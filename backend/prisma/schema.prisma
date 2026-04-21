@@ -1,0 +1,70 @@
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  slug      String    @unique
+  location  String?
+
+  status OrgStatus @default(PENDING)
+
+  hasVoyage   Boolean   @default(false)
+  hasCSE      Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  users     User[]
+
+  @@map("organizations")
+}
+
+enum OrgStatus {
+  PENDING    // En attente de validation par Super Admin
+  ACTIVE     // Active
+  SUSPENDED  // Suspendue
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password       String
+  role           Role     @default(EMPLOYE)
+
+  firstName      String
+  lastName       String
+  isActive       Boolean      @default(true)
+
+  refreshToken   String?
+  lastLoginAt    DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  refreshToken   String?  // 🔥 important
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  RH
+  FINANCE
+  EMPLOYE
+  SUPER_ADMIN
+}
