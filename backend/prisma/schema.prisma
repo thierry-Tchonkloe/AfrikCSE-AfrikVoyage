@@ -6,58 +6,21 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-
-model Organization {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  slug      String    @unique
-  location  String?
-
-  status OrgStatus @default(PENDING)
-
-  hasVoyage   Boolean   @default(false)
-  hasCSE      Boolean   @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
-
-  users     User[]
-
-  @@map("organizations")
-}
+// ─── ENUMS ─────────────────────────────────────────────
 
 enum OrgStatus {
-  PENDING    // En attente de validation par Super Admin
-  ACTIVE     // Active
-  SUSPENDED  // Suspendue
+  PENDING       // En attente de validation par Super Admin
+  ACTIVE        // Active
+  SUSPENDED     // Suspendue
+  REJECTED      // Refusée par Super Admin
 }
 
-model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  password       String
-  role           Role     @default(EMPLOYE)
-
-  firstName      String
-  lastName       String
-  isActive       Boolean      @default(true)
-
-  refreshToken   String?
-  lastLoginAt    DateTime?
-
-  createdAt      DateTime @default(now())
-  updatedAt DateTime @default(now())
-
-  refreshToken   String?  // 🔥 important
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  @@map("users")
+enum Plan {
+  STARTER       // Petit plan
+  BUSINESS      // Plan intermédiaire
+  ENTERPRISE    // Plan complet
 }
 
 enum Role {
@@ -67,4 +30,118 @@ enum Role {
   FINANCE
   EMPLOYE
   SUPER_ADMIN
+}
+
+
+
+// ─── ORGANIZATION ──────────────────────────────────────
+
+
+model Organization {
+  id              String      @id @default(uuid())
+  name            String
+  email           String      @unique
+  slug            String      @unique
+
+  status          OrgStatus   @default(PENDING)
+  plan            Plan        @default(STARTER)
+
+  hasVoyage       Boolean     @default(false)
+  hasCSE          Boolean     @default(false)
+
+
+  country         String?
+  phone           String?
+  size            String?     // "1-10", "11-50", "51-200", etc.
+  industry        String?
+  address         String?
+  city            String?
+  region          String?
+  postalCode      String?
+  businessEmail   String?
+
+  validatedAt     DateTime?
+  validatedById   String?   // ID du Super Admin qui a validé
+  rejectedAt      DateTime?
+  rejectionNote   String?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @default(now())
+
+  users           User[]
+
+  auditLogs       AuditLog[]
+  @@map("organizations")
+}
+
+// ─── USER ───────────────────────────────────────────────
+
+model User {
+  id                      String      @id @default(uuid())
+  email                   String      @unique
+  password                String
+
+  firstName               String
+  lastName                String
+  phone                   String?
+  avatar                  String?      // URL Cloudinary
+  jobTitle                String?
+  department              String?
+  costCenter              String?
+
+  role                    Role         @default(EMPLOYE)
+  isActive                Boolean      @default(true)
+
+  profileCompleted        Boolean      @default(false)
+
+  emailVerified           Boolean      @default(false)
+  emailVerifiedAt         DateTime?
+
+  refreshToken            String?      // Stocké hashé
+  resetPasswordToken      String?      // Token reset password (hashé)
+  resetPasswordExpiresAt  DateTime?
+
+  managerId               String?
+  manager                 User?        @relation("UserManager", fields: [managerId], references: [id])
+  managedUsers            User[]       @relation("UserManager")
+
+  lastLoginAt             DateTime?
+
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @default(now())
+
+  organizationId          String
+  organization            Organization @relation(fields: [organizationId], references: [id])
+
+  auditLogs               AuditLog[]
+
+  @@map("users")
+}
+
+
+// ────────────── AUDIT LOG : Trace toutes les actions sensibles──────────────────────────────────────
+
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  action        String   // "USER_CREATED", "ROLE_CHANGED", "ORG_VALIDATED", etc.
+  entity        String   // "User", "Organization"
+  entityId      String
+  oldValue      Json?    // Valeur avant modification
+  newValue      Json?    // Valeur après modification
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  // Qui a effectué l'action
+
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+
+  // Sur quelle organisation
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@map("audit_logs")
 }
