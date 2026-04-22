@@ -29,7 +29,9 @@ export default defineConfig({
 
   migrations: {
     path: "prisma/migrations", // Dossier des fichiers de migration
-    seed: "ts-node prisma/seed.ts", // Commande de seed
+    //seed: "ts-node prisma/seed.ts", // Commande de seed
+    // ts-node pour exécuter le seed TypeScript directement
+    seed: "ts-node -r tsconfig-paths/register prisma/seed.ts",
   },
 
   datasource: { // Connexion à la base de données

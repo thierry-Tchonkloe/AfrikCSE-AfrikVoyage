@@ -12,7 +12,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio --early-access",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "start:prod": "prisma migrate deploy && prisma db seed && node dist/app.js",
+    "start:prod": "prisma migrate deploy && prisma db seed && node dist/server.js",
     "db:reset": "prisma migrate reset --force",
     "db:setup": "prisma generate && prisma migrate deploy && prisma db seed",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
