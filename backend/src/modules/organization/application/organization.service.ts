@@ -1,6 +1,7 @@
 import { OrganizationRepository } from "../infrastructure/organization.repository";
 import { ValidateOrgDto, RejectOrgDto, UpdateModulesDto } from "../interfaces/organization.validator";
 import { OrgStatus } from "@prisma/client";
+import { prisma } from "../../../core/config/prisma";
 
 export class OrganizationService {
     private repo = new OrganizationRepository();
@@ -67,5 +68,81 @@ export class OrganizationService {
         const org = await this.repo.findById(id);
         if (!org) throw new Error("Organisation introuvable");
         return this.repo.suspend(id);
+    }
+
+
+    // ── Méthodes supplémentaires ──
+
+    async createByAdmin(dto: {
+        name: string;
+        businessEmail?: string;
+        country?: string;
+        phone?: string;
+        city?: string;
+        plan: string;
+        status: string;
+        hasVoyage: boolean;
+        hasCSE: boolean;
+        adminFirstName: string;
+        adminLastName: string;
+        adminEmail: string;
+    }) {
+        // Vérifie email unique
+        const existingUser = await prisma.user.findUnique({
+            where: { email: dto.adminEmail }
+        });
+        if (existingUser) throw new Error("Cet email admin est déjà utilisé");
+
+        const slug = dto.name
+            .toLowerCase()
+            .replace(/\s+/g, "-")
+            .replace(/[^a-z0-9-]/g, "")
+            + "-" + Date.now().toString(36); // garantit l'unicité
+
+        const result = await this.repo.createByAdmin({ ...dto, slug });
+
+        // Lien d'invitation
+        const invitationLink =
+            `${process.env.FRONTEND_URL}/activate?token=${result.invitationToken}`;
+
+        console.log(`[DEV] Lien d'invitation : ${invitationLink}`);
+        // TODO: Envoyer par email
+
+        return { ...result, invitationLink };
+    }
+
+    async validateWithInvitation(
+        id: string,
+        superAdminId: string,
+        dto: { hasVoyage: boolean; hasCSE: boolean }
+    ) {
+        const org = await this.repo.findById(id);
+        if (!org) throw new Error("Organisation introuvable");
+        if (org.status !== "PENDING") throw new Error("Organisation non en attente");
+
+        const result = await this.repo.validateWithInvitation(
+            id,
+            superAdminId,
+            dto.hasVoyage,
+            dto.hasCSE
+        );
+
+        const invitationLink =
+            `${process.env.FRONTEND_URL}/activate?token=${result.invitationToken}`;
+
+        console.log(`[DEV] Lien activation : ${invitationLink}`);
+        // TODO: Envoyer par email à l'admin de l'org
+
+        return { ...result.org, invitationLink };
+    }
+
+    async getPaginated(params: Parameters<OrganizationRepository["findPaginated"]>[0]) {
+        return this.repo.findPaginated(params);
+    }
+
+    async softDelete(id: string) {
+        const org = await this.repo.findById(id);
+        if (!org) throw new Error("Organisation introuvable");
+        return this.repo.softDelete(id);
     }
 }

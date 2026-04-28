@@ -1,8 +1,3 @@
-// import "module-alias/register";
-// import app from "./app";
-
-// app.listen(5000);
-
 import "dotenv/config";
 import app from "./app";
 
