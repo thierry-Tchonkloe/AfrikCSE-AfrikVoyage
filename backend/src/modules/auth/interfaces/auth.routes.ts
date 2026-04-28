@@ -29,5 +29,7 @@ router.post("/reset-password", ctrl.resetPassword.bind(ctrl));
 router.post("/logout", authenticate, ctrl.logout.bind(ctrl));
 router.get("/me", authenticate, ctrl.me.bind(ctrl));
 router.patch("/complete-profile", authenticate, ctrl.completeProfile.bind(ctrl));
+router.post("/activate", ctrl.activateAccount.bind(ctrl));
+
 
 export default router;

@@ -20,6 +20,10 @@ import rateLimit from "express-rate-limit";
 import authRoutes from "./modules/auth/interfaces/auth.routes";
 import organizationRoutes from "./modules/organization/interfaces/organization.routes";
 import userRoutes from "./modules/user/interfaces/user.routes";
+import settingsRoutes from "./modules/settings/interfaces/settings.routes";
+import contactRoutes from "./modules/contact/interfaces/contact.routes";
+
+
 
 const app = express();
 
@@ -59,6 +63,9 @@ app.get("/health", (_req, res) => {
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/organizations", organizationRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/contact", contactRoutes);
+
 
 // ── Handler 404 ─────────────────────────────────────────
 app.use((_req, res) => {
