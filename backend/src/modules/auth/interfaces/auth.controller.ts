@@ -27,15 +27,15 @@
 
 
 
-
+import { prisma } from "../../../core/config/prisma";
 import { Request, Response } from "express";
 import { AuthService } from "../application/auth.service";
 import {
-  registerCompanySchema,
-  loginSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
-  completeProfileSchema,
+    registerCompanySchema,
+    loginSchema,
+    forgotPasswordSchema,
+    resetPasswordSchema,
+    completeProfileSchema,
 } from "./auth.validator";
 
 const service = new AuthService();
@@ -119,8 +119,43 @@ export class AuthController {
         }
     }
 
-    async me(req: Request, res: Response) {
-        return res.status(200).json({ user: req.user });
+    // async me(req: Request, res: Response) {
+    //     return res.status(200).json({ user: req.user });
+    // }
+
+    async me(req: Request, res: Response): Promise<void> {
+        try {
+            const user = await prisma.user.findUnique({
+                where: { id: req.user!.userId },
+                select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true,
+                    profileCompleted: true,
+                    organizationId: true,
+                    organization: {
+                    select: {
+                        id: true,
+                        name: true,
+                        hasVoyage: true,
+                        hasCSE: true,
+                        status: true,
+                    },
+                    },
+                },
+            });
+
+            if (!user) {
+                res.status(404).json({ message: "Utilisateur introuvable" });
+                return;
+            }
+
+            res.status(200).json({ user });
+        } catch (err: any) {
+            res.status(500).json({ message: err.message });
+        }
     }
 
     async completeProfile(req: Request, res: Response) {
@@ -134,6 +169,20 @@ export class AuthController {
             return res.status(200).json({ message: "Profil complété" });
         } catch (err: any) {
             return res.status(500).json({ message: err.message });
+        }
+    }
+
+    async activateAccount(req: Request, res: Response): Promise<void> {
+        const { token, password } = req.body;
+        if (!token || !password) {
+            res.status(400).json({ message: "Token et mot de passe requis" });
+            return;
+        }
+        try {
+            await service.resetPassword({ token, password });
+            res.json({ message: "Compte activé avec succès. Vous pouvez maintenant vous connecter." });
+        } catch (err: any) {
+            res.status(400).json({ message: err.message });
         }
     }
 }
