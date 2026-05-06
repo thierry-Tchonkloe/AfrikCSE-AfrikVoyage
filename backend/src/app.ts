@@ -23,6 +23,11 @@ import userRoutes from "./modules/user/interfaces/user.routes";
 import settingsRoutes from "./modules/settings/interfaces/settings.routes";
 import contactRoutes from "./modules/contact/interfaces/contact.routes";
 
+import employeeRoutes  from "./modules/employees/interfaces/employee.routes";
+import benefitRoutes   from "./modules/benefits/interfaces/benefit.routes";
+import travelRoutes    from "./modules/travels/interfaces/travel.routes";
+import billingRoutes   from "./modules/billing/interfaces/billing.routes";
+import messagingRoutes from "./modules/messaging/interfaces/messaging.routes";
 
 
 const app = express();
@@ -65,6 +70,12 @@ app.use("/api/organizations", organizationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/contact", contactRoutes);
+
+app.use("/api/employees",  employeeRoutes);
+app.use("/api/benefits",   benefitRoutes);
+app.use("/api/travels",    travelRoutes);
+app.use("/api/billing",    billingRoutes);
+app.use("/api/messaging",  messagingRoutes);
 
 
 // ── Handler 404 ─────────────────────────────────────────

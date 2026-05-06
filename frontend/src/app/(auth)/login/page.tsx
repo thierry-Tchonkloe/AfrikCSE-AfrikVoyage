@@ -30,26 +30,67 @@ export default function LoginPage() {
         formState: { errors },
     } = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { rememberMe: false }, });
 
+    // const onSubmit = async (data: FormData): Promise<void> => {
+    //     setLoading(true);
+    //     try {
+    //     const result = await authService.login(data.email, data.password);
+    //     setAuthData(result.accessToken, result.refreshToken, result.user);
+
+    //     toast.success(`Bienvenue, ${result.user.firstName} !`);
+
+    //     // Redirection selon l'état du profil
+    //     if (!result.user.profileCompleted) {
+    //         router.push("/complete-profile");
+    //     } else {
+    //         router.push("/hub");
+    //     }
+    //     } catch (err: any) {
+    //     const message =
+    //         err.response?.data?.message || "Erreur de connexion";
+    //     toast.error(message);
+    //     } finally {
+    //     setLoading(false);
+    //     }
+    // };
+
     const onSubmit = async (data: FormData): Promise<void> => {
         setLoading(true);
         try {
-        const result = await authService.login(data.email, data.password);
-        setAuthData(result.accessToken, result.refreshToken, result.user);
+            const result = await authService.login(data.email, data.password);
+            setAuthData(result.accessToken, result.refreshToken, result.user);
 
-        toast.success(`Bienvenue, ${result.user.firstName} !`);
+            toast.success(`Bienvenue, ${result.user.firstName} !`);
 
-        // Redirection selon l'état du profil
-        if (!result.user.profileCompleted) {
+            // Profil incomplet → complétion
+            if (!result.user.profileCompleted) {
             router.push("/complete-profile");
-        } else {
+            return;
+            }
+
+            const org = result.user.organization;
+
+            // Super Admin → son dashboard
+            if (result.user.role === "SUPER_ADMIN") {
+            router.push("/admin/dashboard");
+            return;
+            }
+
+            // Un seul module actif → redirection directe
+            if (org?.hasCSE && !org?.hasVoyage) {
+            router.push("/companies/AfrikCSE/dashboard");
+            return;
+            }
+            if (org?.hasVoyage && !org?.hasCSE) {
+            router.push("/companies/AfrikVoyage/dashboard");
+            return;
+            }
+
+            // Deux modules ou aucun → Hub
             router.push("/hub");
-        }
         } catch (err: any) {
-        const message =
-            err.response?.data?.message || "Erreur de connexion";
-        toast.error(message);
+            toast.error(err.response?.data?.message || "Erreur de connexion");
         } finally {
-        setLoading(false);
+            setLoading(false);
         }
     };
 

@@ -14,6 +14,7 @@ interface Step {
     imageBg: string;
     imageEmoji: string;
     side: "left" | "right";
+    image: string | null;
 }
 
 interface Benefit {
@@ -41,6 +42,7 @@ const steps: Step[] = [
         imageBg: "from-blue-50 to-indigo-100",
         imageEmoji: "🧑‍💼",
         side: "left",
+        image: "/images/img6.png",
     },
     {
         number: 2,
@@ -57,6 +59,7 @@ const steps: Step[] = [
         imageBg: "from-teal-50 to-emerald-100",
         imageEmoji: "🫂",
         side: "right",
+        image: "/images/img7.png",
     },
     {
         number: 3,
@@ -73,6 +76,7 @@ const steps: Step[] = [
         imageBg: "from-amber-50 to-orange-100",
         imageEmoji: "📋",
         side: "left",
+        image: "/images/img8.png",
     },
     {
         number: 4,
@@ -89,6 +93,7 @@ const steps: Step[] = [
         imageBg: "from-purple-50 to-violet-100",
         imageEmoji: "📱",
         side: "right",
+        image: "/images/img9.png",
     },
     {
         number: 5,
@@ -105,6 +110,7 @@ const steps: Step[] = [
         imageBg: "from-slate-50 to-blue-100",
         imageEmoji: "📈",
         side: "left",
+        image: "/images/img10.png",
     },
 ];
 
@@ -206,10 +212,15 @@ function StepCard({ step, index }: { step: Step; index: number }) {
             <div
             className={`overflow-hidden rounded-2xl bg-linear-to-br ${step.imageBg} aspect-4/3 flex items-center justify-center shadow-md border border-white`}
             >
-            <div className="text-center p-8">
-                <div className="text-7xl mb-3">{step.imageEmoji}</div>
-                <p className="text-slate-500 text-sm font-medium">{step.imageAlt}</p>
-            </div>
+                {
+                    step.image ? <div className="relative w-full aspect-4/3 rounded-2xl overflow-hidden">
+                                    <img src={step.image} alt={step.imageAlt} className="w-full h-full object-cover" />
+                                </div> :
+                                <div className="text-center p-8">
+                                    <div className="text-7xl mb-3">{step.imageEmoji}</div>
+                                    <p className="text-slate-500 text-sm font-medium">{step.imageAlt}</p>
+                                </div>
+                }
             </div>
         </div>
 
@@ -236,34 +247,35 @@ function HeroSection() {
 
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="grid items-center gap-10 lg:grid-cols-2">
-            {/* 3D question mark illustration placeholder */}
-            <div className="flex justify-center lg:justify-start">
-                <div className="relative">
-                <div className="flex h-40 w-40 items-center justify-center rounded-full bg-white/10 text-8xl backdrop-blur-sm sm:h-48 sm:w-48">
-                    ❓
+                {/* 3D question mark illustration placeholder */}
+                <div className="flex justify-center lg:justify-start">
+                    <div className="relative">
+                        {/* <div className="flex h-40 w-40 items-center justify-center rounded-full bg-white/10 text-8xl backdrop-blur-sm sm:h-48 sm:w-48">
+                            ❓
+                        </div> */}
+                        <img src="/images/question_mark-1.png" alt="question-mark" className="w-full max-w-sm rounded-2xl" />
+                    <div className="absolute -right-4 -bottom-4 h-16 w-16 rounded-full bg-teal-400/20 backdrop-blur-sm" />
+                    </div>
                 </div>
-                <div className="absolute -right-4 -bottom-4 h-16 w-16 rounded-full bg-teal-400/20 backdrop-blur-sm" />
-                </div>
-            </div>
 
-            <div>
-                <h1 className="mb-5 text-3xl font-extrabold leading-tight text-white sm:text-4xl md:text-5xl">
-                Comment fonctionne
-                <br />
-                notre plateforme&nbsp;?
-                </h1>
-                <p className="mb-6 text-base leading-relaxed text-blue-100 sm:text-lg">
-                Découvrez en 5 étapes simples comment AfrikCSE &amp; AfrikVoyage
-                transforme la gestion des voyages d&apos;affaires et des avantages
-                sociaux de votre entreprise
-                </p>
-                <button className="inline-flex items-center gap-3 rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-teal-300 backdrop-blur-sm transition hover:bg-white/20">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-400 text-white text-xs">
-                    ▶
-                </span>
-                Processus simplifié en 5 minutes
-                </button>
-            </div>
+                <div>
+                    <h1 className="mb-5 text-3xl font-extrabold leading-tight text-white sm:text-4xl md:text-5xl">
+                    Comment fonctionne
+                    <br />
+                    notre plateforme&nbsp;?
+                    </h1>
+                    <p className="mb-6 text-base leading-relaxed text-blue-100 sm:text-lg">
+                    Découvrez en 5 étapes simples comment AfrikCSE &amp; AfrikVoyage
+                    transforme la gestion des voyages d&apos;affaires et des avantages
+                    sociaux de votre entreprise
+                    </p>
+                    <button className="inline-flex items-center gap-3 rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-teal-300 backdrop-blur-sm transition hover:bg-white/20">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-400 text-white text-xs">
+                        ▶
+                    </span>
+                    Processus simplifié en 5 minutes
+                    </button>
+                </div>
             </div>
         </div>
         </section>
@@ -343,7 +355,7 @@ function StepsSection() {
 
             <div className="space-y-16 md:space-y-20">
                 {steps.map((step, index) => (
-                <StepCard key={step.number} step={step} index={index} />
+                    <StepCard key={step.number} step={step} index={index} />
                 ))}
             </div>
             </div>
