@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -153,7 +154,7 @@ function useInView(ref: React.RefObject<HTMLElement | null>) {
 
 function HeroSection() {
     return (
-        <section className="relative overflow-hidden bg-linear-to-br from-[#1a3a6b] via-[#1e4db7] to-[#2563eb] py-20 md:py-28 lg:py-36">
+        <section className="relative overflow-hidden bg-linear-to-br from-[#1a3a6b] via-[#1e4db7] to-[#2563eb] py-10 md:py-15 lg:py-15">
         {/* Background decorative circles */}
         <div className="pointer-events-none absolute inset-0">
             <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-white/5 blur-3xl" />
@@ -163,16 +164,16 @@ function HeroSection() {
 
         <div className="relative mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm text-teal-300 backdrop-blur-sm">
-            <span>📍</span>
+            <span><img src="/icons/Vector-location.png" alt="vector-location" /></span>
             <span>Basé en Afrique, orienté vers le monde</span>
             </div>
 
             <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
-            Révolutionner la gestion
-            <br />
-            <span className="bg-linear-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">
-                d&apos;entreprise en Afrique
-            </span>
+                Révolutionner la gestion
+                <br />
+                <span className="bg-linear-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">
+                    d&apos;entreprise en Afrique
+                </span>
             </h1>
 
             <p className="mx-auto max-w-3xl text-base leading-relaxed text-blue-100 sm:text-lg md:text-xl">
@@ -219,24 +220,37 @@ function MissionSection() {
             >
             {/* Image placeholder */}
             <div className="relative order-2 lg:order-1">
-                <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-100 to-slate-200 aspect-4/3 flex items-center justify-center shadow-xl">
-                <div className="text-center p-8">
-                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-[#1a3a6b] to-[#2563eb]">
-                    <span className="text-3xl">🏢</span>
-                    </div>
-                    <p className="text-slate-500 text-sm font-medium">
-                    AfrikCSE & AfrikVoyage
-                    </p>
-                    <p className="text-slate-400 text-xs mt-1">
-                    Gestion d&apos;entreprise moderne
-                    </p>
+                {/* <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-100 to-slate-200 aspect-4/3 flex items-center justify-center shadow-xl"> */}
+                    {/* <div className="text-center p-8">
+                        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-[#1a3a6b] to-[#2563eb]">
+                        <span className="text-3xl">🏢</span>
+                        </div>
+                        <p className="text-slate-500 text-sm font-medium">
+                        AfrikCSE & AfrikVoyage
+                        </p>
+                        <p className="text-slate-400 text-xs mt-1">
+                        Gestion d&apos;entreprise moderne
+                        </p>
+                    </div> */}
+                    
+                {/* </div> */}
+                <div className="relative w-full rounded-2xl overflow-hidden">
+                    <img src="/images/img1.png" alt="AfrikCSE & AfrikVoyage - Gestion d'entreprise moderne" />
                 </div>
-                </div>
+                {/* <div className="relative w-full aspect-4/3 rounded-2xl">
+                    <Image
+                        src="/images/img1.png"
+                        alt="AfrikCSE & AfrikVoyage - Gestion d'entreprise moderne"
+                        fill
+                        className="object-cover"
+                        priority
+                    />
+                    </div> */}
                 {/* Floating badge */}
                 <div className="absolute -bottom-4 -right-4 rounded-xl bg-white px-4 py-3 shadow-lg border border-slate-100">
-                <p className="text-xs font-semibold text-emerald-600">
-                    ✓ Innovation africaine
-                </p>
+                    <p className="text-xs font-semibold text-emerald-600">
+                        ✓ Innovation africaine
+                    </p>
                 </div>
             </div>
 
@@ -304,7 +318,7 @@ function MissionSection() {
                     ))}
                     </div>
                 </div>
-                <div className="relative text-center p-8">
+                {/* <div className="relative text-center p-8">
                     <div className="text-6xl mb-3">📊</div>
                     <p className="text-white font-semibold text-lg">
                     Croissance &amp; Performance
@@ -312,6 +326,9 @@ function MissionSection() {
                     <p className="text-blue-200 text-sm mt-1">
                     Résultats mesurables pour vos équipes
                     </p>
+                </div> */}
+                <div className="relative w-full aspect-video rounded-2xl overflow-hidden">
+                    <img src="/images/img2.png" alt="AfrikCSE & AfrikVoyage - Gestion d'entreprise moderne" />
                 </div>
                 </div>
             </div>

@@ -98,7 +98,7 @@ export default function ChallengesAndSolutions() {
                 key={c.title}
                 className="bg-gray-50 border border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow duration-200"
                 >
-                <div className={`w-12 h-12 ${c.iconBg} rounded-full flex items-center justify-center mb-4`}>
+                <div className={`w-12 h-12 ${c.iconBg} rounded-full flex j items-center justify-center mb-4`}>
                     {c.icon}
                 </div>
                 <h3 className="font-bold text-gray-900 text-sm sm:text-base mb-2">{c.title}</h3>

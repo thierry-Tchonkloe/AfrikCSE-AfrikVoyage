@@ -64,10 +64,10 @@ export default function Navbar() {
                 </div>
 
                 <Link
-                href="/infos/join-us"
+                href="/login"
                 className="text-sm font-medium text-gray-700 hover:text-teal-700 transition-colors"
                 >
-                Join us
+                My Spaces
                 </Link>
 
                 <Link
@@ -130,11 +130,11 @@ export default function Navbar() {
             ))}
             <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
                 <Link
-                href="/infos/join-us"
+                href="/login"
                 onClick={() => setMenuOpen(false)}
                 className="block py-2 px-3 text-sm font-medium text-gray-700 hover:text-teal-700 transition-colors"
                 >
-                Join us
+                My Spaces
                 </Link>
                 <Link
                 href="/infos/demo"
