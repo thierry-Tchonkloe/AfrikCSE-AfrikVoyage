@@ -34,6 +34,16 @@ model Organization {
   users         User[]
   invitationTokens InvitationToken[]
 
+  employees        Employee[]
+  benefitCategories BenefitCategory[]
+  benefitRequests  BenefitRequest[]
+  expenseReports   ExpenseReport[]
+  travelRequests   TravelRequest[]
+  conversations    Conversation[]
+  subscription     Subscription?
+  invoices         Invoice[]
+  apiIntegrations  ApiIntegration[]
+
   @@map("organizations")
 }
 
@@ -65,6 +75,10 @@ model User {
   manager                User?        @relation("UserManager", fields: [managerId], references: [id])
   managedUsers           User[]       @relation("UserManager")
   organization           Organization @relation(fields: [organizationId], references: [id])
+
+  employee         Employee?
+  sentMessages     Message[]        @relation("MessageSender")
+  conversations    ConversationParticipant[]
 
   @@map("users")
 }
@@ -119,6 +133,8 @@ model PlatformSettings {
   primaryColor          String   @default("#0f766e")
   secondaryColor        String   @default("#f59e0b")
   darkModeEnabled       Boolean  @default(true)
+
+  faviconUrl            String?
 
   manualValidation      Boolean  @default(true)
   autoRegistration      Boolean  @default(false)
@@ -192,4 +208,262 @@ model ContactRequest {
   updatedAt        DateTime      @updatedAt
 
   @@map("contact_requests")
+}
+
+
+
+
+// ─── EMPLOYEE (profil étendu dans l'org) ───────────────
+model Employee {
+  id             String       @id @default(cuid())
+  matricule      String?      // Numéro matricule RH
+  avatar         String?      // URL Cloudinary
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String       @unique
+  user           User         @relation(fields: [userId], references: [id])
+  managerId      String?
+  manager        Employee?    @relation("EmployeeManager", fields: [managerId], references: [id])
+  subordinates   Employee[]   @relation("EmployeeManager")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  benefitRequests BenefitRequest[]
+  expenseReports  ExpenseReport[]
+
+  @@map("employees")
+}
+
+// ─── BENEFIT CATEGORY (catégories de subventions CSE) ──
+model BenefitCategory {
+  id              String       @id @default(cuid())
+  name            String
+  description     String?
+  icon            String?
+  annualBudget    Float        @default(0)
+  perEmployeeLimit Float       @default(0)
+  currency        String       @default("EUR")
+  isActive        Boolean      @default(true)
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  eligibleServices String[]    // Liste des services éligibles
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  requests        BenefitRequest[]
+
+  @@map("benefit_categories")
+}
+
+// ─── BENEFIT REQUEST (demande d'avantage) ──────────────
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model BenefitRequest {
+  id             String        @id @default(cuid())
+  amount         Float
+  description    String?
+  status         RequestStatus @default(PENDING)
+  urgency        Urgency       @default(LOW)
+  rejectionNote  String?
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  employeeId     String
+  employee       Employee      @relation(fields: [employeeId], references: [id])
+  categoryId     String
+  category       BenefitCategory @relation(fields: [categoryId], references: [id])
+  approvedById   String?
+  approvedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("benefit_requests")
+}
+
+// ─── EXPENSE REPORT (notes de frais voyage) ────────────
+model ExpenseReport {
+  id             String        @id @default(cuid())
+  title          String
+  destination    String?
+  departureDate  DateTime?
+  returnDate     DateTime?
+  amount         Float
+  co2Emissions   Float?        // en tonnes
+  status         RequestStatus @default(PENDING)
+  rejectionNote  String?
+  department     String?
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  employeeId     String
+  employee       Employee      @relation(fields: [employeeId], references: [id])
+  approvedById   String?
+  approvedAt     DateTime?
+  receipts       String[]      // URLs des justificatifs
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("expense_reports")
+}
+
+// ─── TRAVEL REQUEST (réservation voyage) ───────────────
+model TravelRequest {
+  id             String        @id @default(cuid())
+  destination    String
+  purpose        String?
+  departureDate  DateTime
+  returnDate     DateTime
+  estimatedCost  Float?
+  actualCost     Float?
+  department     String?
+  status         RequestStatus @default(PENDING)
+  urgency        Urgency       @default(LOW)
+  rejectionNote  String?
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  requestedById  String
+  approvedById   String?
+  approvedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("travel_requests")
+}
+
+// ─── MESSAGE ───────────────────────────────────────────
+model Conversation {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  participants   ConversationParticipant[]
+  messages       Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  lastReadAt     DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  content        String
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id])
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@map("messages")
+}
+
+// ─── SUBSCRIPTION (facturation) ────────────────────────
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  KKIAPAY
+  FEDAPAY
+}
+
+model Subscription {
+  id             String    @id @default(cuid())
+  organizationId String    @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  plan           Plan      @default(STARTER)
+  status         String    @default("ACTIVE") // ACTIVE, CANCELLED, PAST_DUE
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  invoices       Invoice[]
+
+  @@map("subscriptions")
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  invoiceNumber  String        @unique // INV-2025-001
+  amount         Float
+  currency       String        @default("EUR")
+  status         PaymentStatus @default(PENDING)
+  paymentMethod  PaymentMethod?
+  paymentRef     String?       // Référence transaction externe
+  description    String?
+  subscriptionId String
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id])
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  paidAt         DateTime?
+  dueDate        DateTime
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("invoices")
+}
+
+// ─── PLATFORM SETTINGS (ajout champ logo) ──────────────
+
+
+// ─── API INTEGRATION ───────────────────────────────────
+model ApiIntegration {
+  id             String       @id @default(cuid())
+  name           String       // "SAP SuccessFactors", "Workday", etc.
+  type           String       // "HR", "ACCOUNTING"
+  apiKey         String?      // Stocké chiffré
+  webhookUrl     String?
+  isActive       Boolean      @default(false)
+  lastSyncAt     DateTime?
+  syncConfig     Json?        // Mapping des champs
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  syncLogs       SyncLog[]
+
+  @@map("api_integrations")
+}
+
+model SyncLog {
+  id              String         @id @default(cuid())
+  integrationId   String
+  integration     ApiIntegration @relation(fields: [integrationId], references: [id])
+  type            String         // "AUTOMATIC", "MANUAL"
+  employeesCreated Int           @default(0)
+  employeesUpdated Int           @default(0)
+  errors          Int            @default(0)
+  status          String         // "SUCCESS", "PARTIAL", "FAILED"
+  createdAt       DateTime       @default(now())
+
+  @@map("sync_logs")
 }
