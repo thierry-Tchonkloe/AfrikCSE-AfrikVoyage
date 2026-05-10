@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Routes accessibles sans authentification
-const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/", "/infos"];
+const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/", "/infos", "/activate"];
 
 // Routes réservées au Super Admin uniquement
 const SUPER_ADMIN_ROUTES = ["/admin", "/companies", "/companies/*/*", "/companies/*"];
+
+
+// Ajoute dans les routes protégées
+const PROTECTED_ROUTES = ["/employes", "/admin", "/companies", "/hub", "/complete-profile"];
+
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
