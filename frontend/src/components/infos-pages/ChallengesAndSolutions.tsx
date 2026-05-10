@@ -98,8 +98,10 @@ export default function ChallengesAndSolutions() {
                 key={c.title}
                 className="bg-gray-50 border border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow duration-200"
                 >
-                <div className={`w-12 h-12 ${c.iconBg} rounded-full flex j items-center justify-center mb-4`}>
-                    {c.icon}
+                <div className="flex items-center justify-center mb-4">
+                    <div className={`w-12 h-12 ${c.iconBg} rounded-full flex j items-center justify-center mb-4`}>
+                        {c.icon}
+                    </div>
                 </div>
                 <h3 className="font-bold text-gray-900 text-sm sm:text-base mb-2">{c.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{c.description}</p>
@@ -142,7 +144,7 @@ export default function ChallengesAndSolutions() {
                 ))}
                 </ul>
                 <Link
-                href="/afrikvoyage"
+                href="/companies/AfrikVoyage/dashboard"
                 className="inline-flex items-center gap-1 text-teal-700 font-semibold text-sm hover:gap-2 transition-all duration-200 mt-auto"
                 >
                 En savoir plus
@@ -174,7 +176,7 @@ export default function ChallengesAndSolutions() {
                 ))}
                 </ul>
                 <Link
-                href="/afrikcse"
+                href="/companies/AfrikCSE/dashboard"
                 className="inline-flex items-center gap-1 text-amber-600 font-semibold text-sm hover:gap-2 transition-all duration-200 mt-auto"
                 >
                 En savoir plus
