@@ -1,0 +1,1 @@
+export { default } from "@/app/(company-space)/companies/AfrikCSE/messages/page";

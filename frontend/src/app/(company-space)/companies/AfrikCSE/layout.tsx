@@ -4,19 +4,28 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {
-    LayoutDashboard, Gift, Users, FileText,
+    LayoutDashboard, Gift, Users, FileText, CheckCircle, MessageSquare,
     Bell, Settings, ChevronLeft, ChevronRight,
     LogOut, Menu, Moon, Sun, Plane, ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+// const NAV_ITEMS = [
+//     { href: "/companies/AfrikCSE/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+//     { href: "/companies/AfrikCSE/avantages",  label: "Avantages",       icon: Gift },
+//     { href: "/companies/AfrikCSE/employes",   label: "Employés",        icon: Users },
+//     { href: "/companies/AfrikCSE/budget",     label: "Budget",          icon: FileText },
+//     { href: "/companies/AfrikCSE/settings",   label: "Paramètres",      icon: Settings },
+// ];
+
 const NAV_ITEMS = [
-    { href: "/companies/AfrikCSE/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { href: "/companies/AfrikCSE/avantages",  label: "Avantages",       icon: Gift },
-    { href: "/companies/AfrikCSE/employes",   label: "Employés",        icon: Users },
-    { href: "/companies/AfrikCSE/budget",     label: "Budget",          icon: FileText },
-    { href: "/companies/AfrikCSE/settings",   label: "Paramètres",      icon: Settings },
+  { href: "/companies/AfrikCSE/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/companies/AfrikCSE/avantages",  label: "Approbations",    icon: CheckCircle },
+  { href: "/companies/AfrikCSE/employes",   label: "Employés",        icon: Users },
+  { href: "/companies/AfrikCSE/budget",     label: "Subventions",     icon: FileText },
+  { href: "/companies/AfrikCSE/messages",   label: "Messagerie",      icon: MessageSquare },
+  { href: "/companies/AfrikCSE/settings",   label: "Paramètres",      icon: Settings },
 ];
 
 export default function AfrikCSELayout({ children }: { children: React.ReactNode }) {
