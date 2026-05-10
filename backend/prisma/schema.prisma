@@ -43,6 +43,9 @@ model Organization {
   subscription     Subscription?
   invoices         Invoice[]
   apiIntegrations  ApiIntegration[]
+  events           Event[]
+  csePosts         CsePost[]
+  benefitCatalog   BenefitCatalogItem[]
 
   @@map("organizations")
 }
@@ -79,6 +82,13 @@ model User {
   employee         Employee?
   sentMessages     Message[]        @relation("MessageSender")
   conversations    ConversationParticipant[]
+
+  eventRegistrations EventRegistration[]
+  postLikes          PostLike[]          @relation("PostLiker")
+  postComments       PostComment[]       @relation("CommentAuthor")
+  pollVotes          PollVote[]          @relation("PollVoter")
+  authoredPosts      CsePost[]           @relation("PostAuthor")
+  documents          UserDocument[]
 
   @@map("users")
 }
@@ -466,4 +476,156 @@ model SyncLog {
   createdAt       DateTime       @default(now())
 
   @@map("sync_logs")
+}
+
+
+// ─── EVENT (Calendrier CSE) ────────────────────────────
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+model Event {
+  id             String      @id @default(cuid())
+  title          String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime
+  location       String?
+  maxParticipants Int?
+  icon           String?     // emoji ou URL
+  color          String?     // couleur calendrier
+  status         EventStatus @default(PUBLISHED)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdById    String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  registrations  EventRegistration[]
+
+  @@map("events")
+}
+
+model EventRegistration {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@map("event_registrations")
+}
+
+// ─── CSE POST (Communication) ──────────────────────────
+enum PostType {
+  ARTICLE
+  POLL
+  EVENT_ANNOUNCEMENT
+}
+
+model CsePost {
+  id             String    @id @default(cuid())
+  type           PostType  @default(ARTICLE)
+  title          String?
+  content        String
+  imageUrl       String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  authorId       String
+  author         User      @relation("PostAuthor", fields: [authorId], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  likes          PostLike[]
+  comments       PostComment[]
+  pollOptions    PollOption[]
+
+  @@map("cse_posts")
+}
+
+model PostLike {
+  id     String  @id @default(cuid())
+  postId String
+  post   CsePost @relation(fields: [postId], references: [id])
+  userId String
+  user   User    @relation("PostLiker", fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+  @@map("post_likes")
+}
+
+model PostComment {
+  id        String   @id @default(cuid())
+  content   String
+  postId    String
+  post      CsePost  @relation(fields: [postId], references: [id])
+  authorId  String
+  author    User     @relation("CommentAuthor", fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@map("post_comments")
+}
+
+model PollOption {
+  id        String   @id @default(cuid())
+  label     String
+  postId    String
+  post      CsePost  @relation(fields: [postId], references: [id])
+  createdAt DateTime @default(now())
+
+  votes     PollVote[]
+
+  @@map("poll_options")
+}
+
+model PollVote {
+  id           String     @id @default(cuid())
+  pollOptionId String
+  pollOption   PollOption @relation(fields: [pollOptionId], references: [id])
+  userId       String
+  user         User       @relation("PollVoter", fields: [userId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@unique([pollOptionId, userId])
+  @@map("poll_votes")
+}
+
+// ─── BENEFIT CATALOG (catalogue avantages employé) ─────
+model BenefitCatalogItem {
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  imageUrl       String?
+  category       String   // "Sports et bien-être", "Restauration", etc.
+  subsidyPct     Int      // % subventionné par l'entreprise
+  employeePrice  Float    // ce que paie l'employé
+  companyPrice   Float    // ce que paie l'entreprise
+  validUntil     DateTime?
+  maxPerFamily   Int?
+  isActive       Boolean  @default(true)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("benefit_catalog_items")
+}
+
+// ─── USER DOCUMENT ─────────────────────────────────────
+model UserDocument {
+  id        String   @id @default(cuid())
+  name      String   // "Passport Copy", "National ID"
+  url       String   // URL Cloudinary
+  type      String   // "PDF", "IMAGE"
+  size      String?  // "2.4 MB"
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@map("user_documents")
 }
