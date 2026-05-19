@@ -24,6 +24,7 @@ async function main() {
         hasVoyage: true,
         email: "admin1@waxeho.com",
         hasCSE: true,
+        isHost: true,
         country: "BJ",
         businessEmail: "admin@waxeho.com",
         },

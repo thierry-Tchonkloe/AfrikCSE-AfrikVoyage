@@ -68,21 +68,50 @@ export default function LoginPage() {
             }
 
             const org = result.user.organization;
+            const role = result.user.role;
+            const isHost = org?.isHost ?? false;
+            //const isHost = org?.isHost ?? false;
 
             // Super Admin → son dashboard
-            if (result.user.role === "SUPER_ADMIN") {
-            router.push("/admin/dashboard");
-            return;
+            // if (result.user.role === "SUPER_ADMIN") {
+            // router.push("/admin/dashboard");
+            // return;
+            // }
+            if (isHost && (role === "SUPER_ADMIN" || role === "MANAGER")) {
+                router.push("/admin/dashboard");
+                return;
             }
 
             // Un seul module actif → redirection directe
-            if (org?.hasCSE && !org?.hasVoyage) {
-            router.push("/companies/AfrikCSE/dashboard");
-            return;
-            }
-            if (org?.hasVoyage && !org?.hasCSE) {
-            router.push("/companies/AfrikVoyage/dashboard");
-            return;
+            // if (org?.hasCSE && !org?.hasVoyage) {
+            // router.push("/companies/AfrikCSE/dashboard");
+            // return;
+            // }
+            // if (org?.hasVoyage && !org?.hasCSE) {
+            // router.push("/companies/AfrikVoyage/dashboard");
+            // return;
+            // }
+
+            // 2. Admin/Manager/RH/Finance (toute org) → espace company
+            if (["ADMIN", "MANAGER", "RH", "FINANCE"].includes(role)) {
+                // Si un seul module actif → redirige directement
+                if (org?.hasCSE && !org?.hasVoyage) {
+                    router.push("/companies/AfrikCSE/dashboard");
+                    return;
+                }
+                if (org?.hasVoyage && !org?.hasCSE) {
+                    router.push("/companies/AfrikVoyage/dashboard");
+                    return;
+                }
+                // Les deux modules ou aucun → dashboard companies
+                router.push("/companies/dashboard");
+                return;
+                }
+
+                // 3. Employé (toute org) → espace employé
+                if (role === "EMPLOYE") {
+                    router.push("/employes/dashboard");
+                return;
             }
 
             // Deux modules ou aucun → Hub
