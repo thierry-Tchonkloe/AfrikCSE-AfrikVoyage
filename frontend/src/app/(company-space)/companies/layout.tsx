@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {LayoutDashboard, Users, Settings, ChevronLeft, ChevronRight, Bell, LogOut, Menu, Moon, Sun,} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 // Navigation dynamique selon les modules activés
 function useNavItems(hasCSE: boolean, hasVoyage: boolean) {
@@ -30,33 +31,38 @@ function useNavItems(hasCSE: boolean, hasVoyage: boolean) {
 }
 
 export default function CompanyLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading, logout } = useAuth();
+    // const { user, loading, logout } = useAuth();
+    const { logout } = useAuth();
     const router  = useRouter();
     const pathname = usePathname();
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [darkMode, setDarkMode]       = useState(false);
 
-    const navItems = useNavItems(
+   
+
+    // useEffect(() => {
+    //     if (window.innerWidth < 1024) setSidebarOpen(false);
+    //     const fn = () => { if (window.innerWidth < 1024) setSidebarOpen(false); };
+    //     window.addEventListener("resize", fn);
+    //     return () => window.removeEventListener("resize", fn);
+    // }, []);
+
+    // useEffect(() => {
+    //     if (!loading && !user) router.push("/login");
+    //     if (!loading && user?.role === "SUPER_ADMIN") router.push("/admin/dashboard");
+    // }, [user, loading, router]);
+
+    // useEffect(() => {
+    //     document.documentElement.classList.toggle("dark", darkMode);
+    // }, [darkMode]);
+
+    const { user, loading } = useRouteGuard("company");
+
+     const navItems = useNavItems(
         user?.organization?.hasCSE ?? false,
         user?.organization?.hasVoyage ?? false
     );
-
-    useEffect(() => {
-        if (window.innerWidth < 1024) setSidebarOpen(false);
-        const fn = () => { if (window.innerWidth < 1024) setSidebarOpen(false); };
-        window.addEventListener("resize", fn);
-        return () => window.removeEventListener("resize", fn);
-    }, []);
-
-    useEffect(() => {
-        if (!loading && !user) router.push("/login");
-        if (!loading && user?.role === "SUPER_ADMIN") router.push("/admin/dashboard");
-    }, [user, loading, router]);
-
-    useEffect(() => {
-        document.documentElement.classList.toggle("dark", darkMode);
-    }, [darkMode]);
 
     if (loading || !user) return null;
 

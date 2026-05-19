@@ -51,6 +51,7 @@ export default function CompaniesPage() {
             page, limit: 10, search, status, module,
         });
         setOrgs(res.data);
+        console.log(orgs);
         setTotalPages(res.totalPages);
         setTotal(res.total);
         } catch {
@@ -172,7 +173,7 @@ export default function CompaniesPage() {
                     [...Array(5)].map((_, i) => (
                     <tr key={i} className="border-b border-gray-50">
                         <td colSpan={6} className="px-5 py-4">
-                        <div className="h-4 bg-gray-100 rounded animate-pulse" />
+                            <div className="h-4 bg-gray-100 rounded animate-pulse" />
                         </td>
                     </tr>
                     ))

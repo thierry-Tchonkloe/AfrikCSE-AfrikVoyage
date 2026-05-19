@@ -13,6 +13,7 @@
     "@tanstack/react-query": "^5.99.2",
     "axios": "^1.15.1",
     "clsx": "^2.1.1",
+    "jose": "^6.2.3",
     "lucide-react": "^1.8.0",
     "next": "16.2.2",
     "react": "19.2.4",
@@ -29,8 +30,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
+    "postcss": "^8",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "postcss": "^8"
+    "typescript": "^5"
   }
 }
