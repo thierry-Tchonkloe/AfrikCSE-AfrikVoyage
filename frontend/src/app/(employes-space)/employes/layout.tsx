@@ -10,6 +10,7 @@ import {
     Search, Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 // Navigation principale employé
 const NAV_ITEMS = [
@@ -28,23 +29,26 @@ const NAV_BOTTOM = [
 ];
 
 export default function EmployeLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading, logout } = useAuth();
+    // const { user, loading, logout } = useAuth();
+    const { logout } = useAuth();
     const router   = useRouter();
     const pathname = usePathname();
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [search, setSearch]           = useState("");
 
-    useEffect(() => {
-        if (window.innerWidth < 1024) setSidebarOpen(false);
-        const fn = () => { if (window.innerWidth < 1024) setSidebarOpen(false); };
-        window.addEventListener("resize", fn);
-        return () => window.removeEventListener("resize", fn);
-    }, []);
+    // useEffect(() => {
+    //     if (window.innerWidth < 1024) setSidebarOpen(false);
+    //     const fn = () => { if (window.innerWidth < 1024) setSidebarOpen(false); };
+    //     window.addEventListener("resize", fn);
+    //     return () => window.removeEventListener("resize", fn);
+    // }, []);
 
-    useEffect(() => {
-        if (!loading && !user) router.push("/login");
-    }, [user, loading, router]);
+    // useEffect(() => {
+    //     if (!loading && !user) router.push("/login");
+    // }, [user, loading, router]);
+
+    const { user, loading } = useRouteGuard("employee");
 
     if (loading || !user) return null;
 

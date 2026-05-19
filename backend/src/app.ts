@@ -56,7 +56,7 @@ app.use(rateLimit({
 // ── Rate limiting strict sur les routes auth ────────────
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10, // 10 tentatives par 15min (anti-bruteforce)
+    max: 70, // 70 tentatives par 15min (anti-bruteforce)
     message: { message: "Trop de tentatives, réessayez dans 15 minutes" },
 });
 

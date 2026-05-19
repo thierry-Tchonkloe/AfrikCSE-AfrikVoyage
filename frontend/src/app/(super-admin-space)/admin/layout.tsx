@@ -18,6 +18,7 @@ import {
     Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 const NAV_ITEMS = [
     { href: "/admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -28,7 +29,8 @@ const NAV_ITEMS = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading, logout } = useAuth();
+    // const { user, loading, logout } = useAuth();
+    const { logout } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
 
@@ -37,26 +39,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [darkMode, setDarkMode] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
 
-    useEffect(() => {
-        // Détecte la taille d'écran initiale
-        if (window.innerWidth < 1024) setSidebarOpen(false);
+    // useEffect(() => {
+    //     // Détecte la taille d'écran initiale
+    //     if (window.innerWidth < 1024) setSidebarOpen(false);
 
-        const handleResize = () => {
-        if (window.innerWidth < 1024) setSidebarOpen(false);
-        else setSidebarOpen(true);
-        };
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
+    //     const handleResize = () => {
+    //     if (window.innerWidth < 1024) setSidebarOpen(false);
+    //     else setSidebarOpen(true);
+    //     };
+    //     window.addEventListener("resize", handleResize);
+    //     return () => window.removeEventListener("resize", handleResize);
+    // }, []);
 
-    useEffect(() => {
-        if (!loading && !user) router.push("/login");
-        if (!loading && user && user.role !== "SUPER_ADMIN") router.push("/hub");
-    }, [user, loading, router]);
+    // useEffect(() => {
+    //     if (!loading && !user) router.push("/login");
+    //     if (!loading && user && user.role !== "SUPER_ADMIN") router.push("/hub");
+    // }, [user, loading, router]);
 
-    useEffect(() => {
-        document.documentElement.classList.toggle("dark", darkMode);
-    }, [darkMode]);
+    // useEffect(() => {
+    //     document.documentElement.classList.toggle("dark", darkMode);
+    // }, [darkMode]);
+
+    const { user, loading } = useRouteGuard("super-admin");
 
     if (loading || !user) return null;
 

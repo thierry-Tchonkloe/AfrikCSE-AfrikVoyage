@@ -158,6 +158,7 @@ export class AuthService {
             userId: user.id,
             role: user.role,
             organizationId: user.organizationId,
+            isHost:      user.organization?.isHost ?? false,
         };
 
         const accessToken = signAccessToken(payload);
@@ -221,6 +222,7 @@ export class AuthService {
         userId: user.id,
         role: user.role,
         organizationId: user.organizationId,
+        isHost:      user.organization?.isHost ?? false,
         });
 
         return { accessToken: newAccessToken };

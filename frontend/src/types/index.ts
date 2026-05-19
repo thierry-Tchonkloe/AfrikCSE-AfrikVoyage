@@ -17,6 +17,7 @@ export interface Organization {
     plan: Plan;
     hasVoyage: boolean;
     hasCSE: boolean;
+    isHost: boolean;
 }
 
 export interface User {
@@ -27,7 +28,7 @@ export interface User {
     role: Role;
     profileCompleted: boolean;
     organizationId: string | null;
-    organization: Pick<Organization, "id" | "name" | "hasVoyage" | "hasCSE"> | null;
+    organization: Pick<Organization, "id" | "name" | "hasVoyage" | "hasCSE" | "isHost"> | null;
 }
 
 export interface AuthResponse {
