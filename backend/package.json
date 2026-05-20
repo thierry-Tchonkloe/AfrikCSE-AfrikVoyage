@@ -5,14 +5,14 @@
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
+    "start:prod": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/server.ts",
     "build": "tsc",
     "prisma:generate": "prisma generate --early-access",
     "prisma:migrate": "prisma migrate dev --early-access",
-    "prisma:deploy": "prisma migrate deploy",
+    "prisma:deploy": "prisma migrate deploy --early-access",
     "prisma:studio": "prisma studio --early-access",
     "prisma:seed": "ts-node -r tsconfig-paths/register prisma/seed.ts",
-    "start:prod": "prisma migrate deploy && prisma db seed && node dist/server.js",
     "db:reset": "prisma migrate reset --force",
     "db:setup": "prisma generate && prisma migrate deploy && prisma db seed",
     "test": "echo \"Error: no test specified\" && exit 1"
