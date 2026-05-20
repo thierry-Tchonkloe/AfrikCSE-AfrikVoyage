@@ -6,7 +6,9 @@ services:
     plan: free
 
     buildCommand: npm install && npx prisma generate --early-access && npm run build
-    startCommand: npx prisma migrate deploy && node dist/server.js
+
+    # Migration + démarrage séparés avec les bons flags
+    startCommand: npx prisma migrate deploy --early-access && node dist/server.js
 
     envVars:
       - key: NODE_ENV
