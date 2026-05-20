@@ -11,7 +11,7 @@
     "prisma:migrate": "prisma migrate dev --early-access",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio --early-access",
-    "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:seed": "ts-node -r tsconfig-paths/register prisma/seed.ts",
     "start:prod": "prisma migrate deploy && prisma db seed && node dist/server.js",
     "db:reset": "prisma migrate reset --force",
     "db:setup": "prisma generate && prisma migrate deploy && prisma db seed",
@@ -41,9 +41,8 @@
     "module-alias": "^2.3.4",
     "pg": "^8.20.0",
     "tsconfig-paths": "^4.2.0",
-    "zod": "^4.3.6"
-  },
-  "devDependencies": {
+    "zod": "^4.3.6",
+
     "@types/bcrypt": "^6.0.0",
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
@@ -53,10 +52,12 @@
     "@types/pg": "^8.20.0",
     "dotenv": "^17.4.2",
     "prisma": "^7.7.0",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^6.0.2"
   },
+  "devDependencies": {},
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts"
   }
 }

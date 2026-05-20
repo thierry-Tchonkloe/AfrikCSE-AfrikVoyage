@@ -11,7 +11,7 @@
 
 
 
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
@@ -46,17 +46,17 @@ app.use(cors({
     credentials: true,
 }));
 
-// ── Rate limiting global : 100 req/15min par IP ─────────
+// ── Rate limiting global : 1000 req/15min par IP ─────────
 app.use(rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 1000,
     message: { message: "Trop de requêtes, réessayez dans 15 minutes" },
 }));
 
 // ── Rate limiting strict sur les routes auth ────────────
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 70, // 70 tentatives par 15min (anti-bruteforce)
+    max: 500, // 70 tentatives par 15min (anti-bruteforce)
     message: { message: "Trop de tentatives, réessayez dans 15 minutes" },
 });
 
@@ -65,7 +65,7 @@ app.use(express.json());
 app.use(compression() as any);
 
 // ── Health check ────────────────────────────────────────
-app.get("/health", (_req, res) => {
+app.get("/health", (_req: Request, res: Response) => {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
@@ -89,12 +89,12 @@ app.use("/api/catalog",        catalogRoutes);
 
 
 // ── Handler 404 ─────────────────────────────────────────
-app.use((_req, res) => {
+app.use((_req: Request, res: Response) => {
     res.status(404).json({ message: "Route introuvable" });
 });
 
 // ── Handler erreurs globales ─────────────────────────────
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error("[ERROR]", err.message);
     res.status(500).json({ message: "Erreur interne du serveur" });
 });
