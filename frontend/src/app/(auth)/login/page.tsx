@@ -53,69 +53,118 @@ export default function LoginPage() {
     //     }
     // };
 
+    // const onSubmit = async (data: FormData): Promise<void> => {
+    //     setLoading(true);
+    //     try {
+    //         const result = await authService.login(data.email, data.password);
+    //         setAuthData(result.accessToken, result.refreshToken, result.user);
+
+    //         toast.success(`Bienvenue, ${result.user.firstName} !`);
+
+    //         // Profil incomplet → complétion
+    //         if (!result.user.profileCompleted) {
+    //         //router.push("/complete-profile");
+    //         window.location.href = "/complete-profile";
+    //         return;
+    //         }
+
+    //         const org = result.user.organization;
+    //         const role = result.user.role;
+    //         const isHost = org?.isHost ?? false;
+    //         //const isHost = org?.isHost ?? false;
+
+    //         // Super Admin → son dashboard
+    //         // if (result.user.role === "SUPER_ADMIN") {
+    //         // router.push("/admin/dashboard");
+    //         // return;
+    //         // }
+    //         if (isHost && (role === "SUPER_ADMIN" || role === "MANAGER")) {
+    //             router.push("/admin/dashboard");
+    //             return;
+    //         }
+
+    //         // Un seul module actif → redirection directe
+    //         // if (org?.hasCSE && !org?.hasVoyage) {
+    //         // router.push("/companies/AfrikCSE/dashboard");
+    //         // return;
+    //         // }
+    //         // if (org?.hasVoyage && !org?.hasCSE) {
+    //         // router.push("/companies/AfrikVoyage/dashboard");
+    //         // return;
+    //         // }
+
+    //         // 2. Admin/Manager/RH/Finance (toute org) → espace company
+    //         if (["ADMIN", "MANAGER", "RH", "FINANCE"].includes(role)) {
+    //             // Si un seul module actif → redirige directement
+    //             if (org?.hasCSE && !org?.hasVoyage) {
+    //                 router.push("/companies/AfrikCSE/dashboard");
+    //                 return;
+    //             }
+    //             if (org?.hasVoyage && !org?.hasCSE) {
+    //                 router.push("/companies/AfrikVoyage/dashboard");
+    //                 return;
+    //             }
+    //             // Les deux modules ou aucun → dashboard companies
+    //             router.push("/companies/dashboard");
+    //             return;
+    //         }
+
+    //         // 3. Employé (toute org) → espace employé
+    //         // if (role === "EMPLOYE") {
+    //         router.push("/employes/dashboard");
+    //         // return;
+    //         // }
+
+    //         // Deux modules ou aucun → Hub
+    //         //router.push("/hub");
+    //     } catch (err: any) {
+    //         toast.error(err.response?.data?.message || "Erreur de connexion");
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
+
     const onSubmit = async (data: FormData): Promise<void> => {
         setLoading(true);
         try {
             const result = await authService.login(data.email, data.password);
+
+            // 1. Stocke token + cookie (SANS redirection interne)
             setAuthData(result.accessToken, result.refreshToken, result.user);
 
             toast.success(`Bienvenue, ${result.user.firstName} !`);
 
-            // Profil incomplet → complétion
-            if (!result.user.profileCompleted) {
-            router.push("/complete-profile");
+            const { role, organization, profileCompleted } = result.user;
+            const isHost = organization?.isHost ?? false;
+
+            // 2. Profil incomplet → complétion obligatoire
+            if (!profileCompleted) {
+            window.location.href = "/complete-profile";
             return;
             }
 
-            const org = result.user.organization;
-            const role = result.user.role;
-            const isHost = org?.isHost ?? false;
-            //const isHost = org?.isHost ?? false;
+            // 3. Calcule la route de destination
+            let destination: string;
 
-            // Super Admin → son dashboard
-            // if (result.user.role === "SUPER_ADMIN") {
-            // router.push("/admin/dashboard");
-            // return;
-            // }
             if (isHost && (role === "SUPER_ADMIN" || role === "MANAGER")) {
-                router.push("/admin/dashboard");
-                return;
+                destination = "/admin/dashboard";
+            } else if (["SUPER_ADMIN", "ADMIN", "MANAGER", "RH", "FINANCE"].includes(role)) {
+                if (organization?.hasCSE && !organization?.hasVoyage) {
+                    destination = "/companies/AfrikCSE/dashboard";
+                } else if (organization?.hasVoyage && !organization?.hasCSE) {
+                    destination = "/companies/AfrikVoyage/dashboard";
+                } else {
+                    destination = "/companies/dashboard";
+                }
+            } else {
+               destination = "/employes/dashboard";
             }
 
-            // Un seul module actif → redirection directe
-            // if (org?.hasCSE && !org?.hasVoyage) {
-            // router.push("/companies/AfrikCSE/dashboard");
-            // return;
-            // }
-            // if (org?.hasVoyage && !org?.hasCSE) {
-            // router.push("/companies/AfrikVoyage/dashboard");
-            // return;
-            // }
+            // 4. Redirection forcée avec window.location pour que
+            //    le middleware Edge Runtime lise le cookie fraîchement créé
+            window.location.href = destination;
 
-            // 2. Admin/Manager/RH/Finance (toute org) → espace company
-            if (["ADMIN", "MANAGER", "RH", "FINANCE"].includes(role)) {
-                // Si un seul module actif → redirige directement
-                if (org?.hasCSE && !org?.hasVoyage) {
-                    router.push("/companies/AfrikCSE/dashboard");
-                    return;
-                }
-                if (org?.hasVoyage && !org?.hasCSE) {
-                    router.push("/companies/AfrikVoyage/dashboard");
-                    return;
-                }
-                // Les deux modules ou aucun → dashboard companies
-                router.push("/companies/dashboard");
-                return;
-                }
-
-                // 3. Employé (toute org) → espace employé
-                if (role === "EMPLOYE") {
-                    router.push("/employes/dashboard");
-                return;
-            }
-
-            // Deux modules ou aucun → Hub
-            router.push("/hub");
         } catch (err: any) {
             toast.error(err.response?.data?.message || "Erreur de connexion");
         } finally {

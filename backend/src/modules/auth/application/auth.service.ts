@@ -51,7 +51,7 @@
 
 import { AuthRepository } from "../infrastructure/auth.repository";
 import { hashPassword, comparePassword, generateSecureToken, hashToken, } from "../../../core/utils/hash";
-import { signAccessToken, signRefreshToken, verifyRefreshToken, } from "../../../core/utils/jwt";
+import { signAccessToken, signRefreshToken, verifyRefreshToken, JwtPayload } from "../../../core/utils/jwt";
 import { RegisterCompanyDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, CompleteProfileDto, } from "../interfaces/auth.validator";
 
 export class AuthService {
@@ -154,7 +154,7 @@ export class AuthService {
         }
         }
 
-        const payload = {
+        const payload: JwtPayload = {
             userId: user.id,
             role: user.role,
             organizationId: user.organizationId,
