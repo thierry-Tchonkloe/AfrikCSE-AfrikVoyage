@@ -13,6 +13,8 @@ function useNavItems(hasCSE: boolean, hasVoyage: boolean) {
         { href: "/companies/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
         { href: "/companies/users", label: "Utilisateurs", icon: Users },
         { href: "/companies/settings", label: "Paramètres", icon: Settings },
+        { href: "/companies/billing", label: "Billing", icon: Bell },
+        { href: "/companies/integrations", label: "Intégrations", icon: Settings },
     ];
 
     if (hasCSE) items.splice(1, 0, {
@@ -39,7 +41,13 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [darkMode, setDarkMode]       = useState(false);
 
-   
+
+    // Liste des dossiers à exclure du style de ce layout
+    const excludedFolders = ["/companies/AfrikCSE", "/companies/AfrikVoyage"];
+
+    // Vérifie si le chemin actuel commence par l'un des dossiers exclus
+    const isExcluded = excludedFolders.some((folder) => pathname.startsWith(folder));
+
 
     // useEffect(() => {
     //     if (window.innerWidth < 1024) setSidebarOpen(false);
@@ -199,10 +207,14 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
             </div>
             </header>
 
-            <main className={cn("flex-1 overflow-y-auto p-6",
-            darkMode ? "bg-gray-900" : "bg-gray-50")}>
-            {children}
-            </main>
+            {isExcluded ? (
+                    children
+                ) : (
+                    <main className={cn("flex-1 overflow-y-auto p-6", darkMode ? "bg-gray-900" : "bg-gray-50")}>
+                        {children}
+                    </main>
+                )
+            }
         </div>
         </div>
     );

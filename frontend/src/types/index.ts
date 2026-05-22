@@ -12,9 +12,9 @@ export type Plan = "STARTER" | "BUSINESS" | "ENTERPRISE";
 export interface Organization {
     id: string;
     name: string;
-    slug: string;
-    status: OrgStatus;
-    plan: Plan;
+    slug?: string;
+    status?: OrgStatus;
+    plan?: Plan;
     hasVoyage: boolean;
     hasCSE: boolean;
     isHost: boolean;
@@ -28,7 +28,7 @@ export interface User {
     role: Role;
     profileCompleted: boolean;
     organizationId: string | null;
-    organization: Pick<Organization, "id" | "name" | "hasVoyage" | "hasCSE" | "isHost"> | null;
+    organization: Organization | null;
 }
 
 export interface AuthResponse {
