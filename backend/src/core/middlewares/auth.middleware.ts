@@ -1,21 +1,3 @@
-// import { Request, Response, NextFunction } from "express";
-// import { verifyAccessToken } from "@/core/utils/jwt";
-
-// export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
-//     const token = req.headers.authorization?.split(" ")[1];
-
-//     if (!token) return res.status(401).json({ message: "Unauthorized" });
-
-//     try {
-//         const decoded = verifyAccessToken(token);
-//         req.user = decoded;
-//         next();
-//     } catch {
-//         return res.status(401).json({ message: "Invalid token" });
-//     }
-// };
-
-
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/jwt";
 import { Role } from "@prisma/client";
@@ -27,6 +9,7 @@ declare global {
             userId: string;
             role: Role;
             organizationId: string | null;
+            isHost: boolean;
         };
         }
     }
@@ -37,7 +20,7 @@ export function authenticate( req: Request, res: Response, next: NextFunction ):
 
     if (!authHeader?.startsWith("Bearer ")) {
         res.status(401).json({ message: "Token manquant" });
-        return; // void, pas return res
+        return;
     }
 
     const token = authHeader.split(" ")[1];
@@ -45,9 +28,10 @@ export function authenticate( req: Request, res: Response, next: NextFunction ):
     try {
         const payload = verifyAccessToken(token);
         req.user = {
-        userId: payload.userId,
-        role: payload.role as Role,
-        organizationId: payload.organizationId,
+            userId: payload.userId,
+            role: payload.role as Role,
+            organizationId: payload.organizationId,
+            isHost: payload.isHost,
         };
         next();
     } catch {
