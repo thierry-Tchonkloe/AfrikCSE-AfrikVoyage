@@ -154,6 +154,32 @@ import { User } from "@/types";
 import api from "@/lib/api";
 
 // ── Helpers cookie ─────────────────────────────────────────
+// function setCookie(name: string, value: string, days = 1) {
+//   if (typeof document === "undefined") return;
+
+//   const expires = new Date();
+//   expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+
+//   const isSecure = window.location.protocol === "https:";
+
+//   document.cookie = [
+//     `${name}=${value}`,
+//     `expires=${expires.toUTCString()}`,
+//     "path=/",
+//     "SameSite=Lax",
+//     isSecure ? "Secure" : "",
+//   ]
+//     .filter(Boolean)
+//     .join("; ");
+// }
+
+// function deleteCookie(name: string) {
+//   if (typeof document === "undefined") return;
+//   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+// }
+
+
+// ── Helpers cookie ─────────────────────────────────────────
 function setCookie(name: string, value: string, days = 1) {
   if (typeof document === "undefined") return;
 
@@ -166,7 +192,8 @@ function setCookie(name: string, value: string, days = 1) {
     `${name}=${value}`,
     `expires=${expires.toUTCString()}`,
     "path=/",
-    "SameSite=Lax",
+    // "SameSite=None" est OBLIGATOIRE pour l'échange de cookies Vercel <-> Render en ligne
+    isSecure ? "SameSite=None" : "SameSite=Lax",
     isSecure ? "Secure" : "",
   ]
     .filter(Boolean)
@@ -175,8 +202,20 @@ function setCookie(name: string, value: string, days = 1) {
 
 function deleteCookie(name: string) {
   if (typeof document === "undefined") return;
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+  const isSecure = window.location.protocol === "https:";
+  
+  // La suppression doit calquer les mêmes attributs SameSite pour être valide en ligne
+  document.cookie = [
+    `${name}=`,
+    "expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    "path=/",
+    isSecure ? "SameSite=None" : "SameSite=Lax",
+    isSecure ? "Secure" : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
 }
+
 
 export function useAuth() {
   const [user, setUser]       = useState<User | null>(null);
