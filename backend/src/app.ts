@@ -29,7 +29,7 @@ app.use(helmet());
 
 // ── CORS : autorise uniquement le frontend ──────────────
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "https://afrikcse-afrikvoyage.vercel.app" || "http://localhost:3000",
     credentials: true,
 }));
 
