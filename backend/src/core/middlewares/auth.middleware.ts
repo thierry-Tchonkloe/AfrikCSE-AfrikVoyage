@@ -1,3 +1,63 @@
+// // backend/src/core/middlewares/auth.middleware.ts
+// import { Request, Response, NextFunction } from "express";
+// import { verifyAccessToken } from "../utils/jwt";
+// import { Role } from "@prisma/client";
+
+// declare global {
+//     namespace Express {
+//         interface Request {
+//         user?: {
+//             userId: string;
+//             role: Role;
+//             organizationId: string | null;
+//             isHost: boolean;
+//         };
+//         }
+//     }
+// }
+
+// export function authenticate( req: Request, res: Response, next: NextFunction ): void {
+//     const authHeader = req.headers.authorization;
+
+//     if (!authHeader?.startsWith("Bearer ")) {
+//         res.status(401).json({ message: "Token manquant" });
+//         return;
+//     }
+
+//     const token = authHeader.split(" ")[1];
+
+//     try {
+//         const payload = verifyAccessToken(token);
+//         req.user = {
+//             userId: payload.userId,
+//             role: payload.role as Role,
+//             organizationId: payload.organizationId,
+//             isHost: payload.isHost,
+//         };
+//         next();
+//     } catch {
+//         res.status(401).json({ message: "Token invalide ou expiré" });
+//     }
+// }
+
+// export function authorize(...roles: Role[]) {
+//     return (req: Request, res: Response, next: NextFunction): void => {
+//         if (!req.user) {
+//             res.status(401).json({ message: "Non authentifié" });
+//             return;
+//         }
+
+//         if (!roles.includes(req.user.role)) {
+//             res.status(403).json({ message: "Accès interdit" });
+//             return;
+//         }
+
+//         next();
+//     };
+// }
+
+
+
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/jwt";
 import { Role } from "@prisma/client";
@@ -6,32 +66,35 @@ declare global {
     namespace Express {
         interface Request {
         user?: {
-            userId: string;
-            role: Role;
+            userId:         string;
+            role:           Role;
             organizationId: string | null;
-            isHost: boolean;
+            isHost:         boolean;
         };
         }
     }
 }
 
-export function authenticate( req: Request, res: Response, next: NextFunction ): void {
-    const authHeader = req.headers.authorization;
+export function authenticate(
+    req: Request,
+    res: Response,
+    next: NextFunction
+): void {
+    // ✅ Lecture depuis le cookie HTTP-only (plus depuis Authorization header)
+    const token = req.cookies?.accessToken;
 
-    if (!authHeader?.startsWith("Bearer ")) {
+    if (!token) {
         res.status(401).json({ message: "Token manquant" });
         return;
     }
 
-    const token = authHeader.split(" ")[1];
-
     try {
         const payload = verifyAccessToken(token);
         req.user = {
-            userId: payload.userId,
-            role: payload.role as Role,
-            organizationId: payload.organizationId,
-            isHost: payload.isHost,
+        userId:         payload.userId,
+        role:           payload.role as Role,
+        organizationId: payload.organizationId,
+        isHost:         payload.isHost,
         };
         next();
     } catch {
@@ -39,18 +102,17 @@ export function authenticate( req: Request, res: Response, next: NextFunction ):
     }
 }
 
+// ── authorize — inchangé ───────────────────────────────────────────────────────
 export function authorize(...roles: Role[]) {
     return (req: Request, res: Response, next: NextFunction): void => {
         if (!req.user) {
-            res.status(401).json({ message: "Non authentifié" });
-            return;
+        res.status(401).json({ message: "Non authentifié" });
+        return;
         }
-
         if (!roles.includes(req.user.role)) {
-            res.status(403).json({ message: "Accès interdit" });
-            return;
+        res.status(403).json({ message: "Accès interdit" });
+        return;
         }
-
         next();
     };
 }

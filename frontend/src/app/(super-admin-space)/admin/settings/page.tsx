@@ -68,7 +68,7 @@ export default function SettingsPage() {
     if (!settings) return null;
 
     return (
-        <div className="max-w-3xl space-y-5">
+        <div className="space-y-5">
         {/* En-tête */}
         <div className="flex items-start justify-between">
             <div>
@@ -296,7 +296,7 @@ function Toggle({ label, desc, checked, onChange, color }: {
         >
             <span
             className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-            style={{ transform: checked ? "translateX(20px)" : "translateX(2px)" }}
+            style={{ transform: checked ? "translateX(0px)" : "translateX(-20px)" }}
             />
         </button>
         </div>

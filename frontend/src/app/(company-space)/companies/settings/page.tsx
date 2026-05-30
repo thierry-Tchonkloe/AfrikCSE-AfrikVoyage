@@ -84,7 +84,7 @@ export default function CompanySettingsPage() {
     };
 
     return (
-        <div className="max-w-5xl space-y-5">
+        <div className="space-y-5">
         {/* En-tête */}
         <div className="flex items-start justify-between flex-wrap gap-3">
             <div>

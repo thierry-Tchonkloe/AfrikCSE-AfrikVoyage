@@ -139,7 +139,7 @@ export default function BillingPage() {
         v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
 
     return (
-        <div className="max-w-4xl space-y-6">
+        <div className="space-y-6">
         <div>
             <h1 className="text-xl font-bold text-gray-900">Facturation et abonnement</h1>
             <p className="text-sm text-gray-500">

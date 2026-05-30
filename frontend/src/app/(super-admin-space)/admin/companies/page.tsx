@@ -51,7 +51,7 @@ export default function CompaniesPage() {
             page, limit: 10, search, status, module,
         });
         setOrgs(res.data);
-        console.log(orgs);
+        console.log("ceci est la liste des entreprises:", orgs);
         setTotalPages(res.totalPages);
         setTotal(res.total);
         } catch {
