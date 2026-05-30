@@ -26,7 +26,7 @@ interface UserItem {
 }
 
 const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
-    ADMIN_ENTREPRISE: { label: "Admin",    color: "#8b5cf6" },
+    ADMIN:            { label: "Admin",    color: "#8b5cf6" },
     MANAGER:          { label: "Manager",  color: "#3b82f6" },
     RH:               { label: "RH",       color: "#10b981" },
     FINANCE:          { label: "Finance",  color: "#f59e0b" },
@@ -39,7 +39,7 @@ const createSchema = z.object({
     firstName:  z.string().min(1, "Prénom requis"),
     lastName:   z.string().min(1, "Nom requis"),
     email:      z.string().email("Email invalide"),
-    role:       z.enum(["MANAGER", "RH", "FINANCE", "EMPLOYE"]),
+    role:       z.enum(["ADMIN", "MANAGER", "RH", "FINANCE", "EMPLOYE"]),
     jobTitle:   z.string().optional(),
     department: z.string().optional(),
     phone:      z.string().optional(),

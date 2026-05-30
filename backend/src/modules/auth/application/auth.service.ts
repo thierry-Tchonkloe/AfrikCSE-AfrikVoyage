@@ -225,7 +225,16 @@ export class AuthService {
         isHost:      user.organization?.isHost ?? false,
         });
 
-        return { accessToken: newAccessToken };
+        const newRefreshToken = signRefreshToken(
+            {
+        userId: user.id,
+        role: user.role,
+        organizationId: user.organizationId,
+        isHost:      user.organization?.isHost ?? false,
+        }
+        );
+
+        return { accessToken: newAccessToken, refreshToken: newRefreshToken };
     }
 
     /** Envoie un email de reset password */
