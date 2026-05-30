@@ -72,7 +72,7 @@ export default function IntegrationsPage() {
     };
 
     return (
-        <div className="max-w-3xl space-y-5">
+        <div className="space-y-5">
         {/* En-tête */}
         <div className="flex items-start justify-between">
             <div>
@@ -217,7 +217,7 @@ export default function IntegrationsPage() {
                         className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
                         style={{
                         transform: syncConfig[opt.key as keyof typeof syncConfig]
-                            ? "translateX(16px)" : "translateX(2px)",
+                            ? "translateX(0px)" : "translateX(-16px)",
                         }}
                     />
                     </button>

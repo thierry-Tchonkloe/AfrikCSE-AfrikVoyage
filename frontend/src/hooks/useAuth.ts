@@ -147,13 +147,43 @@
 
 
 
-"use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { User } from "@/types";
-import api from "@/lib/api";
 
-// ── Helpers cookie ─────────────────────────────────────────
+
+
+// "use client";
+
+// import { useState, useEffect, useCallback } from "react";
+// import { User } from "@/types";
+// import api from "@/lib/api";
+
+// // ── Helpers cookie ─────────────────────────────────────────
+// // function setCookie(name: string, value: string, days = 1) {
+// //   if (typeof document === "undefined") return;
+
+// //   const expires = new Date();
+// //   expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+
+// //   const isSecure = window.location.protocol === "https:";
+
+// //   document.cookie = [
+// //     `${name}=${value}`,
+// //     `expires=${expires.toUTCString()}`,
+// //     "path=/",
+// //     "SameSite=Lax",
+// //     isSecure ? "Secure" : "",
+// //   ]
+// //     .filter(Boolean)
+// //     .join("; ");
+// // }
+
+// // function deleteCookie(name: string) {
+// //   if (typeof document === "undefined") return;
+// //   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+// // }
+
+
+// // ── Helpers cookie ─────────────────────────────────────────
 // function setCookie(name: string, value: string, days = 1) {
 //   if (typeof document === "undefined") return;
 
@@ -166,7 +196,8 @@ import api from "@/lib/api";
 //     `${name}=${value}`,
 //     `expires=${expires.toUTCString()}`,
 //     "path=/",
-//     "SameSite=Lax",
+//     // "SameSite=None" est OBLIGATOIRE pour l'échange de cookies Vercel <-> Render en ligne
+//     isSecure ? "SameSite=None" : "SameSite=Lax",
 //     isSecure ? "Secure" : "",
 //   ]
 //     .filter(Boolean)
@@ -175,66 +206,100 @@ import api from "@/lib/api";
 
 // function deleteCookie(name: string) {
 //   if (typeof document === "undefined") return;
-//   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+//   const isSecure = window.location.protocol === "https:";
+  
+//   // La suppression doit calquer les mêmes attributs SameSite pour être valide en ligne
+//   document.cookie = [
+//     `${name}=`,
+//     "expires=Thu, 01 Jan 1970 00:00:00 GMT",
+//     "path=/",
+//     isSecure ? "SameSite=None" : "SameSite=Lax",
+//     isSecure ? "Secure" : "",
+//   ]
+//     .filter(Boolean)
+//     .join("; ");
 // }
 
 
-// ── Helpers cookie ─────────────────────────────────────────
-function setCookie(name: string, value: string, days = 1) {
-  if (typeof document === "undefined") return;
+// export function useAuth() {
+//   const [user, setUser]       = useState<User | null>(null);
+//   const [loading, setLoading] = useState(true);
 
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+//   const loadUser = useCallback(async () => {
+//     const token = localStorage.getItem("accessToken");
+//     if (!token) {
+//       setLoading(false);
+//       return;
+//     }
 
-  const isSecure = window.location.protocol === "https:";
+//     try {
+//       const { data } = await api.get("/auth/me");
+//       setUser(data.user);
+//     } catch {
+//       localStorage.removeItem("accessToken");
+//       localStorage.removeItem("refreshToken");
+//       deleteCookie("accessToken");
+//     } finally {
+//       setLoading(false);
+//     }
+//   }, []);
 
-  document.cookie = [
-    `${name}=${value}`,
-    `expires=${expires.toUTCString()}`,
-    "path=/",
-    // "SameSite=None" est OBLIGATOIRE pour l'échange de cookies Vercel <-> Render en ligne
-    isSecure ? "SameSite=None" : "SameSite=Lax",
-    isSecure ? "Secure" : "",
-  ]
-    .filter(Boolean)
-    .join("; ");
-}
+//   useEffect(() => {
+//     loadUser();
+//   }, [loadUser]);
 
-function deleteCookie(name: string) {
-  if (typeof document === "undefined") return;
-  const isSecure = window.location.protocol === "https:";
-  
-  // La suppression doit calquer les mêmes attributs SameSite pour être valide en ligne
-  document.cookie = [
-    `${name}=`,
-    "expires=Thu, 01 Jan 1970 00:00:00 GMT",
-    "path=/",
-    isSecure ? "SameSite=None" : "SameSite=Lax",
-    isSecure ? "Secure" : "",
-  ]
-    .filter(Boolean)
-    .join("; ");
-}
+//   const logout = useCallback(async () => {
+//     try {
+//       await api.post("/auth/logout");
+//     } finally {
+//       localStorage.removeItem("accessToken");
+//       localStorage.removeItem("refreshToken");
+//       deleteCookie("accessToken");
+//       setUser(null);
+//       window.location.href = "/login";
+//     }
+//   }, []);
+
+//   /**
+//    * Stocke le token + cookie.
+//    * NE fait PAS de redirection — c'est la responsabilité
+//    * de la page qui appelle setAuthData (login/page.tsx)
+//    */
+//   const setAuthData = useCallback(
+//     (accessToken: string, refreshToken: string, userData: User) => {
+//       localStorage.setItem("accessToken", accessToken);
+//       localStorage.setItem("refreshToken", refreshToken);
+//       setCookie("accessToken", accessToken, 1);
+//       setUser(userData);
+//       // PAS de window.location.href ici
+//     },
+//     []
+//   );
+
+//   return { user, loading, logout, setAuthData, reload: loadUser };
+// }
+
+
+
+
+"use client";
+import { useState, useEffect, useCallback } from "react";
+import { User } from "@/types";
+import api from "@/lib/api";
 
 
 export function useAuth() {
   const [user, setUser]       = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUser = useCallback(async () => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
 
+  const loadUser = useCallback(async () => {
     try {
       const { data } = await api.get("/auth/me");
       setUser(data.user);
     } catch {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      deleteCookie("accessToken");
+      // Pas de session valide (l'intercepteur gère le refresh automatiquement)
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -244,33 +309,20 @@ export function useAuth() {
     loadUser();
   }, [loadUser]);
 
+
   const logout = useCallback(async () => {
     try {
       await api.post("/auth/logout");
     } finally {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      deleteCookie("accessToken");
       setUser(null);
       window.location.href = "/login";
     }
   }, []);
 
-  /**
-   * Stocke le token + cookie.
-   * NE fait PAS de redirection — c'est la responsabilité
-   * de la page qui appelle setAuthData (login/page.tsx)
-   */
-  const setAuthData = useCallback(
-    (accessToken: string, refreshToken: string, userData: User) => {
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
-      setCookie("accessToken", accessToken, 1);
-      setUser(userData);
-      // PAS de window.location.href ici
-    },
-    []
-  );
+
+  const setAuthData = useCallback((userData: User) => {
+    setUser(userData);
+  }, []);
 
   return { user, loading, logout, setAuthData, reload: loadUser };
 }
