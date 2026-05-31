@@ -180,39 +180,36 @@ const service = new AuthService();
 
 // ── Helpers cookies ────────────────────────────────────────────────────────────
 // On centralise la config pour ne pas la dupliquer dans chaque méthode.
-// const IS_PROD = process.env.NODE_ENV === "production";
-const IS_PROD = (process.env.FRONTEND_URL || "").includes("https");
+const IS_PROD = process.env.NODE_ENV === "production";
 
 const COOKIE_BASE = {
     httpOnly: true,                                   // inaccessible depuis JS côté client
     secure:   IS_PROD,                                 // HTTPS uniquement en prod
     sameSite: (IS_PROD ? "none" : "lax") as "none" | "lax",
+    // ✅ Path par défaut "/" — les refreshToken peuvent aussi être sur "/"
+    path:   "/",
 } as const;
 
 function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-    // accessToken — durée courte (1h), disponible sur toutes les routes
+    // accessToken — durée courte (15min), disponible sur toutes les routes
     res.cookie("accessToken", accessToken, {
         ...COOKIE_BASE,
-        maxAge: 60 * 60 * 1000,  // 1 heure
-        path:   "/",
+        maxAge: 15 * 60 * 1000,  // 15 minutes
     });
 
-    // refreshToken — durée longue (7j), restreint à la seule route refresh
+    // refreshToken — durée longue (7j), accessible partout pour le refresh workflow
     res.cookie("refreshToken", refreshToken, {
         ...COOKIE_BASE,
         maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 jours
-        path:   "/auth/refresh",
     });
 }
 
 function clearAuthCookies(res: Response) {
     res.clearCookie("accessToken", {
         ...COOKIE_BASE,
-        path: "/",
     });
     res.clearCookie("refreshToken", {
         ...COOKIE_BASE,
-        path: "/auth/refresh",
     });
 }
 

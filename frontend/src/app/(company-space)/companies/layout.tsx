@@ -7,27 +7,53 @@ import {LayoutDashboard, Users, Settings, ChevronLeft, ChevronRight, Bell, LogOu
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
 
-// Navigation dynamique selon les modules activés
-function useNavItems(hasCSE: boolean, hasVoyage: boolean) {
-    const items = [
+// Navigation dynamique selon les modules activés et le pathname
+function useNavItems(hasCSE: boolean, hasVoyage: boolean, pathname: string) {
+    // ── Détecte quel module est actif ──
+    const isInCSE = pathname.startsWith("/companies/AfrikCSE");
+    const isInVoyage = pathname.startsWith("/companies/AfrikVoyage");
+    
+    // ── Basique : dashboard + org-wide items ──
+    let items = [
         { href: "/companies/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-        { href: "/companies/users", label: "Utilisateurs", icon: Users },
-        { href: "/companies/settings", label: "Paramètres", icon: Settings },
-        { href: "/companies/billing", label: "Billing", icon: Bell },
-        { href: "/companies/integrations", label: "Intégrations", icon: Settings },
     ];
 
-    if (hasCSE) items.splice(1, 0, {
-        href: "/companies/AfrikCSE",
-        label: "AfrikCSE",
-        icon: Users, // remplacer par icône dédiée
-    });
-
-    if (hasVoyage) items.splice(hasCSE ? 2 : 1, 0, {
-        href: "/companies/AfrikVoyage",
-        label: "AfrikVoyage",
-        icon: LayoutDashboard,
-    });
+    // ── Ajoute nav items du module si actif ──
+    if (isInCSE && hasCSE) {
+        items.push(
+            { href: "/companies/AfrikCSE/dashboard", label: "AfrikCSE", icon: Users },
+            { href: "/companies/AfrikCSE/avantages", label: "Approbations", icon: Users },
+            { href: "/companies/AfrikCSE/employes", label: "Employés", icon: Users },
+            { href: "/companies/AfrikCSE/budget", label: "Subventions", icon: Users },
+            { href: "/companies/AfrikCSE/messages", label: "Messagerie", icon: Users },
+            { href: "/companies/AfrikCSE/settings", label: "Paramètres", icon: Settings },
+        );
+    } else if (isInVoyage && hasVoyage) {
+        items.push(
+            { href: "/companies/AfrikVoyage/dashboard", label: "AfrikVoyage", icon: Users },
+            { href: "/companies/AfrikVoyage/reservations", label: "Réservations", icon: Users },
+            { href: "/companies/AfrikVoyage/frais", label: "Notes de frais", icon: Users },
+            { href: "/companies/AfrikVoyage/reporting", label: "Duty of Care", icon: Users },
+            { href: "/companies/AfrikVoyage/settings", label: "Paramètres", icon: Settings },
+        );
+    } else {
+        // ── Affiche les modules comme liens de navigation ──
+        items.push(
+            { href: "/companies/users", label: "Utilisateurs", icon: Users },
+            { href: "/companies/settings", label: "Paramètres", icon: Settings },
+            { href: "/companies/billing", label: "Billing", icon: Bell },
+        );
+        if (hasCSE) items.splice(1, 0, {
+            href: "/companies/AfrikCSE/dashboard",
+            label: "AfrikCSE",
+            icon: Users,
+        });
+        if (hasVoyage) items.splice(hasCSE ? 2 : 1, 0, {
+            href: "/companies/AfrikVoyage/dashboard",
+            label: "AfrikVoyage",
+            icon: Users,
+        });
+    }
 
     return items;
 }
@@ -65,11 +91,14 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
     //     document.documentElement.classList.toggle("dark", darkMode);
     // }, [darkMode]);
 
+    // const { user, loading } = useRouteGuard("company");
+
     const { user, loading } = useRouteGuard("company");
 
-     const navItems = useNavItems(
+    const navItems = useNavItems(
         user?.organization?.hasCSE ?? false,
-        user?.organization?.hasVoyage ?? false
+        user?.organization?.hasVoyage ?? false,
+        pathname
     );
 
     if (loading || !user) return null;
