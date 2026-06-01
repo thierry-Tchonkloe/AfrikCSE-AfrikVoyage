@@ -59,7 +59,7 @@ const MOCK_POSTS: Post[] = [
         content: "Bravo à toute l'équipe ! Nous avons dépassé nos objectifs du premier trimestre de 23 %. Un grand bravo aux équipes des ventes, de l'ingénierie et du service client. Votre dévouement et votre esprit d'innovation sont les moteurs de notre succès. Nous espérons une deuxième trimestre encore plus performant !",
         imageUrl: null,
         createdAt: new Date(Date.now() - 24 * 3600000).toISOString(),
-        author: { firstName: "David", lastName: "Okonkwo", role: "ADMIN_ENTREPRISE", jobTitle: "CEO" },
+        author: { firstName: "David", lastName: "Okonkwo", role: "ADMIN", jobTitle: "CEO" },
         _count: { likes: 89, comments: 34 },
         likes: [],
         pollOptions: [],
@@ -213,7 +213,7 @@ export default function CommunicationPage() {
                     <div className="flex items-start gap-3">
                         <div
                         className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                        style={{ background: post.author.role === "ADMIN_ENTREPRISE" ? "#1e3a5f" : "#0f766e" }}
+                        style={{ background: post.author.role === "ADMIN" ? "#1e3a5f" : "#0f766e" }}
                         >
                         {post.author.firstName[0]}{post.author.lastName[0]}
                         </div>

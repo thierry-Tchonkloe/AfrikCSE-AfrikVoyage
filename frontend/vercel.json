@@ -6,6 +6,12 @@
     "env": {
         "NEXT_PUBLIC_API_URL": "https://afrikcse-afrikvoyage.onrender.com/api"
     },
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "https://afrikcse-afrikvoyage.onrender.com/api/$1"
+        }
+    ],
     "headers": [
         {
         "source": "/(.*)",
