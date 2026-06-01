@@ -488,7 +488,7 @@ function RoleModal({ user, processing, onClose, onConfirm,}: {
         </p>
         <div className="space-y-2">
             {Object.entries(ROLE_CONFIG)
-            .filter(([key]) => key !== "ADMIN_ENTREPRISE")
+            .filter(([key]) => key !== "ADMIN")
             .map(([key, { label, color }]) => (
                 <label key={key}
                 className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer"
