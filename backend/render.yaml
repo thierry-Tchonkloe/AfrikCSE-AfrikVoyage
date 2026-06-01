@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: afrikcse-afrikvoyage-api
+    name: afrikcse-afrikvoyage
     runtime: node
     region: frankfurt
     plan: free
@@ -15,7 +15,7 @@ services:
         value: production
       - key: DATABASE_URL
         fromDatabase:
-          name: afrikcse-afrikvoyage-db
+          name: afrikcse-afrikvoyage
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
@@ -27,8 +27,8 @@ services:
         value: 10000
 
 databases:
-  - name: afrikcse-afrikvoyage-db
-    databaseName: afrikcse_afrikvoyage
+  - name: afrikcse-afrikvoyage
+    databaseName: afrikcse-afrikvoyage
     user: afrikcse_user
     region: frankfurt
     plan: free

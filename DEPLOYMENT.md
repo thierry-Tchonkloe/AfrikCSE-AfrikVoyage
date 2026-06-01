@@ -1,108 +1,190 @@
-# 🚀 Instructions Déploiement Production
+# 🚀 Instructions Déploiement Production — COMPLÈTE
 
-## Problèmes corrigés
+## 🔴 PROBLÈMES IDENTIFIÉS ET SOLUTIONS
 
-### 1. ✅ Double Layout
-- **Cause** : Layouts imbriqués d'AfrikCSE et Voyage
-- **Solution** : Layout parent gère maintenant tous les nav items dynamiquement
+### 1. ❌ JWT Secret Mismatch
+**Problème** : Backend et Frontend devaient utiliser le même `JWT_SECRET` mais utilisaient des noms différents
+- Backend : `JWT_ACCESS_SECRET` + `JWT_REFRESH_SECRET` (deux secrets)
+- Frontend : cherchait `JWT_SECRET` (un seul)
 
-### 2. ✅ Auth en Production
-- **Cause** : Cookies HTTP-only ne passaient pas entre Vercel et Render
-- **Corrections** :
-  - `IS_PROD` détection robuste (basée sur `NODE_ENV`)
-  - `refreshToken` path changé de `/auth/refresh` à `//` (pour être envoyé à toutes les routes)
-  - Accesstoken maxAge 15min au lieu de 60min
+**Solution appliquée** :
+- Backend maintenant utilise **une seule `JWT_SECRET`** pour les deux tokens (plus simple)
+- Frontend middleware utilise la même `JWT_SECRET` pour vérifier
+
+### 2. ❌ Cookies cross-origin bloqués
+**Problème** : Frontend sur Vercel, Backend sur Render = domaines différents
+- Requêtes axios vers `https://xxx.onrender.com/api/*` ne recevaient pas les cookies du domaine Render
+
+**Solution appliquée** :
+- Ajout **rewrite Vercel** : `/api/*` → `https://xxx.onrender.com/api/$1`
+- Ainsi, les requêtes semblent venir du même domaine (`vercel.app`)
+- Cookies sont set et envoyés correctement via `withCredentials: true`
+
+### 3. ✅ Cookies HTTP-only Path Fix
+✅ Déjà corrigé : `refreshToken` path changé de `/auth/refresh` à `/`
 
 ---
 
-## ⚙️ Configuration Variables d'Environnement
+## ⚙️ Configuration Variables d'Environnement — À FAIRE MAINTENANT
 
-### 🔴 Backend Render
-
-Va sur `Settings > Environment` dans Render et ajoute :
-
-```env
-NODE_ENV=production
-PORT=5000
-DATABASE_URL=postgresql://[user]:[password]@[host]:[port]/[dbname]?schema=public
-JWT_ACCESS_SECRET=[genère avec: openssl rand -base64 32]
-JWT_REFRESH_SECRET=[genère avec: openssl rand -base64 32]
-JWT_ACCESS_EXPIRES=15m
-JWT_REFRESH_EXPIRES=7d
-FRONTEND_URL=https://afrikcse-afrikvoyage.vercel.app
-CLOUDINARY_CLOUD_NAME=[ton_cloudinary_name]
-CLOUDINARY_API_KEY=[ton_cloudinary_key]
-CLOUDINARY_API_SECRET=[ton_cloudinary_secret]
+### 📌 Étape 1 : Générer une clé JWT forte
+```bash
+# Sur ton terminal local
+openssl rand -base64 32
+# Copie la sortie (ex: a9k2nDxL3qOpQ7vR9mKlM4pT6vW8xYzAb2cDeFgH)
 ```
 
-### 🔵 Frontend Vercel
+### 🔴 Étape 2 : Backend Render
 
-Va sur `Settings > Environment Variables` et ajoute :
+Va sur **Render Dashboard → Ton projet API → Settings → Environment**
 
-```env
-NEXT_PUBLIC_API_URL=https://[ton-backend-render-url].onrender.com/api
-JWT_SECRET=[doit être le même que JWT_ACCESS_SECRET du backend]
-NEXT_PUBLIC_APP_NAME=AfrikCSE & AfrikVoyage
+Ajoute/Modifie les variables suivantes :
+
+| Variable | Valeur | Notes |
+|---|---|---|
+| `NODE_ENV` | `production` | |
+| `PORT` | `5000` | |
+| `DATABASE_URL` | `postgresql://...` | Ta vraie URL BDD Render |
+| `JWT_SECRET` | `[résultat openssl rand]` | ⚠️ IMPORTANT : même valeur en frontend |
+| `JWT_ACCESS_EXPIRES` | `15m` | |
+| `JWT_REFRESH_EXPIRES` | `7d` | |
+| `FRONTEND_URL` | `https://afrikcse-afrikvoyage.vercel.app` | ⚠️ Exact |
+| `CLOUDINARY_CLOUD_NAME` | `[ta valeur]` | |
+| `CLOUDINARY_API_KEY` | `[ta valeur]` | |
+| `CLOUDINARY_API_SECRET` | `[ta valeur]` | |
+
+✅ **Redeploy** Render après avoir sauvegardé
+
+### 🔵 Étape 3 : Frontend Vercel
+
+Va sur **Vercel Dashboard → Ton projet Frontend → Settings > Environment Variables**
+
+Ajoute/Modifie :
+
+| Variable | Valeur | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `/api` | ⚠️ Relatif ! Utilise la rewrite |
+| `JWT_SECRET` | `[MÊME valeur que Backend JWT_SECRET]` | ⚠️ IMPORTANT : identique |
+| `NEXT_PUBLIC_APP_NAME` | `AfrikCSE & AfrikVoyage` | |
+
+✅ **Redeploy** Vercel après avoir sauvegardé
+
+### 📋 Vérifier vercel.json
+```json
+{
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "https://[TON-RENDER-URL].onrender.com/api/$1"
+        }
+    ]
+}
 ```
 
 ---
 
-## 🔧 Trouver les bonnes URLs
+## 🧪 Tests après Déploiement
 
-### Render Backend URL
-1. Va sur ton projet Render
-2. Dashboard principal → `External URL` = `https://xxx.onrender.com`
-3. API URL = `https://xxx.onrender.com/api`
+### Test 1 : Login Flow
+```
+1. Va sur https://afrikcse-afrikvoyage.vercel.app/login
+2. Entre email + password
+3. Doit voir "Bienvenue" toast
+4. Doit être redirigé vers /companies/dashboard ✅
+```
 
-### Vercel Frontend URL
-1. Déjà déployée : probablement `https://afrikcse-afrikvoyage.vercel.app`
+### Test 2 : Vérifier Cookies
+```
+F12 → Application → Cookies → afrikcse-afrikvoyage.vercel.app
+Doit voir : ✅ accessToken
+           ✅ refreshToken
+Attributs : httpOnly, Secure, SameSite=None (en prod)
+```
 
----
+### Test 3 : API Request Directe
+```bash
+# Dans la console du navigateur
+fetch("/api/auth/me", { credentials: "include" })
+    .then(r => r.json())
+    .then(data => console.log(data))
 
-## 🧪 Tests après déploiement
+# Doit afficher: { user: {...} }
+```
 
-1. **Login** : `https://afrikcse-afrikvoyage.vercel.app/login`
-   - Doit prendre quelques secondes (pas "tourne en boucle")
-   - Affiche message de bienvenue
+### Test 4 : Refresh Token (30+ min après login)
+```
+1. Attends 15+ min (expiration accessToken)
+2. Recharge la page
+3. Doit TOUJOURS être connecté (pas redirect vers /login)
+   → Cela veut dire que le refresh a fonctionné ✅
+```
 
-2. **Vérifier cookies** : F12 → Application → Cookies
-   - Doit voir `accessToken` et `refreshToken`
-   - Domaine : `.vercel.app` (set par le backend sur le domaine Vercel)
-
-3. **Accès page protégée** : `/companies/dashboard`
-   - Doit charger sans redirect vers `/login`
-
-4. **API me** : Console → `fetch("https://xxx.onrender.com/api/auth/me", { credentials: 'include' })`
-   - Doit retourner `{ user: {...} }`
-
----
-
-## 🔍 Debugging si ça ne marche pas
-
-### Login tourne en boucle
-- [ ] Vérifier `FRONTEND_URL` correct dans Render
-- [ ] Vérifier `NEXT_PUBLIC_API_URL` correct dans Vercel
-- [ ] Vérifier que le backend rend `HTTP 200` sur `/api/auth/login`
-
-### Pages protégées redirigent vers /login
-- [ ] Vérifier cookies dans F12 → Application après login
-- [ ] Vérifier que `/api/auth/me` retourne 200 (pas 401)
-- [ ] Nettoyer cache et cookies, refaire login
-
-### Cookies ne s'envoient pas au backend
-- [ ] Vérifier `CORS` accepte le frontend origin : `FRONTEND_URL=https://africkcse-afrikvoyage.vercel.app`
-- [ ] Vérifier `credentials: true` sur les requêtes axios (déjà configuré)
-- [ ] Vérifier que les cookies ont `SameSite=None; Secure;` en prod
+### Test 5 : Logout
+```
+1. Clique logout
+2. Doit rediriger vers /login ✅
+3. Cookies doivent être supprimés ✅
+```
 
 ---
 
-## 📋 Checklist Déploiement
+## 🔍 Debugging
 
-- [ ] Backend Render : vars d'env configurées
-- [ ] Frontend Vercel : vars d'env configurées  
-- [ ] Faire un `npm run build` local pour vérifier (pas d'erreurs TypeScript)
-- [ ] Push les changements (`git push`)
-- [ ] Render : re-deploy automatiquement (vérifier)
-- [ ] Vercel : re-deploy automatiquement (vérifier)
-- [ ] Test login + accès page protégée
-- [ ] Vérifier cookies dans devtools
+### Problem : "401 Unauthorized" après login
+```
+Checklist:
+[ ] JWT_SECRET sur Render = JWT_SECRET sur Vercel ?
+[ ] FRONTEND_URL sur Render = https://afrikcse-afrikvoyage.vercel.app ?
+[ ] NODE_ENV=production sur Render ?
+[ ] Cookies visibles dans devtools ?
+[ ] Rewrite /api/* activé dans vercel.json ?
+```
+
+### Problem : Pages protégées redirigent vers /login
+```
+Checklist:
+[ ] /api/auth/me retourne 200 (pas 401) ?
+[ ] accessToken cookie existe et n'est pas expiré ?
+[ ] JWT_SECRET matching entre Backend et Frontend ?
+[ ] Vercel redeployed après changement JWT_SECRET ?
+```
+
+### Problem : "Cannot find module or missing env var"
+```
+[ ] Tous les .env.production remplis sur Render/Vercel ?
+[ ] Pas d'erreur de syntax dans .env ?
+[ ] Redeploy forcé : Render/Vercel → Redeploy
+```
+
+---
+
+## 📝 Résumé des Changements
+
+✅ `backend/src/core/utils/jwt.ts` — Une seule secret pour access + refresh
+✅ `backend/.env.production` — Template mis à jour
+✅ `frontend/vercel.json` — Rewrite `/api/*` ajouté
+✅ Documentation de déploiement complète
+
+---
+
+## 🎯 Déploiement Pas à Pas
+
+```bash
+# 1. Commit les changements
+git add -A
+git commit -m "fix: jwt secret unification and api rewrite"
+git push origin tchonkloe
+
+# 2. Render : Ajouter les env vars (voir Étape 2 ci-dessus)
+# 3. Vercel : Ajouter les env vars (voir Étape 3 ci-dessus)
+# 4. Vercel : Redeploy (triggers automatically on push)
+# 5. Render : Redeploy (check dashboard for auto-deploy)
+
+# 6. Tests locaux d'abord
+npm run build  # backend
+npm run build  # frontend
+
+# 7. Test en prod
+```
+
+
