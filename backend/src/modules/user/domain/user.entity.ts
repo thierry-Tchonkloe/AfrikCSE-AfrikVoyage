@@ -19,7 +19,7 @@ export class UserEntity {
 
     /** Un admin entreprise ne peut gérer que les rôles sous le sien */
     canManageRole(targetRole: string): boolean {
-        const hierarchy = ["EMPLOYE", "FINANCE", "RH", "MANAGER", "ADMIN_ENTREPRISE", "SUPER_ADMIN"];
+        const hierarchy = ["EMPLOYE", "FINANCE", "RH", "MANAGER", "ADMIN", "SUPER_ADMIN"];
         const myIndex = hierarchy.indexOf(this.role);
         const targetIndex = hierarchy.indexOf(targetRole);
         // On peut gérer uniquement les rôles INFÉRIEURS au sien
