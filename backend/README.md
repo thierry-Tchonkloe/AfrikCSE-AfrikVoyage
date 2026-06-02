@@ -40,6 +40,13 @@ npx prisma studio
 
 ---
 
+## Documentation API
+
+- La documentation complète de l'API est disponible dans `API_DOCUMENTATION.md`
+- Pour obtenir un listing dynamique des routes exposées, utilisez : `GET /api`
+
+---
+
 ## ⚠️ Bonnes pratiques
 
 * Ne jamais commit `.env`

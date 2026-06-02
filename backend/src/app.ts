@@ -173,6 +173,162 @@ app.get("/health", (_req: Request, res: Response) => {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+const API_ROUTES = [
+    {
+        prefix: "/api/auth",
+        description: "Authentification, compte et session",
+        methods: [
+            "POST /register-company",
+            "POST /login",
+            "POST /refresh",
+            "POST /forgot-password",
+            "POST /reset-password",
+            "POST /logout",
+            "GET /me",
+            "PATCH /complete-profile",
+            "POST /activate",
+        ],
+    },
+    {
+        prefix: "/api/organizations",
+        description: "Organisation, validation et gestion des modules",
+        methods: [
+            "GET /",
+            "POST /",
+            "GET /paginated",
+            "GET /my/dashboard",
+            "GET /:id",
+            "PATCH /:id/validate",
+            "PATCH /:id/reject",
+            "PATCH /:id/modules",
+            "PATCH /:id/suspend",
+            "PATCH /:id/validate-invite",
+            "DELETE /:id",
+        ],
+    },
+    {
+        prefix: "/api/users",
+        description: "Gestion des utilisateurs et des rôles",
+        methods: [
+            "GET /",
+            "GET /:id",
+            "POST /",
+            "PATCH /:id",
+            "PATCH /:id/role",
+            "PATCH /:id/deactivate",
+            "PATCH /:id/activate",
+        ],
+    },
+    {
+        prefix: "/api/settings",
+        description: "Paramètres application et dashboard",
+        methods: ["GET /", "PATCH /", "GET /dashboard"],
+    },
+    {
+        prefix: "/api/contact",
+        description: "Formulaire contact et gestion des demandes",
+        methods: ["POST /", "GET /", "PATCH /:id/status"],
+    },
+    {
+        prefix: "/api/employees",
+        description: "Vue globale des employés et statistiques",
+        methods: ["GET /", "GET /stats", "GET /:id"],
+    },
+    {
+        prefix: "/api/benefits",
+        description: "Gestion des avantages, demandes et rapports",
+        methods: [
+            "GET /categories",
+            "POST /categories",
+            "PATCH /categories/:id",
+            "DELETE /categories/:id",
+            "GET /requests",
+            "GET /requests/stats",
+            "PATCH /requests/:id/approve",
+            "PATCH /requests/:id/reject",
+            "POST /requests/bulk-approve",
+            "GET /report",
+        ],
+    },
+    {
+        prefix: "/api/billing",
+        description: "Facturation, abonnement et paiements",
+        methods: [
+            "GET /",
+            "POST /upgrade",
+            "GET /invoices",
+            "POST /pay/kkiapay",
+            "POST /pay/fedapay",
+            "POST /pay/card",
+        ],
+    },
+    {
+        prefix: "/api/messaging",
+        description: "Messagerie conversationnelle",
+        methods: [
+            "GET /conversations",
+            "GET /conversations/support",
+            "GET /conversations/unread",
+            "GET /conversations/:id/messages",
+            "POST /conversations/:id/messages",
+            "PATCH /conversations/:id/read",
+        ],
+    },
+    {
+        prefix: "/api/employee",
+        description: "Espace employé personnel",
+        methods: [
+            "GET /dashboard",
+            "GET /travels",
+            "POST /travels",
+            "GET /expenses",
+            "POST /expenses",
+            "GET /profile",
+            "PATCH /profile",
+            "GET /documents",
+            "POST /documents",
+            "DELETE /documents/:id",
+        ],
+    },
+    {
+        prefix: "/api/events",
+        description: "Événements et inscriptions",
+        methods: [
+            "GET /",
+            "GET /upcoming",
+            "GET /stats",
+            "POST /",
+            "POST /:id/register",
+            "DELETE /:id/register",
+        ],
+    },
+    {
+        prefix: "/api/communication",
+        description: "Posts, commentaires et sondages internes",
+        methods: [
+            "GET /posts",
+            "POST /posts",
+            "POST /posts/:id/like",
+            "POST /posts/:id/comment",
+            "POST /poll-options/:id/vote",
+        ],
+    },
+    {
+        prefix: "/api/catalog",
+        description: "Catalogue public et catégories",
+        methods: ["GET /", "GET /categories", "GET /:id"],
+    },
+];
+
+app.get("/api", (_req: Request, res: Response) => {
+    res.status(200).json({
+        status: "ok",
+        note: "Liste des points d'entrée API disponibles",
+        routes: API_ROUTES,
+        documentation: "/API_DOCUMENTATION.md",
+    });
+});
+
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use("/api/auth",          authLimiter, authRoutes);
 app.use("/api/organizations",  organizationRoutes);
