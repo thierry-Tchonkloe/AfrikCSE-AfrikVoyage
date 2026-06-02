@@ -185,6 +185,7 @@ export class AuthService {
                 name: user.organization.name,
                 hasVoyage: user.organization.hasVoyage,
                 hasCSE: user.organization.hasCSE,
+                isHost: user.organization.isHost,
                 }
             : null,
         },

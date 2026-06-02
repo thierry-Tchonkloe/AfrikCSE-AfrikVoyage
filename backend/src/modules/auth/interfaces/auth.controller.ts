@@ -166,6 +166,7 @@
 
 
 import { prisma } from "../../../core/config/prisma";
+import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
 import { AuthService } from "../application/auth.service";
 import {
@@ -186,7 +187,7 @@ const COOKIE_BASE = {
     httpOnly: true,                                   // inaccessible depuis JS côté client
     secure:   IS_PROD,                                 // HTTPS uniquement en prod
     sameSite: (IS_PROD ? "none" : "lax") as "none" | "lax",
-    partitioned: true,
+    partitioned: IS_PROD,
     path:   "/",
 } as const;
 
@@ -240,16 +241,28 @@ export class AuthController {
         }
         try {
         const result = await service.login(parsed.data);
-        // result contient { accessToken, refreshToken, user } (service inchangé)
 
-        // 🔍 LOG TEMPORAIRE
-        // console.log("RESULT LOGIN:", JSON.stringify(result, null, 2));
+        // Pose les cookies HTTP-only (access + refresh) côté API
         setAuthCookies(res, result.accessToken, result.refreshToken);
-        // 🔍 LOG TEMPORAIRE
-        console.log("Headers après setAuthCookies:", res.getHeaders());
 
-        // ✅ Retourne la structure attendue par le frontend : { accessToken, refreshToken, user }
-        return res.status(200).json(result);
+        // Génère un petit token signé, court (1 minute), destiné uniquement
+        // à être placé en cookie lisible par le frontend (middleware Edge)
+        // NOTE: Ce token n'est PAS utilisé pour authentifier les appels API.
+        const sessionSecret = process.env.SESSION_COOKIE_SECRET || process.env.JWT_SECRET;
+        const sessionToken = jwt.sign(
+            {
+            userId: result.user.id,
+            role: result.user.role,
+            organizationId: result.user.organizationId,
+            isHost: result.user.organization?.isHost ?? false,
+            },
+            sessionSecret as jwt.Secret,
+            { expiresIn: "60s" }
+        );
+
+        // Retourne uniquement l'objet user + ce sessionToken court pour que
+        // le frontend puisse poser un cookie lisible par le middleware Edge.
+        return res.status(200).json({ user: result.user, sessionToken });
         } catch (err: any) {
         return res.status(401).json({ message: err.message });
         }
