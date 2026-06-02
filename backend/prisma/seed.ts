@@ -53,7 +53,29 @@ async function main() {
         },
     });
 
-    console.log(`✅ Super Admin créé : ${superAdmin.email}`);
+
+
+    const hashedPassword2 = await bcrypt.hash("waxeho@2026!", 12);
+
+    const superAdmin2 = await prisma.user.upsert({
+        where: { email: "superadmin2@waxeho.com" },
+        update: {
+            isActive: true,
+        },
+            create: {
+            email: "superadmin2@waxeho.com",
+            password: hashedPassword2,
+            firstName: "Super",
+            lastName: "Admin2",
+            role: "SUPER_ADMIN",
+            isActive: true,
+            emailVerified: true,
+            profileCompleted: true,
+            organizationId: waxeho.id,
+        },
+    });
+
+    console.log(`✅ Super Admin créé : ${superAdmin.email}, ${superAdmin2.email}`);
     console.log(`   Mot de passe initial : waxeho@2026!`);
     console.log(`   ⚠️  Changez ce mot de passe après le premier login !`);
 }
