@@ -108,7 +108,7 @@ async function verifyToken(token: string): Promise<TokenPayload | null> {
 // ── Rôles ──────────────────────────────────────────────────
 const SUPER_ADMIN_ROLES   = ["SUPER_ADMIN", "MANAGER"];
 // ADMIN (pas ADMIN_ENTREPRISE) + les autres rôles company
-const COMPANY_ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "RH", "FINANCE"];
+const COMPANY_ADMIN_ROLES = ["ADMIN", "MANAGER", "RH", "FINANCE"];
 
 // ── Route par défaut ───────────────────────────────────────
 function getDefaultRoute(role: string, isHost: boolean): string {
