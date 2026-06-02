@@ -160,7 +160,9 @@ export default function RegisterPage() {
     // ── Soumission finale étape 4 ──
     const onSubmit = async (data: Step4Data) => {
         setLoading(true);
-        const payload = { ...formData, ...data };
+
+        // Backend expects admin email under the key `email` (not `adminEmail`).
+        const payload = { ...formData, ...data, email: (data as any).adminEmail ?? (formData as any).adminEmail };
 
         try {
         await authService.registerCompany(payload);
