@@ -107,7 +107,7 @@ export default function LoginPage() {
 
             if (isHost && (role === "SUPER_ADMIN" || role === "MANAGER")) {
             destination = "/admin/dashboard";
-            } else if (["SUPER_ADMIN", "ADMIN", "MANAGER", "RH", "FINANCE"].includes(role)) {
+            } else if (["ADMIN", "MANAGER", "RH", "FINANCE"].includes(role)) {
             destination = "/companies/dashboard";
             } else if (role === "EMPLOYE") {
             destination = "/employes/dashboard";
