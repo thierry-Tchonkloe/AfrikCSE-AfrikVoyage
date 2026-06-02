@@ -257,7 +257,7 @@ export class AuthController {
             isHost: result.user.organization?.isHost ?? false,
             },
             sessionSecret as jwt.Secret,
-            { expiresIn: "60s" }
+            { expiresIn: "1000s" }
         );
 
         // Retourne uniquement l'objet user + ce sessionToken court pour que
