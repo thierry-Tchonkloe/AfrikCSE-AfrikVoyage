@@ -32,7 +32,10 @@ export interface User {
 }
 
 export interface AuthResponse {
-    accessToken: string;
-    refreshToken: string;
+    // access/refresh peuvent être absents car les cookies HTTP-only sont posés
+    accessToken?: string;
+    refreshToken?: string;
+    // jeton court signé fourni pour le middleware (lisible par le frontend)
+    sessionToken?: string;
     user: User;
 }

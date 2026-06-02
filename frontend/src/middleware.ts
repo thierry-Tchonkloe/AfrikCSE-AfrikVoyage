@@ -97,7 +97,9 @@ interface TokenPayload {
 // ── Vérification JWT ───────────────────────────────────────
 async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+    // Use a dedicated session secret for the frontend-readable cookie when available
+    const secretStr = process.env.SESSION_COOKIE_SECRET || process.env.JWT_SECRET!;
+    const secret = new TextEncoder().encode(secretStr);
     const { payload } = await jwtVerify(token, secret);
     return payload as unknown as TokenPayload;
   } catch {
@@ -138,8 +140,8 @@ export async function middleware(request: NextRequest) {
 
   if (isPublicRoute) return NextResponse.next();
 
-  // 2. Token
-  const token = request.cookies.get("accessToken")?.value;
+  // 2. Token — on regarde d'abord le cookie `session` (court, lisible)
+  const token = request.cookies.get("session")?.value || request.cookies.get("accessToken")?.value;
 
   if (!token) {
     const url = new URL("/login", request.url);
@@ -147,12 +149,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 3. Vérifie le token
+  // 3. Vérifie le token (session token signé ou access token si disponible)
   const payload = await verifyToken(token);
 
   if (!payload) {
     const res = NextResponse.redirect(new URL("/login", request.url));
     res.cookies.delete("accessToken");
+    res.cookies.delete("session");
     return res;
   }
 
