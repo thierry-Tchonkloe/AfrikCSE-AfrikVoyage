@@ -186,7 +186,7 @@ const COOKIE_BASE = {
     httpOnly: true,                                   // inaccessible depuis JS côté client
     secure:   IS_PROD,                                 // HTTPS uniquement en prod
     sameSite: (IS_PROD ? "none" : "lax") as "none" | "lax",
-    // ✅ Path par défaut "/" — les refreshToken peuvent aussi être sur "/"
+    partitioned: true,
     path:   "/",
 } as const;
 
