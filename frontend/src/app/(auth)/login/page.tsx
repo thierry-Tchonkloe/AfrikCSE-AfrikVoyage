@@ -91,6 +91,15 @@ export default function LoginPage() {
             //    On stocke uniquement l'objet user dans le state React.
             setAuthData(result.user);
 
+            // Si le backend renvoie un `sessionToken`, on le pose en cookie
+            // lisible par le middleware Edge (court-lived, usage routing seulement).
+            if (result.sessionToken && typeof window !== "undefined") {
+            const isSecure = window.location.protocol === "https:";
+            const sameSite = isSecure ? "None" : "Lax";
+            // max-age courte (60s) — le middleware doit relire rapidement
+            document.cookie = `session=${result.sessionToken}; path=/; max-age=60; SameSite=${sameSite}; ${isSecure ? "Secure;" : ""}`;
+            }
+
             toast.success(`Bienvenue, ${result.user.firstName} !`);
 
             const { role, organization, profileCompleted } = result.user;
