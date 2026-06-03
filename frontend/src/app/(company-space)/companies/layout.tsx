@@ -237,9 +237,11 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
             </header>
 
             {isExcluded ? (
-                    children
+                    <main className={cn("flex-1 min-h-0 overflow-y-auto", darkMode ? "bg-gray-900" : "bg-gray-50")}>
+                        {children}
+                    </main>
                 ) : (
-                    <main className={cn("flex-1 overflow-y-auto p-6", darkMode ? "bg-gray-900" : "bg-gray-50")}>
+                    <main className={cn("flex-1 min-h-0 overflow-y-auto p-6", darkMode ? "bg-gray-900" : "bg-gray-50")}>
                         {children}
                     </main>
                 )
