@@ -26,4 +26,8 @@ router.patch("/:id/modules", requireSuper, ctrl.updateModules.bind(ctrl));
 router.patch("/:id/suspend", requireSuper, ctrl.suspend.bind(ctrl));
 router.patch("/:id/validate-invite", requireSuper, ctrl.validateWithInvitation.bind(ctrl));
 router.delete("/:id", requireSuper, ctrl.softDelete.bind(ctrl));
+
+router.patch("/:id",              ctrl.update.bind(ctrl));
+router.patch("/:id/reactivate",   ctrl.reactivate.bind(ctrl));
+router.post("/:id/invite",        ctrl.regenerateInvitation.bind(ctrl));
 export default router;
