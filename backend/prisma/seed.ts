@@ -13,11 +13,14 @@ async function main() {
     console.log("🌱 Démarrage du seed...");
 
     //await prisma.post.deleteMany()
-    await prisma.user.deleteMany()
+    // await prisma.user.deleteMany()
+    // await prisma.organization.deleteMany()
     // ── 1. Organisation Waxeho (le propriétaire de la plateforme) ──
     const waxeho = await prisma.organization.upsert({
         where: { slug: "waxeho" },
-        update: {},
+        update: {
+            status: "ACTIVE",
+        },
         create: {
             name: "Waxeho",
             slug: "waxeho",
