@@ -516,7 +516,7 @@ export default function AboutPage() {
         <main className="min-h-screen font-sans antialiased">
         <HeroSection />
         <MissionSection />
-        <StatsBanner />
+        {/* <StatsBanner /> */}
         <VisionSection />
         <TeamSection />
         </main>

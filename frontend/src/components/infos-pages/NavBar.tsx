@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 
 const NAV_LINKS = [
-    { label: "Home", href: "/infos" },
-    { label: "About", href: "/infos/about" },
-    { label: "How it works", href: "/infos/how-it-works" },
+    { label: "Accueil", href: "/infos" },
+    { label: "À propos", href: "/infos/about" },
+    { label: "Comment ça marche", href: "/infos/how-it-works" },
     { label: "Contact", href: "/infos/contact" },
-    { label: "Join us", href: "/infos/join-us" }
+    { label: "Rejoignez-nous", href: "/infos/join-us" }
 ];
 
 export default function Navbar() {
@@ -67,14 +67,14 @@ export default function Navbar() {
                 href="/login"
                 className="text-sm font-medium text-gray-700 hover:text-teal-700 transition-colors"
                 >
-                My Spaces
+                Mon Espace
                 </Link>
 
                 <Link
                 href="/infos/demo"
                 className="bg-teal-900 hover:bg-teal-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors duration-200 whitespace-nowrap"
                 >
-                Request a demo
+                Demander une démonstration
                 </Link>
             </div>
 
@@ -134,14 +134,14 @@ export default function Navbar() {
                 onClick={() => setMenuOpen(false)}
                 className="block py-2 px-3 text-sm font-medium text-gray-700 hover:text-teal-700 transition-colors"
                 >
-                My Spaces
+                Mon Espace
                 </Link>
                 <Link
                 href="/infos/demo"
                 onClick={() => setMenuOpen(false)}
                 className="block text-center bg-teal-900 hover:bg-teal-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                 >
-                Request a demo
+                Demander une démonstration
                 </Link>
             </div>
             </div>
