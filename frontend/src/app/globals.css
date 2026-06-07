@@ -1,48 +1,68 @@
-/* @import "tailwindcss";
-  @tailwind base;
-  @tailwind components;
-@tailwind utilities;
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  @apply bg-gray-100 text-gray-900;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-} */
-
-
-
-
 @import "tailwindcss";
 
 :root {
-  /* Couleurs principales — modifiables pour le thème */
-  --color-primary: #0f766e;      /* teal-700 */
-  --color-primary-hover: #0d9488; /* teal-600 */
-  --color-primary-light: #f0fdfa; /* teal-50 */
-  --color-secondary: #f59e0b;    /* amber-500 */
+  /* --- COULEURS ACTUELLES (Conservées) --- */
+  --color-primary: #0f766e;
+  --color-primary-hover: #0d9488;
+  --color-primary-light: #f0fdfa;
+  --color-secondary: #f59e0b;
   --color-bg: #f8fafc;
   --color-card: #ffffff;
-  --color-border: #e2e8f0;
+  --color-border: #e2e8e0;
   --color-text: #0f172a;
   --color-muted: #64748b;
+
+  /* --- NOUVELLE IDENTITÉ AFRIKVOYAGE & AFRIKCSE --- */
+  
+  /* 1. Couleurs Principales (Identité & Confiance) [1, 2] */
+  --deep-slate: #1E293B;           /* Stabilité, sérieux financier, socle AfrikVoyage */
+  --deep-slate-dark: #0F172A;      /* Pour les fonds Hero immersifs et Sidebar */
+  --electric-indigo: #6366F1;      /* Dynamisme, technologie, socle AfrikCSE */
+  --electric-indigo-glow: #818CF8;  /* Version plus claire pour les effets de lumière */
+
+  /* 2. Couleurs Sémantiques (Indicateurs de Performance) [1, 2] */
+  --success-emerald: #10B981;      /* Vert Émeraude : ROI, -30% de coûts, Succès */
+  --alert-amber: #F59E0B;          /* Ambre : Vigilance budget et conformité */
+
+  /* 3. Structure & Ergonomie (Accessibilité B2C) [2] */
+  --ui-white: #FFFFFF;
+  --ui-light-gray: #F8FAFC;        /* Gris très clair pour une lecture reposante */
+  
+  /* 4. Gradients Premium (Effet 'Woah' Immersif) [2] */
+  /* Gradient principal pour les sections stratégiques (Hero) */
+  --gradient-premium: linear-gradient(135deg, var(--deep-slate) 0%, var(--electric-indigo) 100%);
+  
+  /* Effet Halo Néon pour l'immersion technologique */
+  --gradient-halo: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+  
+  /* Gradient de succès pour les badges de résultats (ex: Marie Dubois / TechAfrik) */
+  --gradient-success: linear-gradient(to right, #059669, #10B981);
+}
+
+/* --- UTILISATION DES NOUVELLES VARIABLES --- */
+
+body {
+  /* Utilisation du gris très clair pour l'accessibilité et la clarté B2C [2] */
+  @apply bg-slate-50 text-slate-900;
+  background-color: var(--ui-light-gray);
+  color: var(--deep-slate);
+  font-family: 'Inter', 'Montserrat', sans-serif; /* Polices optimisées SaaS [1] */
+}
+
+/* Exemple de classe pour la section Hero immersive */
+.hero-section-premium {
+  background: var(--deep-slate-dark);
+  background-image: var(--gradient-halo); /* Ajoute l'effet de profondeur technologique */
+  color: var(--ui-white);
+}
+
+/* Bouton d'action vibrant (Electric Indigo) */
+.btn-primary-vibrant {
+  background-color: var(--electric-indigo);
+  transition: all 0.3s ease;
+}
+
+.btn-primary-vibrant:hover {
+  background-color: var(--electric-indigo-glow);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); /* Effet de lueur moderne */
 }
