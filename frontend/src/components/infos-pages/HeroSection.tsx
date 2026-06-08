@@ -510,6 +510,7 @@ export default function HeroSection() {
 
     return (
         <section
+            id="hero"
             className="relative w-full overflow-hidden flex items-center"
             style={{
                 background: "linear-gradient(135deg, #0F172A 0%, #1E293B 60%, #1E1B4B 100%)",
@@ -544,7 +545,7 @@ export default function HeroSection() {
                             de vos déplacements professionnels et l'épanouissement de vos équipes.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-5 mt-4">
-                            <Link href="/infos/demo"
+                            <Link href="#"
                                 className="inline-flex items-center justify-center bg-[#6366F1] hover:bg-[#818CF8] text-white font-bold text-lg px-8 py-4 rounded-xl transition-all duration-300 shadow-[0_0_25px_rgba(99,102,241,0.4)] hover:scale-[1.02] transform">
                                 Demander une démo
                             </Link>

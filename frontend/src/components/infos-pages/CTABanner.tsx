@@ -16,7 +16,7 @@ export default function CTABanner({
     title = "Commencez votre transformation digitale dès aujourd'hui",
     subtitle = "Rejoignez les centaines d'entreprises qui optimisent déjà leurs voyages d'affaires et avantages employés avec notre solution.",
     primaryLabel = "Demander une démo gratuite",
-    primaryHref = "/infos/demo",
+    primaryHref = "#",
     secondaryLabel = "Parler à un expert",
     secondaryHref = "/infos/contact",
 }: CTABannerProps) {
