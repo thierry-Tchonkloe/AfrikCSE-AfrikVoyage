@@ -99,7 +99,7 @@
 
 
 
-import express, { Request, Response, NextFunction } from "express";
+import express, { Request, Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
@@ -120,6 +120,7 @@ import employeeSpaceRoutes  from "./modules/employee/interfaces/employee-space.r
 import eventRoutes          from "./modules/events/interfaces/event.routes";
 import communicationRoutes  from "./modules/communication/interfaces/communication.routes";
 import catalogRoutes        from "./modules/catalog/interfaces/catalog.routes";
+import { errorMiddleware }  from "./core/middlewares/error.middleware";
 
 const app = express();
 
@@ -193,17 +194,20 @@ const API_ROUTES = [
         prefix: "/api/organizations",
         description: "Organisation, validation et gestion des modules",
         methods: [
-            "GET /",
-            "POST /",
-            "GET /paginated",
-            "GET /my/dashboard",
-            "GET /:id",
-            "PATCH /:id/validate",
-            "PATCH /:id/reject",
-            "PATCH /:id/modules",
-            "PATCH /:id/suspend",
-            "PATCH /:id/validate-invite",
-            "DELETE /:id",
+            "GET /                         — Liste toutes les orgs (SUPER_ADMIN)",
+            "POST /                        — Créer org (SUPER_ADMIN)",
+            "GET /paginated                — Liste paginée avec filtres (SUPER_ADMIN)",
+            "GET /my/dashboard             — Dashboard de l'org connectée",
+            "PATCH /my                     — Mettre à jour sa propre org (ADMIN/MANAGER)",
+            "GET /:id                      — Détail org (SUPER_ADMIN)",
+            "PATCH /:id/validate           — Valider org (SUPER_ADMIN)",
+            "PATCH /:id/reject             — Rejeter org (SUPER_ADMIN)",
+            "PATCH /:id/modules            — Activer/désactiver modules (SUPER_ADMIN)",
+            "PATCH /:id/suspend            — Suspendre org (SUPER_ADMIN)",
+            "PATCH /:id/validate-invite    — Valider + envoyer invitation (SUPER_ADMIN)",
+            "PATCH /:id/reactivate         — Réactiver org suspendue (SUPER_ADMIN)",
+            "POST /:id/invite              — Regénérer lien invitation (SUPER_ADMIN)",
+            "DELETE /:id                   — Désactiver org (SUPER_ADMIN)",
         ],
     },
     {
@@ -252,14 +256,17 @@ const API_ROUTES = [
     },
     {
         prefix: "/api/billing",
-        description: "Facturation, abonnement et paiements",
+        description: "Facturation, abonnement et paiements (KkiaPay, FedaPay, Carte)",
         methods: [
-            "GET /",
-            "POST /upgrade",
-            "GET /invoices",
-            "POST /pay/kkiapay",
-            "POST /pay/fedapay",
-            "POST /pay/card",
+            "GET /plans                  — Prix des plans (public)",
+            "POST /webhook/kkiapay       — Webhook KkiaPay (public, signé HMAC)",
+            "POST /webhook/fedapay       — Webhook FedaPay (public, token)",
+            "GET /                       — Abonnement courant",
+            "POST /upgrade               — Changer de plan (sans paiement immédiat)",
+            "GET /invoices               — Historique des factures",
+            "POST /pay/kkiapay           — Vérifier transactionId KkiaPay et activer",
+            "POST /pay/fedapay           — Créer transaction FedaPay → checkoutUrl",
+            "POST /pay/card              — Paiement carte (Stripe-ready)",
         ],
     },
     {
@@ -276,13 +283,18 @@ const API_ROUTES = [
     },
     {
         prefix: "/api/employee",
-        description: "Espace employé personnel",
+        description: "Espace employé personnel (dashboard, voyages, avantages, profil)",
         methods: [
             "GET /dashboard",
             "GET /travels",
             "POST /travels",
             "GET /expenses",
             "POST /expenses",
+            "GET /benefits/categories    — Catégories CSE disponibles + soldes",
+            "GET /benefits/balance       — Solde global avantages de l'employé",
+            "GET /benefits/requests      — Mes demandes d'avantages",
+            "POST /benefits/requests     — Soumettre une demande d'avantage",
+            "PATCH /benefits/requests/:id/cancel — Annuler une demande en attente",
             "GET /profile",
             "PATCH /profile",
             "GET /documents",
@@ -351,9 +363,6 @@ app.use((_req: Request, res: Response) => {
 });
 
 // ── Erreurs globales ──────────────────────────────────────────────────────────
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    console.error("[ERROR]", err.message);
-    res.status(500).json({ message: "Erreur interne du serveur" });
-});
+app.use(errorMiddleware);
 
 export default app;

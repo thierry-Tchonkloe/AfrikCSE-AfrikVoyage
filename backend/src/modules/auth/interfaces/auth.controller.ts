@@ -257,7 +257,7 @@ export class AuthController {
             isHost: result.user.organization?.isHost ?? false,
             },
             sessionSecret as jwt.Secret,
-            { expiresIn: "1000s" }
+            { expiresIn: "60s" } // aligné avec le max-age=60 du cookie posé côté frontend
         );
 
         // Retourne uniquement l'objet user + ce sessionToken court pour que
