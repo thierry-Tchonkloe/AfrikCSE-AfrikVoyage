@@ -253,7 +253,9 @@ export class AuthService {
 
         // TODO: Envoyer l'email avec le lien :
         // ${process.env.FRONTEND_URL}/auth/reset-password?token=${token}
-        console.log(`[DEV] Reset token : ${token}`);
+        if (process.env.NODE_ENV !== "production") {
+            console.log(`[DEV] Reset token : ${token}`);
+        }
     }
 
     /** Réinitialise le mot de passe */

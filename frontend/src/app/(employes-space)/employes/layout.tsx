@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {
     LayoutDashboard, Plane, FileText, Calendar,
     Gift, MessageSquare, CalendarDays, User, Settings,
     ChevronLeft, ChevronRight, Bell, LogOut, Menu,
-    Search, Mail,
+    Search, Mail, Sun, Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
@@ -35,14 +35,24 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
     const pathname = usePathname();
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [darkMode, setDarkMode]       = useState(false);
     const [search, setSearch]           = useState("");
 
-    // useEffect(() => {
-    //     if (window.innerWidth < 1024) setSidebarOpen(false);
-    //     const fn = () => { if (window.innerWidth < 1024) setSidebarOpen(false); };
-    //     window.addEventListener("resize", fn);
-    //     return () => window.removeEventListener("resize", fn);
-    // }, []);
+    useEffect(() => {
+        document.documentElement.classList.toggle("dark", darkMode);
+    }, [darkMode]);
+
+    // useLayoutEffect (et non useEffect) pour fixer l'état AVANT le premier paint :
+    // évite qu'un panneau plein écran apparaisse brièvement sur mobile au chargement.
+    // Sur mobile/tablette, la sidebar est repliée hors écran par défaut et n'est
+    // accessible que via le petit bouton "menu" du header ; sur grand écran elle
+    // reste visible et ouverte par défaut.
+    useLayoutEffect(() => {
+        const applyFromViewport = () => setSidebarOpen(window.innerWidth >= 1024);
+        applyFromViewport();
+        window.addEventListener("resize", applyFromViewport);
+        return () => window.removeEventListener("resize", applyFromViewport);
+    }, []);
 
     // useEffect(() => {
     //     if (!loading && !user) router.push("/login");
@@ -52,22 +62,30 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
 
     if (loading || !user) return null;
 
-    // Couleur sidebar : dark (comme maquette)
-    const SIDEBAR_BG  = "#0f2137";
-    const SIDEBAR_ACTIVE = "#1a3550";
-    const ACCENT = "#0f766e";
+    // Couleurs pilotées par le système de thémisation dynamique (cf. useTheme/theme.ts) :
+    // sidebar sur la teinte "brand-dark", accent et états actifs sur la couleur primaire.
+    const SIDEBAR_BG  = "var(--color-brand-dark)";
+    const SIDEBAR_ACTIVE = "var(--color-primary)";
+    const ACCENT = "var(--color-primary)";
 
     return (
-        <div className="flex h-screen overflow-hidden bg-gray-50">
+        <div className={cn(
+            "flex h-screen overflow-hidden",
+            darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-900"
+        )}>
         {/* Overlay mobile */}
         {sidebarOpen && (
             <div className="fixed inset-0 z-20 bg-black/40 lg:hidden"
             onClick={() => setSidebarOpen(false)} />
         )}
 
-        {/* ── Sidebar ── */}
+        {/* ── Sidebar ── masquée hors écran sur mobile, accessible uniquement via
+            le bouton "menu" du header ; toujours visible et repliable sur desktop */}
         <aside
-            className="fixed lg:static inset-y-0 left-0 z-30 flex flex-col transition-all duration-300"
+            className={cn(
+            "fixed lg:static inset-y-0 left-0 z-30 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:transition-[width]",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            )}
             style={{
             width: sidebarOpen ? "220px" : "64px",
             background: SIDEBAR_BG,
@@ -113,7 +131,10 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                 return (
                 <button
                     key={href}
-                    onClick={() => router.push(href)}
+                    onClick={() => {
+                        router.push(href);
+                        if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all"
                     style={active
                     ? { background: SIDEBAR_ACTIVE, color: "white", fontWeight: 600 }
@@ -143,7 +164,10 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                 return (
                 <button
                     key={href}
-                    onClick={() => router.push(href)}
+                    onClick={() => {
+                        router.push(href);
+                        if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all"
                     style={active
                     ? { background: SIDEBAR_ACTIVE, color: "white" }
@@ -195,8 +219,11 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
         {/* ── Zone principale ── */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {/* Navbar */}
-            <header className="h-16 flex items-center justify-between px-6 border-b border-gray-200 bg-white shrink-0">
-            <button className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+            <header className={cn(
+                "h-16 flex items-center justify-between px-6 border-b shrink-0",
+                darkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
+            )}>
+            <button className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                 onClick={() => setSidebarOpen(true)}>
                 <Menu size={20} />
             </button>
@@ -209,21 +236,36 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search trips, expenses, benefits..."
-                    className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none"
+                    className={cn(
+                        "w-full pl-9 pr-4 py-2 border rounded-xl text-sm outline-none",
+                        darkMode ? "bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500" : "bg-gray-50 border-gray-200"
+                    )}
                 />
                 </div>
             </div>
 
             {/* Actions droite */}
             <div className="flex items-center gap-2 ml-auto">
-                <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 relative">
+                {/* Dark mode toggle */}
+                <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                style={{ color: darkMode ? "#9ca3af" : "#6b7280" }}
+                >
+                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+
+                <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 relative">
                 <Bell size={18} />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
                 </button>
-                <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
+                <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
                 <Mail size={18} />
                 </button>
-                <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
+                <div className={cn(
+                    "flex items-center gap-2 pl-2 border-l",
+                    darkMode ? "border-gray-700" : "border-gray-200"
+                )}>
                 <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer"
                     style={{ background: ACCENT }}
@@ -232,10 +274,10 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                     {user.firstName?.[0] ?? "E"}{user.lastName?.[0] ?? ""}
                 </div>
                 <div className="hidden sm:block">
-                    <p className="text-xs font-semibold text-gray-900">
+                    <p className="text-xs font-semibold">
                     {user.firstName} {user.lastName}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs" style={{ color: darkMode ? "#9ca3af" : "#6b7280" }}>
                     {user.role.replace("_", " ")}
                     </p>
                 </div>
@@ -244,7 +286,10 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
             </header>
 
             {/* Contenu scrollable */}
-            <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
+            <main className={cn(
+                "flex-1 overflow-y-auto p-4 md:p-6",
+                darkMode ? "bg-gray-900" : "bg-gray-50"
+            )}>
             {children}
             </main>
         </div>

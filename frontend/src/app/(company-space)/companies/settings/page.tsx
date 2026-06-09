@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Loader2, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-//import { companyService } from "@/services/companies/company.service";
+import { companyService } from "@/services/companies/company.service";
 import { toast } from "sonner";
 
 // ── Types ──────────────────────────────────────────────
@@ -46,7 +46,7 @@ export default function CompanySettingsPage() {
     const [changed, setChanged] = useState(false);
 
     const [settings, setSettings] = useState<CompanySettings>({
-        name:               user?.organization?.name ?? "",
+        name:               "",
         legalName:          "",
         registrationNumber: "",
         vatNumber:          "",
@@ -62,6 +62,30 @@ export default function CompanySettingsPage() {
         faviconUrl:         null,
     });
 
+    // Charger les données de l'organisation au montage
+    useEffect(() => {
+        companyService.getDashboard()
+            .then(({ org }) => {
+                if (!org) return;
+                setSettings((prev) => ({
+                    ...prev,
+                    name:         org.name ?? prev.name,
+                    phone:        org.phone ?? prev.phone,
+                    primaryEmail: org.businessEmail ?? prev.primaryEmail,
+                    address:      org.address ?? prev.address,
+                    industry:     org.industry ?? prev.industry,
+                    size:         org.size ?? prev.size,
+                }));
+            })
+            .catch(() => {
+                // Initialiser depuis useAuth comme fallback
+                if (user?.organization) {
+                    setSettings((prev) => ({ ...prev, name: user.organization!.name ?? "" }));
+                }
+            });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const update = (key: keyof CompanySettings, value: string | null) => {
         setSettings((prev) => ({ ...prev, [key]: value }));
         setChanged(true);
@@ -75,12 +99,21 @@ export default function CompanySettingsPage() {
     const handleSave = async () => {
         setSaving(true);
         try {
-        // TODO: appel API PATCH /organizations/my
-        await new Promise((r) => setTimeout(r, 800)); // simulé
-        toast.success("Paramètres enregistrés");
-        setChanged(false);
-        } catch { toast.error("Erreur sauvegarde"); }
-        finally { setSaving(false); }
+            await companyService.updateMyOrg({
+                name:          settings.name || undefined,
+                phone:         settings.phone || undefined,
+                businessEmail: settings.primaryEmail || undefined,
+                address:       settings.address || undefined,
+                industry:      settings.industry || undefined,
+                size:          settings.size || undefined,
+            });
+            toast.success("Paramètres enregistrés");
+            setChanged(false);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message ?? "Erreur sauvegarde");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (

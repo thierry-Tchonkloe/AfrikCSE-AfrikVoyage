@@ -105,7 +105,9 @@ export class OrganizationService {
         const invitationLink =
             `${process.env.FRONTEND_URL}/activate?token=${result.invitationToken}`;
 
-        console.log(`[DEV] Lien d'invitation : ${invitationLink}`);
+        if (process.env.NODE_ENV !== "production") {
+            console.log(`[DEV] Lien d'invitation : ${invitationLink}`);
+        }
         // TODO: Envoyer par email
 
         return { ...result, invitationLink };
@@ -130,7 +132,9 @@ export class OrganizationService {
         const invitationLink =
             `${process.env.FRONTEND_URL}/activate?token=${result.invitationToken}`;
 
-        console.log(`[DEV] Lien activation : ${invitationLink}`);
+        if (process.env.NODE_ENV !== "production") {
+            console.log(`[DEV] Lien activation : ${invitationLink}`);
+        }
         // TODO: Envoyer par email à l'admin de l'org
 
         return { ...result.org, invitationLink };
