@@ -35,14 +35,25 @@ body {
 @import "tailwindcss";
 
 :root {
-  /* Couleurs principales — modifiables pour le thème */
-  --color-primary: #0f766e;      /* teal-700 */
-  --color-primary-hover: #0d9488; /* teal-600 */
-  --color-primary-light: #f0fdfa; /* teal-50 */
-  --color-secondary: #f59e0b;    /* amber-500 */
-  --color-bg: #f8fafc;
+  /*
+   * Palette de marque par défaut (fallback) — appliquée tant qu'aucun
+   * thème d'espace ou de préférence utilisateur n'est résolu côté JS.
+   * Voir src/lib/theme.ts (DEFAULT_PALETTE) pour la résolution dynamique.
+   */
+  --color-brand-dark: #1E293B;      /* Deep Slate    — sections sombres / premium */
+  --color-brand-primary: #6366F1;   /* Electric Indigo — CTA & états actifs */
+  --color-brand-success: #10B981;   /* Vert Émeraude — conformité / positif */
+  --color-brand-warning: #F59E0B;   /* Ambre — alertes / vigilance */
+  --color-brand-bg-light: #F8FAFC;  /* Fond du contenu principal */
+
+  /* Couleurs principales — alias historiques, modifiables dynamiquement */
+  --color-primary: var(--color-brand-primary);
+  --color-primary-hover: #4f46e5;   /* indigo-600 */
+  --color-primary-light: #eef2ff;   /* indigo-50 */
+  --color-secondary: var(--color-brand-warning);
+  --color-bg: var(--color-brand-bg-light);
   --color-card: #ffffff;
   --color-border: #e2e8f0;
-  --color-text: #0f172a;
+  --color-text: var(--color-brand-dark);
   --color-muted: #64748b;
 }

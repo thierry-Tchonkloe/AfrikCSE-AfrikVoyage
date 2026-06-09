@@ -95,16 +95,26 @@ interface TokenPayload {
 }
 
 // ── Vérification JWT ───────────────────────────────────────
+// Le cookie `session` est signé avec SESSION_COOKIE_SECRET (si défini),
+// tandis que `accessToken` est toujours signé avec JWT_SECRET côté backend.
+// On essaie les deux secrets pour couvrir les deux types de cookies,
+// sans quoi la vérification échoue dès que `session` expire (~60s) et
+// que le middleware retombe sur `accessToken`.
+const SECRET_CANDIDATES = [process.env.SESSION_COOKIE_SECRET, process.env.JWT_SECRET]
+  .filter((s): s is string => Boolean(s))
+  .filter((s, i, arr) => arr.indexOf(s) === i)
+  .map((s) => new TextEncoder().encode(s));
+
 async function verifyToken(token: string): Promise<TokenPayload | null> {
-  try {
-    // Use a dedicated session secret for the frontend-readable cookie when available
-    const secretStr = process.env.SESSION_COOKIE_SECRET || process.env.JWT_SECRET!;
-    const secret = new TextEncoder().encode(secretStr);
-    const { payload } = await jwtVerify(token, secret);
-    return payload as unknown as TokenPayload;
-  } catch {
-    return null;
+  for (const secret of SECRET_CANDIDATES) {
+    try {
+      const { payload } = await jwtVerify(token, secret);
+      return payload as unknown as TokenPayload;
+    } catch {
+      // essaie le secret suivant
+    }
   }
+  return null;
 }
 
 // ── Rôles ──────────────────────────────────────────────────

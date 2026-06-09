@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useLayoutEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {LayoutDashboard, Users, Settings, ChevronLeft, ChevronRight, Bell, LogOut, Menu, Moon, Sun,} from "lucide-react";
@@ -75,12 +75,17 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
     const isExcluded = excludedFolders.some((folder) => pathname.startsWith(folder));
 
 
-    // useEffect(() => {
-    //     if (window.innerWidth < 1024) setSidebarOpen(false);
-    //     const fn = () => { if (window.innerWidth < 1024) setSidebarOpen(false); };
-    //     window.addEventListener("resize", fn);
-    //     return () => window.removeEventListener("resize", fn);
-    // }, []);
+    // useLayoutEffect (et non useEffect) pour fixer l'état AVANT le premier paint :
+    // évite qu'un panneau plein écran apparaisse brièvement sur mobile au chargement.
+    // Sur mobile/tablette, la sidebar est repliée hors écran par défaut et n'est
+    // accessible que via le petit bouton "menu" du header ; sur grand écran elle
+    // reste visible et ouverte par défaut.
+    useLayoutEffect(() => {
+        const applyFromViewport = () => setSidebarOpen(window.innerWidth >= 1024);
+        applyFromViewport();
+        window.addEventListener("resize", applyFromViewport);
+        return () => window.removeEventListener("resize", applyFromViewport);
+    }, []);
 
     // useEffect(() => {
     //     if (!loading && !user) router.push("/login");
@@ -113,10 +118,13 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
             onClick={() => setSidebarOpen(false)} />
         )}
 
-        {/* Sidebar */}
+        {/* Sidebar — masquée hors écran sur mobile, accessible uniquement via le
+            bouton "menu" du header ; toujours visible et repliable sur desktop */}
         <aside className={cn(
-            "fixed lg:static inset-y-0 left-0 z-30 flex flex-col transition-all duration-300 border-r",
-            sidebarOpen ? "w-56" : "w-16",
+            "fixed lg:static inset-y-0 left-0 z-30 flex flex-col w-64 transition-transform duration-300 ease-in-out border-r",
+            "lg:translate-x-0 lg:transition-[width] lg:duration-300",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full",
+            sidebarOpen ? "lg:w-56" : "lg:w-16",
             darkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
         )}>
             {/* Logo */}
@@ -148,7 +156,10 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
             {navItems.map(({ href, label, icon: Icon }) => {
                 const active = pathname.startsWith(href);
                 return (
-                <button key={href} onClick={() => router.push(href)}
+                <button key={href} onClick={() => {
+                    router.push(href);
+                    if (window.innerWidth < 1024) setSidebarOpen(false);
+                }}
                     className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
                     active ? "text-white" : darkMode

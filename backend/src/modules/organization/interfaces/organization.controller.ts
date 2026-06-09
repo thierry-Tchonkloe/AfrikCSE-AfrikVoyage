@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { OrganizationService } from "../application/organization.service";
-import { validateOrgSchema, rejectOrgSchema, updateModulesSchema, } from "./organization.validator";
+import { validateOrgSchema, rejectOrgSchema, updateModulesSchema, updateOrgSchema, } from "./organization.validator";
 import { OrgStatus } from "@prisma/client";
 import { prisma } from "../../../core/config/prisma";
 
@@ -162,12 +162,44 @@ export class OrganizationController {
         }
     }
 
-    // Mise à jour des infos de base
+    // Mise à jour des infos de base — champs whitelistés uniquement
+    // (status/plan/modules ont leurs propres routes dédiées et contrôlées)
     async update(req: Request, res: Response): Promise<void> {
+        const parsed = updateOrgSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({ errors: parsed.error.flatten() });
+            return;
+        }
+
         try {
             const org = await prisma.organization.update({
             where: { id: req.params.id as string },
-            data: req.body,
+            data: parsed.data,
+            });
+            res.json(org);
+        } catch (err: any) {
+            res.status(400).json({ message: err.message });
+        }
+    }
+
+    // Admin met à jour sa propre organisation
+    async updateMyOrg(req: Request, res: Response): Promise<void> {
+        const orgId = req.user!.organizationId;
+        if (!orgId) {
+            res.status(400).json({ message: "Organisation introuvable" });
+            return;
+        }
+
+        const parsed = updateOrgSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({ errors: parsed.error.flatten() });
+            return;
+        }
+
+        try {
+            const org = await prisma.organization.update({
+                where: { id: orgId },
+                data: parsed.data,
             });
             res.json(org);
         } catch (err: any) {

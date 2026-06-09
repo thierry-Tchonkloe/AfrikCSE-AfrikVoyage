@@ -3,11 +3,11 @@ import Link from "next/link";
 export default function HeroSection() {
     return (
         <section
-        className="relative w-full overflow-hidden"
-        style={{
-            background: "linear-gradient(135deg, #0d2340 0%, #0e6e6e 60%, #00b894 100%)",
-            minHeight: "calc(100vh - 64px)",
-        }}
+            className="relative w-full overflow-hidden"
+            style={{
+                background: "linear-gradient(135deg, #0d2340 0%, #0e6e6e 60%, #00b894 100%)",
+                minHeight: "calc(100vh - 64px)",
+            }}
         >
         {/* Subtle ambient circles */}
         <div className="absolute inset-0 pointer-events-none">
@@ -50,11 +50,7 @@ export default function HeroSection() {
 
             {/* Right: Dashboard mockup */}
             <div className="flex justify-center lg:justify-end">
-                <img
-                    src="/images/img-acueil-7.png"
-                    alt="Dashboard mockup"
-                    className="max-w-full h-auto rounded-lg shadow-lg"
-                />
+                <img src="/images/hero-home-image.png" alt="Dashboard mockup" className="max-w-full h-auto rounded-lg shadow-lg"/>
             </div>
             </div>
         </div>
