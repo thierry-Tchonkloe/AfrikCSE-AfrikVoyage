@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, ChevronLeft, Loader2 } from "lucide-react";
+import { Upload, X, ChevronLeft, Loader2, Camera } from "lucide-react";
 import { employeeService } from "@/services/employes/employee.service";
 import { toast } from "sonner";
 
@@ -246,12 +246,27 @@ export default function NouvelleNotePage() {
                 onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) handleFile(f);
+                e.target.value = "";
+                }}
+            />
+            <input id="scan-input" type="file" className="hidden"
+                accept="image/*" capture="environment"
+                onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
+                e.target.value = "";
                 }}
             />
             <div className="flex gap-2 justify-center mt-3">
                 <button type="button"
+                onClick={(e) => { e.stopPropagation(); document.getElementById("file-input")?.click(); }}
                 className="text-xs px-4 py-1.5 border border-gray-200 rounded-lg text-gray-600">
                 Parcourir
+                </button>
+                <button type="button"
+                onClick={(e) => { e.stopPropagation(); document.getElementById("scan-input")?.click(); }}
+                className="flex items-center gap-1.5 text-xs px-4 py-1.5 border border-gray-200 rounded-lg text-gray-600">
+                <Camera size={14} /> Scanner le reçu
                 </button>
             </div>
             </div>

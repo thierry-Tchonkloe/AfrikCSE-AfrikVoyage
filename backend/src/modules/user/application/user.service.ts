@@ -3,6 +3,8 @@ import { CreateUserDto, UpdateUserDto, ChangeRoleDto } from "../interfaces/user.
 import { UserEntity } from "../domain/user.entity";
 import { Role } from "@prisma/client";
 import { prisma } from "../../../core/config/prisma";
+import { sendMail } from "../../../core/config/mailer";
+import { employeeInvitationEmail } from "../../../core/mailer/email.templates";
 
 export class UserService {
     private repo = new UserRepository();
@@ -51,7 +53,25 @@ export class UserService {
         throw new Error("Vous ne pouvez pas créer un utilisateur avec ce rôle");
         }
 
-        return this.repo.create({ ...dto, organizationId, role: dto.role as Role });
+        const { user, inviteToken } = await this.repo.create({ ...dto, organizationId, role: dto.role as Role });
+
+        const organization = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true },
+        });
+
+        const setPasswordLink = `${process.env.FRONTEND_URL}/activate?token=${inviteToken}`;
+        const { subject, html } = employeeInvitationEmail({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        companyName: organization?.name ?? "",
+        role: user.role,
+        setPasswordLink,
+        expiresInHours: 72,
+        });
+        await sendMail({ to: user.email, subject, html });
+
+        return user;
     }
 
     async update(id: string, dto: UpdateUserDto) {
