@@ -64,7 +64,7 @@ export default function NouvelleNotePage() {
     };
 
     return (
-        <div className="max-w-2xl space-y-5">
+        <div className="space-y-5 px-4">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-500">
             <button onClick={() => router.back()}

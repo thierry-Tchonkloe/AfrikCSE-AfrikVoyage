@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { OrganizationService } from "../application/organization.service";
-import { validateOrgSchema, rejectOrgSchema, updateModulesSchema, } from "./organization.validator";
+import { validateOrgSchema, rejectOrgSchema, updateModulesSchema, updateOrgSchema, } from "./organization.validator";
 import { OrgStatus } from "@prisma/client";
 import { prisma } from "../../../core/config/prisma";
 
@@ -142,6 +142,98 @@ export class OrganizationController {
             prisma.user.count({ where: { organizationId: orgId, isActive: true } }),
             ]);
             res.json({ org, activeUsers: userCount });
+        } catch (err: any) {
+            res.status(500).json({ message: err.message });
+        }
+    }
+
+
+
+    // Réactivation d'une organisation suspendue
+    async reactivate(req: Request, res: Response): Promise<void> {
+        try {
+            const org = await prisma.organization.update({
+            where: { id: req.params.id as string },
+            data: { status: "ACTIVE" },
+            });
+            res.json({ message: "Organisation réactivée", org });
+        } catch (err: any) {
+            res.status(400).json({ message: err.message });
+        }
+    }
+
+    // Mise à jour des infos de base — champs whitelistés uniquement
+    // (status/plan/modules ont leurs propres routes dédiées et contrôlées)
+    async update(req: Request, res: Response): Promise<void> {
+        const parsed = updateOrgSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({ errors: parsed.error.flatten() });
+            return;
+        }
+
+        try {
+            const org = await prisma.organization.update({
+            where: { id: req.params.id as string },
+            data: parsed.data,
+            });
+            res.json(org);
+        } catch (err: any) {
+            res.status(400).json({ message: err.message });
+        }
+    }
+
+    // Admin met à jour sa propre organisation
+    async updateMyOrg(req: Request, res: Response): Promise<void> {
+        const orgId = req.user!.organizationId;
+        if (!orgId) {
+            res.status(400).json({ message: "Organisation introuvable" });
+            return;
+        }
+
+        const parsed = updateOrgSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({ errors: parsed.error.flatten() });
+            return;
+        }
+
+        try {
+            const org = await prisma.organization.update({
+                where: { id: orgId },
+                data: parsed.data,
+            });
+            res.json(org);
+        } catch (err: any) {
+            res.status(400).json({ message: err.message });
+        }
+    }
+
+    // Générer un nouveau lien d'invitation
+    async regenerateInvitation(req: Request, res: Response): Promise<void> {
+        try {
+            const org = await prisma.organization.findUnique({
+            where: { id: req.params.id as string },
+            include: { users: { where: { role: "ADMIN" }, take: 1 } },
+            });
+            if (!org) { res.status(404).json({ message: "Introuvable" }); return; }
+
+            const crypto = await import("node:crypto");
+            const rawToken = crypto.randomBytes(32).toString("hex");
+            const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+            await prisma.invitationToken.create({
+            data: { token: hashedToken, organizationId: org.id, expiresAt },
+            });
+
+            if (org.users[0]) {
+            await prisma.user.update({
+                where: { id: org.users[0].id },
+                data: { resetPasswordToken: hashedToken, resetPasswordExpiresAt: expiresAt },
+            });
+            }
+
+            const invitationLink = `${process.env.FRONTEND_URL}/activate?token=${rawToken}`;
+            res.json({ invitationLink });
         } catch (err: any) {
             res.status(500).json({ message: err.message });
         }

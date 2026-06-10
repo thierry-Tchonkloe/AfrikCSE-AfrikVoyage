@@ -86,7 +86,9 @@ export class UserRepository {
 
         // TODO: Envoyer email d'invitation avec le lien :
         // ${FRONTEND_URL}/auth/set-password?token=${inviteToken}
-        console.log(`[DEV] Invitation token pour ${data.email}: ${inviteToken}`);
+        if (process.env.NODE_ENV !== "production") {
+            console.log(`[DEV] Invitation token pour ${data.email}: ${inviteToken}`);
+        }
 
         return user;
     }

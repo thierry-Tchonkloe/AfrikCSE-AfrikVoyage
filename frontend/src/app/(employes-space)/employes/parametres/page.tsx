@@ -84,7 +84,7 @@ export default function ParametresPage() {
     };
 
     return (
-        <div className="max-w-3xl space-y-5">
+        <div className="space-y-5 px-4">
         <div>
             <h1 className="text-xl font-bold text-gray-900">Account Information</h1>
             <p className="text-sm text-gray-500">Gérez votre compte, sécurité et préférences</p>
@@ -191,7 +191,7 @@ export default function ParametresPage() {
                 className="relative w-11 h-6 rounded-full transition-colors"
                 style={{ background: twoFA ? "#0f766e" : "#d1d5db" }}>
                 <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                    style={{ transform: twoFA ? "translateX(20px)" : "translateX(2px)" }} />
+                    style={{ transform: twoFA ? "translateX(0px)" : "translateX(-20px)" }} />
                 </button>
             </div>
             {twoFA && (
@@ -262,7 +262,7 @@ export default function ParametresPage() {
                     className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
                     style={{
                     transform: notifSettings[s.key as keyof typeof notifSettings]
-                        ? "translateX(16px)" : "translateX(2px)",
+                        ? "translateX(0px)" : "translateX(-16px)",
                     }}
                 />
                 </button>
@@ -304,7 +304,7 @@ export default function ParametresPage() {
             >
                 <span
                 className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
-                style={{ transform: prefs.darkMode ? "translateX(16px)" : "translateX(2px)" }}
+                style={{ transform: prefs.darkMode ? "translateX(0px)" : "translateX(-16px)" }}
                 />
             </button>
             </div>

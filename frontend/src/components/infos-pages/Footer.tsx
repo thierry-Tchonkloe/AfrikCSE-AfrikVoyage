@@ -9,7 +9,7 @@ const FOOTER_LINKS = {
     ],
     Entreprise: [
         { label: "A Propos", href: "/about" },
-        { label: "Careers", href: "/careers" },
+        { label: "Carrières", href: "/careers" },
         { label: "Contact", href: "/contact" },
         { label: "Partenaires", href: "/partners" },
     ],
@@ -70,7 +70,7 @@ export default function Footer() {
                 </span>
                 </Link>
                 <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs">
-                Empowering African businesses with modern digital solutions for travel and employee management.
+                Offrir aux entreprises africaines des solutions numériques modernes pour la gestion des voyages et des employés.
                 </p>
                 {/* Socials */}
                 <div className="flex items-center gap-3">

@@ -83,4 +83,22 @@ export const adminService = {
         });
         return data;
     },
+
+
+
+
+    async updateOrganization(id: string, payload: Record<string, unknown>) {
+        const { data } = await api.patch(`/organizations/${id}`, payload);
+        return data;
+    },
+
+    async reactivateOrganization(id: string) {
+        const { data } = await api.patch(`/organizations/${id}/reactivate`);
+        return data;
+    },
+
+    async regenerateInvitation(id: string) {
+        const { data } = await api.post(`/organizations/${id}/invite`);
+        return data;
+    },
 };

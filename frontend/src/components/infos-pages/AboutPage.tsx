@@ -827,11 +827,11 @@ function TeamSection() {
 export default function AboutPage() {
     return (
         <main className="min-h-screen font-sans antialiased">
-            <HeroSection />
-            <MissionSection />
-            <StatsBanner />
-            <VisionSection />
-            <TeamSection />
+        <HeroSection />
+        <MissionSection />
+        {/* <StatsBanner /> */}
+        <VisionSection />
+        <TeamSection />
         </main>
     );
 }

@@ -13,10 +13,11 @@ const HOME_SECTIONS = [
 
 // Liens d'onglets réels déjà développés ou structurels
 const NAV_LINKS = [
-  { label: "À propos", href: "/infos/about" },
-  { label: "Comment ça marche", href: "/infos/how-it-works" },
-  { label: "Contact", href: "/infos/contact" },
-  { label: "Recrutement", href: "/infos/join-us" },
+    { label: "Accueil", href: "/infos" },
+    { label: "À propos", href: "/infos/about" },
+    { label: "Comment ça marche", href: "/infos/how-it-works" },
+    { label: "Contact", href: "/infos/contact" },
+    { label: "Rejoignez-nous", href: "/infos/join-us" }
 ];
 
 export default function Navbar() {

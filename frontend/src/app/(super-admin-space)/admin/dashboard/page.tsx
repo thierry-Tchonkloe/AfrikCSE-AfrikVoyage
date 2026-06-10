@@ -49,7 +49,20 @@ export default function DashboardPage() {
     }, []);
 
     if (loading) return <DashboardSkeleton />;
-    if (!data) return null;
+    if (!data) {
+        return (
+            <div className="flex flex-col items-center justify-center gap-2 py-20 text-center text-sm text-gray-500">
+                <p>Impossible de charger le tableau de bord.</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 rounded-lg text-white text-sm font-medium"
+                    style={{ background: "var(--color-primary)" }}
+                >
+                    Réessayer
+                </button>
+            </div>
+        );
+    }
 
     const { stats, recent, monthly } = data;
 

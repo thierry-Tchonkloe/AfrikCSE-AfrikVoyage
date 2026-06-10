@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -29,7 +29,6 @@ const NAV_ITEMS = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    // const { user, loading, logout } = useAuth();
     const { logout } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
@@ -39,30 +38,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [darkMode, setDarkMode] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
 
-    // useEffect(() => {
-    //     // Détecte la taille d'écran initiale
-    //     if (window.innerWidth < 1024) setSidebarOpen(false);
+    // useLayoutEffect (et non useEffect) pour fixer l'état AVANT le premier paint :
+    // évite qu'un panneau plein écran apparaisse brièvement sur mobile au chargement.
+    useLayoutEffect(() => {
+        // Sur mobile/tablette, la sidebar est repliée hors écran par défaut et ne
+        // devient accessible que via le petit bouton "menu" (cf. header). Sur grand
+        // écran, elle reste visible et ouverte par défaut.
+        const applyFromViewport = () => setSidebarOpen(window.innerWidth >= 1024);
+        applyFromViewport();
 
-    //     const handleResize = () => {
-    //     if (window.innerWidth < 1024) setSidebarOpen(false);
-    //     else setSidebarOpen(true);
-    //     };
-    //     window.addEventListener("resize", handleResize);
-    //     return () => window.removeEventListener("resize", handleResize);
-    // }, []);
+        window.addEventListener("resize", applyFromViewport);
+        return () => window.removeEventListener("resize", applyFromViewport);
+    }, []);
 
-    // useEffect(() => {
-    //     if (!loading && !user) router.push("/login");
-    //     if (!loading && user && user.role !== "SUPER_ADMIN") router.push("/hub");
-    // }, [user, loading, router]);
-
-    // useEffect(() => {
-    //     document.documentElement.classList.toggle("dark", darkMode);
-    // }, [darkMode]);
+    useEffect(() => {
+        document.documentElement.classList.toggle("dark", darkMode);
+    }, [darkMode]);
 
     const { user, loading } = useRouteGuard("super-admin");
 
-    if (loading || !user) return null;
+    if (loading || !user) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-gray-50 text-sm text-gray-500">
+                Vérification de l&apos;accès…
+            </div>
+        );
+    }
 
     return (
         <div
@@ -79,11 +80,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             />
         )}
 
-        {/* ── Sidebar ── */}
+        {/* ── Sidebar ──
+            Mobile (< lg) : entièrement masquée hors écran (off-canvas) et accessible
+            uniquement via le petit bouton "menu" du header — comportement standard.
+            Desktop (>= lg) : toujours visible, largeur repliable icône/texte. */}
         <aside
             className={cn(
-            "fixed lg:static inset-y-0 left-0 z-30 flex flex-col transition-all duration-300 border-r",
-            sidebarOpen ? "w-56" : "w-16",
+            "fixed lg:static inset-y-0 left-0 z-30 flex flex-col w-64 transition-transform duration-300 ease-in-out border-r",
+            "lg:translate-x-0 lg:transition-[width] lg:duration-300",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full",
+            sidebarOpen ? "lg:w-56" : "lg:w-16",
             darkMode
                 ? "bg-gray-900 border-gray-700"
                 : "bg-white border-gray-200"
@@ -122,7 +128,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 return (
                 <button
                     key={href}
-                    onClick={() => router.push(href)}
+                    onClick={() => {
+                        router.push(href);
+                        if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
                     className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative",
                     active
@@ -238,14 +247,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 style={{ background: "var(--color-primary)" }}
                 onClick={() => router.push("/admin/settings")}
                 >
-                {user.firstName[0]}{user.lastName[0]}
+                {user.firstName?.[0] ?? "A"}{user.lastName?.[0] ?? ""}
                 </div>
             </div>
             </header>
 
             {/* Contenu scrollable */}
             <main className={cn(
-            "flex-1 overflow-y-auto p-6",
+            "flex-1 overflow-y-auto p-4 md:p-6",
             darkMode ? "bg-gray-900" : "bg-gray-50"
             )}>
             {children}
