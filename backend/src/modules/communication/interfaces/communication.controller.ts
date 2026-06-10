@@ -48,4 +48,9 @@ export class CommunicationController {
         res.status(400).json({ message: err.message });
         }
     }
+
+    async getComments(req: Request, res: Response): Promise<void> {
+        const comments = await repo.getComments(req.params.id as string);
+        res.json(comments);
+    }
 }

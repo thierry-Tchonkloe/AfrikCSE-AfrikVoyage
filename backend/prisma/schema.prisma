@@ -14,7 +14,7 @@ model Organization {
   status        OrgStatus  @default(PENDING)
   hasVoyage     Boolean    @default(false)
   hasCSE        Boolean    @default(false)
-  isHost        Boolean  @default(false) // True pour l'entreprise propriétaire
+  isHost        Boolean    @default(false) // True pour l'entreprise propriétaire
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @default(now())
   address       String?
@@ -305,7 +305,13 @@ model BenefitRequest {
 model ExpenseReport {
   id             String        @id @default(cuid())
   title          String
+  description    String?
   destination    String?
+  expenseDate    DateTime?
+  category       String?
+  paymentMethod  String?
+  travelId       String?
+  travel         TravelRequest? @relation(fields: [travelId], references: [id])
   departureDate  DateTime?
   returnDate     DateTime?
   amount         Float
@@ -346,6 +352,8 @@ model TravelRequest {
   approvedAt     DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  expenses       ExpenseReport[]
 
   @@map("travel_requests")
 }

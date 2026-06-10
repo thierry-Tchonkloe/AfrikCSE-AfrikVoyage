@@ -120,6 +120,7 @@ import employeeSpaceRoutes  from "./modules/employee/interfaces/employee-space.r
 import eventRoutes          from "./modules/events/interfaces/event.routes";
 import communicationRoutes  from "./modules/communication/interfaces/communication.routes";
 import catalogRoutes        from "./modules/catalog/interfaces/catalog.routes";
+import flightRoutes         from "./modules/flights/interfaces/flight.routes";
 import { errorMiddleware }  from "./core/middlewares/error.middleware";
 
 const app = express();
@@ -330,6 +331,14 @@ const API_ROUTES = [
         description: "Catalogue public et catégories",
         methods: ["GET /", "GET /categories", "GET /:id"],
     },
+    {
+        prefix: "/api/flights",
+        description: "Recherche de vols et d'aéroports (Amadeus Self-Service)",
+        methods: [
+            "GET /search    — Recherche de vols (from, to, departureDate, returnDate, adults, nonStop, currency)",
+            "GET /locations — Recherche d'aéroports/villes par mot-clé (autocomplétion)",
+        ],
+    },
 ];
 
 app.get("/api", (_req: Request, res: Response) => {
@@ -356,6 +365,7 @@ app.use("/api/employee",       employeeSpaceRoutes);
 app.use("/api/events",         eventRoutes);
 app.use("/api/communication",  communicationRoutes);
 app.use("/api/catalog",        catalogRoutes);
+app.use("/api/flights",        flightRoutes);
 
 // ── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

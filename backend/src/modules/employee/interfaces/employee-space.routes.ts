@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { EmployeeSpaceController } from "./employee-space.controller";
 import { authenticate } from "../../../core/middlewares/auth.middleware";
+import { receiptUpload } from "../../../core/middlewares/upload.middleware";
 
 const router = Router();
 const ctrl = new EmployeeSpaceController();
@@ -17,6 +18,7 @@ router.post("/travels",    ctrl.createTravel.bind(ctrl));
 // ── Notes de frais ────────────────────────────────────────────────────────────
 router.get("/expenses",    ctrl.getMyExpenses.bind(ctrl));
 router.post("/expenses",   ctrl.createExpense.bind(ctrl));
+router.post("/expenses/upload", receiptUpload.single("file"), ctrl.uploadReceipt.bind(ctrl));
 
 // ── Avantages CSE ─────────────────────────────────────────────────────────────
 router.get("/benefits/categories",           ctrl.getBenefitCategories.bind(ctrl));
