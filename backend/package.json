@@ -52,6 +52,7 @@
     "jsonwebtoken": "^9.0.3",
     "module-alias": "^2.3.4",
     "multer": "^2.1.1",
+    "nodemailer": "^8.0.10",
     "pg": "^8.20.0",
     "prisma": "^7.7.0",
     "ts-node": "^10.9.2",
@@ -62,5 +63,8 @@
   },
   "prisma": {
     "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^8.0.0"
   }
 }

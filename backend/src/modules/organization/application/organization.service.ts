@@ -2,9 +2,18 @@ import { OrganizationRepository } from "../infrastructure/organization.repositor
 import { ValidateOrgDto, RejectOrgDto, UpdateModulesDto } from "../interfaces/organization.validator";
 import { OrgStatus } from "@prisma/client";
 import { prisma } from "../../../core/config/prisma";
+import { SettingsRepository } from "../../settings/infrastructure/settings.repository";
+import { sendMail } from "../../../core/config/mailer";
+import {
+    organizationApprovedEmail,
+    organizationRejectedEmail,
+    organizationInvitationEmail,
+    welcomeEmail,
+} from "../../../core/mailer/email.templates";
 
 export class OrganizationService {
     private repo = new OrganizationRepository();
+    private settingsRepo = new SettingsRepository();
 
     /** Liste les organisations (filtre optionnel par statut) */
     async getAll(status?: OrgStatus) {
@@ -29,7 +38,24 @@ export class OrganizationService {
 
         const updated = await this.repo.validate(id, superAdminId, dto.hasVoyage, dto.hasCSE);
 
-        // TODO: Envoyer email de confirmation à l'admin de l'organisation
+        // Email de confirmation à l'admin de l'organisation (si activé dans les réglages)
+        const admin = org.users.find((u) => u.role === "ADMIN");
+        if (admin) {
+            const settings = await this.settingsRepo.get();
+            if (settings.notifyOnValidation) {
+                const modules: string[] = [];
+                if (dto.hasVoyage) modules.push("Voyages");
+                if (dto.hasCSE) modules.push("Avantages CSE");
+
+                const { subject, html } = organizationApprovedEmail({
+                    companyName: org.name,
+                    adminFirstName: admin.firstName,
+                    modules,
+                    loginLink: `${process.env.FRONTEND_URL}/login`,
+                });
+                await sendMail({ to: admin.email, subject, html });
+            }
+        }
         // TODO: Créer un audit log
 
         return updated;
@@ -46,7 +72,20 @@ export class OrganizationService {
 
         const updated = await this.repo.reject(id, dto.rejectionNote);
 
-        // TODO: Envoyer email de refus à l'admin avec la note
+        // Email de refus à l'admin avec la note (si activé dans les réglages)
+        const admin = org.users.find((u) => u.role === "ADMIN");
+        if (admin) {
+            const settings = await this.settingsRepo.get();
+            if (settings.notifyOnRejection) {
+                const { subject, html } = organizationRejectedEmail({
+                    companyName: org.name,
+                    adminFirstName: admin.firstName,
+                    reason: dto.rejectionNote,
+                    supportEmail: process.env.SUPPORT_EMAIL,
+                });
+                await sendMail({ to: admin.email, subject, html });
+            }
+        }
 
         return updated;
     }
@@ -105,10 +144,17 @@ export class OrganizationService {
         const invitationLink =
             `${process.env.FRONTEND_URL}/activate?token=${result.invitationToken}`;
 
+        const { subject, html } = organizationInvitationEmail({
+            companyName: dto.name,
+            adminFirstName: dto.adminFirstName,
+            invitationLink,
+            expiresInDays: 7,
+        });
+        await sendMail({ to: dto.adminEmail, subject, html });
+
         if (process.env.NODE_ENV !== "production") {
             console.log(`[DEV] Lien d'invitation : ${invitationLink}`);
         }
-        // TODO: Envoyer par email
 
         return { ...result, invitationLink };
     }
@@ -132,10 +178,26 @@ export class OrganizationService {
         const invitationLink =
             `${process.env.FRONTEND_URL}/activate?token=${result.invitationToken}`;
 
+        const admin = result.org.users[0];
+        if (admin) {
+            const invitation = organizationInvitationEmail({
+                companyName: result.org.name,
+                adminFirstName: admin.firstName,
+                invitationLink,
+                expiresInDays: 7,
+            });
+            await sendMail({ to: admin.email, subject: invitation.subject, html: invitation.html });
+
+            const settings = await this.settingsRepo.get();
+            if (settings.notifyWelcome) {
+                const welcome = welcomeEmail({ companyName: result.org.name, adminFirstName: admin.firstName });
+                await sendMail({ to: admin.email, subject: welcome.subject, html: welcome.html });
+            }
+        }
+
         if (process.env.NODE_ENV !== "production") {
             console.log(`[DEV] Lien activation : ${invitationLink}`);
         }
-        // TODO: Envoyer par email à l'admin de l'org
 
         return { ...result.org, invitationLink };
     }

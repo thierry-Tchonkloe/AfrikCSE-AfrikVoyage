@@ -1,6 +1,7 @@
 // core/middlewares/error.middleware.ts
 
 import { Request, Response, NextFunction } from "express";
+import { MulterError } from "multer";
 import { AppError } from "../errors/app.error";
 
 export function errorMiddleware(
@@ -14,6 +15,15 @@ export function errorMiddleware(
         success: false,
         message: err.message,
         });
+        return;
+    }
+
+    // Multer : fichier trop volumineux, champ inattendu, etc.
+    if (err instanceof MulterError) {
+        const message = err.code === "LIMIT_FILE_SIZE"
+            ? "Fichier trop volumineux (max 5 Mo)"
+            : "Échec de l'upload du fichier";
+        res.status(400).json({ success: false, message });
         return;
     }
 
