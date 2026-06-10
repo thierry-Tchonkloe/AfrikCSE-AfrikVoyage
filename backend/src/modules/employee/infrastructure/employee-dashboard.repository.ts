@@ -118,15 +118,40 @@ export class EmployeeDashboardRepository {
         destination?: string;
         description?: string;
         department?: string;
+        category?: string;
+        paymentMethod?: string;
+        expenseDate?: Date;
         departureDate?: Date;
         returnDate?: Date;
+        travelId?: string;
+        receipts?: string[];
     }) {
         const emp = await prisma.employee.findUnique({ where: { userId } });
         if (!emp) throw new Error("Profil employé introuvable");
 
+        let travel: { destination: string; department: string | null; departureDate: Date; returnDate: Date } | null = null;
+        if (data.travelId) {
+            travel = await prisma.travelRequest.findFirst({
+                where: { id: data.travelId, requestedById: userId },
+                select: { destination: true, department: true, departureDate: true, returnDate: true },
+            });
+            if (!travel) throw new Error("Voyage introuvable");
+        }
+
         return prisma.expenseReport.create({
             data: {
-                ...data,
+                title: data.title,
+                amount: data.amount,
+                description: data.description,
+                category: data.category,
+                paymentMethod: data.paymentMethod,
+                expenseDate: data.expenseDate,
+                receipts: data.receipts ?? [],
+                travelId: data.travelId,
+                destination: data.destination ?? travel?.destination,
+                department: data.department ?? travel?.department ?? undefined,
+                departureDate: data.departureDate ?? travel?.departureDate,
+                returnDate: data.returnDate ?? travel?.returnDate,
                 organizationId: orgId,
                 employeeId: emp.id,
                 status: "PENDING",

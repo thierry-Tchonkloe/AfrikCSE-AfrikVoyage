@@ -91,4 +91,14 @@ export class CommunicationRepository {
         },
         });
     }
+
+    async getComments(postId: string) {
+        return prisma.postComment.findMany({
+        where: { postId },
+        include: {
+            author: { select: { firstName: true, lastName: true } },
+        },
+        orderBy: { createdAt: "asc" },
+        });
+    }
 }

@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, X, ChevronLeft, Loader2 } from "lucide-react";
 import { employeeService } from "@/services/employes/employee.service";
 import { toast } from "sonner";
+
+interface Travel {
+    id: string;
+    destination: string;
+    departureDate: string;
+}
 
 const CATEGORIES = [
     "Transport", "Hébergement", "Restauration", "Fournitures",
@@ -23,6 +29,9 @@ export default function NouvelleNotePage() {
     const [saving, setSaving]   = useState(false);
     const [isDraft, setIsDraft] = useState(false);
     const [uploadedFile, setUploadedFile] = useState<{name: string; size: string} | null>(null);
+    const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [travels, setTravels] = useState<Travel[]>([]);
 
     const [form, setForm] = useState({
         title:         "",
@@ -33,6 +42,12 @@ export default function NouvelleNotePage() {
         paymentMethod: "card",
         description:   "",
     });
+
+    useEffect(() => {
+        employeeService.getMyTravels()
+        .then((data) => setTravels(data))
+        .catch(() => toast.error("Erreur lors du chargement des voyages"));
+    }, []);
 
     const upd = (k: keyof typeof form, v: string) =>
         setForm((prev) => ({ ...prev, [k]: v }));
@@ -46,10 +61,14 @@ export default function NouvelleNotePage() {
         setIsDraft(draft);
         try {
         await employeeService.createExpense({
-            title:       form.title,
-            amount:      parseFloat(form.amount),
-            description: form.description,
-            status:      draft ? "PENDING" : "PENDING",
+            title:         form.title,
+            amount:        parseFloat(form.amount),
+            description:   form.description || undefined,
+            category:      form.category || undefined,
+            paymentMethod: form.paymentMethod,
+            expenseDate:   form.date || undefined,
+            travelId:      form.travelId || undefined,
+            receipts:      receiptUrl ? [receiptUrl] : [],
         });
         toast.success(draft ? "Brouillon sauvegardé" : "Note soumise pour validation");
         router.push("/employes/notes-de-frais");
@@ -57,10 +76,24 @@ export default function NouvelleNotePage() {
         finally { setSaving(false); }
     };
 
+    const handleFile = async (file: File) => {
+        setUploadedFile({ name: file.name, size: `${(file.size / 1024 / 1024).toFixed(1)} MB` });
+        setUploading(true);
+        try {
+        const res = await employeeService.uploadReceipt(file);
+        setReceiptUrl(res.url);
+        } catch {
+        toast.error("Erreur lors de l'envoi du justificatif");
+        setUploadedFile(null);
+        } finally {
+        setUploading(false);
+        }
+    };
+
     const handleFileDrop = (e: React.DragEvent) => {
         e.preventDefault();
         const file = e.dataTransfer.files[0];
-        if (file) setUploadedFile({ name: file.name, size: `${(file.size / 1024 / 1024).toFixed(1)} MB` });
+        if (file) handleFile(file);
     };
 
     return (
@@ -119,8 +152,11 @@ export default function NouvelleNotePage() {
                 onChange={(e) => upd("travelId", e.target.value)}
                 className={inp}>
                 <option value="">Sélectionner un voyage...</option>
-                <option value="1">Paris → London (Dec 23)</option>
-                <option value="2">Lagos → Nairobi (Jan 15)</option>
+                {travels.map((t) => (
+                    <option key={t.id} value={t.id}>
+                    {t.destination} ({new Date(t.departureDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })})
+                    </option>
+                ))}
                 </select>
             </div>
             </div>
@@ -209,10 +245,7 @@ export default function NouvelleNotePage() {
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) setUploadedFile({
-                    name: f.name,
-                    size: `${(f.size / 1024 / 1024).toFixed(1)} MB`,
-                });
+                if (f) handleFile(f);
                 }}
             />
             <div className="flex gap-2 justify-center mt-3">
@@ -220,25 +253,22 @@ export default function NouvelleNotePage() {
                 className="text-xs px-4 py-1.5 border border-gray-200 rounded-lg text-gray-600">
                 Parcourir
                 </button>
-                <button type="button"
-                className="text-xs px-4 py-1.5 rounded-lg text-white"
-                style={{ background: "#0f766e" }}
-                onClick={(e) => { e.stopPropagation(); toast.info("Scanner — à connecter à un scanner"); }}
-                >
-                Scanner
-                </button>
             </div>
             </div>
 
             {/* Fichier uploadé */}
             {uploadedFile && (
             <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl">
-                <span className="text-red-500 text-xl">📄</span>
+                {uploading
+                ? <Loader2 size={20} className="animate-spin text-gray-400" />
+                : <span className="text-red-500 text-xl">📄</span>}
                 <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{uploadedFile.name}</p>
-                <p className="text-xs text-gray-400">{uploadedFile.size}</p>
+                <p className="text-xs text-gray-400">
+                    {uploading ? "Envoi en cours..." : uploadedFile.size}
+                </p>
                 </div>
-                <button onClick={() => setUploadedFile(null)}
+                <button onClick={() => { setUploadedFile(null); setReceiptUrl(null); }}
                 className="text-red-400 hover:text-red-600 text-xl leading-none">
                 ×
                 </button>
@@ -256,15 +286,15 @@ export default function NouvelleNotePage() {
             <div className="flex gap-2">
             <button
                 onClick={() => handleSubmit(true)}
-                disabled={saving && isDraft}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600"
+                disabled={saving || uploading}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 disabled:opacity-60"
             >
                 {saving && isDraft && <Loader2 size={14} className="animate-spin" />}
                 Sauvegarder
             </button>
             <button
                 onClick={() => handleSubmit(false)}
-                disabled={saving && !isDraft}
+                disabled={saving || uploading}
                 className="flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-70"
                 style={{ background: "#0f766e" }}
             >

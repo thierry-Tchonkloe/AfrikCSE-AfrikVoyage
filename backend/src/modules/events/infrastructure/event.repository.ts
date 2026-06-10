@@ -29,6 +29,19 @@ export class EventRepository {
         });
     }
 
+    async getRecent(orgId: string, limit = 3) {
+        return prisma.event.findMany({
+        where: {
+            organizationId: orgId,
+            status: { in: ["PUBLISHED", "COMPLETED"] },
+            endDate: { lt: new Date() },
+        },
+        include: { _count: { select: { registrations: true } } },
+        orderBy: { endDate: "desc" },
+        take: limit,
+        });
+    }
+
     async register(eventId: string, userId: string) {
         // Vérifie la capacité
         const event = await prisma.event.findUnique({

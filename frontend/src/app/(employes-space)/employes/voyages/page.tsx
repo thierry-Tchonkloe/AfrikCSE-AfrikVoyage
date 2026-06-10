@@ -24,25 +24,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
     CANCELLED:{ label: "Annulé",      color: "#6b7280", bg: "#f9fafb" },
 };
 
-// Mock data pour le rendu
-const MOCK_TRAVELS: Travel[] = [
-    {
-        id: "1", destination: "Paris → London", purpose: "Business Conference",
-        departureDate: "2024-12-23", returnDate: "2024-12-26",
-        estimatedCost: 1245, status: "APPROVED", department: "Engineering",
-    },
-    {
-        id: "2", destination: "Lagos → Nairobi", purpose: "Client Meeting",
-        departureDate: "2025-01-15", returnDate: "2025-01-18",
-        estimatedCost: 3240, status: "PENDING", department: "Sales",
-    },
-    {
-        id: "3", destination: "Cotonou → Dakar", purpose: "Formation",
-        departureDate: "2025-02-01", returnDate: "2025-02-03",
-        estimatedCost: 980, status: "PENDING", department: "RH",
-    },
-];
-
 export default function VoyagesPage() {
     const router = useRouter();
     const [travels, setTravels] = useState<Travel[]>([]);
@@ -53,14 +34,21 @@ export default function VoyagesPage() {
         returnDate: "", estimatedCost: "", department: "",
     });
 
-    useEffect(() => {
+    const load = () => {
+        setLoading(true);
         employeeService.getMyTravels()
-        .then((data) => setTravels(data.length ? data : MOCK_TRAVELS))
-        .catch(() => setTravels(MOCK_TRAVELS))
+        .then((data) => setTravels(data))
+        .catch(() => toast.error("Erreur lors du chargement des voyages"))
         .finally(() => setLoading(false));
-    }, []);
+    };
+
+    useEffect(() => { load(); }, []);
 
     const handleCreate = async () => {
+        if (!form.destination || !form.departureDate || !form.returnDate) {
+        toast.error("Destination et dates requises");
+        return;
+        }
         try {
         await employeeService.createTravel({
             ...form,
@@ -69,6 +57,7 @@ export default function VoyagesPage() {
         toast.success("Demande de voyage soumise");
         setShowCreate(false);
         setForm({ destination: "", purpose: "", departureDate: "", returnDate: "", estimatedCost: "", department: "" });
+        load();
         } catch { toast.error("Erreur soumission"); }
     };
 
@@ -101,8 +90,12 @@ export default function VoyagesPage() {
             [...Array(3)].map((_, i) => (
                 <div key={i} className="bg-white rounded-xl border border-gray-200 h-28 animate-pulse" />
             ))
+            ) : travels.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-sm text-gray-400">
+                Aucun voyage pour le moment.
+            </div>
             ) : (
-            (travels.length ? travels : MOCK_TRAVELS).map((t) => {
+            travels.map((t) => {
                 const st = STATUS_CONFIG[t.status] ?? STATUS_CONFIG.PENDING;
                 return (
                 <div key={t.id}
