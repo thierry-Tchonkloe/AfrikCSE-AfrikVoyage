@@ -16,6 +16,11 @@ export class EventController {
         res.json(events);
     }
 
+    async getRecent(req: Request, res: Response): Promise<void> {
+        const events = await repo.getRecent(req.user!.organizationId!);
+        res.json(events);
+    }
+
     async getStats(req: Request, res: Response): Promise<void> {
         const stats = await repo.getStats(req.user!.organizationId!);
         res.json(stats);

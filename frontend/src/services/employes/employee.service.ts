@@ -26,6 +26,14 @@ export const employeeService = {
         const { data } = await api.post("/employee/expenses", payload);
         return data;
     },
+    async uploadReceipt(file: File) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const { data } = await api.post("/employee/expenses/upload", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        return data as { url: string; name: string; size: string };
+    },
 
     // ── Avantages CSE ─────────────────────────────────────────────────────────
     async getBenefitCategories() {
@@ -103,6 +111,10 @@ export const employeeService = {
         const { data } = await api.get("/events/upcoming");
         return data;
     },
+    async getRecentEvents() {
+        const { data } = await api.get("/events/recent");
+        return data;
+    },
     async getEventStats() {
         const { data } = await api.get("/events/stats");
         return data;
@@ -139,6 +151,28 @@ export const employeeService = {
     },
     async addComment(postId: string, content: string) {
         const { data } = await api.post(`/communication/posts/${postId}/comment`, { content });
+        return data;
+    },
+    async getComments(postId: string) {
+        const { data } = await api.get(`/communication/posts/${postId}/comments`);
+        return data;
+    },
+
+    // ── Vols (Amadeus) ───────────────────────────────────────────────────────
+    async searchFlights(params: {
+        from: string;
+        to: string;
+        departureDate: string;
+        returnDate?: string;
+        adults?: number;
+        nonStop?: boolean;
+        currency?: string;
+    }) {
+        const { data } = await api.get("/flights/search", { params });
+        return data;
+    },
+    async searchAirports(keyword: string) {
+        const { data } = await api.get("/flights/locations", { params: { keyword } });
         return data;
     },
 };

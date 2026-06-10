@@ -1,469 +1,864 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types & Data ────────────────────────────────────────────────────────────
 
 interface FormData {
-    fullName: string;
-    company: string;
-    email: string;
-    phone: string;
-    companySize: string;
-    message: string;
-    acceptMarketing: boolean;
+  fullName: string;
+  company: string;
+  email: string;
+  phone: string;
+  companySize: string;
+  workspace: "voyage" | "cse";
+  message: string;
+  acceptMarketing: boolean;
 }
 
 interface FormErrors {
-    fullName?: string;
-    company?: string;
-    email?: string;
-    message?: string;
+  fullName?: string;
+  company?: string;
+  email?: string;
+  message?: string;
 }
 
 type Status = "idle" | "loading" | "success" | "error";
 
+const contactPhone = "+33 1 84 17 36 85";
+const contactPhoneCompact = contactPhone.replace(/[^\d+]/g, "");
+const whatsappPhone = contactPhone.replace(/\D/g, "");
+const contactEmails = ["corp@afrikvoyage.com", "support@afrikcse.com"];
+
 const companySizes = [
-    "1 – 10 employés",
-    "11 – 50 employés",
-    "51 – 200 employés",
-    "201 – 500 employés",
-    "500+ employés",
+  "1 – 10 employés",
+  "11 – 50 employés",
+  "51 – 200 employés",
+  "201 – 500 employés",
+  "500+ employés",
 ];
 
 const faqs = [
-    {
-        question: "Combien de temps faut-il pour implémenter la solution ?",
-        answer:
-        "L'implémentation standard prend entre 3 et 7 jours ouvrés. Notre équipe vous accompagne à chaque étape : configuration, import des données, formation des administrateurs et go-live.",
-    },
-    {
-        question: "Proposez-vous une période d'essai gratuite ?",
-        answer:
-        "Oui, nous proposons un essai gratuit de 14 jours sans engagement ni carte bancaire. Vous accédez à toutes les fonctionnalités de la plateforme pendant cette période.",
-    },
-    {
-        question: "Comment se déroule la formation des utilisateurs ?",
-        answer:
-        "La formation est intégrée à la plateforme sous forme de tutoriels interactifs, vidéos et documentation. Nous proposons également des sessions de formation live pour les équipes RH et CSE.",
-    },
-    {
-        question: "Vos données sont-elles hébergées en Afrique ?",
-        answer:
-        "Nous offrons le choix de l'hébergement : datacenter africain (Afrique du Sud, Nigeria) ou européen (France). Toutes les données sont chiffrées et conformes au RGPD.",
-    },
-    {
-        question: "Quels modes de paiement acceptez-vous ?",
-        answer:
-        "Nous acceptons les virements bancaires, les cartes Visa/Mastercard, Mobile Money (Orange Money, MTN MoMo, Wave) et les paiements via Stripe pour les entreprises internationales.",
-    },
+  {
+    question: "Comment l'IA d'AfrikVoyage réduit-elle mes dépenses de 30% ?",
+    answer:
+      "Notre algorithme prédictif analyse les flux de voyages historiques et applique des tarifs négociés en temps réel avec des hubs locaux. Il bloque automatiquement les anomalies hors-politique RH avant achat.",
+  },
+  {
+    question: "Peut-on personnaliser le catalogue d'avantages AfrikCSE style B2C ?",
+    answer:
+      "Absolument. La plateforme génère une Service Gallery immersive calquée sur l'expérience Netflix, segmentée par subvention disponible immédiatement en FCFA.",
+  },
+  {
+    question: "La plateforme gère-t-elle les régulations locales africaines ?",
+    answer:
+      "Oui, un système de conformité automatisé intègre les règles fiscales UEMOA, CEMAC et les standards internationaux pour certifier instantanément vos rapports comptables et audits RH.",
+  },
+  {
+    question: "Où nos données d'entreprise et de voyage sont-elles hébergées ?",
+    answer:
+      "Nous offrons une infrastructure souveraine au choix : Datacenters africains premium (Afrique du Sud, Nigeria) ou infrastructures européennes, chiffrées de bout en bout et 100% conformes RGPD.",
+  },
+  {
+    question: "Quels modes de paiement locaux et internationaux intégrez-vous ?",
+    answer:
+      "Nous prenons en charge nativement les réseaux Mobile Money régionaux (Orange Money, MTN MoMo, Wave, Moov), les cartes bancaires locales, ainsi que les virements SWIFT et Stripe pour l'international.",
+  },
 ];
 
 // ─── Validate ─────────────────────────────────────────────────────────────────
 
 function validate(data: FormData): FormErrors {
-    const errors: FormErrors = {};
-    if (!data.fullName.trim()) errors.fullName = "Le nom est requis";
-    if (!data.company.trim()) errors.company = "L'entreprise est requise";
-    if (!data.email.trim()) {
-        errors.email = "L'email est requis";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-        errors.email = "Email invalide";
+  const errors: FormErrors = {};
+  if (!data.fullName.trim()) errors.fullName = "Le nom complet est requis";
+  if (!data.company.trim()) errors.company = "L'entreprise est requise";
+  if (!data.email.trim()) {
+    errors.email = "L'email professionnel est requis";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    errors.email = "Format d'email invalide";
+  }
+  if (!data.message.trim()) errors.message = "Le message est requis";
+  return errors;
+}
+
+// ─── Contact Popover ──────────────────────────────────────────────────────────
+
+function ContactPopover({
+  type,
+  value,
+  label,
+}: {
+  type: "email" | "phone";
+  value: string;
+  label?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
     }
-    if (!data.message.trim()) errors.message = "Le message est requis";
-    return errors;
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {/* noop */}
+  }
+
+  const actions =
+    type === "email"
+      ? [
+          {
+            icon: "📋",
+            label: copied ? "Copié !" : "Copier l'adresse",
+            onClick: copy,
+          },
+          {
+            icon: "✉️",
+            label: "Ouvrir dans l'app Mail",
+            href: `mailto:${value}`,
+          },
+          {
+            icon: "💬",
+            label: "Envoyer un message",
+            href: `mailto:${value}?subject=${encodeURIComponent("Contact AfrikVoyage / AfrikCSE")}`,
+          },
+        ]
+      : [
+          {
+            icon: "📋",
+            label: copied ? "Copié !" : "Copier le numéro",
+            onClick: copy,
+          },
+          {
+            icon: "📞",
+            label: "Appeler directement",
+            href: `tel:${contactPhoneCompact}`,
+          },
+          {
+            icon: "💚",
+            label: "WhatsApp",
+            href: `https://wa.me/${whatsappPhone}`,
+            external: true,
+          },
+        ];
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-sm font-mono text-indigo-600 hover:text-indigo-800 underline decoration-indigo-300 underline-offset-4 transition-colors"
+      >
+        {label ?? value}
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/60 overflow-hidden">
+          <div className="px-3 pt-3 pb-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+              {type === "email" ? value : contactPhone}
+            </p>
+          </div>
+          {actions.map((action, i) => {
+            const cls =
+              "flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors rounded-lg mx-auto";
+            return action.href ? (
+              <a
+                key={i}
+                href={action.href}
+                target={action.external ? "_blank" : undefined}
+                rel={action.external ? "noreferrer" : undefined}
+                className={cls}
+                onClick={() => setOpen(false)}
+              >
+                <span className="text-base">{action.icon}</span>
+                {action.label}
+              </a>
+            ) : (
+              <button
+                key={i}
+                type="button"
+                onClick={action.onClick}
+                className={cls}
+              >
+                <span className="text-base">{action.icon}</span>
+                {action.label}
+              </button>
+            );
+          })}
+          <div className="h-2" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Africa SVG Map ───────────────────────────────────────────────────────────
+
+const hubs = [
+  { name: "Casablanca", cx: 148, cy: 78, color: "#6366f1" },
+  { name: "Dakar", cx: 88, cy: 178, color: "#10b981" },
+  { name: "Abidjan", cx: 128, cy: 228, color: "#10b981" },
+  { name: "Cotonou", cx: 162, cy: 222, color: "#10b981" },
+  { name: "Lagos", cx: 174, cy: 218, color: "#f59e0b" },
+  { name: "Nairobi", cx: 238, cy: 258, color: "#6366f1" },
+  { name: "Antananarivo", cx: 270, cy: 340, color: "#10b981" },
+  { name: "Johannesburg", cx: 210, cy: 390, color: "#6366f1" },
+];
+
+function AfricaMap() {
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  return (
+    <div className="relative flex items-center justify-center w-full h-[440px]">
+      <svg
+        viewBox="0 0 380 480"
+        className="h-full w-auto drop-shadow-sm"
+        aria-label="Carte interactive Afrique – hubs AfrikVoyage & AfrikCSE"
+        role="img"
+      >
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Continent silhouette – realistic Africa path */}
+        <path
+          d="
+            M148,12
+            C138,14 128,18 120,26
+            C108,36 100,50 96,66
+            C90,84 88,100 84,116
+            C80,132 72,146 66,160
+            C60,174 56,188 58,202
+            C60,216 66,228 72,238
+            C78,248 84,256 86,266
+            C88,276 84,288 82,300
+            C82,312 86,324 92,334
+            C98,344 106,352 112,362
+            C118,372 122,384 126,396
+            C130,408 132,420 138,430
+            C144,440 154,446 164,448
+            C172,450 180,448 188,444
+            C196,440 202,434 208,426
+            C214,418 218,408 222,400
+            C226,390 230,380 236,372
+            C242,364 250,358 256,350
+            C262,342 266,332 268,320
+            C270,308 268,296 264,286
+            C260,276 256,266 254,256
+            C252,246 254,234 258,224
+            C262,214 268,206 270,196
+            C272,186 270,174 264,164
+            C258,154 250,148 244,138
+            C238,128 236,116 232,106
+            C228,96 222,88 218,78
+            C214,68 212,56 206,48
+            C200,40 190,36 182,30
+            C172,24 160,10 148,12Z
+          "
+          fill="#EEF2FF"
+          stroke="#C7D2FE"
+          strokeWidth="1.5"
+        />
+
+        {/* Madagascar */}
+        <path
+          d="M306,292 C300,296 296,304 294,314 C292,326 294,338 298,348 C302,358 308,364 314,360 C320,356 322,344 320,332 C318,320 316,308 312,300 C310,296 308,290 306,292Z"
+          fill="#EEF2FF"
+          stroke="#C7D2FE"
+          strokeWidth="1.5"
+        />
+
+        {/* Connexion lines entre hubs */}
+        {[
+          ["Dakar", "Abidjan"],
+          ["Abidjan", "Cotonou"],
+          ["Cotonou", "Lagos"],
+          ["Casablanca", "Dakar"],
+          ["Lagos", "Nairobi"],
+          ["Nairobi", "Antananarivo"],
+          ["Nairobi", "Johannesburg"],
+        ].map(([a, b]) => {
+          const ha = hubs.find((h) => h.name === a);
+          const hb = hubs.find((h) => h.name === b);
+          if (!ha || !hb) return null;
+          return (
+            <line
+              key={`${a}-${b}`}
+              x1={ha.cx}
+              y1={ha.cy}
+              x2={hb.cx}
+              y2={hb.cy}
+              stroke="#C7D2FE"
+              strokeWidth="1"
+              strokeDasharray="4 4"
+              opacity="0.7"
+            />
+          );
+        })}
+
+        {/* Hubs pulsants */}
+        {hubs.map((hub) => (
+          <g
+            key={hub.name}
+            onMouseEnter={() => setHovered(hub.name)}
+            onMouseLeave={() => setHovered(null)}
+            style={{ cursor: "pointer" }}
+          >
+            {/* Pulse ring */}
+            <circle
+              cx={hub.cx}
+              cy={hub.cy}
+              r={hovered === hub.name ? 14 : 10}
+              fill={hub.color}
+              opacity={0.15}
+              style={{ transition: "r 0.2s, opacity 0.2s" }}
+            />
+            {/* Dot */}
+            <circle
+              cx={hub.cx}
+              cy={hub.cy}
+              r={5}
+              fill={hub.color}
+              stroke="white"
+              strokeWidth="2"
+              filter="url(#glow)"
+            />
+            {/* Label on hover */}
+            {hovered === hub.name && (
+              <g>
+                <rect
+                  x={hub.cx + 10}
+                  y={hub.cy - 12}
+                  width={hub.name.length * 6.8 + 12}
+                  height={20}
+                  rx={6}
+                  fill="white"
+                  stroke="#E0E7FF"
+                  strokeWidth="1"
+                />
+                <text
+                  x={hub.cx + 16}
+                  y={hub.cy + 2}
+                  fontSize="10"
+                  fontWeight="700"
+                  fill="#312e81"
+                  fontFamily="sans-serif"
+                >
+                  {hub.name}
+                </text>
+              </g>
+            )}
+          </g>
+        ))}
+      </svg>
+
+      {/* Légende */}
+      <div className="absolute bottom-4 left-4 flex flex-col gap-1.5 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 px-3 py-2.5 shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+          Hubs actifs
+        </p>
+        {[
+          { color: "#10b981", label: "AfrikVoyage" },
+          { color: "#6366f1", label: "AfrikCSE" },
+          { color: "#f59e0b", label: "Hub régional" },
+        ].map((item) => (
+          <div key={item.label} className="flex items-center gap-2">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: item.color }}
+            />
+            <span className="text-[11px] font-medium text-slate-600">
+              {item.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ─── FAQ Item ─────────────────────────────────────────────────────────────────
 
 function FAQItem({ faq }: { faq: (typeof faqs)[0] }) {
-    const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
-    return (
-        <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-        <button
-            onClick={() => setOpen(!open)}
-            className="w-full flex items-center justify-between px-6 py-4 text-left text-sm font-semibold text-[#1a3a6b] hover:bg-slate-50 transition-colors"
+  return (
+    <div
+      className={`border rounded-xl overflow-hidden bg-white transition-all duration-200 ${open ? "border-indigo-200 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50/80 transition-colors"
+      >
+        <span>{faq.question}</span>
+        <span
+          className={`text-slate-400 transition-transform duration-300 ml-4 shrink-0 ${open ? "rotate-180 text-indigo-500" : ""}`}
         >
-            <span>{faq.question}</span>
-            <span
-            className={`text-slate-400 transition-transform duration-200 text-lg ${
-                open ? "rotate-180" : ""
-            }`}
-            >
-            ⌄
-            </span>
-        </button>
-        {open && (
-            <div className="px-6 pb-5 text-sm leading-relaxed text-slate-600 border-t border-slate-100 pt-4">
-            {faq.answer}
-            </div>
-        )}
+          ▾
+        </span>
+      </button>
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${open ? "max-h-48 border-t border-slate-100" : "max-h-0"}`}
+      >
+        <div className="px-5 py-4 text-sm leading-relaxed text-slate-600">
+          {faq.answer}
         </div>
-    );
+      </div>
+    </div>
+  );
 }
 
 // ─── Contact Form ─────────────────────────────────────────────────────────────
 
 function ContactForm() {
-    const [form, setForm] = useState<FormData>({
+  const [form, setForm] = useState<FormData>({
+    fullName: "",
+    company: "",
+    email: "",
+    phone: "",
+    companySize: "",
+    workspace: "voyage",
+    message: "",
+    acceptMarketing: false,
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [status, setStatus] = useState<Status>("idle");
+
+  function set(field: keyof FormData, value: string | boolean) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  }
+
+  async function handleSubmit(e: React.MouseEvent) {
+    e.preventDefault();
+    const errs = validate(form);
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error();
+      setStatus("success");
+      setForm({
         fullName: "",
         company: "",
         email: "",
         phone: "",
         companySize: "",
+        workspace: "voyage",
         message: "",
         acceptMarketing: false,
-    });
-    const [errors, setErrors] = useState<FormErrors>({});
-    const [status, setStatus] = useState<Status>("idle");
-
-    function set(field: keyof FormData, value: string | boolean) {
-        setForm((prev) => ({ ...prev, [field]: value }));
-        if (errors[field as keyof FormErrors]) {
-        setErrors((prev) => ({ ...prev, [field]: undefined }));
-        }
+      });
+    } catch {
+      setStatus("error");
     }
+  }
 
-    async function handleSubmit(e: React.MouseEvent) {
-        e.preventDefault();
-        const errs = validate(form);
-        if (Object.keys(errs).length) {
-        setErrors(errs);
-        return;
-        }
-        setStatus("loading");
-        try {
-        const res = await fetch("/api/contact", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(form),
-        });
-        if (!res.ok) throw new Error();
-        setStatus("success");
-        setForm({
-            fullName: "",
-            company: "",
-            email: "",
-            phone: "",
-            companySize: "",
-            message: "",
-            acceptMarketing: false,
-        });
-        } catch {
-        setStatus("error");
-        }
-    }
+  const inputBase =
+    "w-full rounded-xl border px-4 py-3 text-sm text-slate-800 placeholder-slate-400 bg-white outline-none transition duration-200 focus:ring-2";
+  const inputNormal = `${inputBase} border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-400`;
+  const inputError = `${inputBase} border-red-300 bg-red-50/50 focus:ring-red-500/20 focus:border-red-400`;
 
-    const inputBase =
-        "w-full rounded-lg border px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:ring-2 focus:ring-teal-400 focus:border-teal-400";
-    const inputNormal = `${inputBase} border-slate-200 bg-white`;
-    const inputError = `${inputBase} border-red-400 bg-red-50 focus:ring-red-300`;
+  return (
+    <div className="rounded-2xl bg-white border border-slate-200 p-6 md:p-8 shadow-sm">
+      <h2 className="mb-1 text-2xl font-black text-slate-900 tracking-tight">
+        Lancez votre transformation
+      </h2>
+      <p className="mb-6 text-sm text-slate-500">
+        Notre équipe vous répond sous 24h ouvrées.
+      </p>
 
-    return (
-        <div className="rounded-2xl bg-white shadow-sm border border-slate-100 p-6 md:p-8">
-        <h2 className="mb-1 text-xl font-bold text-[#1a3a6b]">
-            Contactez notre équipe commerciale
-        </h2>
-        <p className="mb-6 text-sm text-slate-500">
-            Remplissez ce formulaire et nous vous recontacterons dans les 24h pour
-            discuter de vos besoins.
-        </p>
+      {status === "success" && (
+        <div className="mb-6 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 font-medium flex items-center gap-3">
+          <span>✅</span>
+          <span>
+            Votre demande a bien été enregistrée ! Traitement prioritaire actif.
+          </span>
+        </div>
+      )}
 
-        {status === "success" && (
-            <div className="mb-6 rounded-xl bg-emerald-50 border border-emerald-200 px-5 py-4 text-sm text-emerald-700 flex items-center gap-2">
-            <span>✅</span>
-            <span>
-                Votre demande a bien été envoyée ! Nous vous répondrons sous 24h.
-            </span>
-            </div>
-        )}
+      {status === "error" && (
+        <div className="mb-6 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 font-medium flex items-center gap-3">
+          <span>⚠️</span>
+          <span>Échec du routage. Veuillez réessayer.</span>
+        </div>
+      )}
 
-        {status === "error" && (
-            <div className="mb-6 rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-sm text-red-600 flex items-center gap-2">
-            <span>⚠️</span>
-            <span>Une erreur est survenue. Veuillez réessayer.</span>
-            </div>
-        )}
-
-        <div className="space-y-4">
-            {/* Row 1 */}
-            <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">
-                Nom complet <span className="text-red-500">*</span>
-                </label>
-                <input
-                type="text"
-                placeholder="Votre nom"
-                value={form.fullName}
-                onChange={(e) => set("fullName", e.target.value)}
-                className={errors.fullName ? inputError : inputNormal}
-                />
-                {errors.fullName && (
-                <p className="mt-1 text-xs text-red-500">{errors.fullName}</p>
-                )}
-            </div>
-            <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">
-                Entreprise <span className="text-red-500">*</span>
-                </label>
-                <input
-                type="text"
-                placeholder="Nom de votre entreprise"
-                value={form.company}
-                onChange={(e) => set("company", e.target.value)}
-                className={errors.company ? inputError : inputNormal}
-                />
-                {errors.company && (
-                <p className="mt-1 text-xs text-red-500">{errors.company}</p>
-                )}
-            </div>
-            </div>
-
-            {/* Row 2 */}
-            <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">
-                Email professionnel <span className="text-red-500">*</span>
-                </label>
-                <input
-                type="email"
-                placeholder="votre.email@entreprise.com"
-                value={form.email}
-                onChange={(e) => set("email", e.target.value)}
-                className={errors.email ? inputError : inputNormal}
-                />
-                {errors.email && (
-                <p className="mt-1 text-xs text-red-500">{errors.email}</p>
-                )}
-            </div>
-            <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">
-                Téléphone
-                </label>
-                <input
-                type="tel"
-                placeholder="+33 1 23 45 67 89"
-                value={form.phone}
-                onChange={(e) => set("phone", e.target.value)}
-                className={inputNormal}
-                />
-            </div>
-            </div>
-
-            {/* Row 3 — Select */}
-            <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">
-                Taille de l&apos;entreprise
-            </label>
-            <div className="relative">
-                <select
-                value={form.companySize}
-                onChange={(e) => set("companySize", e.target.value)}
-                className={`${inputNormal} appearance-none pr-10`}
-                >
-                <option value="">Sélectionnez une option</option>
-                {companySizes.map((s) => (
-                    <option key={s} value={s}>
-                    {s}
-                    </option>
-                ))}
-                </select>
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-                ⌄
-                </span>
-            </div>
-            </div>
-
-            {/* Row 4 — Textarea */}
-            <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">
-                Message <span className="text-red-500">*</span>
-            </label>
-            <textarea
-                rows={5}
-                placeholder="Décrivez votre projet et vos besoins..."
-                value={form.message}
-                onChange={(e) => set("message", e.target.value)}
-                className={`${errors.message ? inputError : inputNormal} resize-none`}
-            />
-            {errors.message && (
-                <p className="mt-1 text-xs text-red-500">{errors.message}</p>
-            )}
-            </div>
-
-            {/* Checkbox */}
-            <label className="flex items-start gap-3 cursor-pointer">
-            <input
-                type="checkbox"
-                checked={form.acceptMarketing}
-                onChange={(e) => set("acceptMarketing", e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-teal-500"
-            />
-            <span className="text-xs text-slate-500 leading-relaxed">
-                J&apos;accepte de recevoir les communications commerciales de la
-                part d&apos;AfrikCSE &amp; AfrikVoyage conformément à la politique
-                de confidentialité.
-            </span>
-            </label>
-
-            {/* Submit */}
+      <div className="space-y-5">
+        {/* Workspace selector */}
+        <div>
+          <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-400">
+            Solution ciblée
+          </label>
+          <div className="grid grid-cols-2 gap-3 bg-slate-100 p-1.5 rounded-xl">
             <button
-            onClick={handleSubmit}
-            disabled={status === "loading"}
-            className="w-full rounded-xl bg-teal-500 px-6 py-3.5 text-sm font-bold text-white shadow transition hover:bg-teal-400 active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
+              type="button"
+              onClick={() => set("workspace", "voyage")}
+              className={`py-2.5 rounded-lg text-xs font-bold transition-all ${form.workspace === "voyage" ? "bg-white text-emerald-700 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-700"}`}
             >
-            {status === "loading" ? (
-                <>
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-                Envoi en cours…
-                </>
-            ) : (
-                <>Envoyer ma demande →</>
-            )}
+              🌐 AfrikVoyage
             </button>
+            <button
+              type="button"
+              onClick={() => set("workspace", "cse")}
+              className={`py-2.5 rounded-lg text-xs font-bold transition-all ${form.workspace === "cse" ? "bg-white text-indigo-700 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-700"}`}
+            >
+              🎁 AfrikCSE
+            </button>
+          </div>
         </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+              Nom complet <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Jean Kouassi"
+              value={form.fullName}
+              onChange={(e) => set("fullName", e.target.value)}
+              className={errors.fullName ? inputError : inputNormal}
+            />
+            {errors.fullName && (
+              <p className="mt-1 text-xs text-red-500">{errors.fullName}</p>
+            )}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+              Entreprise <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="TechAfrik Holding"
+              value={form.company}
+              onChange={(e) => set("company", e.target.value)}
+              className={errors.company ? inputError : inputNormal}
+            />
+            {errors.company && (
+              <p className="mt-1 text-xs text-red-500">{errors.company}</p>
+            )}
+          </div>
         </div>
-    );
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+              Email professionnel <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="email"
+              placeholder="j.kouassi@entreprise.com"
+              value={form.email}
+              onChange={(e) => set("email", e.target.value)}
+              className={errors.email ? inputError : inputNormal}
+            />
+            {errors.email && (
+              <p className="mt-1 text-xs text-red-500">{errors.email}</p>
+            )}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+              Téléphone
+            </label>
+            <input
+              type="tel"
+              placeholder="+229 01 XX XX XX"
+              value={form.phone}
+              onChange={(e) => set("phone", e.target.value)}
+              className={inputNormal}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+            Taille de l&apos;organisation
+          </label>
+          <div className="relative">
+            <select
+              value={form.companySize}
+              onChange={(e) => set("companySize", e.target.value)}
+              className={`${inputNormal} appearance-none pr-10`}
+            >
+              <option value="">Sélectionnez l&apos;effectif</option>
+              {companySizes.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+              ▾
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+            Expression des besoins <span className="text-red-400">*</span>
+          </label>
+          <textarea
+            rows={4}
+            placeholder="Décrivez vos enjeux ou objectifs (ex: centralisation RH, réduction de 30% des coûts...)"
+            value={form.message}
+            onChange={(e) => set("message", e.target.value)}
+            className={`${errors.message ? inputError : inputNormal} resize-none`}
+          />
+          {errors.message && (
+            <p className="mt-1 text-xs text-red-500">{errors.message}</p>
+          )}
+        </div>
+
+        <label className="flex items-start gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={form.acceptMarketing}
+            onChange={(e) => set("acceptMarketing", e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-500 accent-indigo-500"
+          />
+          <span className="text-[11px] text-slate-500 leading-relaxed">
+            J&apos;autorise AfrikVoyage &amp; AfrikCSE à traiter mes données
+            pour me soumettre des propositions budgétaires conformément à la
+            charte de confidentialité.
+          </span>
+        </label>
+
+        <button
+          onClick={handleSubmit}
+          disabled={status === "loading"}
+          className="w-full rounded-xl bg-indigo-600 px-6 py-4 text-sm font-bold text-white shadow-sm transition-all duration-300 hover:bg-indigo-500 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {status === "loading" ? (
+            <>
+              <svg
+                className="h-4 w-4 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                />
+              </svg>
+              Traitement en cours…
+            </>
+          ) : (
+            <>Demander une démo →</>
+          )}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 function Sidebar() {
-    return (
-        <div className="space-y-5">
-        {/* Call card */}
-        <div className="rounded-2xl bg-linear-to-r from-orange-400 to-orange-500 p-6 text-white shadow-lg">
-            <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-xl">
-                🎧
-            </div>
-            <div>
-                <p className="font-bold text-sm">Parlez directement à nos experts</p>
-                <p className="text-orange-100 text-xs">
-                Obtenez des réponses personnalisées
-                </p>
-            </div>
-            </div>
-            <button className="flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-orange-500 transition hover:bg-orange-50">
-            <span>📞</span>
-            Programmer un appel
-            </button>
+  return (
+    <div className="space-y-5">
+      {/* Expert call card */}
+      <div className="rounded-2xl bg-slate-900 p-5 text-white border border-slate-800 shadow-sm">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-xl">
+            ⚡
+          </div>
+          <div>
+            <p className="font-bold text-sm">Ligne directe experts</p>
+            <p className="text-slate-400 text-xs">Cadrage de projet immédiat</p>
+          </div>
         </div>
+        <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-900 hover:bg-slate-100 transition-colors active:scale-[0.97]">
+          📞 Programmer un appel
+        </button>
+      </div>
 
-        {/* Coordinates */}
-        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-6 space-y-4">
-            <h3 className="font-bold text-[#1a3a6b]">Nos coordonnées</h3>
+      {/* Coordonnées avec popover */}
+      <div className="rounded-2xl bg-white border border-slate-200 p-5 space-y-5 shadow-sm">
+        <h3 className="font-bold text-slate-800 text-sm">Canaux officiels</h3>
 
-            <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-100 text-sm">
-                ✉️
-            </div>
-            <div>
-                <p className="text-xs font-semibold text-slate-700">Email</p>
-                <p className="text-xs text-slate-500">
-                contact@afrikcse-afrikvoyage.com
-                </p>
-                <p className="text-xs text-slate-500">
-                support@afrikcse-afrikvoyage.com
-                </p>
-            </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-sm">
-                📞
-            </div>
-            <div>
-                <p className="text-xs font-semibold text-slate-700">Téléphone</p>
-                <p className="text-xs text-slate-500">+33 1 84 17 36 85</p>
-                <p className="text-xs text-slate-400">Lun–Ven 9h–18h CET</p>
-            </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-sm">
-                📍
-            </div>
-            <div>
-                <p className="text-xs font-semibold text-slate-700">Adresse</p>
-                <p className="text-xs text-slate-500">
-                123 Avenue des Champs-Élysées
-                </p>
-                <p className="text-xs text-slate-500">75008 Paris, France</p>
-            </div>
-            </div>
-        </div>
-
-        {/* Response time */}
-        <div className="rounded-2xl bg-blue-50 border border-blue-100 p-5">
-            <div className="flex items-center gap-2 mb-2">
-            <span className="text-blue-500 text-base">ℹ️</span>
-            <p className="text-sm font-semibold text-[#1a3a6b]">
-                Temps de réponse garanti
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm">
+            ✉️
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              Relations commerciales
             </p>
+            <div className="space-y-1">
+              {contactEmails.map((email) => (
+                <div key={email}>
+                  <ContactPopover type="email" value={email} />
+                </div>
+              ))}
             </div>
-            <p className="text-xs leading-relaxed text-slate-600">
-            Nous nous engageons à vous répondre dans les{" "}
-            <span className="font-semibold text-blue-600">
-                24 heures ouvrées
-            </span>{" "}
-            pour toute demande commerciale.
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm">
+            📞
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              Téléphonie
             </p>
+            <ContactPopover type="phone" value={contactPhone} />
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Lun–Ven 8h–18h GMT
+            </p>
+          </div>
         </div>
+
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm">
+            📍
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              Hub principal
+            </p>
+            <p className="text-sm text-slate-700 font-medium">
+              123 Avenue des Champs-Élysées
+            </p>
+            <p className="text-sm text-slate-500">75008 Paris, France</p>
+          </div>
         </div>
-    );
+      </div>
+
+      {/* SLA badge */}
+      <div className="rounded-2xl bg-indigo-50 border border-indigo-100 p-4">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-indigo-500 text-base">⚙️</span>
+          <p className="text-sm font-bold text-indigo-800">
+            Engagement SLA & Réactivité
+          </p>
+        </div>
+        <p className="text-xs leading-relaxed text-indigo-600">
+          Routage intelligent sur toutes les demandes. Rapport d&apos;éligibilité
+          fourni sous{" "}
+          <span className="font-bold text-indigo-700">24h ouvrées max</span>.
+        </p>
+      </div>
+    </div>
+  );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function ContactPage() {
-    return (
-        <main className="min-h-screen font-sans antialiased bg-slate-50">
-        {/* Hero */}
-        <section className="bg-linear-to-br from-[#1a3a6b] via-[#1e4db7] to-[#2563eb] py-16 md:py-20">
-            <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-            <h1 className="mb-4 text-3xl font-extrabold text-white sm:text-4xl md:text-5xl">
-                Parlons de votre projet
-            </h1>
-            <p className="text-base leading-relaxed text-blue-100 sm:text-lg">
-                Notre équipe d&apos;experts est prête à vous accompagner dans la
-                transformation digitale de votre gestion des voyages d&apos;affaires
-                et des avantages salariés.
-            </p>
-            </div>
-        </section>
-
-        {/* Form + Sidebar */}
-        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 md:py-16">
-            <div className="grid gap-8 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]">
-            <ContactForm />
-            <Sidebar />
-            </div>
-        </section>
-
-        {/* FAQ */}
-        <section className="bg-white py-14 md:py-20">
-            <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-10 text-center">
-                <h2 className="mb-2 text-2xl font-extrabold text-[#1a3a6b] sm:text-3xl">
-                Questions fréquentes
-                </h2>
-                <p className="text-sm text-slate-500">
-                Trouvez rapidement les réponses à vos questions les plus courantes
-                </p>
-            </div>
-            <div className="space-y-3">
-                {faqs.map((faq) => (
-                <FAQItem key={faq.question} faq={faq} />
+  return (
+    <main className="min-h-screen font-sans antialiased bg-white text-slate-900">
+      {/* ── HERO ── */}
+      <section className="border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white py-20 lg:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Texte */}
+            <div className="lg:col-span-5 text-center lg:text-left space-y-5">
+              <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
+                Connectivité Souveraine B2B
+              </span>
+              <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl leading-[1.05]">
+                Une expertise locale,{" "}
+                <span className="text-indigo-600">une plateforme globale</span>
+              </h1>
+              <p className="text-base text-slate-500 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                Déployez la puissance d&apos;AfrikVoyage &amp; AfrikCSE dans
+                votre organisation. Nos équipes régionales vous assurent un
+                support de proximité et un déploiement sur-mesure.
+              </p>
+              <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
+                {[
+                  "🌍 8 hubs panafricains",
+                  "⚡ Déploiement 48h",
+                  "🔒 RGPD & UEMOA",
+                ].map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full"
+                  >
+                    {tag}
+                  </span>
                 ))}
+              </div>
             </div>
+
+            {/* Carte interactive */}
+            <div className="lg:col-span-7 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="px-4 pt-4 pb-0 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  Réseau actif — passez la souris sur un hub
+                </span>
+              </div>
+              <AfricaMap />
             </div>
-        </section>
-        </main>
-    );
+          </div>
+        </div>
+      </section>
+
+      {/* ── FORM + SIDEBAR ── */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid gap-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
+          <ContactForm />
+          <Sidebar />
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section className="py-20 border-t border-slate-100 bg-slate-50/50">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 text-center">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+              Questions fréquentes
+            </h2>
+            <p className="mt-2 text-sm text-slate-500">
+              Tout ce qu&apos;il faut savoir pour aligner vos processus RH et
+              financiers.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {faqs.map((faq) => (
+              <FAQItem key={faq.question} faq={faq} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      
+    </main>
+  );
 }

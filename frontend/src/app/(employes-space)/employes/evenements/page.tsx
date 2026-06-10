@@ -26,6 +26,15 @@ interface EventStat {
     budget: number;
 }
 
+interface RecentEvent {
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    icon: string | null;
+    _count: { registrations: number };
+}
+
 // Jours de la semaine
 const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 const MONTHS_FR = [
@@ -33,40 +42,11 @@ const MONTHS_FR = [
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ];
 
-// Mock événements
-const MOCK_EVENTS: CalEvent[] = [
-    {
-        id: "1", title: "Galette des Rois",
-        startDate: "2024-01-15T12:30:00", endDate: "2024-01-15T14:00:00",
-        location: "Salle de réunion A", maxParticipants: 30, icon: "🎂", color: "#0f766e",
-        _count: { registrations: 24 }, registrations: [],
-    },
-    {
-        id: "2", title: "Soirée Théâtre",
-        startDate: "2024-01-22T18:30:00", endDate: "2024-01-22T22:30:00",
-        location: "Théâtre National", maxParticipants: 20, icon: "🎭", color: "#f59e0b",
-        _count: { registrations: 12 }, registrations: [],
-    },
-    {
-        id: "3", title: "Week-end Ski",
-        startDate: "2024-01-28T00:00:00", endDate: "2024-01-30T00:00:00",
-        location: "Station de ski", maxParticipants: 48, icon: "⛷️", color: "#3b82f6",
-        _count: { registrations: 40 }, registrations: [],
-    },
-];
-
-const MOCK_STATS: EventStat = {
-    eventsThisMonth: 12,
-    totalRegistrations: 284,
-    budget: 15240,
+const EMPTY_STATS: EventStat = {
+    eventsThisMonth: 0,
+    totalRegistrations: 0,
+    budget: 0,
 };
-
-// Événements récents mock (avec photos)
-const RECENT_EVENTS_MOCK = [
-    { id: "r1", title: "Fête de Noël 2023", date: "15 Déc 2023", participants: 85, emoji: "🎄" },
-    { id: "r2", title: "Team Building",     date: "8 Nov 2023",  participants: 42, emoji: "🤝" },
-    { id: "r3", title: "Conférence Bien-être", date: "20 Oct 2023", participants: 67, emoji: "🧘" },
-];
 
 export default function EvenementsPage() {
     const { user }  = useAuth();
@@ -77,7 +57,8 @@ export default function EvenementsPage() {
     const [currentYear, setCurrentYear]   = useState(now.getFullYear());
 
     const [events, setEvents]   = useState<CalEvent[]>([]);
-    const [stats, setStats]     = useState<EventStat>(MOCK_STATS);
+    const [stats, setStats]     = useState<EventStat>(EMPTY_STATS);
+    const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreate, setShowCreate] = useState(false);
     const [registering, setRegistering] = useState<string | null>(null);
@@ -91,14 +72,16 @@ export default function EvenementsPage() {
     const load = useCallback(async () => {
         setLoading(true);
         try {
-        const [evRes, stRes] = await Promise.all([
+        const [evRes, stRes, recentRes] = await Promise.all([
             employeeService.getEvents(currentMonth, currentYear),
             employeeService.getEventStats(),
+            employeeService.getRecentEvents(),
         ]);
-        setEvents(evRes.length ? evRes : MOCK_EVENTS);
+        setEvents(evRes);
         setStats(stRes);
+        setRecentEvents(recentRes);
         } catch {
-        setEvents(MOCK_EVENTS);
+        toast.error("Erreur lors du chargement des événements");
         } finally {
         setLoading(false);
         }
@@ -309,7 +292,12 @@ export default function EvenementsPage() {
             {/* Événements à venir */}
             <div className="space-y-3">
             <h3 className="font-semibold text-gray-900">Événements à venir</h3>
-            {(loading ? MOCK_EVENTS : events).map((ev) => {
+            {!loading && events.length === 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-sm text-gray-400">
+                Aucun événement ce mois-ci.
+                </div>
+            )}
+            {events.map((ev) => {
                 const isRegistered = ev.registrations.some((r) => r.userId === user?.id);
                 const isFull = ev.maxParticipants !== null &&
                 ev._count.registrations >= ev.maxParticipants;
@@ -366,47 +354,55 @@ export default function EvenementsPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Événements récents</h3>
-            <button className="text-xs hover:underline" style={{ color: "#0f766e" }}>
-                Voir tout
-            </button>
             </div>
+            {recentEvents.length === 0 ? (
+            <div className="text-center text-sm text-gray-400 py-6">
+                Aucun événement passé pour le moment.
+            </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {RECENT_EVENTS_MOCK.map((ev) => (
-                <div key={ev.id}
-                className="rounded-xl overflow-hidden border border-gray-200">
-                <div
-                    className="h-32 flex items-center justify-center text-5xl"
-                    style={{ background: "#f0fdf4" }}
-                >
-                    {ev.emoji}
-                </div>
-                <div className="p-3">
-                    <p className="font-semibold text-sm text-gray-900">{ev.title}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                    {ev.date} · {ev.participants} participants
-                    </p>
-                    <div className="flex mt-2 -space-x-1">
-                    {[...Array(Math.min(4, ev.participants))].map((_, i) => (
-                        <div
-                        key={i}
-                        className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold"
-                        style={{
-                            background: ["#0f766e", "#3b82f6", "#f59e0b", "#8b5cf6"][i],
-                        }}
-                        >
-                        {String.fromCharCode(65 + i)}
-                        </div>
-                    ))}
-                    {ev.participants > 4 && (
-                        <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-xs text-gray-600">
-                        +{ev.participants - 4}
-                        </div>
-                    )}
+                {recentEvents.map((ev) => {
+                const participants = ev._count.registrations;
+                return (
+                    <div key={ev.id}
+                    className="rounded-xl overflow-hidden border border-gray-200">
+                    <div
+                        className="h-32 flex items-center justify-center text-5xl"
+                        style={{ background: "#f0fdf4" }}
+                    >
+                        {ev.icon ?? "📅"}
                     </div>
-                </div>
-                </div>
-            ))}
+                    <div className="p-3">
+                        <p className="font-semibold text-sm text-gray-900">{ev.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                        {new Date(ev.startDate).toLocaleDateString("fr-FR", {
+                            day: "numeric", month: "short", year: "numeric",
+                        })} · {participants} participant{participants > 1 ? "s" : ""}
+                        </p>
+                        <div className="flex mt-2 -space-x-1">
+                        {[...Array(Math.min(4, participants))].map((_, i) => (
+                            <div
+                            key={i}
+                            className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold"
+                            style={{
+                                background: ["#0f766e", "#3b82f6", "#f59e0b", "#8b5cf6"][i],
+                            }}
+                            >
+                            {String.fromCharCode(65 + i)}
+                            </div>
+                        ))}
+                        {participants > 4 && (
+                            <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-xs text-gray-600">
+                            +{participants - 4}
+                            </div>
+                        )}
+                        </div>
+                    </div>
+                    </div>
+                );
+                })}
             </div>
+            )}
         </div>
 
         {/* Modal création événement */}

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { employeeService } from "@/services/employes/employee.service";
 import { toast } from "sonner";
-import { Image, BarChart2, CalendarDays, Send, Heart, MessageCircle, Bookmark, MoreHorizontal } from "lucide-react";
+import { Image, BarChart2, CalendarDays, Heart, MessageCircle, MoreHorizontal, Loader2, Send } from "lucide-react";
 
 interface PollOption {
     id: string;
@@ -25,77 +26,59 @@ interface Post {
     pollOptions: PollOption[];
 }
 
-// Mock posts riches
-const MOCK_POSTS: Post[] = [
-    {
-        id: "1", type: "ARTICLE",
-        title: "🎉 Lancement d'un nouveau programme de bien-être",
-        content: "Nous sommes ravis d'annoncer notre nouveau programme de bien-être complet, qui débutera le mois prochain. Il comprend des abonnements à une salle de sport, un soutien psychologique et des bilans de santé trimestriels pour tous les employés. Votre bien-être est notre priorité.",
-        imageUrl: "wellness",
-        createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
-        author: { firstName: "Sarah", lastName: "Mensah", role: "RH", jobTitle: "HR Manager" },
-        _count: { likes: 42, comments: 18 },
-        likes: [],
-        pollOptions: [],
-    },
-    {
-        id: "2", type: "POLL",
-        title: null,
-        content: "Quelle activité de team building préférez-vous pour le deuxième trimestre ?",
-        imageUrl: null,
-        createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
-        author: { firstName: "Marcus", lastName: "Diallo", role: "MANAGER", jobTitle: "CSE Committee" },
-        _count: { likes: 0, comments: 0 },
-        likes: [],
-        pollOptions: [
-        { id: "p1", label: "Journée d'aventure en plein air", _count: { votes: 70 } },
-        { id: "p2", label: "Atelier de cuisine",             _count: { votes: 44 } },
-        { id: "p3", label: "Tournoi de jeux vidéo",          _count: { votes: 42 } },
-        ],
-    },
-    {
-        id: "3", type: "ARTICLE",
-        title: "Résultats et reconnaissance du Q1",
-        content: "Bravo à toute l'équipe ! Nous avons dépassé nos objectifs du premier trimestre de 23 %. Un grand bravo aux équipes des ventes, de l'ingénierie et du service client. Votre dévouement et votre esprit d'innovation sont les moteurs de notre succès. Nous espérons une deuxième trimestre encore plus performant !",
-        imageUrl: null,
-        createdAt: new Date(Date.now() - 24 * 3600000).toISOString(),
-        author: { firstName: "David", lastName: "Okonkwo", role: "ADMIN", jobTitle: "CEO" },
-        _count: { likes: 89, comments: 34 },
-        likes: [],
-        pollOptions: [],
-    },
-];
+interface UpcomingEvent {
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    location: string | null;
+    color: string | null;
+}
 
-// Événements à venir (sidebar)
-const UPCOMING_EVENTS = [
-    { date: "MAR 28", title: "Journée de team building", time: "10:00AM – 6:00 PM", loc: "Adventure Park, Accra", color: "#0f766e" },
-    { date: "AVR 05", title: "Atelier de bien-être",     time: "2:00 PM – 3:30 PM", loc: "Conference Room A",     color: "#3b82f6" },
-    { date: "AVR 12", title: "Anniversaire de l'entreprise", time: "6:00 PM – 9:00 PM", loc: "Grand Ballroom",    color: "#f59e0b" },
-];
+interface Comment {
+    id: string;
+    content: string;
+    createdAt: string;
+    author: { firstName: string; lastName: string };
+}
 
-// Sondages actifs (sidebar)
-const ACTIVE_POLLS = [
-    { question: "Service traiteur pour le déjeuner préféré ?", votes: 98,  timeLeft: "2 days left", color: "#0f766e" },
-    { question: "Flexibilité des horaires de bureau ?",         votes: 142, timeLeft: "3 days left", color: "#3b82f6" },
-    { question: "Priorités budgétaires du CSE ?",               votes: 57,  timeLeft: "1 week left", color: "#f59e0b" },
-];
+const ACTIVITY_CONFIG: Record<string, { label: string; color: string }> = {
+    ARTICLE:           { label: "a publié un article", color: "#0f766e" },
+    POLL:              { label: "a lancé un sondage",  color: "#3b82f6" },
+    EVENT_ANNOUNCEMENT:{ label: "a annoncé un événement", color: "#f59e0b" },
+};
 
 export default function CommunicationPage() {
+    const router = useRouter();
     const { user }  = useAuth();
     const [posts, setPosts]       = useState<Post[]>([]);
     const [loading, setLoading]   = useState(true);
     const [newPost, setNewPost]   = useState("");
     const [postType, setPostType] = useState<"ARTICLE" | "POLL" | "EVENT_ANNOUNCEMENT">("ARTICLE");
+    const [pollOptionInputs, setPollOptionInputs] = useState<string[]>(["", ""]);
+    const [posting, setPosting] = useState(false);
     const [votedPolls, setVotedPolls] = useState<Record<string, string>>({});
     const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
+    const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
+
+    const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+    const [comments, setComments] = useState<Record<string, Comment[]>>({});
+    const [commentLoading, setCommentLoading] = useState<Record<string, boolean>>({});
+    const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+
+    const composerRef = useRef<HTMLInputElement>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-        const res = await employeeService.getPosts();
-        setPosts(res.posts.length ? res.posts : MOCK_POSTS);
+        const [postsRes, eventsRes] = await Promise.all([
+            employeeService.getPosts(),
+            employeeService.getUpcomingEvents(),
+        ]);
+        setPosts(postsRes.posts);
+        setUpcomingEvents(eventsRes);
         } catch {
-        setPosts(MOCK_POSTS);
+        toast.error("Erreur lors du chargement du fil d'actualité");
         } finally {
         setLoading(false);
         }
@@ -105,12 +88,22 @@ export default function CommunicationPage() {
 
     const handlePost = async () => {
         if (!newPost.trim()) return;
+        setPosting(true);
         try {
-        await employeeService.createPost({ type: postType, content: newPost });
+        const pollOptions = postType === "POLL"
+            ? pollOptionInputs.map((o) => o.trim()).filter(Boolean)
+            : undefined;
+        if (postType === "POLL" && (!pollOptions || pollOptions.length < 2)) {
+            toast.error("Ajoutez au moins 2 options de sondage");
+            return;
+        }
+        await employeeService.createPost({ type: postType, content: newPost, pollOptions });
         toast.success("Publication créée !");
         setNewPost("");
+        setPollOptionInputs(["", ""]);
         load();
         } catch { toast.error("Erreur publication"); }
+        finally { setPosting(false); }
     };
 
     const handleLike = async (postId: string) => {
@@ -126,12 +119,48 @@ export default function CommunicationPage() {
         catch { toast.error("Erreur vote"); }
     };
 
+    const toggleComments = async (postId: string) => {
+        const willOpen = !openComments[postId];
+        setOpenComments((prev) => ({ ...prev, [postId]: willOpen }));
+        if (willOpen && !comments[postId]) {
+        setCommentLoading((prev) => ({ ...prev, [postId]: true }));
+        try {
+            const data = await employeeService.getComments(postId);
+            setComments((prev) => ({ ...prev, [postId]: data }));
+        } catch {
+            toast.error("Erreur lors du chargement des commentaires");
+        } finally {
+            setCommentLoading((prev) => ({ ...prev, [postId]: false }));
+        }
+        }
+    };
+
+    const handleAddComment = async (postId: string) => {
+        const content = (commentDrafts[postId] ?? "").trim();
+        if (!content) return;
+        try {
+        const comment = await employeeService.addComment(postId, content);
+        setComments((prev) => ({ ...prev, [postId]: [...(prev[postId] ?? []), comment] }));
+        setCommentDrafts((prev) => ({ ...prev, [postId]: "" }));
+        setPosts((prev) => prev.map((p) =>
+            p.id === postId ? { ...p, _count: { ...p._count, comments: p._count.comments + 1 } } : p
+        ));
+        } catch { toast.error("Erreur lors de l'ajout du commentaire"); }
+    };
+
     const formatTime = (iso: string) => {
         const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-        if (diff < 3600) return `${Math.round(diff / 60)} minutes ago`;
-        if (diff < 86400) return `${Math.round(diff / 3600)} hours ago`;
-        return `${Math.round(diff / 86400)} days ago`;
+        if (diff < 60) return "À l'instant";
+        if (diff < 3600) return `il y a ${Math.round(diff / 60)} min`;
+        if (diff < 86400) return `il y a ${Math.round(diff / 3600)} h`;
+        return `il y a ${Math.round(diff / 86400)} j`;
     };
+
+    const activePolls = posts
+        .filter((p) => p.type === "POLL" && p.pollOptions.length > 0)
+        .slice(0, 3);
+
+    const recentActivity = posts.slice(0, 4);
 
     return (
         <div className="space-y-5">
@@ -145,7 +174,10 @@ export default function CommunicationPage() {
             <button
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium"
             style={{ background: "#0f766e" }}
-            onClick={() => toast.info("Créer un article — fonctionnalité admin")}
+            onClick={() => {
+                setPostType("ARTICLE");
+                composerRef.current?.focus();
+            }}
             >
             + Créer un article
             </button>
@@ -164,12 +196,39 @@ export default function CommunicationPage() {
                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                 </div>
                 <input
+                    ref={composerRef}
                     value={newPost}
                     onChange={(e) => setNewPost(e.target.value)}
-                    placeholder="Share something with your colleagues..."
+                    placeholder={postType === "POLL"
+                        ? "Posez votre question de sondage..."
+                        : "Partagez quelque chose avec vos collègues..."}
                     className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none"
                 />
                 </div>
+
+                {postType === "POLL" && (
+                <div className="pl-12 space-y-2">
+                    {pollOptionInputs.map((opt, i) => (
+                    <input
+                        key={i}
+                        value={opt}
+                        onChange={(e) => setPollOptionInputs((prev) =>
+                        prev.map((o, idx) => idx === i ? e.target.value : o)
+                        )}
+                        placeholder={`Option ${i + 1}`}
+                        className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs outline-none"
+                    />
+                    ))}
+                    <button
+                    onClick={() => setPollOptionInputs((prev) => [...prev, ""])}
+                    className="text-xs hover:underline"
+                    style={{ color: "#0f766e" }}
+                    >
+                    + Ajouter une option
+                    </button>
+                </div>
+                )}
+
                 <div className="flex items-center justify-between">
                 <div className="flex gap-1">
                     {[
@@ -191,17 +250,27 @@ export default function CommunicationPage() {
                 </div>
                 <button
                     onClick={handlePost}
-                    disabled={!newPost.trim()}
-                    className="px-4 py-1.5 rounded-lg text-white text-xs font-medium disabled:opacity-40"
+                    disabled={!newPost.trim() || posting}
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-white text-xs font-medium disabled:opacity-40"
                     style={{ background: "#0f766e" }}
                 >
-                    Post
+                    {posting && <Loader2 size={12} className="animate-spin" />}
+                    Publier
                 </button>
                 </div>
             </div>
 
             {/* Posts */}
-            {(loading ? MOCK_POSTS : posts).map((post) => {
+            {loading ? (
+                [...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-200 h-44 animate-pulse" />
+                ))
+            ) : posts.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-sm text-gray-400">
+                Aucune publication pour le moment.
+                </div>
+            ) : (
+                posts.map((post) => {
                 const isLiked = likedPosts[post.id];
                 const totalVotes = post.pollOptions.reduce((s, o) => s + o._count.votes, 0);
 
@@ -299,7 +368,9 @@ export default function CommunicationPage() {
                             </button>
                         );
                         })}
-                        <p className="text-xs text-gray-400">{totalVotes} votes · Ends in 2 days</p>
+                        <p className="text-xs text-gray-400">
+                        {totalVotes} vote{totalVotes > 1 ? "s" : ""} · {formatTime(post.createdAt)}
+                        </p>
                     </div>
                     )}
 
@@ -313,21 +384,67 @@ export default function CommunicationPage() {
                         <Heart size={15} fill={isLiked ? "#ef4444" : "none"} />
                         {post._count.likes + (isLiked ? 1 : 0)}
                     </button>
-                    <button className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <button
+                        onClick={() => toggleComments(post.id)}
+                        className="flex items-center gap-1.5 text-xs transition-colors"
+                        style={{ color: openComments[post.id] ? "#0f766e" : "#6b7280" }}
+                    >
                         <MessageCircle size={15} />
                         {post._count.comments}
                     </button>
-                    <button className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <Send size={15} />
-                        3
-                    </button>
-                    <button className="ml-auto text-gray-400 hover:text-gray-600">
-                        <Bookmark size={15} />
-                    </button>
                     </div>
+
+                    {/* Commentaires */}
+                    {openComments[post.id] && (
+                    <div className="pt-2 border-t border-gray-100 space-y-2">
+                        {commentLoading[post.id] ? (
+                        <div className="flex justify-center py-3">
+                            <Loader2 size={16} className="animate-spin text-gray-400" />
+                        </div>
+                        ) : (comments[post.id]?.length ?? 0) === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-2">Aucun commentaire pour le moment.</p>
+                        ) : (
+                        comments[post.id]!.map((c) => (
+                            <div key={c.id} className="flex items-start gap-2">
+                            <div
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                                style={{ background: "#0f766e" }}
+                            >
+                                {c.author.firstName[0]}{c.author.lastName[0]}
+                            </div>
+                            <div className="flex-1 bg-gray-50 rounded-lg px-3 py-1.5">
+                                <p className="text-xs font-semibold text-gray-900">
+                                {c.author.firstName} {c.author.lastName}
+                                </p>
+                                <p className="text-xs text-gray-700">{c.content}</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">{formatTime(c.createdAt)}</p>
+                            </div>
+                            </div>
+                        ))
+                        )}
+                        <div className="flex items-center gap-2 pt-1">
+                        <input
+                            value={commentDrafts[post.id] ?? ""}
+                            onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                            onKeyDown={(e) => { if (e.key === "Enter") handleAddComment(post.id); }}
+                            placeholder="Écrire un commentaire..."
+                            className="flex-1 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs outline-none"
+                        />
+                        <button
+                            onClick={() => handleAddComment(post.id)}
+                            disabled={!(commentDrafts[post.id] ?? "").trim()}
+                            className="p-1.5 rounded-lg text-white disabled:opacity-40"
+                            style={{ background: "#0f766e" }}
+                        >
+                            <Send size={13} />
+                        </button>
+                        </div>
+                    </div>
+                    )}
                 </div>
                 );
-            })}
+                })
+            )}
             </div>
 
             {/* ── Sidebar droite ── */}
@@ -336,27 +453,40 @@ export default function CommunicationPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-sm text-gray-900">Événements à venir</h3>
-                <button className="text-xs hover:underline" style={{ color: "#0f766e" }}>
-                    View All
+                <button
+                    onClick={() => router.push("/employes/evenements")}
+                    className="text-xs hover:underline" style={{ color: "#0f766e" }}>
+                    Voir tout
                 </button>
                 </div>
                 <div className="space-y-3">
-                {UPCOMING_EVENTS.map((ev) => (
-                    <div key={ev.title} className="flex gap-3">
-                    <div
-                        className="w-12 h-12 rounded-xl flex flex-col items-center justify-center text-white text-xs font-bold shrink-0"
-                        style={{ background: ev.color }}
-                    >
-                        <span style={{ fontSize: "9px" }}>{ev.date.split(" ")[0]}</span>
-                        <span className="text-sm leading-none">{ev.date.split(" ")[1]}</span>
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-xs font-semibold text-gray-900 truncate">{ev.title}</p>
-                        <p className="text-xs text-gray-500">{ev.time}</p>
-                        <p className="text-xs text-gray-400">{ev.loc}</p>
-                    </div>
-                    </div>
-                ))}
+                {upcomingEvents.length === 0 ? (
+                    <p className="text-xs text-gray-400">Aucun événement à venir.</p>
+                ) : (
+                    upcomingEvents.map((ev) => {
+                    const start = new Date(ev.startDate);
+                    const end = new Date(ev.endDate);
+                    const month = start.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "").toUpperCase();
+                    const time = `${start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
+
+                    return (
+                        <div key={ev.id} className="flex gap-3">
+                        <div
+                            className="w-12 h-12 rounded-xl flex flex-col items-center justify-center text-white text-xs font-bold shrink-0"
+                            style={{ background: ev.color ?? "#0f766e" }}
+                        >
+                            <span style={{ fontSize: "9px" }}>{month}</span>
+                            <span className="text-sm leading-none">{start.getDate()}</span>
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-semibold text-gray-900 truncate">{ev.title}</p>
+                            <p className="text-xs text-gray-500">{time}</p>
+                            <p className="text-xs text-gray-400">{ev.location ?? "—"}</p>
+                        </div>
+                        </div>
+                    );
+                    })
+                )}
                 </div>
             </div>
 
@@ -364,27 +494,39 @@ export default function CommunicationPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-sm text-gray-900">Sondages actifs</h3>
-                <span
+                {activePolls.length > 0 && (
+                    <span
                     className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white"
                     style={{ background: "#f59e0b" }}
-                >
-                    3
-                </span>
+                    >
+                    {activePolls.length}
+                    </span>
+                )}
                 </div>
                 <div className="space-y-3">
-                {ACTIVE_POLLS.map((poll) => (
-                    <div key={poll.question}>
-                    <p className="text-xs font-medium text-gray-900">{poll.question}</p>
-                    <div className="flex justify-between text-xs text-gray-500 mt-1 mb-1.5">
-                        <span>{poll.votes} votes</span>
-                        <span>{poll.timeLeft}</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5">
-                        <div className="h-1.5 rounded-full"
-                        style={{ width: "60%", background: poll.color }} />
-                    </div>
-                    </div>
-                ))}
+                {activePolls.length === 0 ? (
+                    <p className="text-xs text-gray-400">Aucun sondage actif.</p>
+                ) : (
+                    activePolls.map((poll) => {
+                    const totalVotes = poll.pollOptions.reduce((s, o) => s + o._count.votes, 0);
+                    const leadingVotes = Math.max(...poll.pollOptions.map((o) => o._count.votes));
+                    const pct = totalVotes > 0 ? Math.round((leadingVotes / totalVotes) * 100) : 0;
+
+                    return (
+                        <div key={poll.id}>
+                        <p className="text-xs font-medium text-gray-900">{poll.content}</p>
+                        <div className="flex justify-between text-xs text-gray-500 mt-1 mb-1.5">
+                            <span>{totalVotes} vote{totalVotes > 1 ? "s" : ""}</span>
+                            <span>{formatTime(poll.createdAt)}</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-1.5">
+                            <div className="h-1.5 rounded-full"
+                            style={{ width: `${pct}%`, background: "#0f766e" }} />
+                        </div>
+                        </div>
+                    );
+                    })
+                )}
                 </div>
             </div>
 
@@ -392,21 +534,25 @@ export default function CommunicationPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <h3 className="font-semibold text-sm text-gray-900 mb-3">Activité récente</h3>
                 <div className="space-y-2.5">
-                {[
-                    { action: "Sarah M. liked your post",  time: "5 minutes ago",  color: "#ef4444" },
-                    { action: "Marcus D. commented on poll", time: "1 hour ago",   color: "#3b82f6" },
-                    { action: "New event: Team Building Day", time: "3 hours ago", color: "#10b981" },
-                    { action: "12 colleagues joined the platform", time: "Yesterday", color: "#f59e0b" },
-                ].map((act) => (
-                    <div key={act.action} className="flex items-start gap-2">
-                    <span className="w-2 h-2 rounded-full mt-1.5 shrink-0"
-                        style={{ background: act.color }} />
-                    <div>
-                        <p className="text-xs text-gray-700">{act.action}</p>
-                        <p className="text-xs text-gray-400">{act.time}</p>
-                    </div>
-                    </div>
-                ))}
+                {recentActivity.length === 0 ? (
+                    <p className="text-xs text-gray-400">Aucune activité récente.</p>
+                ) : (
+                    recentActivity.map((post) => {
+                    const { label, color } = ACTIVITY_CONFIG[post.type] ?? ACTIVITY_CONFIG.ARTICLE;
+                    return (
+                        <div key={post.id} className="flex items-start gap-2">
+                        <span className="w-2 h-2 rounded-full mt-1.5 shrink-0"
+                            style={{ background: color }} />
+                        <div>
+                            <p className="text-xs text-gray-700">
+                            {post.author.firstName} {post.author.lastName} {label}
+                            </p>
+                            <p className="text-xs text-gray-400">{formatTime(post.createdAt)}</p>
+                        </div>
+                        </div>
+                    );
+                    })
+                )}
                 </div>
             </div>
             </div>
