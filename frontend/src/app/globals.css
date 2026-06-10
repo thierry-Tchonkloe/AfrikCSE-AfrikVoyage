@@ -65,6 +65,8 @@ body {
 .btn-primary-vibrant:hover {
   background-color: var(--electric-indigo-glow);
   box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); /* Effet de lueur moderne */
+}
+
 :root {
   /*
    * Palette de marque par défaut (fallback) — appliquée tant qu'aucun
