@@ -29,9 +29,10 @@ export const employeeService = {
     async uploadReceipt(file: File) {
         const formData = new FormData();
         formData.append("file", file);
-        const { data } = await api.post("/employee/expenses/upload", formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        });
+        // Ne pas fixer "Content-Type" manuellement : le navigateur doit
+        // générer lui-même l'en-tête multipart/form-data avec son boundary,
+        // sinon le parsing (busboy/multer) échoue côté backend.
+        const { data } = await api.post("/employee/expenses/upload", formData);
         return data as { url: string; name: string; size: string };
     },
 

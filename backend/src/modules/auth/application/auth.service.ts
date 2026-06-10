@@ -53,6 +53,8 @@ import { AuthRepository } from "../infrastructure/auth.repository";
 import { hashPassword, comparePassword, generateSecureToken, hashToken, } from "../../../core/utils/hash";
 import { signAccessToken, signRefreshToken, verifyRefreshToken, JwtPayload } from "../../../core/utils/jwt";
 import { RegisterCompanyDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, CompleteProfileDto, } from "../interfaces/auth.validator";
+import { sendMail } from "../../../core/config/mailer";
+import { companyRegistrationReceivedEmail, newCompanyPendingValidationEmail, passwordResetEmail, } from "../../../core/mailer/email.templates";
 
 export class AuthService {
     private repo = new AuthRepository();
@@ -104,8 +106,31 @@ export class AuthService {
         },
         });
 
-        // TODO: Envoyer email de confirmation au Super Admin
-        // TODO: Envoyer email "demande reçue" à l'admin de l'entreprise
+        // Email "demande reçue" à l'admin de l'entreprise
+        const received = companyRegistrationReceivedEmail({
+            firstName: dto.adminFirstName,
+            companyName: dto.companyName,
+        });
+        await sendMail({ to: dto.email, subject: received.subject, html: received.html });
+
+        // Email de notification aux SUPER_ADMIN (BDD + adresse(s) configurée(s) en .env)
+        const extraEmails = (process.env.SUPER_ADMIN_NOTIFICATION_EMAIL || "")
+            .split(",")
+            .map((e) => e.trim())
+            .filter(Boolean);
+        const superAdminEmails = [...new Set([...(await this.repo.findSuperAdminEmails()), ...extraEmails])];
+
+        if (superAdminEmails.length > 0) {
+            const pending = newCompanyPendingValidationEmail({
+                companyName: dto.companyName,
+                adminName: `${dto.adminFirstName} ${dto.adminLastName}`,
+                adminEmail: dto.email,
+                plan: dto.plan,
+                country: dto.country,
+                reviewLink: `${process.env.FRONTEND_URL}/admin/validations`,
+            });
+            await sendMail({ to: superAdminEmails, subject: pending.subject, html: pending.html });
+        }
 
         return {
         message:
@@ -251,8 +276,11 @@ export class AuthService {
 
         await this.repo.saveResetToken(user.id, hashToken(token), expiresAt);
 
-        // TODO: Envoyer l'email avec le lien :
-        // ${process.env.FRONTEND_URL}/auth/reset-password?token=${token}
+        // Réutilise la page /activate (gère déjà la définition d'un nouveau mot de passe via token)
+        const resetLink = `${process.env.FRONTEND_URL}/activate?token=${token}`;
+        const { subject, html } = passwordResetEmail({ firstName: user.firstName, resetLink });
+        await sendMail({ to: user.email, subject, html });
+
         if (process.env.NODE_ENV !== "production") {
             console.log(`[DEV] Reset token : ${token}`);
         }
