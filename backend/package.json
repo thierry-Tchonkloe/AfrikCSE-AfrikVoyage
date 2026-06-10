@@ -38,6 +38,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
+    "@types/nodemailer": "^8.0.0",
     "@types/node": "^25.5.2",
     "@types/pg": "^8.20.0",
     "bcrypt": "^6.0.0",
@@ -63,8 +64,5 @@
   },
   "prisma": {
     "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts"
-  },
-  "devDependencies": {
-    "@types/nodemailer": "^8.0.0"
   }
 }
