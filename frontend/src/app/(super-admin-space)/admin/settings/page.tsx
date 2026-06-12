@@ -101,7 +101,7 @@ export default function SettingsPage() {
             <div className="lg:col-span-2 space-y-5">
             {/* Apparence */}
             <SettingsSection title="Apparence" icon="🎨">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
                     Couleur primaire
@@ -295,8 +295,8 @@ function Toggle({ label, desc, checked, onChange, color }: {
             style={{ background: checked ? (color || "var(--color-primary)") : "#d1d5db" }}
         >
             <span
-            className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-            style={{ transform: checked ? "translateX(0px)" : "translateX(-20px)" }}
+            className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
+            style={{ transform: checked ? "translateX(20px)" : "translateX(0px)" }}
             />
         </button>
         </div>

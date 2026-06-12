@@ -1,13 +1,13 @@
 import api from "@/lib/api";
 
 export const employeeService = {
-    // Dashboard
+    // ── Dashboard ─────────────────────────────────────────────────────────────
     async getDashboard() {
         const { data } = await api.get("/employee/dashboard");
         return data;
     },
 
-    // Voyages
+    // ── Voyages ───────────────────────────────────────────────────────────────
     async getMyTravels() {
         const { data } = await api.get("/employee/travels");
         return data;
@@ -17,7 +17,7 @@ export const employeeService = {
         return data;
     },
 
-    // Notes de frais
+    // ── Notes de frais ────────────────────────────────────────────────────────
     async getMyExpenses() {
         const { data } = await api.get("/employee/expenses");
         return data;
@@ -27,7 +27,34 @@ export const employeeService = {
         return data;
     },
 
-    // Profil
+    // ── Avantages CSE ─────────────────────────────────────────────────────────
+    async getBenefitCategories() {
+        const { data } = await api.get("/employee/benefits/categories");
+        return data;
+    },
+    async getBenefitBalance() {
+        const { data } = await api.get("/employee/benefits/balance");
+        return data;
+    },
+    async getMyBenefitRequests() {
+        const { data } = await api.get("/employee/benefits/requests");
+        return data;
+    },
+    async submitBenefitRequest(payload: {
+        categoryId: string;
+        amount: number;
+        description?: string;
+        urgency?: "LOW" | "MEDIUM" | "HIGH";
+    }) {
+        const { data } = await api.post("/employee/benefits/requests", payload);
+        return data;
+    },
+    async cancelBenefitRequest(id: string) {
+        const { data } = await api.patch(`/employee/benefits/requests/${id}/cancel`);
+        return data;
+    },
+
+    // ── Profil ────────────────────────────────────────────────────────────────
     async getProfile() {
         const { data } = await api.get("/employee/profile");
         return data;
@@ -37,9 +64,13 @@ export const employeeService = {
         return data;
     },
 
-    // Documents
+    // ── Documents ─────────────────────────────────────────────────────────────
     async getDocuments() {
         const { data } = await api.get("/employee/documents");
+        return data;
+    },
+    async addDocument(payload: { name: string; url: string; type: string; size?: string }) {
+        const { data } = await api.post("/employee/documents", payload);
         return data;
     },
     async deleteDocument(id: string) {
@@ -47,7 +78,7 @@ export const employeeService = {
         return data;
     },
 
-    // Avantages catalogue
+    // ── Catalogue avantages (public) ──────────────────────────────────────────
     async getCatalog(params?: Record<string, string>) {
         const { data } = await api.get("/catalog", { params });
         return data;
@@ -61,10 +92,10 @@ export const employeeService = {
         return data;
     },
 
-    // Événements
+    // ── Événements ────────────────────────────────────────────────────────────
     async getEvents(month?: number, year?: number) {
         const { data } = await api.get("/events", {
-        params: month !== undefined ? { month, year } : {},
+            params: month !== undefined ? { month, year } : {},
         });
         return data;
     },
@@ -89,7 +120,7 @@ export const employeeService = {
         return data;
     },
 
-    // Communication
+    // ── Communication ─────────────────────────────────────────────────────────
     async getPosts(page = 1) {
         const { data } = await api.get("/communication/posts", { params: { page } });
         return data;

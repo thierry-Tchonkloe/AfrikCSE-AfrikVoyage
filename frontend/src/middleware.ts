@@ -95,14 +95,26 @@ interface TokenPayload {
 }
 
 // ── Vérification JWT ───────────────────────────────────────
+// Le cookie `session` est signé avec SESSION_COOKIE_SECRET (si défini),
+// tandis que `accessToken` est toujours signé avec JWT_SECRET côté backend.
+// On essaie les deux secrets pour couvrir les deux types de cookies,
+// sans quoi la vérification échoue dès que `session` expire (~60s) et
+// que le middleware retombe sur `accessToken`.
+const SECRET_CANDIDATES = [process.env.SESSION_COOKIE_SECRET, process.env.JWT_SECRET]
+  .filter((s): s is string => Boolean(s))
+  .filter((s, i, arr) => arr.indexOf(s) === i)
+  .map((s) => new TextEncoder().encode(s));
+
 async function verifyToken(token: string): Promise<TokenPayload | null> {
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
-    const { payload } = await jwtVerify(token, secret);
-    return payload as unknown as TokenPayload;
-  } catch {
-    return null;
+  for (const secret of SECRET_CANDIDATES) {
+    try {
+      const { payload } = await jwtVerify(token, secret);
+      return payload as unknown as TokenPayload;
+    } catch {
+      // essaie le secret suivant
+    }
   }
+  return null;
 }
 
 // ── Rôles ──────────────────────────────────────────────────
@@ -138,8 +150,8 @@ export async function middleware(request: NextRequest) {
 
   if (isPublicRoute) return NextResponse.next();
 
-  // 2. Token
-  const token = request.cookies.get("accessToken")?.value;
+  // 2. Token — on regarde d'abord le cookie `session` (court, lisible)
+  const token = request.cookies.get("session")?.value || request.cookies.get("accessToken")?.value;
 
   if (!token) {
     const url = new URL("/login", request.url);
@@ -147,12 +159,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 3. Vérifie le token
+  // 3. Vérifie le token (session token signé ou access token si disponible)
   const payload = await verifyToken(token);
 
   if (!payload) {
     const res = NextResponse.redirect(new URL("/login", request.url));
     res.cookies.delete("accessToken");
+    res.cookies.delete("session");
     return res;
   }
 

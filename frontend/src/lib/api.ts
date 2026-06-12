@@ -77,6 +77,7 @@ const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
     headers: { "Content-Type": "application/json" },
     withCredentials: true, // ← envoie les cookies HTTP-only automatiquement
+    timeout: 15000, // évite qu'une requête bloquée laisse l'UI en chargement indéfiniment
 });
 
 // ── Intercepteur requête ────────────────────────────────────────────

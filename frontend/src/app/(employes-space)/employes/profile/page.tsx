@@ -84,7 +84,7 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="max-w-4xl space-y-5">
+        <div className="space-y-5 px-4">
         {/* En-tête */}
         <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
@@ -343,7 +343,7 @@ export default function ProfilePage() {
                     >
                     <span
                         className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                        style={{ transform: s.checked ? "translateX(20px)" : "translateX(2px)" }}
+                        style={{ transform: s.checked ? "translateX(0px)" : "translateX(-20px)" }}
                     />
                     </button>
                 </div>

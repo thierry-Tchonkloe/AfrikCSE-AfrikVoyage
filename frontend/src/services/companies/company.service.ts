@@ -7,6 +7,12 @@ export const companyService = {
         return data;
     },
 
+    // Mettre à jour les infos de sa propre organisation (ADMIN/MANAGER uniquement)
+    async updateMyOrg(payload: Record<string, unknown>) {
+        const { data } = await api.patch("/organizations/my", payload);
+        return data;
+    },
+
     // Users de l'organisation
     async getUsers() {
         const { data } = await api.get("/users");

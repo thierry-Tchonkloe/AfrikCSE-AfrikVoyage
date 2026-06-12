@@ -65,4 +65,26 @@ body {
 .btn-primary-vibrant:hover {
   background-color: var(--electric-indigo-glow);
   box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); /* Effet de lueur moderne */
+:root {
+  /*
+   * Palette de marque par défaut (fallback) — appliquée tant qu'aucun
+   * thème d'espace ou de préférence utilisateur n'est résolu côté JS.
+   * Voir src/lib/theme.ts (DEFAULT_PALETTE) pour la résolution dynamique.
+   */
+  --color-brand-dark: #1E293B;      /* Deep Slate    — sections sombres / premium */
+  --color-brand-primary: #6366F1;   /* Electric Indigo — CTA & états actifs */
+  --color-brand-success: #10B981;   /* Vert Émeraude — conformité / positif */
+  --color-brand-warning: #F59E0B;   /* Ambre — alertes / vigilance */
+  --color-brand-bg-light: #F8FAFC;  /* Fond du contenu principal */
+
+  /* Couleurs principales — alias historiques, modifiables dynamiquement */
+  --color-primary: var(--color-brand-primary);
+  --color-primary-hover: #4f46e5;   /* indigo-600 */
+  --color-primary-light: #eef2ff;   /* indigo-50 */
+  --color-secondary: var(--color-brand-warning);
+  --color-bg: var(--color-brand-bg-light);
+  --color-card: #ffffff;
+  --color-border: #e2e8f0;
+  --color-text: var(--color-brand-dark);
+  --color-muted: #64748b;
 }
