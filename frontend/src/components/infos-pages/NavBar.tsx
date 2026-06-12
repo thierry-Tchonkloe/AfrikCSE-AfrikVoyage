@@ -92,7 +92,6 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Gestion du hover avec délai pour éviter les disparitions intempestives
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -118,13 +117,11 @@ export default function Navbar() {
     setMegaMenuOpen(false);
   };
 
-  // Navigation vers la page solutions avec ancrage
   const navigateToSolutions = (href: string) => {
     setMegaMenuOpen(false);
     router.push(href);
   };
 
-  // Vérifier si la page solutions est active
   const isSolutionsActive = pathname === "/infos/solutions";
 
   return (
@@ -136,9 +133,9 @@ export default function Navbar() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-20 gap-4">
           
-          {/* ── ZONE GAUCHE : LOGO SEULEMENT ── */}
+          {/* ── ZONE GAUCHE : LOGO ── */}
           <div className="flex items-center gap-6 shrink-0">
             <Link href="/infos" className="flex items-center gap-3 group">
               <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-emerald-500 flex items-center justify-center p-[1px] transition-transform duration-300 group-hover:scale-105">
@@ -151,7 +148,7 @@ export default function Navbar() {
                   </svg>
                 </div>
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col hidden sm:flex">
                 <span className={`text-base font-bold tracking-tight leading-none mb-0.5 transition-colors ${isScrolled ? "text-white" : "text-slate-900"}`}>
                   Afrik<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-emerald-400">Workspace</span>
                 </span>
@@ -162,11 +159,11 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* ── ZONE CENTRALE : NAVIGATION AVEC MÉGA-MENU ── */}
-          <nav className={`hidden md:flex items-center gap-1 p-1 rounded-full border transition-all ${
+          {/* ── ZONE CENTRALE ACCENTUÉE : NAVIGATION CAPSULE EXTENSIBLE ── */}
+          <nav className={`hidden md:flex items-center xl:gap-2 lg:gap-1.5 gap-0.5 p-1.5 rounded-full border transition-all shrink-0 ${
             isScrolled ? "bg-slate-950/40 border-slate-800/80" : "bg-white border-slate-200/60"
           }`}>
-            {/* Déclencheur du Méga-Menu - avec lien direct vers solutions */}
+            {/* Déclencheur du Méga-Menu */}
             <div
               ref={solutionsButtonRef}
               className="relative"
@@ -175,7 +172,7 @@ export default function Navbar() {
             >
               <Link
                 href="/infos/solutions"
-                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                className={`inline-flex items-center gap-1.5 xl:px-4 lg:px-3 px-2.5 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
                   isScrolled ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-900"
                 } ${megaMenuOpen ? (isScrolled ? "bg-slate-800/60" : "bg-slate-50") : ""} ${isSolutionsActive ? (isScrolled ? "text-indigo-400 bg-slate-900" : "text-indigo-600 bg-slate-100") : ""}`}
               >
@@ -188,22 +185,18 @@ export default function Navbar() {
                 </svg>
               </Link>
 
-              {/* MÉGA-MENU - avec liens vers les sections de la page solutions */}
+              {/* MÉGA-MENU ALIGNÉ */}
               {megaMenuOpen && (
                 <div 
                   ref={megaMenuRef}
-                  className="absolute top-full left-0 mt-2 w-[1100px] rounded-2xl border shadow-2xl transition-all duration-300 animate-fadeIn overflow-hidden z-50"
-                  style={{ 
-                    left: "0",
-                    transform: "translateX(0)"
-                  }}
+                  className="absolute top-full left-0 mt-3 w-[1000px] xl:w-[1100px] rounded-2xl border shadow-2xl transition-all duration-300 animate-fadeIn overflow-hidden z-50"
+                  style={{ transform: "translateX(-10%)" }} // Léger décalage pour recentrer la boîte géante
                   onMouseEnter={handleMegaMenuMouseEnter}
                   onMouseLeave={handleMegaMenuMouseLeave}
                 >
                   <div className={`p-5 ${
                     isScrolled ? "bg-slate-950 border-slate-800/80" : "bg-white border-slate-100"
                   }`}>
-                    {/* Grille 4 colonnes pour les solutions */}
                     <div className="grid grid-cols-4 gap-5">
                       {ALL_SOLUTIONS.map((category, idx) => (
                         <div key={idx} className="space-y-2">
@@ -247,7 +240,6 @@ export default function Navbar() {
                               </button>
                             ))}
                           </div>
-                          {/* Lien vers la catégorie complète */}
                           <button
                             onClick={() => navigateToSolutions(category.href)}
                             className="mt-2 text-[9px] font-semibold text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1"
@@ -261,10 +253,8 @@ export default function Navbar() {
                       ))}
                     </div>
 
-                    {/* Séparateur */}
                     <div className="my-4 border-t border-slate-700/20" />
 
-                    {/* Plateforme en bref - Stats */}
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xs">📊</span>
@@ -283,7 +273,6 @@ export default function Navbar() {
                       </div>
                     </div>
 
-                    {/* Call to action */}
                     <div className="mt-4 pt-3 border-t border-slate-700/20 flex items-center justify-between gap-3">
                       <p className="text-[10px] text-slate-400">
                         ✨ Découvrez comment AfrikWorkspace transforme la gestion des voyages
@@ -301,14 +290,14 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Liens structurels avec détection active */}
+            {/* Liens structurels corrigés (Pas de retour à la ligne + Espacement fluide) */}
             {NAV_LINKS.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 relative ${
+                  className={`xl:px-4 lg:px-3 px-2.5 py-2 rounded-full text-sm font-semibold transition-all duration-300 relative whitespace-nowrap ${
                     isActive
                       ? isScrolled ? "text-indigo-400 bg-slate-900" : "text-indigo-600 bg-slate-100"
                       : isScrolled ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
@@ -323,9 +312,9 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* ── ZONE DROITE : ACTIONS & SÉCURITÉ INFRA ── */}
-          <div className="hidden md:flex items-center gap-5">
-            {/* Sélecteur Région / Langue International */}
+          {/* ── ZONE DROITE : ACTIONS (Empêche l'écrasement de la nav) ── */}
+          <div className="hidden md:flex items-center xl:gap-5 lg:gap-3 gap-2 shrink-0 ml-auto">
+            {/* Sélecteur Région / Langue */}
             <div className={`flex items-center text-[11px] font-bold border px-2.5 py-1.5 rounded-xl transition-colors ${
               isScrolled ? "text-slate-400 border-slate-800 bg-slate-950/40" : "text-slate-500 border-slate-200 bg-slate-50"
             }`}>
@@ -337,7 +326,7 @@ export default function Navbar() {
             {/* Bouton Connexion */}
             <Link
               href="/login"
-              className={`text-sm font-semibold transition-colors duration-200 flex items-center gap-2 ${
+              className={`text-sm font-semibold transition-colors duration-200 flex items-center gap-1.5 whitespace-nowrap ${
                 isScrolled ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -347,16 +336,12 @@ export default function Navbar() {
               Connexion
             </Link>
 
-            {/* CTA Premium avec effet tape-à-l'œil */}
+            {/* CTA Premium */}
             <Link
               href="#"
               onMouseEnter={() => setHoverEffect(true)}
               onMouseLeave={() => setHoverEffect(false)}
-              className={`relative text-xs font-black px-5 py-3 rounded-xl transition-all duration-300 overflow-hidden whitespace-nowrap group ${
-                isScrolled
-                  ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white"
-                  : "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white"
-              }`}
+              className="relative text-xs font-black xl:px-5 lg:px-4 px-3.5 py-3 rounded-xl transition-all duration-300 overflow-hidden whitespace-nowrap group bg-gradient-to-r from-indigo-600 to-indigo-500 text-white"
               style={{
                 boxShadow: hoverEffect 
                   ? "0 0 30px rgba(99, 102, 241, 0.8), 0 0 15px rgba(99, 102, 241, 0.4)" 
@@ -372,7 +357,7 @@ export default function Navbar() {
                   animation: "pulse-ring 2s infinite"
                 }} 
               />
-              <span className="relative flex items-center gap-2">
+              <span className="relative flex items-center gap-1.5">
                 Demander une démo
                 <svg className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -381,8 +366,8 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* INTERFACE COMMUTATEUR COMPACT MOBILE */}
-          <div className="flex md:hidden items-center gap-4">
+          {/* MOBILE TOGGLE */}
+          <div className="flex md:hidden items-center gap-4 ml-auto">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className={`p-2 rounded-xl border ${isScrolled ? "text-slate-400 bg-slate-900 border-slate-800" : "text-slate-600 bg-slate-50 border-slate-200"}`}
@@ -398,7 +383,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* ── ACCORDÉON EXPANSION MOBILE ── */}
+      {/* ── MOBILE ACCORDION ── */}
       {menuOpen && (
         <div className={`md:hidden border-t px-6 pb-8 pt-4 space-y-4 backdrop-blur-xl ${
           isScrolled ? "border-slate-800/80 bg-slate-950/95 text-white" : "border-slate-200/60 bg-white/98 text-slate-900"
