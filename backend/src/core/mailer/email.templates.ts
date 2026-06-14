@@ -210,6 +210,60 @@ export function employeeInvitationEmail(params: {
     };
 }
 
+/** Formate une date en français (ex: "lundi 15 janvier 2026 à 09:00") */
+function formatEventDate(date: Date): string {
+    return date.toLocaleDateString("fr-FR", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+    });
+}
+
+/** Email envoyé à un employé après son inscription à un événement CSE */
+export function eventRegistrationConfirmationEmail(params: {
+    firstName: string;
+    eventTitle: string;
+    startDate: Date;
+    endDate: Date;
+    location?: string;
+}): EmailContent {
+    const eventTitle = escapeHtml(params.eventTitle);
+    return {
+        subject: `Inscription confirmée — ${eventTitle}`,
+        html: layout("Inscription confirmée", `
+            <p>Bonjour ${escapeHtml(params.firstName)},</p>
+            <p>Votre inscription à l'événement <strong>${eventTitle}</strong> est confirmée.</p>
+            <ul>
+                <li><strong>Début :</strong> ${formatEventDate(params.startDate)}</li>
+                <li><strong>Fin :</strong> ${formatEventDate(params.endDate)}</li>
+                ${params.location ? `<li><strong>Lieu :</strong> ${escapeHtml(params.location)}</li>` : ""}
+            </ul>
+            <p>Vous recevrez un rappel 24h avant le début de l'événement.</p>
+        `),
+    };
+}
+
+/** Email de rappel envoyé 24h avant le début d'un événement CSE */
+export function eventReminderEmail(params: {
+    firstName: string;
+    eventTitle: string;
+    startDate: Date;
+    location?: string;
+}): EmailContent {
+    const eventTitle = escapeHtml(params.eventTitle);
+    return {
+        subject: `Rappel — ${eventTitle} a lieu demain`,
+        html: layout("Rappel d'événement", `
+            <p>Bonjour ${escapeHtml(params.firstName)},</p>
+            <p>Petit rappel : l'événement <strong>${eventTitle}</strong> auquel vous êtes inscrit(e) a lieu demain.</p>
+            <ul>
+                <li><strong>Début :</strong> ${formatEventDate(params.startDate)}</li>
+                ${params.location ? `<li><strong>Lieu :</strong> ${escapeHtml(params.location)}</li>` : ""}
+            </ul>
+            <p>À très vite !</p>
+        `),
+    };
+}
+
 /** Email de notification envoyé au support lors d'une nouvelle demande de contact */
 export function contactNotificationEmail(params: {
     fullName: string;

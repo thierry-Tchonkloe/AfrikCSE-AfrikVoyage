@@ -19,6 +19,8 @@ export const updateModulesSchema = z.object({
 // Champs d'informations générales modifiables — exclut volontairement
 // status, plan, hasVoyage/hasCSE, slug et autres champs sensibles qui
 // disposent de leurs propres routes/contrôles dédiés.
+const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Couleur invalide (format #RRGGBB)");
+
 export const updateOrgSchema = z.object({
     name: z.string().min(1).optional(),
     email: z.string().email().nullable().optional(),
@@ -31,6 +33,8 @@ export const updateOrgSchema = z.object({
     region: z.string().nullable().optional(),
     industry: z.string().nullable().optional(),
     size: z.string().nullable().optional(),
+    primaryColor: hexColor.nullable().optional(),
+    secondaryColor: hexColor.nullable().optional(),
 }).strict();
 
 export type ValidateOrgDto = z.infer<typeof validateOrgSchema>;

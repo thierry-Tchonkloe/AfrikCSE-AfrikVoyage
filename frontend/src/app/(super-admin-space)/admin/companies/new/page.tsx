@@ -8,6 +8,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Copy, Check } from "lucide-react";
 import { adminService } from "@/services/admin/admin.service";
+import { getErrorMessage } from "@/lib/errors";
 
 const schema = z.object({
     name: z.string().min(2, "Nom requis"),
@@ -61,8 +62,8 @@ export default function NewCompanyPage() {
         const res = await adminService.createOrganization(data);
         setResult({ invitationLink: res.invitationLink, org: res.org });
         toast.success("Entreprise créée avec succès");
-        } catch (err: any) {
-        toast.error(err.response?.data?.message || "Erreur création");
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Erreur création"));
         } finally {
         setLoading(false);
         }

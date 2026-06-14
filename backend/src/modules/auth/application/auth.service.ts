@@ -53,8 +53,9 @@ import { AuthRepository } from "../infrastructure/auth.repository";
 import { hashPassword, comparePassword, generateSecureToken, hashToken, } from "../../../core/utils/hash";
 import { signAccessToken, signRefreshToken, verifyRefreshToken, JwtPayload } from "../../../core/utils/jwt";
 import { RegisterCompanyDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, CompleteProfileDto, } from "../interfaces/auth.validator";
-import { sendMail } from "../../../core/config/mailer";
+import { sendMail } from "../../../core/services/email.service";
 import { companyRegistrationReceivedEmail, newCompanyPendingValidationEmail, passwordResetEmail, } from "../../../core/mailer/email.templates";
+import { logger } from "../../../core/utils/logger";
 
 export class AuthService {
     private repo = new AuthRepository();
@@ -282,7 +283,7 @@ export class AuthService {
         await sendMail({ to: user.email, subject, html });
 
         if (process.env.NODE_ENV !== "production") {
-            console.log(`[DEV] Reset token : ${token}`);
+            logger.debug(`Reset token : ${token}`);
         }
     }
 

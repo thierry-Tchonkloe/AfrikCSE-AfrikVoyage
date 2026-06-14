@@ -202,6 +202,7 @@ export default function ReportingPage() {
                 <input placeholder="Search employees..."
                 className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg outline-none" />
             </div>
+            <div className="overflow-x-auto">
             <table className="w-full">
                 <thead>
                 <tr className="border-b border-gray-100">
@@ -245,6 +246,7 @@ export default function ReportingPage() {
                 ))}
                 </tbody>
             </table>
+            </div>
             </div>
 
             {/* Contacts urgence + Quick actions */}

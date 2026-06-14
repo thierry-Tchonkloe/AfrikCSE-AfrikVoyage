@@ -45,13 +45,18 @@ Ajoute/Modifie les variables suivantes :
 | `NODE_ENV` | `production` | |
 | `PORT` | `5000` | |
 | `DATABASE_URL` | `postgresql://...` | Ta vraie URL BDD Render |
-| `JWT_SECRET` | `[résultat openssl rand]` | ⚠️ IMPORTANT : même valeur en frontend |
-| `JWT_ACCESS_EXPIRES` | `15m` | |
-| `JWT_REFRESH_EXPIRES` | `7d` | |
+| `JWT_SECRET` | `[résultat openssl rand]` | ⚠️ IMPORTANT : même valeur en frontend, signe access ET refresh tokens |
+| `ENCRYPTION_KEY` | `[openssl rand -hex 32]` | ⚠️ 32 bytes (64 car. hex) — chiffre les clés API (ApiIntegration) |
 | `FRONTEND_URL` | `https://afrikcse-afrikvoyage.vercel.app` | ⚠️ Exact |
 | `CLOUDINARY_CLOUD_NAME` | `[ta valeur]` | |
 | `CLOUDINARY_API_KEY` | `[ta valeur]` | |
 | `CLOUDINARY_API_SECRET` | `[ta valeur]` | |
+| `RESEND_API_KEY` | `[ta valeur]` | Envoi d'emails transactionnels |
+| `EMAIL_FROM` | `no-reply@afrikcse.com` | Adresse expéditeur des emails |
+| `KKIAPAY_SECRET_KEY` | `sk_live_...` | Vérification des transactions KkiaPay |
+| `KKIAPAY_PUBLIC_KEY` / `KKIAPAY_PRIVATE_KEY` | `pk_live_... / pv_live_...` | Clés KkiaPay |
+| `FEDAPAY_SECRET_KEY` | `sk_live_...` | API FedaPay |
+| `FEDAPAY_WEBHOOK_TOKEN` | `[token choisi]` | Validation du webhook FedaPay |
 
 ✅ **Redeploy** Render après avoir sauvegardé
 

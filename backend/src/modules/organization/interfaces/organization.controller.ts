@@ -3,6 +3,17 @@ import { OrganizationService } from "../application/organization.service";
 import { validateOrgSchema, rejectOrgSchema, updateModulesSchema, updateOrgSchema, } from "./organization.validator";
 import { OrgStatus } from "@prisma/client";
 import { prisma } from "../../../core/config/prisma";
+import { toCsv } from "../../../core/utils/csv";
+import { logAudit } from "../../../core/utils/audit";
+import { cloudinary } from "../../../core/config/cloudinary";
+import { UploadApiResponse } from "cloudinary";
+
+const STATUS_LABELS: Record<string, string> = {
+    PENDING: "En attente",
+    ACTIVE: "Active",
+    SUSPENDED: "Suspendue",
+    REJECTED: "Refusée",
+};
 
 const service = new OrganizationService();
 
@@ -35,6 +46,15 @@ export class OrganizationController {
             req.user!.userId,
             parsed.data
         );
+        await logAudit({
+            action: "ORG_VALIDATED",
+            entity: "Organization",
+            entityId: org.id,
+            userId: req.user!.userId,
+            organizationId: org.id,
+            newValue: parsed.data,
+            req,
+        });
         res.status(200).json({ message: "Organisation validée", org });
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -50,6 +70,15 @@ export class OrganizationController {
 
         try {
         const org = await service.reject(req.params.id as string, parsed.data);
+        await logAudit({
+            action: "ORG_REJECTED",
+            entity: "Organization",
+            entityId: org.id,
+            userId: req.user!.userId,
+            organizationId: org.id,
+            newValue: parsed.data,
+            req,
+        });
         res.status(200).json({ message: "Organisation rejetée", org });
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -65,6 +94,15 @@ export class OrganizationController {
 
         try {
         const org = await service.updateModules(req.params.id as string, parsed.data);
+        await logAudit({
+            action: "ORG_MODULES_UPDATED",
+            entity: "Organization",
+            entityId: org.id,
+            userId: req.user!.userId,
+            organizationId: org.id,
+            newValue: parsed.data,
+            req,
+        });
         res.status(200).json({ message: "Modules mis à jour", org });
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -74,6 +112,14 @@ export class OrganizationController {
     async suspend(req: Request, res: Response): Promise<void> {
         try {
         const org = await service.suspend(req.params.id as string);
+        await logAudit({
+            action: "ORG_SUSPENDED",
+            entity: "Organization",
+            entityId: org.id,
+            userId: req.user!.userId,
+            organizationId: org.id,
+            req,
+        });
         res.status(200).json({ message: "Organisation suspendue", org });
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -114,9 +160,62 @@ export class OrganizationController {
             res.json(result);
         }
 
+    /** Export CSV des organisations (mêmes filtres que la liste paginée) */
+    async exportCsv(req: Request, res: Response): Promise<void> {
+        const search = req.query.search as string | undefined;
+        const status = req.query.status as string | undefined;
+        const module = req.query.module as string | undefined;
+
+        const orgs = await service.getAllForExport({ search, status, module });
+
+        const rows = orgs.map((org) => ({
+            name: org.name,
+            businessEmail: org.businessEmail ?? "",
+            country: org.country ?? "",
+            city: org.city ?? "",
+            phone: org.phone ?? "",
+            plan: org.plan,
+            status: STATUS_LABELS[org.status] ?? org.status,
+            hasCSE: org.hasCSE ? "Oui" : "Non",
+            hasVoyage: org.hasVoyage ? "Oui" : "Non",
+            usersCount: org._count.users,
+            adminName: org.users[0] ? `${org.users[0].firstName} ${org.users[0].lastName}` : "",
+            adminEmail: org.users[0]?.email ?? "",
+            createdAt: org.createdAt.toISOString().slice(0, 10),
+        }));
+
+        const csv = toCsv(rows, [
+            { key: "name", label: "Entreprise" },
+            { key: "businessEmail", label: "Email" },
+            { key: "country", label: "Pays" },
+            { key: "city", label: "Ville" },
+            { key: "phone", label: "Téléphone" },
+            { key: "plan", label: "Plan" },
+            { key: "status", label: "Statut" },
+            { key: "hasCSE", label: "AfrikCSE" },
+            { key: "hasVoyage", label: "AfrikVoyage" },
+            { key: "usersCount", label: "Utilisateurs" },
+            { key: "adminName", label: "Administrateur" },
+            { key: "adminEmail", label: "Email administrateur" },
+            { key: "createdAt", label: "Date d'inscription" },
+        ]);
+
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Disposition", `attachment; filename="organisations-${new Date().toISOString().slice(0, 10)}.csv"`);
+        res.send(csv);
+    }
+
     async softDelete(req: Request, res: Response): Promise<void> {
         try {
             await service.softDelete(req.params.id as string);
+            await logAudit({
+                action: "ORG_DELETED",
+                entity: "Organization",
+                entityId: req.params.id as string,
+                userId: req.user!.userId,
+                organizationId: req.params.id as string,
+                req,
+            });
             res.json({ message: "Organisation désactivée" });
         } catch (err: any) {
             res.status(400).json({ message: err.message });
@@ -136,6 +235,7 @@ export class OrganizationController {
                 select: {
                 id: true, name: true, status: true, plan: true,
                 hasCSE: true, hasVoyage: true,
+                logoUrl: true, primaryColor: true, secondaryColor: true,
                 _count: { select: { users: true } },
                 },
             }),
@@ -156,6 +256,14 @@ export class OrganizationController {
             where: { id: req.params.id as string },
             data: { status: "ACTIVE" },
             });
+            await logAudit({
+                action: "ORG_REACTIVATED",
+                entity: "Organization",
+                entityId: org.id,
+                userId: req.user!.userId,
+                organizationId: org.id,
+                req,
+            });
             res.json({ message: "Organisation réactivée", org });
         } catch (err: any) {
             res.status(400).json({ message: err.message });
@@ -175,6 +283,15 @@ export class OrganizationController {
             const org = await prisma.organization.update({
             where: { id: req.params.id as string },
             data: parsed.data,
+            });
+            await logAudit({
+                action: "ORG_UPDATED",
+                entity: "Organization",
+                entityId: org.id,
+                userId: req.user!.userId,
+                organizationId: org.id,
+                newValue: parsed.data,
+                req,
             });
             res.json(org);
         } catch (err: any) {
@@ -204,6 +321,43 @@ export class OrganizationController {
             res.json(org);
         } catch (err: any) {
             res.status(400).json({ message: err.message });
+        }
+    }
+
+    // Upload du logo de l'organisation connectée (ADMIN/MANAGER)
+    async uploadLogo(req: Request, res: Response): Promise<void> {
+        const orgId = req.user!.organizationId;
+        if (!orgId) {
+            res.status(400).json({ message: "Organisation introuvable" });
+            return;
+        }
+        if (!req.file) {
+            res.status(400).json({ message: "Aucun fichier fourni" });
+            return;
+        }
+
+        try {
+            const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: `afrikcse/logos/${orgId}`,
+                        resource_type: "image",
+                    },
+                    (err, uploadResult) => {
+                        if (err || !uploadResult) reject(err ?? new Error("Échec de l'upload"));
+                        else resolve(uploadResult);
+                    }
+                );
+                stream.end(req.file!.buffer);
+            });
+
+            const org = await prisma.organization.update({
+                where: { id: orgId },
+                data: { logoUrl: result.secure_url },
+            });
+            res.json({ logoUrl: org.logoUrl });
+        } catch (err: any) {
+            res.status(500).json({ message: err.message ?? "Échec de l'upload du logo" });
         }
     }
 

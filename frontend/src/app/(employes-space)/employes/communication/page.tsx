@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { employeeService } from "@/services/employes/employee.service";
 import { toast } from "sonner";
 import { Image, BarChart2, CalendarDays, Heart, MessageCircle, MoreHorizontal, Loader2, Send } from "lucide-react";
+import { UserAvatar } from "@/components/employes/UserAvatar";
 
 interface PollOption {
     id: string;
@@ -20,7 +21,7 @@ interface Post {
     content: string;
     imageUrl: string | null;
     createdAt: string;
-    author: { firstName: string; lastName: string; role: string; jobTitle: string | null };
+    author: { firstName: string; lastName: string; avatar?: string | null; role: string; jobTitle: string | null };
     _count: { likes: number; comments: number };
     likes: { userId: string }[];
     pollOptions: PollOption[];
@@ -39,7 +40,7 @@ interface Comment {
     id: string;
     content: string;
     createdAt: string;
-    author: { firstName: string; lastName: string };
+    author: { firstName: string; lastName: string; avatar?: string | null };
 }
 
 const ACTIVITY_CONFIG: Record<string, { label: string; color: string }> = {
@@ -53,6 +54,9 @@ export default function CommunicationPage() {
     const { user }  = useAuth();
     const [posts, setPosts]       = useState<Post[]>([]);
     const [loading, setLoading]   = useState(true);
+    const [page, setPage]         = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [newPost, setNewPost]   = useState("");
     const [postType, setPostType] = useState<"ARTICLE" | "POLL" | "EVENT_ANNOUNCEMENT">("ARTICLE");
     const [pollOptionInputs, setPollOptionInputs] = useState<string[]>(["", ""]);
@@ -76,6 +80,8 @@ export default function CommunicationPage() {
             employeeService.getUpcomingEvents(),
         ]);
         setPosts(postsRes.posts);
+        setPage(postsRes.page ?? 1);
+        setTotalPages(postsRes.totalPages ?? 1);
         setUpcomingEvents(eventsRes);
         } catch {
         toast.error("Erreur lors du chargement du fil d'actualité");
@@ -85,6 +91,22 @@ export default function CommunicationPage() {
     }, []);
 
     useEffect(() => { load(); }, [load]);
+
+    const handleLoadMore = async () => {
+        if (loadingMore || page >= totalPages) return;
+        setLoadingMore(true);
+        try {
+        const nextPage = page + 1;
+        const postsRes = await employeeService.getPosts(nextPage);
+        setPosts((prev) => [...prev, ...postsRes.posts]);
+        setPage(postsRes.page ?? nextPage);
+        setTotalPages(postsRes.totalPages ?? totalPages);
+        } catch {
+        toast.error("Erreur lors du chargement des publications");
+        } finally {
+        setLoadingMore(false);
+        }
+    };
 
     const handlePost = async () => {
         if (!newPost.trim()) return;
@@ -189,12 +211,12 @@ export default function CommunicationPage() {
             {/* Zone de publication */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
                 <div className="flex items-center gap-3">
-                <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ background: "#0f766e" }}
-                >
-                    {user?.firstName?.[0]}{user?.lastName?.[0]}
-                </div>
+                <UserAvatar
+                    avatar={user?.avatar}
+                    firstName={user?.firstName}
+                    lastName={user?.lastName}
+                    className="w-9 h-9 text-xs"
+                />
                 <input
                     ref={composerRef}
                     value={newPost}
@@ -280,12 +302,13 @@ export default function CommunicationPage() {
                     {/* Auteur */}
                     <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                        <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                        style={{ background: post.author.role === "ADMIN" ? "#1e3a5f" : "#0f766e" }}
-                        >
-                        {post.author.firstName[0]}{post.author.lastName[0]}
-                        </div>
+                        <UserAvatar
+                        avatar={post.author.avatar}
+                        firstName={post.author.firstName}
+                        lastName={post.author.lastName}
+                        background={post.author.role === "ADMIN" ? "#1e3a5f" : "#0f766e"}
+                        className="w-10 h-10 text-xs"
+                        />
                         <div>
                         <div className="flex items-center gap-2">
                             <p className="text-sm font-semibold text-gray-900">
@@ -406,12 +429,12 @@ export default function CommunicationPage() {
                         ) : (
                         comments[post.id]!.map((c) => (
                             <div key={c.id} className="flex items-start gap-2">
-                            <div
-                                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
-                                style={{ background: "#0f766e" }}
-                            >
-                                {c.author.firstName[0]}{c.author.lastName[0]}
-                            </div>
+                            <UserAvatar
+                                avatar={c.author.avatar}
+                                firstName={c.author.firstName}
+                                lastName={c.author.lastName}
+                                className="w-7 h-7 text-[10px]"
+                            />
                             <div className="flex-1 bg-gray-50 rounded-lg px-3 py-1.5">
                                 <p className="text-xs font-semibold text-gray-900">
                                 {c.author.firstName} {c.author.lastName}
@@ -444,6 +467,20 @@ export default function CommunicationPage() {
                 </div>
                 );
                 })
+            )}
+
+            {/* Charger plus */}
+            {!loading && page < totalPages && (
+                <div className="flex justify-center pt-2">
+                <button
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                >
+                    {loadingMore && <Loader2 size={12} className="animate-spin" />}
+                    Charger plus
+                </button>
+                </div>
             )}
             </div>
 

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { OrganizationController } from "./organization.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
+import { logoUpload } from "../../../core/middlewares/upload.middleware";
 
 const router = Router();
 const ctrl = new OrganizationController();
@@ -14,12 +15,17 @@ const requireSuper = authorize("SUPER_ADMIN");
 router.get("/", requireSuper, ctrl.getAll.bind(ctrl));
 router.post("/", requireSuper, ctrl.createByAdmin.bind(ctrl));
 router.get("/paginated", requireSuper, ctrl.getPaginated.bind(ctrl));
+// Doit être déclarée avant "/:id" — sinon "export" serait interprété comme un id
+router.get("/export", requireSuper, ctrl.exportCsv.bind(ctrl));
 
 // Tableau de bord de l'organisation connectée (tout utilisateur authentifié)
 router.get("/my/dashboard", ctrl.getMyDashboard.bind(ctrl));
 
 // Mise à jour de sa propre organisation — réservée ADMIN, MANAGER, RH, FINANCE
 router.patch("/my", authorize("ADMIN", "MANAGER"), ctrl.updateMyOrg.bind(ctrl));
+
+// Upload du logo de l'organisation connectée — réservée ADMIN, MANAGER
+router.post("/my/logo", authorize("ADMIN", "MANAGER"), logoUpload.single("file"), ctrl.uploadLogo.bind(ctrl));
 
 // Routes CRUD/Admin — réservées au SUPER_ADMIN
 router.get("/:id", requireSuper, ctrl.getById.bind(ctrl));

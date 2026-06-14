@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { UserPlus, Search, Pencil, UserX, UserCheck, Shield, } from "lucide-react";
+import { UserPlus, Search, Pencil, UserX, UserCheck, Shield, ChevronLeft, ChevronRight } from "lucide-react";
 import { companyService } from "@/services/companies/company.service";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -59,7 +60,12 @@ function UsersContent() {
 
     const [users, setUsers]           = useState<UserItem[]>([]);
     const [loading, setLoading]       = useState(true);
+    const [searchInput, setSearchInput] = useState("");
     const [search, setSearch]         = useState("");
+    const [department, setDepartment] = useState("");
+    const [page, setPage]             = useState(1);
+    const [total, setTotal]           = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
     const [showCreate, setShowCreate] = useState(
         searchParams.get("action") === "new"
     );
@@ -67,30 +73,36 @@ function UsersContent() {
     const [roleModal, setRoleModal]   = useState<UserItem | null>(null);
     const [processing, setProcessing] = useState(false);
 
+    const LIMIT = 10;
+
+    // Débounce de la recherche
+    useEffect(() => {
+        const t = setTimeout(() => setSearch(searchInput), 400);
+        return () => clearTimeout(t);
+    }, [searchInput]);
+
+    // Revient à la page 1 quand les filtres changent
+    useEffect(() => { setPage(1); }, [search, department]);
+
     const load = useCallback(async () => {
         setLoading(true);
         try {
-        const data = await companyService.getUsers();
-        setUsers(data);
+        const data = await companyService.getUsers({
+            page, limit: LIMIT,
+            search: search || undefined,
+            department: department || undefined,
+        });
+        setUsers(data.data);
+        setTotal(data.total);
+        setTotalPages(data.totalPages);
         } catch {
         toast.error("Erreur chargement utilisateurs");
         } finally {
         setLoading(false);
         }
-    }, []);
+    }, [page, search, department]);
 
     useEffect(() => { load(); }, [load]);
-
-    // Filtre local par recherche
-    const filtered = users.filter((u) => {
-        const q = search.toLowerCase();
-        return (
-        u.firstName.toLowerCase().includes(q) ||
-        u.lastName.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        (u.department ?? "").toLowerCase().includes(q)
-        );
-    });
 
     const handleDeactivate = async (u: UserItem) => {
         if (!confirm(`Désactiver ${u.firstName} ${u.lastName} ?`)) return;
@@ -120,7 +132,7 @@ function UsersContent() {
             <div>
             <h1 className="text-xl font-bold text-gray-900">Utilisateurs</h1>
             <p className="text-sm text-gray-500">
-                {users.length} utilisateur{users.length > 1 ? "s" : ""} dans votre organisation
+                {total} utilisateur{total > 1 ? "s" : ""} dans votre organisation
             </p>
             </div>
             <button
@@ -132,17 +144,25 @@ function UsersContent() {
             </button>
         </div>
 
-        {/* Barre de recherche */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="relative max-w-sm">
+        {/* Barre de recherche + filtre département */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 max-w-sm">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Rechercher un utilisateur..."
                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm outline-none"
             />
             </div>
+            <select
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white text-gray-700 sm:w-56"
+            >
+            <option value="">Tous les départements</option>
+            {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
         </div>
 
         {/* Tableau */}
@@ -165,14 +185,14 @@ function UsersContent() {
                         </td>
                     </tr>
                     ))
-                ) : filtered.length === 0 ? (
+                ) : users.length === 0 ? (
                     <tr>
                     <td colSpan={6} className="px-5 py-10 text-center text-sm text-gray-400">
                         Aucun utilisateur trouvé
                     </td>
                     </tr>
                 ) : (
-                    filtered.map((u) => {
+                    users.map((u) => {
                     const rc = ROLE_CONFIG[u.role] ?? ROLE_CONFIG.EMPLOYE;
                     return (
                         <tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50">
@@ -257,6 +277,31 @@ function UsersContent() {
                 </tbody>
             </table>
             </div>
+
+            {/* Pagination */}
+            {!loading && totalPages > 1 && (
+            <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+                <p className="text-xs text-gray-500">
+                Page {page} sur {totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="p-1.5 rounded-lg border border-gray-200 text-gray-500 disabled:opacity-40 hover:bg-gray-50"
+                >
+                    <ChevronLeft size={15} />
+                </button>
+                <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="p-1.5 rounded-lg border border-gray-200 text-gray-500 disabled:opacity-40 hover:bg-gray-50"
+                >
+                    <ChevronRight size={15} />
+                </button>
+                </div>
+            </div>
+            )}
         </div>
 
         {/* ── Modal Créer utilisateur ── */}
@@ -289,8 +334,8 @@ function UsersContent() {
                 toast.success("Rôle mis à jour");
                 setRoleModal(null);
                 load();
-                } catch (err: any) {
-                toast.error(err.response?.data?.message || "Erreur");
+                } catch (err) {
+                toast.error(getErrorMessage(err, "Erreur"));
                 } finally {
                 setProcessing(false);
                 }
@@ -328,8 +373,8 @@ function CreateUserModal({ onClose, onSuccess,}: {
         await companyService.createUser(data as unknown as Record<string, unknown>);
         toast.success("Utilisateur créé — un email d'invitation lui a été envoyé");
         onSuccess();
-        } catch (err: any) {
-        toast.error(err.response?.data?.message || "Erreur création");
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Erreur création"));
         } finally {
         setLoading(false);
         }

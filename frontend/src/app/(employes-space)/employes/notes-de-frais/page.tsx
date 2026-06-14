@@ -22,9 +22,10 @@ interface Expense {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-    PENDING:  { label: "Pending",  color: "#f59e0b", bg: "#fffbeb" },
-    APPROVED: { label: "Approved", color: "#10b981", bg: "#f0fdf4" },
-    REJECTED: { label: "Rejected", color: "#ef4444", bg: "#fef2f2" },
+    PENDING:   { label: "En attente", color: "#f59e0b", bg: "#fffbeb" },
+    APPROVED:  { label: "Approuvé",   color: "#10b981", bg: "#f0fdf4" },
+    REJECTED:  { label: "Rejeté",     color: "#ef4444", bg: "#fef2f2" },
+    CANCELLED: { label: "Annulé",     color: "#6b7280", bg: "#f9fafb" },
 };
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
@@ -71,7 +72,7 @@ export default function NotesDeFragsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[
             { label: "En attente",     value: totalPending,          color: "#f59e0b", bg: "#fffbeb" },
-            { label: "Remboursé",      value: `€${totalApproved.toLocaleString()}`, color: "#10b981", bg: "#f0fdf4" },
+            { label: "Remboursé",      value: `${totalApproved.toLocaleString()} XOF`, color: "#10b981", bg: "#f0fdf4" },
             { label: "Total soumis",   value: expenses.length,       color: "#3b82f6", bg: "#eff6ff" },
             ].map((s) => (
             <div key={s.label}
@@ -124,7 +125,7 @@ export default function NotesDeFragsPage() {
                         {new Date(exp.expenseDate ?? exp.createdAt).toLocaleDateString("fr-FR")}
                         </td>
                         <td className="px-5 py-3 text-sm font-semibold text-gray-900">
-                        €{exp.amount.toLocaleString()}
+                        {exp.amount.toLocaleString()} XOF
                         </td>
                         <td className="px-5 py-3">
                         <span className="text-xs font-medium px-2 py-1 rounded-full"
@@ -178,7 +179,7 @@ export default function NotesDeFragsPage() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                     <p className="text-xs text-gray-400">Montant</p>
-                    <p className="font-semibold text-gray-900">€{selected.amount.toLocaleString()}</p>
+                    <p className="font-semibold text-gray-900">{selected.amount.toLocaleString()} XOF</p>
                 </div>
                 <div>
                     <p className="text-xs text-gray-400">Catégorie</p>

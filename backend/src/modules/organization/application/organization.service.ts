@@ -3,13 +3,14 @@ import { ValidateOrgDto, RejectOrgDto, UpdateModulesDto } from "../interfaces/or
 import { OrgStatus } from "@prisma/client";
 import { prisma } from "../../../core/config/prisma";
 import { SettingsRepository } from "../../settings/infrastructure/settings.repository";
-import { sendMail } from "../../../core/config/mailer";
+import { sendMail } from "../../../core/services/email.service";
 import {
     organizationApprovedEmail,
     organizationRejectedEmail,
     organizationInvitationEmail,
     welcomeEmail,
 } from "../../../core/mailer/email.templates";
+import { logger } from "../../../core/utils/logger";
 
 export class OrganizationService {
     private repo = new OrganizationRepository();
@@ -153,7 +154,7 @@ export class OrganizationService {
         await sendMail({ to: dto.adminEmail, subject, html });
 
         if (process.env.NODE_ENV !== "production") {
-            console.log(`[DEV] Lien d'invitation : ${invitationLink}`);
+            logger.debug(`Lien d'invitation : ${invitationLink}`);
         }
 
         return { ...result, invitationLink };
@@ -196,7 +197,7 @@ export class OrganizationService {
         }
 
         if (process.env.NODE_ENV !== "production") {
-            console.log(`[DEV] Lien activation : ${invitationLink}`);
+            logger.debug(`Lien activation : ${invitationLink}`);
         }
 
         return { ...result.org, invitationLink };
@@ -204,6 +205,11 @@ export class OrganizationService {
 
     async getPaginated(params: Parameters<OrganizationRepository["findPaginated"]>[0]) {
         return this.repo.findPaginated(params);
+    }
+
+    /** Liste complète (sans pagination) pour export CSV */
+    async getAllForExport(filters: { search?: string; status?: string; module?: string }) {
+        return this.repo.findAllForExport(filters);
     }
 
     async softDelete(id: string) {

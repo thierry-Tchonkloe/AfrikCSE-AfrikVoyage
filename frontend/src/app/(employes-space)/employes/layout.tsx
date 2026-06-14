@@ -1,16 +1,20 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useLayoutEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {
     LayoutDashboard, Plane, FileText, Calendar,
     Gift, MessageSquare, CalendarDays, User, Settings,
-    ChevronLeft, ChevronRight, Bell, LogOut, Menu,
-    Search, Mail, Sun, Moon,
+    ChevronLeft, ChevronRight, LogOut, Menu,
+    Mail, Sun, Moon, LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
+import { useTheme } from "@/hooks/useTheme";
+import { NotificationBell } from "@/components/shared/NotificationBell";
+import { UserAvatar } from "@/components/employes/UserAvatar";
+import { GlobalSearch } from "@/components/shared/GlobalSearch";
 
 // Navigation principale employé
 const NAV_ITEMS = [
@@ -21,6 +25,7 @@ const NAV_ITEMS = [
     { href: "/employes/avantages",      label: "Mes avantages",        icon: Gift },
     { href: "/employes/communication",  label: "Communication CSE",    icon: MessageSquare },
     { href: "/employes/evenements",     label: "Calendrier des Évènements", icon: CalendarDays },
+    { href: "/employes/support",        label: "Support",              icon: LifeBuoy },
 ];
 
 const NAV_BOTTOM = [
@@ -35,12 +40,7 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
     const pathname = usePathname();
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [darkMode, setDarkMode]       = useState(false);
-    const [search, setSearch]           = useState("");
-
-    useEffect(() => {
-        document.documentElement.classList.toggle("dark", darkMode);
-    }, [darkMode]);
+    const { darkMode, setDarkMode } = useTheme();
 
     // useLayoutEffect (et non useEffect) pour fixer l'état AVANT le premier paint :
     // évite qu'un panneau plein écran apparaisse brièvement sur mobile au chargement.
@@ -186,12 +186,13 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
             <div className="p-3 border-t border-white/10">
             {sidebarOpen ? (
                 <div className="flex items-center gap-2">
-                <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ background: ACCENT }}
-                >
-                    {user.firstName?.[0] ?? "E"}{user.lastName?.[0] ?? ""}
-                </div>
+                <UserAvatar
+                    avatar={user.avatar}
+                    firstName={user.firstName}
+                    lastName={user.lastName}
+                    background={ACCENT}
+                    className="w-8 h-8 text-xs"
+                />
                 <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-white truncate">
                     {user.firstName} {user.lastName}
@@ -230,18 +231,7 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
 
             {/* Barre de recherche globale */}
             <div className="hidden sm:flex items-center flex-1 max-w-md mx-4">
-                <div className="relative w-full">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search trips, expenses, benefits..."
-                    className={cn(
-                        "w-full pl-9 pr-4 py-2 border rounded-xl text-sm outline-none",
-                        darkMode ? "bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500" : "bg-gray-50 border-gray-200"
-                    )}
-                />
-                </div>
+                <GlobalSearch scope="employee" darkMode={darkMode} placeholder="Rechercher voyages, frais, avantages..." />
             </div>
 
             {/* Actions droite */}
@@ -255,10 +245,7 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
 
-                <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 relative">
-                <Bell size={18} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
-                </button>
+                <NotificationBell darkMode={darkMode} notificationsHref="/employes/notifications" />
                 <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
                 <Mail size={18} />
                 </button>
@@ -266,13 +253,14 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                     "flex items-center gap-2 pl-2 border-l",
                     darkMode ? "border-gray-700" : "border-gray-200"
                 )}>
-                <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer"
-                    style={{ background: ACCENT }}
+                <UserAvatar
+                    avatar={user.avatar}
+                    firstName={user.firstName}
+                    lastName={user.lastName}
+                    background={ACCENT}
+                    className="w-8 h-8 text-xs cursor-pointer"
                     onClick={() => router.push("/employes/profile")}
-                >
-                    {user.firstName?.[0] ?? "E"}{user.lastName?.[0] ?? ""}
-                </div>
+                />
                 <div className="hidden sm:block">
                     <p className="text-xs font-semibold">
                     {user.firstName} {user.lastName}

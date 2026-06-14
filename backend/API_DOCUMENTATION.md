@@ -46,8 +46,10 @@ La plateforme utilise des **cookies HTTP-only** (pas de header Authorization).
 | GET | `/api/organizations` | SUPER_ADMIN | Liste toutes les organisations |
 | POST | `/api/organizations` | SUPER_ADMIN | Créer une organisation |
 | GET | `/api/organizations/paginated` | SUPER_ADMIN | Liste paginée avec filtres |
+| GET | `/api/organizations/export` | SUPER_ADMIN | Export CSV des organisations (filtres: search, status, module) |
 | GET | `/api/organizations/my/dashboard` | Auth | Dashboard de l'org connectée |
 | **PATCH** | **`/api/organizations/my`** | **ADMIN, MANAGER** | **Mettre à jour sa propre organisation** |
+| POST | `/api/organizations/my/logo` | ADMIN, MANAGER | Upload du logo de l'organisation (multipart) |
 | GET | `/api/organizations/:id` | SUPER_ADMIN | Détails d'une organisation |
 | PATCH | `/api/organizations/:id/validate` | SUPER_ADMIN | Valider une org en attente |
 | PATCH | `/api/organizations/:id/reject` | SUPER_ADMIN | Rejeter une org en attente |
@@ -131,7 +133,29 @@ La plateforme utilise des **cookies HTTP-only** (pas de header Authorization).
 | PATCH | `/api/benefits/requests/:id/approve` | ADMIN, MANAGER | Approuver une demande |
 | PATCH | `/api/benefits/requests/:id/reject` | ADMIN, MANAGER | Rejeter une demande (note requise) |
 | POST | `/api/benefits/requests/bulk-approve` | ADMIN, MANAGER | Approuver en masse |
-| GET | `/api/benefits/report` | ADMIN, FINANCE | Rapport budgétaire annuel |
+| GET | `/api/benefits/report` | SUPER_ADMIN, ADMIN, FINANCE | Rapport budgétaire annuel |
+| GET | `/api/benefits/compliance` | SUPER_ADMIN, ADMIN, FINANCE | Rapport de conformité (justificatifs manquants) |
+
+---
+
+## Voyages — vue admin (`/api/travels`)
+
+| Méthode | Route | Rôle requis | Description |
+|---------|-------|-------------|-------------|
+| GET | `/api/travels` | SUPER_ADMIN, ADMIN, MANAGER, FINANCE | Liste paginée des voyages |
+| GET | `/api/travels/stats` | SUPER_ADMIN, ADMIN, MANAGER, FINANCE | Statistiques voyages |
+| GET | `/api/travels/approvals/stats` | SUPER_ADMIN, ADMIN, MANAGER | Statistiques des approbations |
+| POST | `/api/travels/bulk-approve` | SUPER_ADMIN, ADMIN, MANAGER | Approuver plusieurs voyages en masse |
+| GET | `/api/travels/expenses` | SUPER_ADMIN, ADMIN, MANAGER, FINANCE | Liste des notes de frais |
+| GET | `/api/travels/expenses/stats` | SUPER_ADMIN, ADMIN, FINANCE | Statistiques des notes de frais |
+| PATCH | `/api/travels/expenses/:id/approve` | SUPER_ADMIN, ADMIN, MANAGER | Approuver une note de frais |
+| PATCH | `/api/travels/expenses/:id/reject` | SUPER_ADMIN, ADMIN, MANAGER | Rejeter une note de frais (note requise) |
+| GET | `/api/travels/:id` | SUPER_ADMIN, ADMIN, MANAGER, FINANCE | Détails d'un voyage |
+| PATCH | `/api/travels/:id/approve` | SUPER_ADMIN, ADMIN, MANAGER | Approuver une demande de voyage |
+| PATCH | `/api/travels/:id/reject` | SUPER_ADMIN, ADMIN, MANAGER | Rejeter une demande (note requise) |
+| PATCH | `/api/travels/:id/status` | SUPER_ADMIN, ADMIN, MANAGER | Changer le statut (planifié, en cours, terminé...) |
+| PATCH | `/api/travels/:id/partner` | SUPER_ADMIN, ADMIN, MANAGER | Assigner une agence/partenaire de voyage |
+| PATCH | `/api/travels/:id/payment` | SUPER_ADMIN, ADMIN, FINANCE | Mettre à jour le statut de paiement |
 
 ---
 
@@ -197,6 +221,7 @@ NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY=pk_live_...  # Clé publique pour le widget
 | GET | `/api/messaging/conversations/:id/messages` | Auth | Messages d'une conversation |
 | POST | `/api/messaging/conversations/:id/messages` | Auth | Envoyer un message |
 | PATCH | `/api/messaging/conversations/:id/read` | Auth | Marquer comme lu |
+| PATCH | `/api/messaging/conversations/:id/status` | SUPER_ADMIN | Changer le statut (`OPEN` / `RESOLVED`) |
 
 ---
 
@@ -276,6 +301,82 @@ NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY=pk_live_...  # Clé publique pour le widget
 | GET | `/api/catalog` | Public | Liste du catalogue (filtres: category, search) |
 | GET | `/api/catalog/categories` | Public | Catégories du catalogue |
 | GET | `/api/catalog/:id` | Public | Détail d'un item catalogue |
+
+---
+
+## Notifications (`/api/notifications`)
+
+| Méthode | Route | Rôle requis | Description |
+|---------|-------|-------------|-------------|
+| GET | `/api/notifications` | Auth | Liste paginée de mes notifications (filtre `type` optionnel) |
+| GET | `/api/notifications/unread-count` | Auth | Nombre de notifications non lues |
+| PATCH | `/api/notifications/read-all` | Auth | Marquer toutes mes notifications comme lues |
+| PATCH | `/api/notifications/:id/read` | Auth | Marquer une notification comme lue |
+
+### Types de notification (`NotificationType`)
+`APPROVAL_REQUEST`, `REQUEST_APPROVED`, `REQUEST_REJECTED`, `TRIP_REMINDER`, `NEW_EVENT`, `MESSAGE_RECEIVED`, `SYSTEM_UPDATE`
+
+---
+
+## Recherche globale (`/api/search`)
+
+| Méthode | Route | Rôle requis | Description |
+|---------|-------|-------------|-------------|
+| GET | `/api/search?q=...&scope=employee\|company\|admin` | Auth | Recherche transverse selon le scope |
+
+- `q` — terme recherché (minimum 2 caractères, sinon renvoie `{ "results": [] }`)
+- `scope=employee` — recherche dans mes voyages, notes de frais, avantages et événements
+- `scope=company` — recherche dans les employés, voyages, notes de frais et avantages de l'organisation (ADMIN, MANAGER, RH, FINANCE)
+- `scope=admin` — recherche dans les organisations et utilisateurs (SUPER_ADMIN)
+
+### Réponse
+```json
+{
+  "results": [
+    { "id": "...", "type": "travel", "title": "Paris", "subtitle": "En attente", "url": "/employes/voyages" }
+  ]
+}
+```
+
+---
+
+## Plans tarifaires (`/api/plan-configs`)
+
+| Méthode | Route | Rôle requis | Description |
+|---------|-------|-------------|-------------|
+| GET | `/api/plan-configs/public` | Public | Plans actifs (page tarifs du site vitrine) |
+| GET | `/api/plan-configs` | Auth | Liste des plans avec nb d'organisations |
+| GET | `/api/plan-configs/:id` | Auth | Détail d'un plan |
+| POST | `/api/plan-configs` | SUPER_ADMIN | Créer un plan |
+| PATCH | `/api/plan-configs/:id` | SUPER_ADMIN | Modifier un plan |
+| DELETE | `/api/plan-configs/:id` | SUPER_ADMIN | Supprimer un plan inutilisé |
+
+### `POST /api/plan-configs` — Corps de la requête
+```json
+{
+  "name": "STARTER",
+  "label": "Starter",
+  "price": "29 000 FCFA / mois",
+  "maxUsers": 50,
+  "hasVoyage": true,
+  "hasCSE": true,
+  "features": ["Gestion des avantages CSE", "Voyages d'affaires"],
+  "isActive": true
+}
+```
+
+---
+
+## Journal d'audit (`/api/audit-logs`)
+
+| Méthode | Route | Rôle requis | Description |
+|---------|-------|-------------|-------------|
+| GET | `/api/audit-logs` | SUPER_ADMIN | Liste paginée et filtrable |
+| GET | `/api/audit-logs/actions` | SUPER_ADMIN | Types d'actions distinctes (pour filtres) |
+| GET | `/api/audit-logs/export` | SUPER_ADMIN | Export CSV du journal |
+
+### Filtres (query params)
+`page`, `limit`, `userId`, `action`, `entity`, `organizationId`, `dateFrom`, `dateTo`, `search`
 
 ---
 

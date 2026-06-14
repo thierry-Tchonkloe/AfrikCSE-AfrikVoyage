@@ -29,10 +29,13 @@ export const employeeService = {
     async uploadReceipt(file: File) {
         const formData = new FormData();
         formData.append("file", file);
-        // Ne pas fixer "Content-Type" manuellement : le navigateur doit
-        // générer lui-même l'en-tête multipart/form-data avec son boundary,
-        // sinon le parsing (busboy/multer) échoue côté backend.
-        const { data } = await api.post("/employee/expenses/upload", formData);
+        // L'instance axios fixe "Content-Type: application/json" par défaut,
+        // ce qui ferait JSON-stringifier le FormData (le File devient {}).
+        // On efface l'en-tête ici pour que le navigateur génère lui-même
+        // le "multipart/form-data; boundary=..." correct.
+        const { data } = await api.post("/employee/expenses/upload", formData, {
+            headers: { "Content-Type": undefined },
+        });
         return data as { url: string; name: string; size: string };
     },
 
@@ -54,6 +57,7 @@ export const employeeService = {
         amount: number;
         description?: string;
         urgency?: "LOW" | "MEDIUM" | "HIGH";
+        receipts?: string[];
     }) {
         const { data } = await api.post("/employee/benefits/requests", payload);
         return data;
@@ -71,6 +75,14 @@ export const employeeService = {
     async updateProfile(payload: Record<string, unknown>) {
         const { data } = await api.patch("/employee/profile", payload);
         return data;
+    },
+    async uploadAvatar(file: File) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const { data } = await api.post("/employee/avatar", formData, {
+            headers: { "Content-Type": undefined },
+        });
+        return data as { avatar: string };
     },
 
     // ── Documents ─────────────────────────────────────────────────────────────
@@ -156,6 +168,44 @@ export const employeeService = {
     },
     async getComments(postId: string) {
         const { data } = await api.get(`/communication/posts/${postId}/comments`);
+        return data;
+    },
+
+    // ── Notifications ─────────────────────────────────────────────────────────
+    async getNotifications(page = 1) {
+        const { data } = await api.get("/notifications", { params: { page } });
+        return data;
+    },
+    async getUnreadNotificationCount() {
+        const { data } = await api.get("/notifications/unread-count");
+        return data as { count: number };
+    },
+    async markNotificationAsRead(id: string) {
+        const { data } = await api.patch(`/notifications/${id}/read`);
+        return data;
+    },
+    async markAllNotificationsAsRead() {
+        const { data } = await api.patch("/notifications/read-all");
+        return data;
+    },
+
+    // ── Messagerie / Support ──────────────────────────────────────────────────
+    async getSupportConversation() {
+        const { data } = await api.get("/messaging/conversations/support");
+        return data;
+    },
+    async getConversationMessages(conversationId: string, page = 1) {
+        const { data } = await api.get(`/messaging/conversations/${conversationId}/messages`, {
+            params: { page },
+        });
+        return data;
+    },
+    async sendConversationMessage(conversationId: string, content: string) {
+        const { data } = await api.post(`/messaging/conversations/${conversationId}/messages`, { content });
+        return data;
+    },
+    async markConversationAsRead(conversationId: string) {
+        const { data } = await api.patch(`/messaging/conversations/${conversationId}/read`);
         return data;
     },
 

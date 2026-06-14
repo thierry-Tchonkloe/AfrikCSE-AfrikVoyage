@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Save, Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 import api from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 
 // Mock activité
 const ACTIVITY_LOG = [
@@ -16,6 +18,7 @@ const ACTIVITY_LOG = [
 
 export default function ParametresPage() {
     const { user, logout } = useAuth();
+    const { darkMode, setDarkMode } = useTheme();
     const [saving, setSaving] = useState(false);
 
     // Sécurité
@@ -39,7 +42,6 @@ export default function ParametresPage() {
         currency: "USD - US Dollar",
         timezone: "EST - Eastern Standard Time",
         dateFormat: "MM/DD/YY",
-        darkMode: false,
     });
 
     // 2FA
@@ -69,8 +71,8 @@ export default function ParametresPage() {
         await api.patch("/auth/change-password", { currentPassword: currentPwd, newPassword: newPwd });
         toast.success("Mot de passe modifié !");
         setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
-        } catch (err: any) {
-        toast.error(err.response?.data?.message ?? "Erreur");
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Erreur"));
         } finally {
         setSaving(false);
         }
@@ -298,13 +300,13 @@ export default function ParametresPage() {
                 <p className="text-xs text-gray-400">Switch to dark theme</p>
             </div>
             <button
-                onClick={() => setPrefs({ ...prefs, darkMode: !prefs.darkMode })}
+                onClick={() => setDarkMode(!darkMode)}
                 className="relative w-9 h-5 rounded-full transition-colors"
-                style={{ background: prefs.darkMode ? "#0f766e" : "#d1d5db" }}
+                style={{ background: darkMode ? "#0f766e" : "#d1d5db" }}
             >
                 <span
                 className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
-                style={{ transform: prefs.darkMode ? "translateX(0px)" : "translateX(-16px)" }}
+                style={{ transform: darkMode ? "translateX(0px)" : "translateX(-16px)" }}
                 />
             </button>
             </div>

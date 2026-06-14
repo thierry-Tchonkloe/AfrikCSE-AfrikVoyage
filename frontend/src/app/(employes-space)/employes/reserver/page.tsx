@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plane, Hotel, Train, Car, Filter, ChevronLeft, ChevronRight, MapPin, Loader2 } from "lucide-react";
+import { Search, Plane, Hotel, Train, Car, Filter, ChevronLeft, ChevronRight, MapPin, Loader2, X } from "lucide-react";
 import { employeeService } from "@/services/employes/employee.service";
 import { toast } from "sonner";
 
@@ -87,6 +87,18 @@ export default function ReserverPage() {
     const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
     const [selectedStops, setSelectedStops]       = useState<string[]>([]);
     const [selectedTimes, setSelectedTimes]       = useState<string[]>([]);
+
+    // ── Confirmation de réservation ──────────────────────────────────────────
+    const [confirmFlight, setConfirmFlight] = useState<FlightOffer | null>(null);
+    const [purpose, setPurpose]       = useState("");
+    const [department, setDepartment] = useState("");
+    const [confirmSubmitting, setConfirmSubmitting] = useState(false);
+
+    useEffect(() => {
+        employeeService.getProfile()
+            .then((profile) => setDepartment(profile?.department ?? ""))
+            .catch(() => {});
+    }, []);
 
     const TABS: { id: TabType; icon: React.ElementType }[] = [
         { id: "Flights",    icon: Plane },
@@ -176,22 +188,37 @@ export default function ReserverPage() {
         }
     };
 
-    const handleSelect = async (flight: FlightOffer) => {
-        setBookingId(flight.id);
+    const handleSelect = (flight: FlightOffer) => {
+        setConfirmFlight(flight);
+        setPurpose(`Vol ${flight.airline}`);
+    };
+
+    const closeConfirm = () => {
+        setConfirmFlight(null);
+        setPurpose("");
+    };
+
+    const handleConfirmSubmit = async () => {
+        if (!confirmFlight) return;
+        setBookingId(confirmFlight.id);
+        setConfirmSubmitting(true);
         try {
             await employeeService.createTravel({
-                destination: `${flight.outbound.from} → ${flight.outbound.to}`,
-                purpose: `Vol ${flight.airline}`,
-                departureDate: flight.outbound.departDate,
-                returnDate: flight.inbound ? flight.inbound.departDate : flight.outbound.departDate,
-                estimatedCost: flight.price,
+                destination: `${confirmFlight.outbound.from} → ${confirmFlight.outbound.to}`,
+                purpose,
+                department: department || undefined,
+                departureDate: confirmFlight.outbound.departDate,
+                returnDate: confirmFlight.inbound ? confirmFlight.inbound.departDate : confirmFlight.outbound.departDate,
+                estimatedCost: confirmFlight.price,
             });
-            toast.success(`Vol ${flight.airline} réservé — demande ajoutée à "Mes voyages"`);
+            toast.success("Votre demande est en attente d'approbation");
             router.push("/employes/voyages");
         } catch {
             toast.error("Erreur lors de la création de la demande de voyage");
         } finally {
             setBookingId(null);
+            setConfirmSubmitting(false);
+            closeConfirm();
         }
     };
 
@@ -557,6 +584,91 @@ export default function ReserverPage() {
                 </div>
                 )}
             </div>
+            </div>
+        )}
+
+        {/* ── Modal de confirmation ──────────────────────────────────────────── */}
+        {confirmFlight && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+                    <div className="flex justify-between items-center mb-5">
+                        <h3 className="font-bold text-gray-900">Confirmer la demande de voyage</h3>
+                        <button onClick={closeConfirm} className="text-gray-400 hover:text-gray-600">
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Destination</label>
+                            <div className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-700">
+                                {confirmFlight.outbound.from} → {confirmFlight.outbound.to}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Départ</label>
+                                <div className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-700">
+                                    {new Date(confirmFlight.outbound.departDate).toLocaleDateString("fr-FR")}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Retour</label>
+                                <div className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-700">
+                                    {confirmFlight.inbound
+                                        ? new Date(confirmFlight.inbound.departDate).toLocaleDateString("fr-FR")
+                                        : "—"}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Objet du voyage *</label>
+                            <input
+                                value={purpose}
+                                onChange={(e) => setPurpose(e.target.value)}
+                                placeholder="Ex : Mission commerciale, formation..."
+                                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-400"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Département</label>
+                            <input
+                                value={department}
+                                onChange={(e) => setDepartment(e.target.value)}
+                                placeholder="Ex : Ventes, RH, IT..."
+                                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-400"
+                            />
+                        </div>
+
+                        <div className="flex justify-between items-center px-3 py-2.5 rounded-lg" style={{ background: "#f0fdf4" }}>
+                            <span className="text-xs text-gray-600">Coût estimé</span>
+                            <span className="text-sm font-bold" style={{ color: "#0f766e" }}>
+                                {confirmFlight.price.toLocaleString()} {confirmFlight.currency}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                        <button
+                            onClick={closeConfirm}
+                            className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            onClick={handleConfirmSubmit}
+                            disabled={confirmSubmitting || !purpose.trim()}
+                            className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-70"
+                            style={{ background: "#0f766e" }}
+                        >
+                            {confirmSubmitting && <Loader2 size={14} className="animate-spin" />}
+                            Confirmer la demande
+                        </button>
+                    </div>
+                </div>
             </div>
         )}
         </div>

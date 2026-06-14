@@ -92,7 +92,7 @@ export default function IntegrationsPage() {
             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
             🔌 Statut de connexion
             </h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-3 border border-gray-100 rounded-xl">
                 <p className="text-xs text-gray-500 mb-1">Outil connecté</p>
                 <p className="text-sm font-semibold text-gray-900">SAP SuccessFactors</p>

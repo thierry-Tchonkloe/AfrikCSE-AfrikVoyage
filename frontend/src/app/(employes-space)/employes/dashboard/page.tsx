@@ -23,6 +23,7 @@ interface DashboardData {
     } | null;
     recentActivity: Array<{
         id: string;
+        type: "expense" | "travel";
         title: string;
         amount: number;
         status: string;
@@ -31,42 +32,26 @@ interface DashboardData {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-    APPROVED: { label: "Approved", color: "#10b981" },
-    PENDING:  { label: "Pending",  color: "#f59e0b" },
-    REJECTED: { label: "Rejected", color: "#ef4444" },
+    APPROVED:    { label: "Approuvé",  color: "#10b981" },
+    PENDING:     { label: "En attente", color: "#f59e0b" },
+    REJECTED:    { label: "Refusé",    color: "#ef4444" },
+    CANCELLED:   { label: "Annulé",    color: "#6b7280" },
+    IN_PROGRESS: { label: "En cours",  color: "#3b82f6" },
+    COMPLETED:   { label: "Terminé",   color: "#10b981" },
 };
 
-// Activité mock enrichie
-const MOCK_ACTIVITY = [
-    {
-        id: "1", icon: "✅", type: "expense",
-        title: "Note de frais approuvée",
-        desc: "Your expense report #EXP-2847 has been approved by your manager.",
-        badge: "Approved", badgeColor: "#10b981",
-        time: "2 hours ago",
-    },
-    {
-        id: "2", icon: "✈️", type: "travel",
-        title: "Rappel de voyage : conférence à Londres",
-        desc: "Your trip to London is coming up in 3 days.",
-        badge: "Reminder", badgeColor: "#3b82f6",
-        time: "5 hours ago",
-    },
-    {
-        id: "3", icon: "🎁", type: "benefit",
-        title: "Nouveaux avantages CSE disponibles",
-        desc: "Check out the new gym membership and wellness packages.",
-        badge: "New", badgeColor: "#8b5cf6",
-        time: "1 day ago",
-    },
-    {
-        id: "4", icon: "⏳", type: "expense",
-        title: "Note de frais en attente de vérification",
-        desc: "Your expense report #EXP-2851 is awaiting manager approval.",
-        badge: "Pending", badgeColor: "#f59e0b",
-        time: "2 days ago",
-    },
-];
+const ACTIVITY_ICONS: Record<DashboardData["recentActivity"][number]["type"], string> = {
+    expense: "📋",
+    travel:  "✈️",
+};
+
+function formatTimeAgo(iso: string): string {
+    const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 60) return "À l'instant";
+    if (diff < 3600) return `il y a ${Math.round(diff / 60)} min`;
+    if (diff < 86400) return `il y a ${Math.round(diff / 3600)} h`;
+    return `il y a ${Math.round(diff / 86400)} j`;
+}
 
 export default function EmployeeDashboardPage() {
     const { user } = useAuth();
@@ -83,37 +68,37 @@ export default function EmployeeDashboardPage() {
 
     const STAT_CARDS = [
         {
-        label: "CSE Balance",
-        value: data ? `€${data.stats.cseBalance.toLocaleString()}` : "€1,250.00",
-        sub: "Available to spend",
-        badge: "Active",
+        label: "Solde CSE",
+        value: data ? `${data.stats.cseBalance.toLocaleString()} XOF` : "—",
+        sub: "Disponible à dépenser",
+        badge: "Actif",
         badgeColor: "#10b981",
         icon: "💳",
         iconBg: "#f0fdf4",
         },
         {
-        label: "Next Trip",
-        value: data?.stats.nextTripDays !== null ? `${data?.stats.nextTripDays} days` : "—",
-        sub: data?.stats.nextTripRoute ?? "No upcoming trip",
-        badge: "Upcoming",
+        label: "Prochain voyage",
+        value: data?.stats.nextTripDays != null ? `${data.stats.nextTripDays} j` : "—",
+        sub: data?.stats.nextTripRoute ?? "Aucun voyage à venir",
+        badge: "À venir",
         badgeColor: "#3b82f6",
         icon: "✈️",
         iconBg: "#eff6ff",
         },
         {
-        label: "Expense Reports",
-        value: data ? String(data.stats.pendingExpenses) : "2",
-        sub: "Awaiting approval",
-        badge: "Pending",
+        label: "Notes de frais",
+        value: data ? String(data.stats.pendingExpenses) : "—",
+        sub: "En attente d'approbation",
+        badge: "En attente",
         badgeColor: "#f59e0b",
         icon: "📋",
         iconBg: "#fffbeb",
         },
         {
-        label: "Benefits Used",
-        value: data ? String(data.stats.benefitsUsed) : "12",
-        sub: "This year",
-        badge: "New",
+        label: "Avantages utilisés",
+        value: data ? String(data.stats.benefitsUsed) : "—",
+        sub: "Cette année",
+        badge: "Cumulé",
         badgeColor: "#8b5cf6",
         icon: "🎁",
         iconBg: "#f5f3ff",
@@ -124,8 +109,8 @@ export default function EmployeeDashboardPage() {
         {
         label: "Mes voyages d'affaires",
         desc: "Consultez et gérez vos voyages d'affaires à venir et passés",
-        sub: "3 active trips",
-        subLink: "View all →",
+        sub: data ? `${data.stats.activeTravels} voyage${data.stats.activeTravels > 1 ? "s" : ""} actif${data.stats.activeTravels > 1 ? "s" : ""}` : "—",
+        subLink: "Voir tout →",
         icon: Plane,
         href: "/employes/voyages",
         color: "#3b82f6",
@@ -133,8 +118,8 @@ export default function EmployeeDashboardPage() {
         {
         label: "Mes notes de frais",
         desc: "Soumettez et suivez vos demandes de remboursement de frais",
-        sub: "2 pending",
-        subLink: "View all →",
+        sub: data ? `${data.stats.pendingExpenses} en attente` : "—",
+        subLink: "Voir tout →",
         icon: FileText,
         href: "/employes/notes-de-frais",
         color: "#f59e0b",
@@ -142,8 +127,8 @@ export default function EmployeeDashboardPage() {
         {
         label: "Mes avantages CSE",
         desc: "Explorez et profitez de vos avantages sociaux",
-        sub: "€1,250 available",
-        subLink: "Explore →",
+        sub: data ? `${data.stats.cseBalance.toLocaleString()} XOF disponibles` : "—",
+        subLink: "Explorer →",
         icon: Gift,
         href: "/employes/avantages",
         color: "#10b981",
@@ -155,10 +140,10 @@ export default function EmployeeDashboardPage() {
         {/* Bienvenue */}
         <div>
             <h1 className="text-xl font-bold text-gray-900">
-            Welcome back, {user?.firstName} ! 👋
+            Bon retour, {user?.firstName} ! 👋
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
-            Here&#39;s what&#39;s happening with your account today.
+            Voici un aperçu de votre activité aujourd&#39;hui.
             </p>
         </div>
 
@@ -190,7 +175,7 @@ export default function EmployeeDashboardPage() {
 
         {/* Quick Access */}
         <div>
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Quick Access</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">Accès rapide</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {QUICK_ACCESS.map((qa) => (
                 <div key={qa.label}
@@ -227,29 +212,46 @@ export default function EmployeeDashboardPage() {
             <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
                 <h3 className="font-semibold text-gray-900">Activité récente</h3>
-                <button className="text-xs hover:underline" style={{ color: "#0f766e" }}>
-                View all
+                <button
+                onClick={() => router.push("/employes/notes-de-frais")}
+                className="text-xs hover:underline" style={{ color: "#0f766e" }}>
+                Voir tout
                 </button>
             </div>
             <div className="divide-y divide-gray-50">
-                {MOCK_ACTIVITY.map((act) => (
-                <div key={act.id} className="px-5 py-4 flex items-start gap-3">
-                    <span className="text-xl shrink-0 mt-0.5">{act.icon}</span>
-                    <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium text-gray-900">{act.title}</p>
-                        <span
-                        className="text-xs font-medium px-2 py-0.5 rounded-full"
-                        style={{ color: act.badgeColor, background: act.badgeColor + "18" }}
-                        >
-                        {act.badge}
-                        </span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{act.desc}</p>
-                    <p className="text-xs text-gray-400 mt-1">{act.time}</p>
-                    </div>
+                {loading ? (
+                [...Array(4)].map((_, i) => (
+                    <div key={i} className="px-5 py-4 h-14 animate-pulse" />
+                ))
+                ) : !data?.recentActivity.length ? (
+                <div className="px-5 py-8 text-center text-sm text-gray-400">
+                    Aucune activité récente.
                 </div>
-                ))}
+                ) : (
+                data.recentActivity.map((act) => {
+                    const statusInfo = STATUS_CONFIG[act.status] ?? { label: act.status, color: "#6b7280" };
+                    return (
+                    <div key={act.id} className="px-5 py-4 flex items-start gap-3">
+                        <span className="text-xl shrink-0 mt-0.5">{ACTIVITY_ICONS[act.type]}</span>
+                        <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-medium text-gray-900">{act.title}</p>
+                            <span
+                            className="text-xs font-medium px-2 py-0.5 rounded-full"
+                            style={{ color: statusInfo.color, background: statusInfo.color + "18" }}
+                            >
+                            {statusInfo.label}
+                            </span>
+                        </div>
+                        {act.amount > 0 && (
+                            <p className="text-xs text-gray-500 mt-0.5">{act.amount.toLocaleString()} XOF</p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-1">{formatTimeAgo(act.createdAt)}</p>
+                        </div>
+                    </div>
+                    );
+                })
+                )}
             </div>
             </div>
 
@@ -268,34 +270,19 @@ export default function EmployeeDashboardPage() {
                     </div>
                     <div className="space-y-1.5 text-xs text-gray-600">
                     <div className="flex justify-between">
-                        <span className="text-gray-400">Departure</span>
-                        <span>{new Date(data.nextTravel.departureDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                        <span className="text-gray-400">Départ</span>
+                        <span>{new Date(data.nextTravel.departureDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-gray-400">Return</span>
-                        <span>{new Date(data.nextTravel.returnDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                        <span className="text-gray-400">Retour</span>
+                        <span>{new Date(data.nextTravel.returnDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</span>
                     </div>
                     </div>
                 </>
                 ) : (
-                <div className="text-center py-4">
+                <div className="text-center py-6">
                     <Plane size={24} className="text-gray-300 mx-auto mb-2" />
-                    <p className="text-xs text-gray-400">Paris → London</p>
-                    <p className="text-xs text-gray-400">Business Conference</p>
-                    <div className="mt-3 space-y-1.5 text-xs text-gray-600">
-                    <div className="flex justify-between">
-                        <span className="text-gray-400">Departure</span>
-                        <span>Dec 23, 2024</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-400">Return</span>
-                        <span>Dec 26, 2024</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-400">Duration</span>
-                        <span>3 days</span>
-                    </div>
-                    </div>
+                    <p className="text-xs text-gray-400">Aucun voyage à venir</p>
                 </div>
                 )}
                 <button
@@ -303,7 +290,7 @@ export default function EmployeeDashboardPage() {
                 className="w-full mt-4 py-2 rounded-lg text-white text-xs font-medium"
                 style={{ background: "#0f766e" }}
                 >
-                View Details
+                {data?.nextTravel ? "Voir les détails" : "Voir mes voyages"}
                 </button>
             </div>
 

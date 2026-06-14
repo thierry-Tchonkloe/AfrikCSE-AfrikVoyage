@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsx -e ' *)",
+      "Bash(npx tsx *)",
+      "Bash(grep -E \"app.use\\\\\\(\\\\\"\\\\/api\" backend/src/app.ts)"
+    ]
+  }
+}
