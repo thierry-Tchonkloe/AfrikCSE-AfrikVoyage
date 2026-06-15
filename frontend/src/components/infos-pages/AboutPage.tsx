@@ -354,7 +354,7 @@ function AfricaMapSection() {
                         <motion.div variants={{ hidden: { opacity: 0, x: -30 }, visible: { opacity: 1, x: 0, transition: { duration: 0.5 } } }} className="relative">
                             <div className="rounded-2xl overflow-hidden shadow-2xl relative">
                                 <img 
-                                    src="/images/carte-d'afrique.avif" 
+                                    src="/images/carte-d'afrique.jpeg" 
                                     alt="Carte de l'Afrique"
                                     className="w-full h-auto object-cover"
                                 />
