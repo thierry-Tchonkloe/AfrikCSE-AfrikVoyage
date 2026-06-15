@@ -18,6 +18,9 @@ export interface Organization {
     hasVoyage: boolean;
     hasCSE: boolean;
     isHost: boolean;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
 }
 
 export interface User {
@@ -25,10 +28,31 @@ export interface User {
     email: string;
     firstName: string;
     lastName: string;
+    avatar?: string | null;
     role: Role;
     profileCompleted: boolean;
     organizationId: string | null;
     organization: Organization | null;
+}
+
+export type NotificationType =
+    | "APPROVAL_REQUEST"
+    | "REQUEST_APPROVED"
+    | "REQUEST_REJECTED"
+    | "TRIP_REMINDER"
+    | "NEW_EVENT"
+    | "MESSAGE_RECEIVED"
+    | "SYSTEM_UPDATE";
+
+export interface Notification {
+    id: string;
+    userId: string;
+    title: string;
+    body: string;
+    type: NotificationType;
+    link?: string | null;
+    read: boolean;
+    createdAt: string;
 }
 
 export interface AuthResponse {

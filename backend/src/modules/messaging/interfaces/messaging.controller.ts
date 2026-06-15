@@ -49,9 +49,19 @@
 
 
 import { Request, Response } from "express";
+import { ConversationStatus } from "@prisma/client";
 import { MessagingRepository } from "../infrastructure/messaging.repository";
+import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
 
 const repo = new MessagingRepository();
+const notificationRepo = new NotificationRepository();
+
+/** Lien vers l'interface de messagerie adaptée au rôle du destinataire */
+function messagingLinkForRole(role: string): string {
+    if (role === "SUPER_ADMIN") return "/admin/messages";
+    if (role === "EMPLOYE") return "/employes/support";
+    return "/companies/AfrikCSE/messages";
+}
 
 export class MessagingController {
     /**
@@ -60,12 +70,20 @@ export class MessagingController {
      * - Autres → conversations de son organisation
      */
     async getConversations(req: Request, res: Response): Promise<void> {
-        const { role, organizationId } = req.user!;
+        const { role, organizationId, userId } = req.user!;
 
-        const convs = role === "SUPER_ADMIN"
-        ? await repo.getAllConversations()
-        : await repo.getConversationsByOrg(organizationId!);
+        if (role === "SUPER_ADMIN") {
+        const page = req.query.page !== undefined ? parseInt(req.query.page as string) : undefined;
+        const limit = req.query.limit !== undefined ? parseInt(req.query.limit as string) : undefined;
+        const search = req.query.search as string | undefined;
+        const status = req.query.status as ConversationStatus | undefined;
 
+        const result = await repo.getAllConversations(userId, { page, limit, search, status });
+        res.json(result);
+        return;
+        }
+
+        const convs = await repo.getConversationsByOrg(organizationId!, userId);
         res.json(convs);
     }
 
@@ -101,6 +119,19 @@ export class MessagingController {
         }
         try {
         const msg = await repo.sendMessage(req.params.id as string, req.user!.userId, content);
+
+        const recipients = await repo.getOtherParticipants(req.params.id as string, req.user!.userId);
+        const preview = content.length > 100 ? `${content.slice(0, 100)}…` : content;
+        for (const recipient of recipients) {
+            await notificationRepo.createForUsers(
+            [recipient.id],
+            `Nouveau message de ${msg.sender.firstName} ${msg.sender.lastName}`,
+            preview,
+            "MESSAGE_RECEIVED",
+            messagingLinkForRole(recipient.role)
+            );
+        }
+
         res.status(201).json(msg);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -115,5 +146,22 @@ export class MessagingController {
     async getUnreadCount(req: Request, res: Response): Promise<void> {
         const count = await repo.getUnreadCount(req.user!.userId);
         res.json({ count });
+    }
+
+    /**
+     * Marque une conversation comme résolue ou ouverte (Super Admin)
+     */
+    async updateStatus(req: Request, res: Response): Promise<void> {
+        const { status } = req.body;
+        if (status !== "OPEN" && status !== "RESOLVED") {
+        res.status(400).json({ message: "Statut invalide" });
+        return;
+        }
+        try {
+        const conv = await repo.updateStatus(req.params.id as string, status);
+        res.json(conv);
+        } catch (err: any) {
+        res.status(400).json({ message: err.message });
+        }
     }
 }

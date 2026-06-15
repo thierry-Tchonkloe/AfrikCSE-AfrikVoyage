@@ -7,6 +7,7 @@ import { adminService } from "@/services/admin/admin.service";
 import {
     DEFAULT_PALETTE,
     ThemePalette,
+    applyDarkMode,
     applyThemePalette,
     resolveThemePalette,
 } from "@/lib/theme";
@@ -22,6 +23,7 @@ function spaceFromPathname(pathname: string): ThemeSpace {
 }
 
 const USER_THEME_STORAGE_PREFIX = "afrikcse:user-theme:";
+const DARK_MODE_STORAGE_KEY = "afrikcse:dark-mode";
 
 function loadUserPalette(userId?: string): Partial<ThemePalette> | null {
     if (!userId || typeof window === "undefined") return null;
@@ -49,6 +51,10 @@ interface ThemeContextValue {
     defaultColors: ThemePalette;
     /** Définit (ou efface avec `null`) la surcharge personnelle de l'utilisateur connecté */
     setUserColors: (colors: Partial<ThemePalette> | null) => void;
+    /** Mode sombre actif — partagé et persisté entre tous les espaces */
+    darkMode: boolean;
+    /** Active/désactive le mode sombre et persiste la préférence */
+    setDarkMode: (dark: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -102,12 +108,28 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         return () => { cancelled = true; };
     }, [space, user]);
 
+    // Espaces Company/Employé : la palette de l'organisation (logo/couleurs)
+    // est déjà incluse dans `user.organization` (réponse de /auth/me), donc
+    // aucun appel réseau supplémentaire n'est nécessaire ici.
+    const orgPalette = useMemo<Partial<ThemePalette> | null>(() => {
+        if (space !== "company" && space !== "employee") return null;
+        const org = user?.organization;
+        if (!org || (!org.primaryColor && !org.secondaryColor)) return null;
+        return {
+            primary: org.primaryColor ?? undefined,
+            secondary: org.secondaryColor ?? undefined,
+            warning: org.secondaryColor ?? undefined,
+        };
+    }, [space, user]);
+
     // Ne retient le résultat récupéré que s'il correspond à l'espace courant
     // (évite d'appliquer un thème "Super Admin" résiduel après avoir changé d'espace).
-    const spacePalette = useMemo(
-        () => (fetchedSpaceSettings && fetchedSpaceSettings.space === space ? fetchedSpaceSettings.palette : null),
-        [fetchedSpaceSettings, space]
-    );
+    const spacePalette = useMemo(() => {
+        if (space === "super-admin") {
+            return fetchedSpaceSettings && fetchedSpaceSettings.space === space ? fetchedSpaceSettings.palette : null;
+        }
+        return orgPalette;
+    }, [fetchedSpaceSettings, space, orgPalette]);
 
     // Préférences personnelles de l'utilisateur connecté — surcharge la plus prioritaire.
     // Persistées côté client (le backend n'expose pas encore de thème par utilisateur) ;
@@ -141,9 +163,30 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         applyThemePalette(colors);
     }, [colors]);
 
+    // Mode sombre — préférence globale partagée par tous les espaces, persistée
+    // côté client. Démarre à `false` (identique au rendu serveur) puis se
+    // synchronise avec la valeur stockée juste après le montage, pour éviter
+    // tout mismatch d'hydratation.
+    const [darkMode, setDarkModeState] = useState(false);
+
+    useEffect(() => {
+        if (window.localStorage.getItem(DARK_MODE_STORAGE_KEY) === "true") {
+            setDarkModeState(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        applyDarkMode(darkMode);
+    }, [darkMode]);
+
+    const setDarkMode = useCallback((dark: boolean) => {
+        setDarkModeState(dark);
+        window.localStorage.setItem(DARK_MODE_STORAGE_KEY, String(dark));
+    }, []);
+
     const value = useMemo<ThemeContextValue>(
-        () => ({ space, colors, defaultColors: DEFAULT_PALETTE, setUserColors }),
-        [space, colors, setUserColors]
+        () => ({ space, colors, defaultColors: DEFAULT_PALETTE, setUserColors, darkMode, setDarkMode }),
+        [space, colors, setUserColors, darkMode, setDarkMode]
     );
 
     return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { authService } from "@/services/auth.service";
+import { getErrorMessage } from "@/lib/errors";
 
 // ── Schémas par étape ────────────────────────────────────
 
@@ -168,8 +169,8 @@ export default function RegisterPage() {
         await authService.registerCompany(payload);
         toast.success("Demande envoyée ! Vous serez notifié par email après validation.");
         router.push("/login");
-        } catch (err: any) {
-        toast.error(err.response?.data?.message || "Une erreur est survenue");
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Une erreur est survenue"));
         } finally {
         setLoading(false);
         }

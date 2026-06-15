@@ -59,8 +59,18 @@ export const completeProfileSchema = z.object({
     managerId: z.string().optional(),
 });
 
+export const changePasswordSchema = z.object({
+    currentPassword: z.string().min(1, "Mot de passe actuel requis"),
+    newPassword: z
+        .string()
+        .min(8, "Minimum 8 caractères")
+        .regex(/[A-Z]/, "Au moins une majuscule")
+        .regex(/[0-9]/, "Au moins un chiffre"),
+});
+
 export type RegisterCompanyDto = z.infer<typeof registerCompanySchema>;
 export type LoginDto = z.infer<typeof loginSchema>;
 export type ForgotPasswordDto = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordDto = z.infer<typeof resetPasswordSchema>;
 export type CompleteProfileDto = z.infer<typeof completeProfileSchema>;
+export type ChangePasswordDto = z.infer<typeof changePasswordSchema>;

@@ -6,6 +6,9 @@ import { useAuth } from "@/hooks/useAuth";
 import {LayoutDashboard, Users, Settings, ChevronLeft, ChevronRight, Bell, LogOut, Menu, Moon, Sun,} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
+import { useTheme } from "@/hooks/useTheme";
+import { GlobalSearch } from "@/components/shared/GlobalSearch";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 
 // Navigation dynamique selon les modules activés et le pathname
 function useNavItems(hasCSE: boolean, hasVoyage: boolean, pathname: string) {
@@ -14,7 +17,7 @@ function useNavItems(hasCSE: boolean, hasVoyage: boolean, pathname: string) {
     const isInVoyage = pathname.startsWith("/companies/AfrikVoyage");
     
     // ── Basique : dashboard + org-wide items ──
-    let items = [
+    const items = [
         { href: "/companies/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     ];
 
@@ -25,12 +28,14 @@ function useNavItems(hasCSE: boolean, hasVoyage: boolean, pathname: string) {
             { href: "/companies/AfrikCSE/avantages", label: "Approbations", icon: Users },
             { href: "/companies/AfrikCSE/employes", label: "Employés", icon: Users },
             { href: "/companies/AfrikCSE/budget", label: "Subventions", icon: Users },
+            { href: "/companies/AfrikCSE/rapport", label: "Rapport", icon: LayoutDashboard },
             { href: "/companies/AfrikCSE/messages", label: "Messagerie", icon: Users },
             { href: "/companies/AfrikCSE/settings", label: "Paramètres", icon: Settings },
         );
     } else if (isInVoyage && hasVoyage) {
         items.push(
             { href: "/companies/AfrikVoyage/dashboard", label: "AfrikVoyage", icon: Users },
+            { href: "/companies/AfrikVoyage/approbations", label: "Approbations", icon: Users },
             { href: "/companies/AfrikVoyage/reservations", label: "Réservations", icon: Users },
             { href: "/companies/AfrikVoyage/frais", label: "Notes de frais", icon: Users },
             { href: "/companies/AfrikVoyage/reporting", label: "Duty of Care", icon: Users },
@@ -42,6 +47,8 @@ function useNavItems(hasCSE: boolean, hasVoyage: boolean, pathname: string) {
             { href: "/companies/users", label: "Utilisateurs", icon: Users },
             { href: "/companies/settings", label: "Paramètres", icon: Settings },
             { href: "/companies/billing", label: "Billing", icon: Bell },
+            { href: "/companies/notifications", label: "Notifications", icon: Bell },
+            { href: "/companies/integrations", label: "Intégrations", icon: Users },
         );
         if (hasCSE) items.splice(1, 0, {
             href: "/companies/AfrikCSE/dashboard",
@@ -65,7 +72,7 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
     const pathname = usePathname();
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [darkMode, setDarkMode]       = useState(false);
+    const { darkMode, setDarkMode } = useTheme();
 
 
     // Liste des dossiers à exclure du style de ce layout
@@ -91,10 +98,6 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
     //     if (!loading && !user) router.push("/login");
     //     if (!loading && user?.role === "SUPER_ADMIN") router.push("/admin/dashboard");
     // }, [user, loading, router]);
-
-    // useEffect(() => {
-    //     document.documentElement.classList.toggle("dark", darkMode);
-    // }, [darkMode]);
 
     // const { user, loading } = useRouteGuard("company");
 
@@ -132,12 +135,20 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
             style={{ borderColor: darkMode ? "#374151" : "#e5e7eb" }}>
             {sidebarOpen && (
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ background: "var(--color-primary)" }}
-                >
-                    {user.organization?.name?.[0] ?? "A"}
-                </div>
+                {user.organization?.logoUrl ? (
+                    <img
+                        src={user.organization.logoUrl}
+                        alt={user.organization?.name ?? "Logo"}
+                        className="w-8 h-8 rounded-lg object-cover shrink-0"
+                    />
+                ) : (
+                    <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"
+                        style={{ background: "var(--color-primary)" }}
+                    >
+                        {user.organization?.name?.[0] ?? "A"}
+                    </div>
+                )}
                 <span className="font-semibold text-sm truncate"
                     style={{ color: "var(--color-text)" }}>
                     {user.organization?.name ?? "Entreprise"}
@@ -221,10 +232,15 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
                 <Menu size={20} />
             </button>
 
-            <div className="hidden lg:block">
+            <div className="hidden lg:block shrink-0">
                 <p className="text-sm font-semibold">
                 {navItems.find((n) => pathname.startsWith(n.href))?.label || "Espace entreprise"}
                 </p>
+            </div>
+
+            {/* Barre de recherche globale */}
+            <div className="hidden sm:flex items-center flex-1 max-w-md mx-4">
+                <GlobalSearch scope="company" darkMode={darkMode} placeholder="Rechercher employés, voyages, frais..." />
             </div>
 
             <div className="flex items-center gap-2 ml-auto">
@@ -233,10 +249,7 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
                 style={{ color: darkMode ? "#9ca3af" : "#6b7280" }}>
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
-                <button className="p-2 rounded-lg hover:bg-gray-100"
-                style={{ color: darkMode ? "#9ca3af" : "#6b7280" }}>
-                <Bell size={18} />
-                </button>
+                <NotificationBell darkMode={darkMode} notificationsHref="/companies/notifications" />
                 <button
                 onClick={() => router.push("/hub")}
                 className="text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors hover:bg-gray-50"

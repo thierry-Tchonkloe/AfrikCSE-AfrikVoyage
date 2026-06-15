@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Download, CreditCard, Check, Loader2, X, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { billingService } from "@/services/companies/billing.service";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -142,7 +143,7 @@ export default function BillingPage() {
                 // Lance le widget KkiaPay
                 window.openKkiapayWidget({
                     amount: plan.priceXOF,
-                    api_key: kkiapayKey,
+                    key: kkiapayKey,
                     sandbox: process.env.NODE_ENV !== "production",
                     name: "AfrikCSE / AfrikVoyage",
                     data: JSON.stringify({ plan: payModal }),
@@ -155,8 +156,8 @@ export default function BillingPage() {
                         toast.success("Paiement KkiaPay confirmé — abonnement activé !");
                         setPayModal(null);
                         load();
-                    } catch (err: any) {
-                        toast.error(err?.response?.data?.message ?? "Erreur confirmation KkiaPay");
+                    } catch (err) {
+                        toast.error(getErrorMessage(err, "Erreur confirmation KkiaPay"));
                     }
                 });
 
@@ -193,8 +194,8 @@ export default function BillingPage() {
                 setCardNumber(""); setExpiry(""); setCvv("");
                 load();
             }
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? "Erreur lors du paiement");
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Erreur lors du paiement"));
         } finally {
             setPaying(false);
         }
@@ -256,7 +257,7 @@ export default function BillingPage() {
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {[
                             {
                                 label: "Coût mensuel",

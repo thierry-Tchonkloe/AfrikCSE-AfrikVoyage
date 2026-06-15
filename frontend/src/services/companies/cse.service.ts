@@ -52,14 +52,18 @@ export const cseService = {
     },
 
     // ── Rapports ──
-    async getBudgetReport(year?: number) {
-        const { data } = await api.get("/benefits/report", { params: { year } });
+    async getBudgetReport(params?: { year?: number; department?: string; startDate?: string; endDate?: string }) {
+        const { data } = await api.get("/benefits/report", { params });
+        return data;
+    },
+    async getComplianceReport() {
+        const { data } = await api.get("/benefits/compliance");
         return data;
     },
 
     // ── Messagerie ──
-    async getConversations() {
-        const { data } = await api.get("/messaging/conversations");
+    async getConversations(params?: { page?: number; limit?: number; search?: string; status?: string }) {
+        const { data } = await api.get("/messaging/conversations", { params });
         return data;
     },
     async getMessages(conversationId: string, page = 1) {
@@ -94,6 +98,11 @@ export const cseService = {
 
     async markAsRead(conversationId: string) {
         const { data } = await api.patch(`/messaging/conversations/${conversationId}/read`);
+        return data;
+    },
+
+    async updateConversationStatus(conversationId: string, status: "OPEN" | "RESOLVED") {
+        const { data } = await api.patch(`/messaging/conversations/${conversationId}/status`, { status });
         return data;
     },
 };

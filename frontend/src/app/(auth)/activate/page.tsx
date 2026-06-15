@@ -8,6 +8,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2, Eye, EyeOff, CheckCircle } from "lucide-react";
 import api from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 
 const schema = z.object({
     password: z
@@ -62,8 +63,8 @@ function ActivateContent() {
         try {
         await api.post("/auth/activate", { token, password: data.password });
         setDone(true);
-        } catch (err: any) {
-        toast.error(err.response?.data?.message || "Lien invalide ou expiré");
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Lien invalide ou expiré"));
         } finally {
         setLoading(false);
         }

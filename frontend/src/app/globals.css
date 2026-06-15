@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Active la variante `dark:` basée sur la classe `.dark` (ajoutée sur <html>
+   via applyDarkMode), au lieu de la préférence système par défaut de Tailwind v4. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* --- COULEURS ACTUELLES (Conservées) --- */
   --color-primary: #0f766e;

@@ -1,5 +1,11 @@
 import { Request, Response } from "express";
 import { BenefitService } from "../application/benefit.service";
+import {
+    createBenefitCategorySchema,
+    updateBenefitCategorySchema,
+    rejectRequestSchema,
+    bulkApproveSchema,
+} from "./benefit.validator";
 
 const service = new BenefitService();
 
@@ -11,8 +17,13 @@ export class BenefitController {
     }
 
     async createCategory(req: Request, res: Response): Promise<void> {
+        const parsed = createBenefitCategorySchema.safeParse(req.body);
+        if (!parsed.success) {
+        res.status(400).json({ errors: parsed.error.flatten() });
+        return;
+        }
         try {
-        const cat = await service.createCategory(req.user!.organizationId!, req.body);
+        const cat = await service.createCategory(req.user!.organizationId!, parsed.data);
         res.status(201).json(cat);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -20,8 +31,13 @@ export class BenefitController {
     }
 
     async updateCategory(req: Request, res: Response): Promise<void> {
+        const parsed = updateBenefitCategorySchema.safeParse(req.body);
+        if (!parsed.success) {
+        res.status(400).json({ errors: parsed.error.flatten() });
+        return;
+        }
         try {
-        const cat = await service.updateCategory(req.params.id as string, req.body);
+        const cat = await service.updateCategory(req.params.id as string, parsed.data);
         res.json(cat);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -65,8 +81,13 @@ export class BenefitController {
     }
 
     async rejectRequest(req: Request, res: Response): Promise<void> {
+        const parsed = rejectRequestSchema.safeParse(req.body);
+        if (!parsed.success) {
+        res.status(400).json({ errors: parsed.error.flatten() });
+        return;
+        }
         try {
-        const result = await service.rejectRequest(req.params.id as string, req.body.note);
+        const result = await service.rejectRequest(req.params.id as string, parsed.data.note);
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -74,8 +95,13 @@ export class BenefitController {
     }
 
     async bulkApprove(req: Request, res: Response): Promise<void> {
+        const parsed = bulkApproveSchema.safeParse(req.body);
+        if (!parsed.success) {
+        res.status(400).json({ errors: parsed.error.flatten() });
+        return;
+        }
         try {
-        const result = await service.bulkApprove(req.body.ids, req.user!.userId);
+        const result = await service.bulkApprove(parsed.data.ids, req.user!.userId);
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -84,7 +110,16 @@ export class BenefitController {
 
     async getBudgetReport(req: Request, res: Response): Promise<void> {
         const year = parseInt(req.query.year as string) || new Date().getFullYear();
-        const data = await service.getBudgetReport(req.user!.organizationId!, year);
+        const department = req.query.department as string | undefined;
+        const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+        const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+
+        const data = await service.getBudgetReport(req.user!.organizationId!, year, { department, startDate, endDate });
+        res.json(data);
+    }
+
+    async getComplianceReport(req: Request, res: Response): Promise<void> {
+        const data = await service.getComplianceReport(req.user!.organizationId!);
         res.json(data);
     }
 }

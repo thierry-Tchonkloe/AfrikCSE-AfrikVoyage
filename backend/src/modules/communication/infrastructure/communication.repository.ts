@@ -9,7 +9,7 @@ export class CommunicationRepository {
         prisma.csePost.findMany({
             where: { organizationId: orgId },
             include: {
-            author: { select: { firstName: true, lastName: true, role: true, jobTitle: true } },
+            author: { select: { firstName: true, lastName: true, avatar: true, role: true, jobTitle: true } },
             _count: { select: { likes: true, comments: true } },
             pollOptions: {
                 include: { _count: { select: { votes: true } } },
@@ -45,7 +45,7 @@ export class CommunicationRepository {
             : undefined,
         },
         include: {
-            author: { select: { firstName: true, lastName: true, role: true } },
+            author: { select: { firstName: true, lastName: true, avatar: true, role: true } },
             pollOptions: true,
         },
         });
@@ -87,7 +87,7 @@ export class CommunicationRepository {
         return prisma.postComment.create({
         data: { postId, authorId, content },
         include: {
-            author: { select: { firstName: true, lastName: true } },
+            author: { select: { firstName: true, lastName: true, avatar: true } },
         },
         });
     }
@@ -96,7 +96,7 @@ export class CommunicationRepository {
         return prisma.postComment.findMany({
         where: { postId },
         include: {
-            author: { select: { firstName: true, lastName: true } },
+            author: { select: { firstName: true, lastName: true, avatar: true } },
         },
         orderBy: { createdAt: "asc" },
         });

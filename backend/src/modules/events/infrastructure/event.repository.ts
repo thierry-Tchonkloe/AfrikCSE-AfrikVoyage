@@ -56,12 +56,40 @@ export class EventRepository {
 
         return prisma.eventRegistration.create({
         data: { eventId, userId },
+        include: {
+            event: true,
+            user: { select: { firstName: true, lastName: true, email: true } },
+        },
         });
     }
 
     async unregister(eventId: string, userId: string) {
         return prisma.eventRegistration.deleteMany({
         where: { eventId, userId },
+        });
+    }
+
+    /** Inscriptions dont l'événement démarre dans la fenêtre donnée et dont le rappel n'a pas encore été envoyé */
+    async getUpcomingForReminder(windowStart: Date, windowEnd: Date) {
+        return prisma.eventRegistration.findMany({
+        where: {
+            reminderSentAt: null,
+            event: {
+            status: "PUBLISHED",
+            startDate: { gte: windowStart, lte: windowEnd },
+            },
+        },
+        include: {
+            event: true,
+            user: { select: { firstName: true, lastName: true, email: true } },
+        },
+        });
+    }
+
+    async markReminderSent(registrationId: string) {
+        return prisma.eventRegistration.update({
+        where: { id: registrationId },
+        data: { reminderSentAt: new Date() },
         });
     }
 

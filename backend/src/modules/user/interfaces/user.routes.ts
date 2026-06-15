@@ -10,6 +10,8 @@ router.use(authenticate);
 
 // Lecture : tous les rôles admin+
 router.get("/", authorize("SUPER_ADMIN", "ADMIN", "MANAGER", "RH"), ctrl.getAll.bind(ctrl));
+// Doit être déclarée avant "/:id" — sinon "host" serait interprété comme un id
+router.get("/host", authorize("SUPER_ADMIN"), ctrl.getHostUsers.bind(ctrl));
 router.get("/:id", authorize("SUPER_ADMIN", "ADMIN", "MANAGER", "RH"), ctrl.getById.bind(ctrl));
 
 // Écriture : admin uniquement
