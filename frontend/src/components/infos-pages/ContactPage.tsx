@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 
 // ─── Types & Data ────────────────────────────────────────────────────────────
 
@@ -202,181 +203,72 @@ function ContactPopover({
   );
 }
 
-// ─── Africa SVG Map ───────────────────────────────────────────────────────────
+// ─── Africa Map avec vraie image ───────────────────────────────────────────────
 
 const hubs = [
-  { name: "Casablanca", cx: 148, cy: 78, color: "#6366f1" },
-  { name: "Dakar", cx: 88, cy: 178, color: "#10b981" },
-  { name: "Abidjan", cx: 128, cy: 228, color: "#10b981" },
-  { name: "Cotonou", cx: 162, cy: 222, color: "#10b981" },
-  { name: "Lagos", cx: 174, cy: 218, color: "#f59e0b" },
-  { name: "Nairobi", cx: 238, cy: 258, color: "#6366f1" },
-  { name: "Antananarivo", cx: 270, cy: 340, color: "#10b981" },
-  { name: "Johannesburg", cx: 210, cy: 390, color: "#6366f1" },
+  { name: "Casablanca", left: "39%", top: "16%", color: "#6366F1" },
+  { name: "Dakar", left: "23%", top: "37%", color: "#10B981" },
+  { name: "Abidjan", left: "34%", top: "48%", color: "#10B981" },
+  { name: "Cotonou", left: "43%", top: "47%", color: "#10B981" },
+  { name: "Lagos", left: "47%", top: "46%", color: "#F59E0B" },
+  { name: "Nairobi", left: "63%", top: "54%", color: "#6366F1" },
+  { name: "Antananarivo", left: "72%", top: "72%", color: "#10B981" },
+  { name: "Johannesburg", left: "55%", top: "82%", color: "#6366F1" },
 ];
 
 function AfricaMap() {
   const [hovered, setHovered] = useState<string | null>(null);
 
   return (
-    <div className="relative flex items-center justify-center w-full h-[440px]">
-      <svg
-        viewBox="0 0 380 480"
-        className="h-full w-auto drop-shadow-sm"
-        aria-label="Carte interactive Afrique – hubs AfrikVoyage & AfrikCSE"
-        role="img"
-      >
-        <defs>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        {/* Continent silhouette – realistic Africa path */}
-        <path
-          d="
-            M148,12
-            C138,14 128,18 120,26
-            C108,36 100,50 96,66
-            C90,84 88,100 84,116
-            C80,132 72,146 66,160
-            C60,174 56,188 58,202
-            C60,216 66,228 72,238
-            C78,248 84,256 86,266
-            C88,276 84,288 82,300
-            C82,312 86,324 92,334
-            C98,344 106,352 112,362
-            C118,372 122,384 126,396
-            C130,408 132,420 138,430
-            C144,440 154,446 164,448
-            C172,450 180,448 188,444
-            C196,440 202,434 208,426
-            C214,418 218,408 222,400
-            C226,390 230,380 236,372
-            C242,364 250,358 256,350
-            C262,342 266,332 268,320
-            C270,308 268,296 264,286
-            C260,276 256,266 254,256
-            C252,246 254,234 258,224
-            C262,214 268,206 270,196
-            C272,186 270,174 264,164
-            C258,154 250,148 244,138
-            C238,128 236,116 232,106
-            C228,96 222,88 218,78
-            C214,68 212,56 206,48
-            C200,40 190,36 182,30
-            C172,24 160,10 148,12Z
-          "
-          fill="#EEF2FF"
-          stroke="#C7D2FE"
-          strokeWidth="1.5"
-        />
-
-        {/* Madagascar */}
-        <path
-          d="M306,292 C300,296 296,304 294,314 C292,326 294,338 298,348 C302,358 308,364 314,360 C320,356 322,344 320,332 C318,320 316,308 312,300 C310,296 308,290 306,292Z"
-          fill="#EEF2FF"
-          stroke="#C7D2FE"
-          strokeWidth="1.5"
-        />
-
-        {/* Connexion lines entre hubs */}
-        {[
-          ["Dakar", "Abidjan"],
-          ["Abidjan", "Cotonou"],
-          ["Cotonou", "Lagos"],
-          ["Casablanca", "Dakar"],
-          ["Lagos", "Nairobi"],
-          ["Nairobi", "Antananarivo"],
-          ["Nairobi", "Johannesburg"],
-        ].map(([a, b]) => {
-          const ha = hubs.find((h) => h.name === a);
-          const hb = hubs.find((h) => h.name === b);
-          if (!ha || !hb) return null;
-          return (
-            <line
-              key={`${a}-${b}`}
-              x1={ha.cx}
-              y1={ha.cy}
-              x2={hb.cx}
-              y2={hb.cy}
-              stroke="#C7D2FE"
-              strokeWidth="1"
-              strokeDasharray="4 4"
-              opacity="0.7"
+    <div className="relative w-full h-[440px]">
+      <Image
+        src="/images/carte-d-afrique.avif"
+        alt="Carte d'Afrique - Présence d'AfrikVoyage et AfrikCSE"
+        fill
+        className="object-contain rounded-lg"
+        priority
+      />
+      
+      {/* Points de présence interactifs */}
+      {hubs.map((hub) => (
+        <div
+          key={hub.name}
+          className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20 group"
+          style={{ left: hub.left, top: hub.top }}
+          onMouseEnter={() => setHovered(hub.name)}
+          onMouseLeave={() => setHovered(null)}
+        >
+          {/* Point lumineux */}
+          <div className="relative">
+            <div
+              className="w-4 h-4 rounded-full shadow-lg animate-pulse"
+              style={{ backgroundColor: hub.color, boxShadow: `0 0 0 2px white, 0 0 0 4px ${hub.color}40` }}
             />
-          );
-        })}
-
-        {/* Hubs pulsants */}
-        {hubs.map((hub) => (
-          <g
-            key={hub.name}
-            onMouseEnter={() => setHovered(hub.name)}
-            onMouseLeave={() => setHovered(null)}
-            style={{ cursor: "pointer" }}
-          >
-            {/* Pulse ring */}
-            <circle
-              cx={hub.cx}
-              cy={hub.cy}
-              r={hovered === hub.name ? 14 : 10}
-              fill={hub.color}
-              opacity={0.15}
-              style={{ transition: "r 0.2s, opacity 0.2s" }}
+            <div
+              className="absolute inset-0 w-4 h-4 rounded-full animate-ping opacity-75"
+              style={{ backgroundColor: hub.color }}
             />
-            {/* Dot */}
-            <circle
-              cx={hub.cx}
-              cy={hub.cy}
-              r={5}
-              fill={hub.color}
-              stroke="white"
-              strokeWidth="2"
-              filter="url(#glow)"
-            />
-            {/* Label on hover */}
-            {hovered === hub.name && (
-              <g>
-                <rect
-                  x={hub.cx + 10}
-                  y={hub.cy - 12}
-                  width={hub.name.length * 6.8 + 12}
-                  height={20}
-                  rx={6}
-                  fill="white"
-                  stroke="#E0E7FF"
-                  strokeWidth="1"
-                />
-                <text
-                  x={hub.cx + 16}
-                  y={hub.cy + 2}
-                  fontSize="10"
-                  fontWeight="700"
-                  fill="#312e81"
-                  fontFamily="sans-serif"
-                >
-                  {hub.name}
-                </text>
-              </g>
-            )}
-          </g>
-        ))}
-      </svg>
-
+          </div>
+          
+          {/* Tooltip */}
+          {hovered === hub.name && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-white rounded-lg shadow-lg border border-indigo-200 whitespace-nowrap z-30">
+              <p className="text-xs font-bold text-slate-800">{hub.name}</p>
+              <p className="text-[10px] text-indigo-600">Hub actif</p>
+            </div>
+          )}
+        </div>
+      ))}
+      
       {/* Légende */}
-      <div className="absolute bottom-4 left-4 flex flex-col gap-1.5 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 px-3 py-2.5 shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+      <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 px-3 py-2.5 shadow-sm z-20">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
           Hubs actifs
         </p>
         {[
-          { color: "#10b981", label: "AfrikVoyage" },
-          { color: "#6366f1", label: "AfrikCSE" },
-          { color: "#f59e0b", label: "Hub régional" },
+          { color: "#10B981", label: "AfrikVoyage" },
+          { color: "#6366F1", label: "AfrikCSE" },
+          { color: "#F59E0B", label: "Hub régional" },
         ].map((item) => (
           <div key={item.label} className="flex items-center gap-2">
             <span
@@ -816,7 +708,7 @@ export default function ContactPage() {
               </div>
             </div>
 
-            {/* Carte interactive */}
+            {/* Carte interactive avec vraie image */}
             <div className="lg:col-span-7 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
               <div className="px-4 pt-4 pb-0 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -857,8 +749,6 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
-
-      
     </main>
   );
 }
