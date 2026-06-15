@@ -121,9 +121,19 @@ import eventRoutes          from "./modules/events/interfaces/event.routes";
 import communicationRoutes  from "./modules/communication/interfaces/communication.routes";
 import catalogRoutes        from "./modules/catalog/interfaces/catalog.routes";
 import flightRoutes         from "./modules/flights/interfaces/flight.routes";
+import planConfigRoutes     from "./modules/plan-config/interfaces/plan-config.routes";
+import auditLogRoutes       from "./modules/audit-log/interfaces/audit-log.routes";
+import notificationRoutes   from "./modules/notification/interfaces/notification.routes";
+import searchRoutes         from "./modules/search/interfaces/search.routes";
+import integrationRoutes    from "./modules/integrations/interfaces/api-integration.routes";
 import { errorMiddleware }  from "./core/middlewares/error.middleware";
 
 const app = express();
+
+// ── Trust proxy ──────────────────────────────────────────────────────────────
+// Nécessaire derrière le proxy de la plateforme d'hébergement (Railway, etc.)
+// pour que req.ip reflète l'IP réelle du client (rate limiting, logs, CORS).
+app.set("trust proxy", 1);
 
 // ── Origines autorisées ─────────────────────────────────────────────────────
 // ✅ Tableau au lieu du || chaîné — toutes les origines sont acceptées
@@ -158,13 +168,6 @@ app.use(rateLimit({
     max: 1000,
     message: { message: "Trop de requêtes, réessayez dans 15 minutes" },
 }));
-
-// ── Rate limiting strict auth ────────────────────────────────────────────────
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 1500,
-    message: { message: "Trop de tentatives, réessayez dans 15 minutes" },
-});
 
 // ── Parsing ──────────────────────────────────────────────────────────────────
 app.use(express.json());
@@ -339,6 +342,43 @@ const API_ROUTES = [
             "GET /locations — Recherche d'aéroports/villes par mot-clé (autocomplétion)",
         ],
     },
+    {
+        prefix: "/api/plan-configs",
+        description: "Catalogue des plans tarifaires (SUPER_ADMIN)",
+        methods: [
+            "GET /        — Liste des plans avec nb d'organisations",
+            "GET /:id      — Détail d'un plan",
+            "POST /        — Créer un plan (SUPER_ADMIN)",
+            "PATCH /:id    — Modifier un plan (SUPER_ADMIN)",
+            "DELETE /:id   — Supprimer un plan inutilisé (SUPER_ADMIN)",
+        ],
+    },
+    {
+        prefix: "/api/audit-logs",
+        description: "Journal d'audit des actions (SUPER_ADMIN)",
+        methods: [
+            "GET /         — Liste paginée et filtrable (user, action, entity, organisation, date)",
+            "GET /actions  — Liste des types d'actions distinctes (pour filtres)",
+            "GET /export   — Export CSV du journal",
+        ],
+    },
+    {
+        prefix: "/api/notifications",
+        description: "Notifications in-app de l'utilisateur connecté",
+        methods: [
+            "GET /              — Liste paginée de mes notifications",
+            "GET /unread-count  — Nombre de notifications non lues",
+            "PATCH /read-all    — Marquer toutes mes notifications comme lues",
+            "PATCH /:id/read    — Marquer une notification comme lue",
+        ],
+    },
+    {
+        prefix: "/api/search",
+        description: "Recherche globale (employé, entreprise, super-admin)",
+        methods: [
+            "GET /?q=&scope=employee|company|admin — Recherche transverse selon le scope",
+        ],
+    },
 ];
 
 app.get("/api", (_req: Request, res: Response) => {
@@ -351,7 +391,7 @@ app.get("/api", (_req: Request, res: Response) => {
 });
 
 // ── Routes ───────────────────────────────────────────────────────────────────
-app.use("/api/auth",          authLimiter, authRoutes);
+app.use("/api/auth",          authRoutes);
 app.use("/api/organizations",  organizationRoutes);
 app.use("/api/users",          userRoutes);
 app.use("/api/settings",       settingsRoutes);
@@ -366,6 +406,11 @@ app.use("/api/events",         eventRoutes);
 app.use("/api/communication",  communicationRoutes);
 app.use("/api/catalog",        catalogRoutes);
 app.use("/api/flights",        flightRoutes);
+app.use("/api/plan-configs",   planConfigRoutes);
+app.use("/api/audit-logs",     auditLogRoutes);
+app.use("/api/notifications",  notificationRoutes);
+app.use("/api/search",         searchRoutes);
+app.use("/api/integrations",   integrationRoutes);
 
 // ── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

@@ -27,7 +27,6 @@ const PAYMENT_METHODS = [
 export default function NouvelleNotePage() {
     const router = useRouter();
     const [saving, setSaving]   = useState(false);
-    const [isDraft, setIsDraft] = useState(false);
     const [uploadedFile, setUploadedFile] = useState<{name: string; size: string} | null>(null);
     const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -52,13 +51,12 @@ export default function NouvelleNotePage() {
     const upd = (k: keyof typeof form, v: string) =>
         setForm((prev) => ({ ...prev, [k]: v }));
 
-    const handleSubmit = async (draft = false) => {
+    const handleSubmit = async () => {
         if (!form.title || !form.amount) {
         toast.error("Titre et montant requis");
         return;
         }
         setSaving(true);
-        setIsDraft(draft);
         try {
         await employeeService.createExpense({
             title:         form.title,
@@ -70,9 +68,9 @@ export default function NouvelleNotePage() {
             travelId:      form.travelId || undefined,
             receipts:      receiptUrl ? [receiptUrl] : [],
         });
-        toast.success(draft ? "Brouillon sauvegardé" : "Note soumise pour validation");
+        toast.success("Soumis pour validation");
         router.push("/employes/notes-de-frais");
-        } catch { toast.error("Erreur soumission"); }
+        } catch { toast.error("Erreur lors de la soumission"); }
         finally { setSaving(false); }
     };
 
@@ -292,31 +290,16 @@ export default function NouvelleNotePage() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-            <input type="checkbox" className="w-4 h-4"
-                style={{ accentColor: "#0f766e" }} />
-            Enregistrer comme brouillon
-            </label>
-            <div className="flex gap-2">
+        <div className="flex items-center justify-end">
             <button
-                onClick={() => handleSubmit(true)}
-                disabled={saving || uploading}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 disabled:opacity-60"
-            >
-                {saving && isDraft && <Loader2 size={14} className="animate-spin" />}
-                Sauvegarder
-            </button>
-            <button
-                onClick={() => handleSubmit(false)}
+                onClick={handleSubmit}
                 disabled={saving || uploading}
                 className="flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-70"
                 style={{ background: "#0f766e" }}
             >
-                {saving && !isDraft && <Loader2 size={14} className="animate-spin" />}
+                {saving && <Loader2 size={14} className="animate-spin" />}
                 Soumettre pour validation
             </button>
-            </div>
         </div>
 
         {/* Conseils */}

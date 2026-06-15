@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2, Save } from "lucide-react";
 import { adminService } from "@/services/admin/admin.service";
 import { applyTheme } from "@/lib/theme";
@@ -20,6 +21,7 @@ interface Settings {
 }
 
 export default function SettingsPage() {
+    const router = useRouter();
     const [settings, setSettings] = useState<Settings | null>(null);
     const [loading, setLoading]   = useState(true);
     const [saving, setSaving]     = useState(false);
@@ -224,15 +226,28 @@ export default function SettingsPage() {
                 </div>
                 <button
                 className="w-full py-2 rounded-lg text-white text-sm font-medium bg-red-500 hover:bg-red-600"
-                onClick={() => toast.info("Gestion accès à venir")}
+                onClick={() => router.push("/admin/access")}
                 >
                 Gérer les accès
                 </button>
                 <button
                 className="w-full py-2 mt-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
-                onClick={() => toast.info("Logs à venir")}
+                onClick={() => router.push("/admin/logs")}
                 >
                 Voir les logs
+                </button>
+            </SettingsSection>
+
+            {/* Plans tarifaires */}
+            <SettingsSection title="Plans tarifaires" icon="💳">
+                <p className="text-xs text-gray-500 mb-3">
+                Gérez le catalogue de plans proposés aux entreprises
+                </p>
+                <button
+                className="w-full py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
+                onClick={() => router.push("/admin/plans")}
+                >
+                Gérer les plans
                 </button>
             </SettingsSection>
 

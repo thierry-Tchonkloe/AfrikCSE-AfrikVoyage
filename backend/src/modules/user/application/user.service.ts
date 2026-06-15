@@ -3,20 +3,23 @@ import { CreateUserDto, UpdateUserDto, ChangeRoleDto } from "../interfaces/user.
 import { UserEntity } from "../domain/user.entity";
 import { Role } from "@prisma/client";
 import { prisma } from "../../../core/config/prisma";
-import { sendMail } from "../../../core/config/mailer";
+import { sendMail } from "../../../core/services/email.service";
 import { employeeInvitationEmail } from "../../../core/mailer/email.templates";
 
 export class UserService {
     private repo = new UserRepository();
 
-    /** Liste les users — SUPER_ADMIN voit tout, ADMIN voit son org */
-    async getAll(requester: { role: string; organizationId: string | null }) {
+    /** Liste les users — SUPER_ADMIN voit tout, ADMIN voit son org (paginé) */
+    async getAll(
+        requester: { role: string; organizationId: string | null },
+        params: { page: number; limit: number; search?: string; department?: string }
+    ) {
         if (requester.role === "SUPER_ADMIN") {
-        return this.repo.findAll();
+        return this.repo.findAllPaginated(params);
         }
 
         if (!requester.organizationId) throw new Error("Organisation introuvable");
-        return this.repo.findByOrganization(requester.organizationId);
+        return this.repo.findByOrganization(requester.organizationId, params);
     }
 
     async getById(id: string) {
@@ -105,5 +108,10 @@ export class UserService {
     async activate(id: string) {
         await this.getById(id);
         return this.repo.activate(id);
+    }
+
+    /** Membres de l'organisation hôte (Waxeho) — pour la gestion des accès Super Admin */
+    async getHostUsers() {
+        return this.repo.findHostUsers();
     }
 }

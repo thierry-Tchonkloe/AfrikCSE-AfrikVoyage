@@ -73,6 +73,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { SUPER_ADMIN_ROLES, COMPANY_ADMIN_ROLES, getDefaultRoute } from "@/lib/roles";
 
 // ── Routes publiques ───────────────────────────────────────
 const PUBLIC_PREFIXES = [
@@ -115,25 +116,6 @@ async function verifyToken(token: string): Promise<TokenPayload | null> {
     }
   }
   return null;
-}
-
-// ── Rôles ──────────────────────────────────────────────────
-const SUPER_ADMIN_ROLES   = ["SUPER_ADMIN", "MANAGER"];
-// ADMIN (pas ADMIN_ENTREPRISE) + les autres rôles company
-const COMPANY_ADMIN_ROLES = ["ADMIN", "MANAGER", "RH", "FINANCE"];
-
-// ── Route par défaut ───────────────────────────────────────
-function getDefaultRoute(role: string, isHost: boolean): string {
-  if (isHost && SUPER_ADMIN_ROLES.includes(role)) {
-    return "/admin/dashboard";
-  }
-  if (COMPANY_ADMIN_ROLES.includes(role)) {
-    return "/companies/dashboard";
-  }
-  if (role === "EMPLOYE") {
-  return "/employes/dashboard";
-  }
-  return "/hub";
 }
 
 // ── Middleware ─────────────────────────────────────────────

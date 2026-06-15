@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Loader2, ChevronRight, SkipForward } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { authService } from "@/services/auth.service";
+import { getErrorMessage } from "@/lib/errors";
 
 const schema = z.object({
     jobTitle: z.string().optional(),
@@ -49,8 +50,8 @@ export default function CompleteProfilePage() {
         toast.success("Profil complété !");
         await reload();
         router.push("/hub");
-        } catch (err: any) {
-        toast.error(err.response?.data?.message || "Erreur lors de la mise à jour");
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Erreur lors de la mise à jour"));
         } finally {
         setSubmitting(false);
         }

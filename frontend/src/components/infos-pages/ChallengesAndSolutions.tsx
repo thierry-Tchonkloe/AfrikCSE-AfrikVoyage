@@ -2,25 +2,138 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { motion, useAnimation, useInView } from "framer-motion";
 
-// ── CONFIGURATION DES DONNÉES ENRICHIES ───────────────────────────────────────────────
+// ── CONFIGURATION DES DONNÉES ENRICHIES AVEC KPIs ───────────────────────────────
 
 const AFRIKVOYAGE_FEATURES = [
-    { title: "Réservation centralisée", desc: "Vols, hôtels & transports sur un seul écran" },
-    { title: "Contrôle budgétaire en temps réel", desc: "Bloquez les dépassements avant la validation" },
-    { title: "Gestion des notes de frais", desc: "Numérisation intelligente et rapprochement instantané" },
-    { title: "Reporting avancé & Heatmaps", desc: "Visualisez les fuites de capitaux par filiale" },
+    { title: "Réservation centralisée", desc: "Vols, hôtels & transports sur un seul écran", kpi: "-30%" },
+    { title: "Contrôle budgétaire en temps réel", desc: "Bloquez les dépassements avant la validation", kpi: "100%" },
+    { title: "Gestion des notes de frais", desc: "Numérisation intelligente et rapprochement instantané", kpi: "-18€/note" },
+    { title: "Reporting avancé & Heatmaps", desc: "Visualisez les fuites de capitaux par filiale", kpi: "+47% ROI" },
 ];
 
 const AFRIKCSE_FEATURES = [
-    { title: "Gestion des avantages", desc: "Subventions et allocations distribuées en 1 clic" },
-    { title: "Catalogue de services B2C", desc: "Offres exclusives, loisirs et chèques cadeaux" },
-    { title: "Suivi de satisfaction en continu", desc: "Pulse sondages pour mesurer le climat social" },
-    { title: "Conformité automatisée", desc: "Rapports d'URSSAF et règles fiscales locales intégrés" },
+    { title: "Gestion des avantages", desc: "Subventions et allocations distribuées en 1 clic", kpi: "95%" },
+    { title: "Catalogue de services B2C", desc: "Offres exclusives, loisirs et chèques cadeaux", kpi: "12+ offres" },
+    { title: "Suivi de satisfaction en continu", desc: "Pulse sondages pour mesurer le climat social", kpi: "+42%" },
+    { title: "Conformité automatisée", desc: "Rapports d'URSSAF et règles fiscales locales intégrés", kpi: "99.2%" },
 ];
 
-// ── COMPOSANT DE SURLIGNAGE STYLE FEUTRE PREMIUM ────────────────────
+// ── COMPOSANT TRUST BAR (MARQUEE DE LOGOS) - COLLÉ EN HAUT ──────────────────────
+const TrustBar = () => {
+    const logos = [
+        { name: "ORANGE", color: "#FF7900" },
+        { name: "TOTALENERGIES", color: "#ED1B24" },
+        { name: "ECOBANK", color: "#009F4D" },
+        { name: "BRIDGECORP", color: "#1E3A8A" },
+        { name: "MTN", color: "#FFCD00" },
+        { name: "BOLLORÉ", color: "#004080" },
+        { name: "SUNU", color: "#E87C1F" },
+        { name: "BICICI", color: "#003399" },
+    ];
+    
+    const duplicatedLogos = [...logos, ...logos, ...logos];
 
+    return (
+        <div className="w-full overflow-hidden py-4 border-y border-slate-200/50 bg-slate-50/30">
+            <div className="relative flex overflow-x-hidden group">
+                <div className="animate-marquee flex items-center gap-12 whitespace-nowrap">
+                    {duplicatedLogos.map((logo, idx) => (
+                        <div
+                            key={idx}
+                            className="inline-flex items-center justify-center px-4 py-1 transition-all duration-300 grayscale hover:grayscale-0 hover:scale-110 cursor-pointer"
+                            style={{ transition: "all 0.3s ease" }}
+                        >
+                            <span className="text-slate-400 text-lg font-bold tracking-wider hover:text-slate-800 transition-colors">
+                                {logo.name}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+                <div className="absolute top-0 left-0 w-20 h-full bg-linear-to-r from-slate-50/80 to-transparent z-10 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-20 h-full bg-linear-to-l from-slate-50/80 to-transparent z-10 pointer-events-none" />
+            </div>
+        </div>
+    );
+};
+
+// ── COMPOSANT VIDÉO INTÉGRÉE ────────────────────────────────────────────────────
+const VideoSection = () => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    const handlePlay = () => {
+        if (videoRef.current) {
+            videoRef.current.play();
+            setIsPlaying(true);
+        }
+    };
+
+    const handlePause = () => {
+        if (videoRef.current) {
+            videoRef.current.pause();
+            setIsPlaying(false);
+        }
+    };
+
+    return (
+        <div className="relative rounded-2xl overflow-hidden bg-slate-900 shadow-xl">
+            {/* Thumbnail / Video */}
+            <div className="relative aspect-video">
+                <video
+                    ref={videoRef}
+                    className="w-full h-full object-cover"
+                    poster="/videos/bg-video1.mp4"
+                    playsInline
+                >
+                    <source src="/videos/bg-video1.mp4" type="video/mp4" />
+                </video>
+                
+                {/* Overlay lecture si non joué */}
+                {!isPlaying && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <button
+                            onClick={handlePlay}
+                            className="group relative w-20 h-20 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-indigo-500/80 transition-all duration-300 hover:scale-110"
+                        >
+                            <div className="absolute inset-0 rounded-full animate-ping bg-white/30 opacity-75" />
+                            <svg className="w-8 h-8 text-white ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                    </div>
+                )}
+                
+                {/* Contrôles si en lecture */}
+                {isPlaying && (
+                    <button
+                        onClick={handlePause}
+                        className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center hover:bg-black/70 transition"
+                    >
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </button>
+                )}
+            </div>
+            
+            {/* Texte descriptif */}
+            <div className="p-5 bg-white border-t border-slate-100">
+                <div className="flex items-center gap-3 mb-2">
+                    <span className="text-indigo-600 text-sm">📹</span>
+                    <h3 className="font-bold text-slate-800">Découvrez la plateforme en action</h3>
+                </div>
+                <p className="text-slate-500 text-sm leading-relaxed">
+                    Regardez comment AfrikWorkspace unifie la gestion des voyages d'affaires et des avantages collaborateurs en une seule interface intuitive.
+                </p>
+            </div>
+        </div>
+    );
+};
+
+// ── COMPOSANT DE SURLIGNAGE STYLE FEUTRE PREMIUM ────────────────────────────────
 const MarkerHighlight = ({ children, color = "rgba(20, 184, 166, 0.2)" }: { children: React.ReactNode, color?: string }) => (
     <span className="relative inline-block px-1 z-10">
         <span className="relative z-10">{children}</span>
@@ -37,8 +150,7 @@ const MarkerHighlight = ({ children, color = "rgba(20, 184, 166, 0.2)" }: { chil
     </span>
 );
 
-// ── FOND LIVE CANVAS (RÉSEAU INTERCONNECTÉ) ───────────────────
-
+// ── FOND LIVE CANVAS (RÉSEAU INTERCONNECTÉ) ─────────────────────────────────────
 const BackgroundParticles = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -58,32 +170,37 @@ const BackgroundParticles = () => {
 
         const createParticles = () => {
             particles = [];
-            const count = Math.min(Math.floor(canvas.width / 40), 30);
+            const count = Math.min(Math.floor(canvas.width / 50), 40);
             for (let i = 0; i < count; i++) {
                 particles.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height,
-                    vx: (Math.random() - 0.5) * 0.3,
-                    vy: (Math.random() - 0.5) * 0.3,
-                    radius: Math.random() * 2 + 1,
-                    alpha: Math.random() * 0.15 + 0.05
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: (Math.random() - 0.5) * 0.2,
+                    radius: Math.random() * 2 + 0.5,
+                    alpha: Math.random() * 0.1 + 0.03
                 });
             }
         };
 
         resize();
         createParticles();
-        window.addEventListener("resize", resize);
+        window.addEventListener("resize", () => {
+            resize();
+            createParticles();
+        });
 
         const draw = () => {
+            if (!ctx) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = "rgba(99, 102, 241, 0.02)";
-            ctx.lineWidth = 0.8;
+            
+            ctx.strokeStyle = "rgba(99, 102, 241, 0.03)";
+            ctx.lineWidth = 0.5;
             
             for (let i = 0; i < particles.length; i++) {
                 for (let j = i + 1; j < particles.length; j++) {
                     const dist = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
-                    if (dist < 200) {
+                    if (dist < 180) {
                         ctx.beginPath();
                         ctx.moveTo(particles[i].x, particles[i].y);
                         ctx.lineTo(particles[j].x, particles[j].y);
@@ -118,14 +235,110 @@ const BackgroundParticles = () => {
     return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-0" />;
 };
 
-// ── COMPOSANTS DE VÉRIFICATION DES DÉFIS (PREVIEWS INTERACTIFS) ───────
+// ── BENTO GRID INTERACTIVE POUR LES DÉFIS ──────────────────────────────────────
+interface ChallengeCardProps {
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    color: string;
+    bgGradient: string;
+    solutionTitle: string;
+    solutionDesc: string;
+    kpi: string;
+    kpiLabel: string;
+    isActive: boolean;
+    onHover: () => void;
+}
 
+const ChallengeCard = ({ 
+    title, description, icon, color, bgGradient, 
+    solutionTitle, solutionDesc, kpi, kpiLabel, 
+    isActive, onHover 
+}: ChallengeCardProps) => {
+    return (
+        <motion.div
+            onMouseEnter={onHover}
+            className={`relative cursor-pointer rounded-2xl p-6 transition-all duration-500 overflow-hidden ${
+                isActive 
+                    ? `shadow-2xl scale-[1.02] border-${color}-200` 
+                    : 'shadow-sm hover:shadow-xl hover:scale-[1.01]'
+            }`}
+            style={{
+                background: isActive ? bgGradient : "white",
+                borderWidth: "1px",
+                borderColor: isActive ? `rgba(var(--color-${color}), 0.3)` : "#e2e8f0"
+            }}
+            animate={{
+                scale: isActive ? 1.02 : 1,
+                transition: { duration: 0.3 }
+            }}
+        >
+            {isActive && (
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute -inset-1 bg-linear-to-r from-transparent via-white/20 to-transparent opacity-0 animate-shimmer" />
+                </div>
+            )}
+            
+            <div className="relative z-10">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 mb-4 ${
+                    isActive ? `bg-${color}-500 text-white shadow-md` : `bg-${color}-50 text-${color}-500`
+                }`}>
+                    {icon}
+                </div>
+                
+                {!isActive ? (
+                    <>
+                        <h3 className="text-slate-900 font-extrabold text-lg mb-2">
+                            {title}
+                        </h3>
+                        <p className="text-slate-500 text-sm leading-relaxed font-medium">
+                            {description}
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-slate-900 font-extrabold text-lg">
+                                {solutionTitle}
+                            </h3>
+                            <div className="flex flex-col items-end">
+                                <span className={`text-2xl font-black text-${color}-600`}>{kpi}</span>
+                                <span className="text-[10px] text-slate-400">{kpiLabel}</span>
+                            </div>
+                        </div>
+                        <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                            {solutionDesc}
+                        </p>
+                        <div className="mt-4 flex items-center gap-2">
+                            <span className={`text-xs font-semibold text-${color}-600`}>Solution activée</span>
+                            <svg className="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                    </>
+                )}
+            </div>
+            
+            {isActive && (
+                <div className="absolute bottom-4 right-4">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                </div>
+            )}
+        </motion.div>
+    );
+};
+
+// ── COMPOSANTS DE VISUALISATION PREMIUM ─────────────────────────────────────────
 const BudgetLeakPreview = () => (
-    <div className="w-full h-full bg-slate-950 text-white flex flex-col justify-between p-6 relative overflow-hidden font-sans">
+    <div className="w-full h-full bg-slate-900 text-white flex flex-col justify-between p-6 relative overflow-hidden font-sans rounded-2xl">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(244,63,94,0.15),transparent_70%)]" />
         <div className="flex justify-between items-center z-10">
             <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                 <span className="text-[10px] font-mono tracking-widest text-rose-400 uppercase font-bold">Alerte Perte active</span>
             </div>
             <span className="text-[11px] font-medium text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">Frais Q2 — Hub Afrique</span>
@@ -145,7 +358,7 @@ const BudgetLeakPreview = () => (
                 ))}
             </div>
         </div>
-        <div className="text-[11px] text-slate-400 border-t border-slate-900 pt-3 flex justify-between items-center z-10">
+        <div className="text-[11px] text-slate-400 border-t border-slate-800 pt-3 flex justify-between items-center z-10">
             <span>Flux de réservation non contrôlé</span>
             <span className="text-rose-400 font-bold font-mono">Impact : Direct</span>
         </div>
@@ -153,40 +366,40 @@ const BudgetLeakPreview = () => (
 );
 
 const CseFragmentationPreview = () => (
-    <div className="w-full h-full bg-slate-950 text-white flex flex-col justify-between p-6 relative overflow-hidden">
+    <div className="w-full h-full bg-slate-900 text-white flex flex-col justify-between p-6 relative overflow-hidden rounded-2xl">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_100%,rgba(245,158,11,0.12),transparent_70%)]" />
         <div className="flex justify-between items-center z-10">
             <span className="text-[10px] font-mono tracking-widest text-amber-400 uppercase font-bold">Données d'Engagement</span>
             <span className="text-[11px] font-medium text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">Suivi RH</span>
         </div>
         <div className="my-auto relative flex flex-col items-center justify-center gap-2 z-10">
-            <div className="absolute top-2 left-0 bg-slate-900 border border-slate-800 shadow-xl px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-300 transform -rotate-3">Demandes perdues (Excel) 📄</div>
-            <div className="absolute bottom-2 right-0 bg-slate-900 border border-slate-800 shadow-xl px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-300 transform rotate-3">Attente validation : 18 jours ⏳</div>
+            <div className="absolute top-2 left-0 bg-slate-800/80 border border-slate-700 shadow-xl px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-300 transform -rotate-3">Demandes perdues (Excel) 📄</div>
+            <div className="absolute bottom-2 right-0 bg-slate-800/80 border border-slate-700 shadow-xl px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-300 transform rotate-3">Attente validation : 18 jours ⏳</div>
             <div className="text-3xl font-black text-amber-400 tracking-tight">-42%</div>
-            <div className="text-xs font-medium text-slate-400 text-center max-w-[180px]">Baisse de participation aux subventions</div>
+            <div className="text-xs font-medium text-slate-400 text-center max-w-45">Baisse de participation aux subventions</div>
         </div>
-        <div className="text-[11px] text-center text-slate-500 border-t border-slate-900 pt-3 z-10">
+        <div className="text-[11px] text-center text-slate-500 border-t border-slate-800 pt-3 z-10">
             Fragmentation due à la dispersion des outils locaux
         </div>
     </div>
 );
 
 const ComplianceRiskPreview = () => (
-    <div className="w-full h-full bg-slate-950 text-white flex flex-col justify-between p-6 relative overflow-hidden">
+    <div className="w-full h-full bg-slate-900 text-white flex flex-col justify-between p-6 relative overflow-hidden rounded-2xl">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.12),transparent_70%)]" />
         <div className="flex justify-between items-center z-10">
             <span className="text-[10px] font-mono tracking-widest text-blue-400 uppercase font-bold">Réglementation & Taxes</span>
             <span className="text-[11px] font-medium text-emerald-400 bg-emerald-950/50 border border-emerald-900/50 px-2 py-0.5 rounded font-mono">ID: Audit-2026</span>
         </div>
         <div className="my-auto space-y-2 z-10">
-            <div className="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 flex items-center gap-3">
+            <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] shrink-0" />
                 <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-bold text-slate-200 truncate">Réglementation Fiscale UEMOA</p>
                     <p className="text-[10px] text-slate-400 font-medium">Écarts critiques sur la récupération TVA</p>
                 </div>
             </div>
-            <div className="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 flex items-center gap-3">
+            <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] shrink-0" />
                 <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-bold text-slate-200 truncate">Loi de Finance Sociale</p>
@@ -203,11 +416,9 @@ const ComplianceRiskPreview = () => (
     </div>
 );
 
-// ── COMPOSANTS VISUELS PREMIUM (INTERACTIONS AVEC ÉCRANS IMAGES & ROI) ──
-
+// ── COMPOSANTS VISUELS PREMIUM (INTERACTIONS AVEC ÉCRANS IMAGES & ROI) ──────────
 const TravelConsolePreview = () => (
     <div className="w-full bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col font-sans">
-        {/* Header de la console */}
         <div className="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-6">
                 <div className="flex gap-1.5">
@@ -222,23 +433,20 @@ const TravelConsolePreview = () => (
             </div>
         </div>
 
-        {/* Corps : Structure Asymétrique Image vs Data */}
         <div className="grid grid-cols-1 md:grid-cols-12">
-            {/* Visualisation descriptive / Image d'affaires */}
-            <div className="md:col-span-5 relative h-48 md:h-full min-h-[180px] bg-slate-950">
+            <div className="md:col-span-5 relative h-48 md:h-full min-h-45 bg-slate-950">
                 <img 
                     src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=600&q=80" 
                     alt="Gestion des flux aériens professionnels" 
                     className="w-full h-full object-cover opacity-60 mix-blend-luminosity grayscale group-hover:grayscale-0 group-hover:opacity-80 transition-all duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4">
                     <p className="text-[11px] font-mono text-teal-400 font-bold uppercase tracking-wider">Couverture Globale</p>
                     <p className="text-xs text-white font-medium mt-0.5">Centralisation des politiques multi-compagnies.</p>
                 </div>
             </div>
 
-            {/* Zone Graphique de Performance ROI */}
             <div className="md:col-span-7 p-5 flex flex-col justify-between bg-slate-900 border-l border-slate-800/60">
                 <div>
                     <div className="flex justify-between items-start mb-2">
@@ -251,9 +459,7 @@ const TravelConsolePreview = () => (
                         </span>
                     </div>
 
-                    {/* Comparaison de Courbes Intelligentes */}
                     <div className="relative h-24 w-full mt-4 flex items-end">
-                        {/* Courbe Avant (Ligne pointillée rouge descendante lente ou haute) */}
                         <svg className="absolute inset-0 w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
                             <path d="M 0 20 Q 25 15, 50 35 T 100 25" fill="none" stroke="rgba(244,63,94,0.4)" strokeWidth="2" strokeDasharray="4" />
                             <path d="M 0 80 Q 25 50, 50 40 T 100 15" fill="none" stroke="#14b8a6" strokeWidth="3" />
@@ -285,7 +491,6 @@ const TravelConsolePreview = () => (
 
 const CseWorkspacePreview = () => (
     <div className="w-full bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col font-sans">
-        {/* Header de la console */}
         <div className="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-6">
                 <div className="flex gap-1.5">
@@ -301,7 +506,6 @@ const CseWorkspacePreview = () => (
             </div>
         </div>
 
-        {/* Corps : Style Catalogue B2C / Netflix Épuré */}
         <div className="p-5 space-y-4">
             <div className="flex justify-between items-center">
                 <div>
@@ -314,44 +518,40 @@ const CseWorkspacePreview = () => (
                 </span>
             </div>
 
-            {/* Grille d'avantages avec images réelles et overlays */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                {/* Carte service 1 */}
                 <div className="relative h-28 rounded-xl overflow-hidden border border-slate-800 group/item bg-slate-950">
                     <img 
                         src="https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=300&q=80" 
                         alt="Bons d'achat et alimentation" 
                         className="w-full h-full object-cover opacity-40 group-hover/item:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent" />
                     <div className="absolute bottom-2 left-2 right-2">
                         <span className="text-[9px] font-bold bg-amber-500/20 border border-amber-500/30 text-amber-400 px-1.5 py-0.5 rounded uppercase">Alimentation</span>
                         <p className="text-[11px] font-extrabold text-white mt-1">Chèques Resto & Paniers</p>
                     </div>
                 </div>
 
-                {/* Carte service 2 */}
                 <div className="relative h-28 rounded-xl overflow-hidden border border-slate-800 group/item bg-slate-950">
                     <img 
                         src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=300&q=80" 
                         alt="Santé, sport et bien-être" 
                         className="w-full h-full object-cover opacity-40 group-hover/item:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent" />
                     <div className="absolute bottom-2 left-2 right-2">
                         <span className="text-[9px] font-bold bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 px-1.5 py-0.5 rounded uppercase">Bien-être</span>
                         <p className="text-[11px] font-extrabold text-white mt-1">Abonnements Sport & Santé</p>
                     </div>
                 </div>
 
-                {/* Carte service 3 */}
                 <div className="relative h-28 rounded-xl overflow-hidden border border-slate-800 group/item bg-slate-950">
                     <img 
                         src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=300&q=80" 
                         alt="Formations et e-learning" 
                         className="w-full h-full object-cover opacity-40 group-hover/item:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent" />
                     <div className="absolute bottom-2 left-2 right-2">
                         <span className="text-[9px] font-bold bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 px-1.5 py-0.5 rounded uppercase">Éducation</span>
                         <p className="text-[11px] font-extrabold text-white mt-1">Formations & E-learning</p>
@@ -368,11 +568,76 @@ const CheckIcon = () => (
     </svg>
 );
 
+// ── COMPOSANT PRINCIPAL ────────────────────────────────────────────────────────
 export default function ChallengesAndSolutions() {
     const [activeChallenge, setActiveChallenge] = useState<number>(0);
+    const sectionRef = useRef<HTMLDivElement>(null);
+    const isInView = useInView(sectionRef, { once: true, amount: 0.1 });
+    const controls = useAnimation();
+
+    useEffect(() => {
+        if (isInView) {
+            controls.start("visible");
+        }
+    }, [isInView, controls]);
+
+    const challenges = [
+        {
+            title: "Fuite des capitaux & Angles morts",
+            description: "Les dépenses de voyage d'affaires explosent de manière opaque. Sans contrôle analytique en amont de l'achat, l'ajustement budgétaire en temps réel reste impossible.",
+            icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+            color: "rose",
+            bgGradient: "linear-gradient(135deg, #fff 0%, #fff1f0 100%)",
+            solutionTitle: "Contrôle budgétaire IA",
+            solutionDesc: "Notre IA analyse et bloque automatiquement les dépenses hors politique avant validation, réduisant les fuites de 34%.",
+            kpi: "-34%",
+            kpiLabel: "fuites détectées",
+            preview: <BudgetLeakPreview />
+        },
+        {
+            title: "Fragmentation des avantages CSE",
+            description: "La gestion manuelle et distribuée des comités sociaux nuit à la cohésion. Les collaborateurs profitent peu de leurs privilèges à cause de processus complexes.",
+            icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+            color: "amber",
+            bgGradient: "linear-gradient(135deg, #fff 0%, #fffaf0 100%)",
+            solutionTitle: "Portail unifié des avantages",
+            solutionDesc: "Centralisez tous vos avantages dans une interface B2C moderne, augmentant la participation de 42%.",
+            kpi: "+42%",
+            kpiLabel: "participation",
+            preview: <CseFragmentationPreview />
+        },
+        {
+            title: "Risque de non-conformité fiscale",
+            description: "Naviguer sans garde-fou à travers les lois douanières, les taxes régionales d'hébergement et les normes d'audit expose les groupes à des redressements majeurs.",
+            icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+            color: "blue",
+            bgGradient: "linear-gradient(135deg, #fff 0%, #eff6ff 100%)",
+            solutionTitle: "Bouclier de conformité",
+            solutionDesc: "Nos algorithmes surveillent en temps réel les réglementations locales et vous alertent avant les échéances critiques.",
+            kpi: "99.2%",
+            kpiLabel: "conformité",
+            preview: <ComplianceRiskPreview />
+        }
+    ];
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.15,
+                duration: 0.5
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 30 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+    };
 
     return (
-        <div className="relative w-full bg-white overflow-hidden py-24 border-t border-slate-100">
+        <div ref={sectionRef} className="relative w-full bg-white overflow-hidden border-t border-slate-100">
             {/* Trame technique d'arrière-plan */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
             
@@ -380,122 +645,87 @@ export default function ChallengesAndSolutions() {
 
             {/* Halos de lumière épurés */}
             <div className="absolute inset-0 pointer-events-none z-0">
-                <div className="absolute top-12 right-1/4 w-[500px] h-[500px] rounded-full bg-indigo-50/30 blur-[130px]" />
-                <div className="absolute bottom-12 left-1/4 w-[500px] h-[500px] rounded-full bg-teal-50/20 blur-[130px]" />
+                <div className="absolute top-12 right-1/4 w-125 h-125 rounded-full bg-indigo-50/30 blur-[130px]" />
+                <div className="absolute bottom-12 left-1/4 w-125 h-125 rounded-full bg-teal-50/20 blur-[130px]" />
             </div>
 
-            {/* ── PARTIE 1 : LES DÉFIS INTERACTIFS ── */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-36 relative z-10">
-                <div className="text-center mb-16">
-                    <h2 
-                        style={{
-                            fontFamily: "Sanomat, ui-serif",
-                            fontWeight: 600,
-                            fontStyle: "normal",
-                            fontSize: "42px",
-                            lineHeight: "50px",
-                            color: "rgb(21, 0, 44)"
-                        }}
-                        className="tracking-tight mb-5"
-                    >
-                        Les frictions qui freinent votre croissance
-                    </h2>
-                    <p className="text-slate-500 text-base sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed">
-                        Le paysage des entreprises africaines exige une agilité maximale, pourtant les anciens processus manuels créent des barrières invisibles.
-                    </p>
-                </div>
+            {/* ── TRUST BAR (Bandeau de logos) - Collé en haut ── */}
+            <TrustBar />
 
-                {/* Grille : Cartes descriptives vs Visionneuse live */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-                    
-                    {/* Colonne Gauche : Déclencheurs tactiles/survol */}
-                    <div className="lg:col-span-7 flex flex-col gap-4 justify-between">
+            {/* ── SECTION DÉFIS ET SOLUTIONS ── */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20 mb-24 relative z-10">
+                <motion.div
+                    initial="hidden"
+                    animate={controls}
+                    variants={containerVariants}
+                >
+                    <motion.div variants={itemVariants} className="text-center mb-16">
+                        <span className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-600 rounded-full mb-4">
+                            Diagnostic 2026
+                        </span>
+                        <h2 
+                            style={{
+                                fontFamily: "Sanomat, ui-serif",
+                                fontWeight: 600,
+                                fontStyle: "normal",
+                                fontSize: "clamp(32px, 5vw, 42px)",
+                                lineHeight: "1.2",
+                                color: "rgb(21, 0, 44)"
+                            }}
+                            className="tracking-tight mb-5"
+                        >
+                            Les frictions qui freinent votre croissance
+                        </h2>
+                        <p className="text-slate-500 text-base sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed">
+                            Le paysage des entreprises africaines exige une agilité maximale, pourtant les anciens processus manuels créent des barrières invisibles.
+                        </p>
+                    </motion.div>
+
+                    {/* Grille Bento Grid 3 colonnes + Vidéo */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20">
+                        {/* 3 cartes challenges */}
+                        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {challenges.slice(0, 2).map((challenge, idx) => (
+                                <ChallengeCard
+                                    key={idx}
+                                    title={challenge.title}
+                                    description={challenge.description}
+                                    icon={challenge.icon}
+                                    color={challenge.color}
+                                    bgGradient={challenge.bgGradient}
+                                    solutionTitle={challenge.solutionTitle}
+                                    solutionDesc={challenge.solutionDesc}
+                                    kpi={challenge.kpi}
+                                    kpiLabel={challenge.kpiLabel}
+                                    isActive={activeChallenge === idx}
+                                    onHover={() => setActiveChallenge(idx)}
+                                />
+                            ))}
+                            
+                        </div>
                         
-                        {/* Défi 1 */}
-                        <div 
-                            onMouseEnter={() => setActiveChallenge(0)}
-                            onClick={() => setActiveChallenge(0)}
-                            className={`cursor-pointer rounded-2xl p-6 border transition-all duration-300 relative flex items-start gap-5 ${
-                                activeChallenge === 0 
-                                ? 'bg-white border-rose-200 shadow-[0_12px_30px_rgba(244,63,94,0.06)] scale-[1.01]' 
-                                : 'bg-white/60 border-slate-200/60 hover:bg-white hover:border-slate-300'
-                            }`}
-                        >
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
-                                activeChallenge === 0 ? 'bg-rose-500 text-white shadow-md' : 'bg-rose-50 text-rose-500'
-                            }`}>
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 className="text-slate-900 font-extrabold text-lg mb-1.5 flex items-center gap-2">
-                                    Fuite des capitaux & <MarkerHighlight color="rgba(244, 63, 94, 0.80)">Angles morts</MarkerHighlight>
-                                </h3>
-                                <p className="text-slate-500 text-sm leading-relaxed font-medium">
-                                    Les dépenses de voyage d'affaires explosent de manière opaque. Sans contrôle analytique en amont de l'achat, l'ajustement budgétaire en temps réel reste impossible.
-                                </p>
-                            </div>
+                        
+                        {/* 3ème carte challenge - seule à droite */}
+                        <div>
+                            <ChallengeCard
+                                key={2}
+                                title={challenges[2].title}
+                                description={challenges[2].description}
+                                icon={challenges[2].icon}
+                                color={challenges[2].color}
+                                bgGradient={challenges[2].bgGradient}
+                                solutionTitle={challenges[2].solutionTitle}
+                                solutionDesc={challenges[2].solutionDesc}
+                                kpi={challenges[2].kpi}
+                                kpiLabel={challenges[2].kpiLabel}
+                                isActive={activeChallenge === 2}
+                                onHover={() => setActiveChallenge(2)}
+                            />
                         </div>
-
-                        {/* Défi 2 */}
-                        <div 
-                            onMouseEnter={() => setActiveChallenge(1)}
-                            onClick={() => setActiveChallenge(1)}
-                            className={`cursor-pointer rounded-2xl p-6 border transition-all duration-300 relative flex items-start gap-5 ${
-                                activeChallenge === 1 
-                                ? 'bg-white border-amber-200 shadow-[0_12px_30px_rgba(245,158,11,0.06)] scale-[1.01]' 
-                                : 'bg-white/60 border-slate-200/60 hover:bg-white hover:border-slate-300'
-                            }`}
-                        >
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
-                                activeChallenge === 1 ? 'bg-amber-500 text-white shadow-md' : 'bg-amber-50 text-amber-500'
-                            }`}>
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 className="text-slate-900 font-extrabold text-lg mb-1.5 flex items-center gap-2">
-                                    Fragmentation des <MarkerHighlight color="rgba(245, 158, 11, 0.80)">avantages CSE</MarkerHighlight>
-                                </h3>
-                                <p className="text-slate-500 text-sm leading-relaxed font-medium">
-                                    La gestion manuelle et distribuée des comités sociaux nuit à la cohésion. Les collaborateurs profitent peu de leurs privilèges à cause de processus complexes.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Défi 3 */}
-                        <div 
-                            onMouseEnter={() => setActiveChallenge(2)}
-                            onClick={() => setActiveChallenge(2)}
-                            className={`cursor-pointer rounded-2xl p-6 border transition-all duration-300 relative flex items-start gap-5 ${
-                                activeChallenge === 2 
-                                ? 'bg-white border-blue-200 shadow-[0_12px_30px_rgba(59,130,246,0.06)] scale-[1.01]' 
-                                : 'bg-white/60 border-slate-200/60 hover:bg-white hover:border-slate-300'
-                            }`}
-                        >
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
-                                activeChallenge === 2 ? 'bg-blue-500 text-white shadow-md' : 'bg-blue-50 text-blue-500'
-                            }`}>
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 className="text-slate-900 font-extrabold text-lg mb-1.5 flex items-center gap-2">
-                                    Risque de <MarkerHighlight color="rgba(59, 130, 246, 0.80)">non-conformité fiscale</MarkerHighlight>
-                                </h3>
-                                <p className="text-slate-500 text-sm leading-relaxed font-medium">
-                                    Naviguer sans garde-fou à travers les lois douanières, les taxes régionales d'hébergement et les normes d'audit expose les groupes à des redressements majeurs.
-                                </p>
-                            </div>
-                        </div>
-
                     </div>
 
-                    {/* Colonne Droite : Écran de visualisation technique */}
-                    <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-3xl p-4 flex flex-col justify-between shadow-2xl min-h-[350px] lg:min-h-full">
+                    {/* Zone de visualisation interactive */}
+                    <motion.div variants={itemVariants} className="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-2xl">
                         <div className="w-full h-6 flex items-center gap-2 px-2 mb-3 border-b border-slate-800 pb-3">
                             <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
                             <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
@@ -503,141 +733,185 @@ export default function ChallengesAndSolutions() {
                             <span className="text-[10px] font-mono font-bold text-slate-500 ml-2 tracking-wider uppercase">Audit d'interface analytique</span>
                         </div>
                         
-                        <div className="flex-1 bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden shadow-inner flex items-center justify-center relative">
-                            {activeChallenge === 0 && <BudgetLeakPreview />}
-                            {activeChallenge === 1 && <CseFragmentationPreview />}
-                            {activeChallenge === 2 && <ComplianceRiskPreview />}
+                        <div className="bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden shadow-inner flex items-center justify-center min-h-80">
+                            {challenges[activeChallenge]?.preview}
                         </div>
-                    </div>
-
-                </div>
+                    </motion.div>
+                </motion.div>
             </section>
-
-            {/* ── PARTIE 2 : LES SOLUTIONS UNIFIÉES (AVEC PREVIEWS PREMIUM) ── */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div className="text-center mb-16">
-                    <h2 
-                        style={{
-                            fontFamily: "Sanomat, ui-serif",
-                            fontWeight: 600,
-                            fontStyle: "normal",
-                            fontSize: "42px",
-                            lineHeight: "50px",
-                            color: "rgb(21, 0, 44)"
-                        }}
-                        className="tracking-tight mb-5"
-                    >
-                        Deux piliers interconnectés, une cohérence totale
-                    </h2>
-                    <p className="text-slate-500 text-base max-w-2xl mx-auto font-medium leading-relaxed">
-                        Unifiez enfin la performance logistique et financière de vos déplacements avec la gestion de l'épanouissement social de vos collaborateurs.
-                    </p>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
-                    
-                    {/* SOLUTION 1 : AFRIKVOYAGE (FINTECH / LOGISTIQUE) */}
-                    <div className="group relative rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 flex flex-col justify-between hover:border-teal-500/80 transition-all duration-300 shadow-sm hover:shadow-2xl hover:-translate-y-1">
-                        <div className="space-y-6">
-                            {/* Dashboard Live avec Graphique & Courbes */}
-                            <TravelConsolePreview />
-
-                            <div className="flex items-center gap-4 pt-2">
-                                <div className="w-11 h-11 bg-teal-50 border border-teal-100 text-teal-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                    </svg>
-                                </div>
-                                <h3 className="font-black text-slate-900 text-2xl tracking-tight">AfrikVoyage</h3>
+            {/* Section vidéo intégrée */}
+                            <div className="md:col-span-2 w-5xl mx-auto mb-32 relative z-10">
+                                <VideoSection />
                             </div>
 
-                            <p className="text-slate-600 text-sm leading-relaxed font-medium">
-                                Automatisez l'achat de billets, centralisez vos politiques de voyage régionales et suivez vos indicateurs de ROI en <MarkerHighlight color="rgba(20, 184, 166, 0.15)">temps réel</MarkerHighlight> sans friction administrative.
-                            </p>
+            {/* ── SECTION SOLUTIONS UNIFIÉES AVEC KPIs VISIBLES ── */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pb-20">
+                <motion.div
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.1 }}
+                    variants={containerVariants}
+                >
+                    <motion.div variants={itemVariants} className="text-center mb-16">
+                        <span className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-600 rounded-full mb-4">
+                            Solutions unifiées
+                        </span>
+                        <h2 
+                            style={{
+                                fontFamily: "Sanomat, ui-serif",
+                                fontWeight: 600,
+                                fontStyle: "normal",
+                                fontSize: "clamp(32px, 5vw, 42px)",
+                                lineHeight: "1.2",
+                                color: "rgb(21, 0, 44)"
+                            }}
+                            className="tracking-tight mb-5"
+                        >
+                            Deux piliers interconnectés, <br />une cohérence totale
+                        </h2>
+                        <p className="text-slate-500 text-base max-w-2xl mx-auto font-medium leading-relaxed">
+                            Unifiez enfin la performance logistique et financière de vos déplacements avec la gestion de l'épanouissement social de vos collaborateurs.
+                        </p>
+                    </motion.div>
 
-                            <div className="h-px bg-gradient-to-r from-slate-200 via-transparent to-transparent" />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
+                        
+                        {/* SOLUTION 1 : AFRIKVOYAGE */}
+                        <motion.div variants={itemVariants} className="group relative rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 flex flex-col justify-between hover:border-teal-500/80 transition-all duration-300 shadow-sm hover:shadow-2xl hover:-translate-y-1">
+                            <div className="absolute -top-3 right-6 bg-emerald-500 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg">
+                                -30% de coûts
+                            </div>
+                            
+                            <div className="space-y-6">
+                                <TravelConsolePreview />
 
-                            {/* Liste de features hiérarchisées */}
-                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {AFRIKVOYAGE_FEATURES.map((f) => (
-                                    <li key={f.title} className="flex items-start gap-3 text-slate-700">
-                                        <span className="text-teal-600 bg-teal-50 p-1 rounded-md border border-teal-100 shadow-sm mt-0.5 shrink-0">
-                                            <CheckIcon />
-                                        </span>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-bold text-slate-900 leading-tight">{f.title}</p>
-                                            <p className="text-[11px] text-slate-400 mt-0.5 leading-snug font-medium">{f.desc}</p>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        <div className="pt-8">
-                            <Link
-                                href="/companies/AfrikVoyage/dashboard"
-                                className="inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-teal-600 transition-all duration-200 shadow-lg shadow-slate-900/10 group/link w-full sm:w-auto justify-center"
-                            >
-                                Accéder à la console AfrikVoyage
-                                <svg className="w-4 h-4 transform group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                                </svg>
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* SOLUTION 2 : AFRIKCSE (RH / ENGAGEMENT HUMAIN) */}
-                    <div className="group relative rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 flex flex-col justify-between hover:border-amber-500/80 transition-all duration-300 shadow-sm hover:shadow-2xl hover:-translate-y-1">
-                        <div className="space-y-6">
-                            {/* Interface B2C Style Netflix */}
-                            <CseWorkspacePreview />
-
-                            <div className="flex items-center gap-4 pt-2">
-                                <div className="w-11 h-11 bg-amber-50 border border-amber-100 text-amber-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
+                                <div className="flex items-center gap-4 pt-2">
+                                    <div className="w-11 h-11 bg-teal-50 border border-teal-100 text-teal-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="font-black text-slate-900 text-2xl tracking-tight">AfrikVoyage</h3>
                                 </div>
-                                <h3 className="font-black text-slate-900 text-2xl tracking-tight">AfrikCSE</h3>
+
+                                <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                                    Automatisez l'achat de billets, centralisez vos politiques de voyage régionales et suivez vos indicateurs de ROI en <MarkerHighlight color="rgba(20, 184, 166, 0.15)">temps réel</MarkerHighlight> sans friction administrative.
+                                </p>
+
+                                <div className="h-px bg-linear-to-r from-slate-200 via-transparent to-transparent" />
+
+                                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {AFRIKVOYAGE_FEATURES.map((f) => (
+                                        <li key={f.title} className="flex items-start gap-3 text-slate-700">
+                                            <span className="text-teal-600 bg-teal-50 p-1 rounded-md border border-teal-100 shadow-sm mt-0.5 shrink-0">
+                                                <CheckIcon />
+                                            </span>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-bold text-slate-900 leading-tight">{f.title}</p>
+                                                    <span className="text-[10px] font-black text-emerald-600">{f.kpi}</span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug font-medium">{f.desc}</p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
 
-                            <p className="text-slate-600 text-sm leading-relaxed font-medium">
-                                Boostez la satisfaction de vos talents via un portail d'avantages sociaux moderne. Offrez-leur un accès fluide à des <MarkerHighlight color="rgba(245, 158, 11, 0.15)">services exclusifs</MarkerHighlight> adaptés à leur quotidien.
-                            </p>
+                            <div className="pt-8">
+                                <Link
+                                    href="/companies/AfrikVoyage/dashboard"
+                                    className="inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-teal-600 transition-all duration-200 shadow-lg shadow-slate-900/10 group/link w-full sm:w-auto justify-center"
+                                >
+                                    Accéder à la console AfrikVoyage
+                                    <svg className="w-4 h-4 transform group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                    </svg>
+                                </Link>
+                            </div>
+                        </motion.div>
 
-                            <div className="h-px bg-gradient-to-r from-slate-200 via-transparent to-transparent" />
+                        {/* SOLUTION 2 : AFRIKCSE */}
+                        <motion.div variants={itemVariants} className="group relative rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 flex flex-col justify-between hover:border-amber-500/80 transition-all duration-300 shadow-sm hover:shadow-2xl hover:-translate-y-1">
+                            <div className="absolute -top-3 right-6 bg-amber-500 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg">
+                                95% d'adoption
+                            </div>
+                            
+                            <div className="space-y-6">
+                                <CseWorkspacePreview />
 
-                            {/* Liste de features hiérarchisées */}
-                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {AFRIKCSE_FEATURES.map((f) => (
-                                    <li key={f.title} className="flex items-start gap-3 text-slate-700">
-                                        <span className="text-amber-600 bg-amber-50 p-1 rounded-md border border-amber-100 shadow-sm mt-0.5 shrink-0">
-                                            <CheckIcon />
-                                        </span>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-bold text-slate-900 leading-tight">{f.title}</p>
-                                            <p className="text-[11px] text-slate-400 mt-0.5 leading-snug font-medium">{f.desc}</p>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+                                <div className="flex items-center gap-4 pt-2">
+                                    <div className="w-11 h-11 bg-amber-50 border border-amber-100 text-amber-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="font-black text-slate-900 text-2xl tracking-tight">AfrikCSE</h3>
+                                </div>
 
-                        <div className="pt-8">
-                            <Link
-                                href="/companies/AfrikCSE/dashboard"
-                                className="inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-amber-600 transition-all duration-200 shadow-lg shadow-slate-900/10 group/link w-full sm:w-auto justify-center"
-                            >
-                                Ouvrir le Workspace Avantages
-                                <svg className="w-4 h-4 transform group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                                </svg>
-                            </Link>
-                        </div>
+                                <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                                    Boostez la satisfaction de vos talents via un portail d'avantages sociaux moderne. Offrez-leur un accès fluide à des <MarkerHighlight color="rgba(245, 158, 11, 0.15)">services exclusifs</MarkerHighlight> adaptés à leur quotidien.
+                                </p>
+
+                                <div className="h-px bg-linear-to-r from-slate-200 via-transparent to-transparent" />
+
+                                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {AFRIKCSE_FEATURES.map((f) => (
+                                        <li key={f.title} className="flex items-start gap-3 text-slate-700">
+                                            <span className="text-amber-600 bg-amber-50 p-1 rounded-md border border-amber-100 shadow-sm mt-0.5 shrink-0">
+                                                <CheckIcon />
+                                            </span>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-bold text-slate-900 leading-tight">{f.title}</p>
+                                                    <span className="text-[10px] font-black text-emerald-600">{f.kpi}</span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug font-medium">{f.desc}</p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div className="pt-8">
+                                <Link
+                                    href="/companies/AfrikCSE/dashboard"
+                                    className="inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-amber-600 transition-all duration-200 shadow-lg shadow-slate-900/10 group/link w-full sm:w-auto justify-center"
+                                >
+                                    Ouvrir le Workspace Avantages
+                                    <svg className="w-4 h-4 transform group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                    </svg>
+                                </Link>
+                            </div>
+                        </motion.div>
+
                     </div>
-
-                </div>
+                </motion.div>
             </section>
+
+            <style jsx global>{`
+                @keyframes marquee {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                }
+                @keyframes shimmer {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                }
+                .animate-marquee {
+                    animation: marquee 20s linear infinite;
+                }
+                .animate-shimmer {
+                    animation: shimmer 1.5s ease-in-out infinite;
+                }
+                @keyframes ping {
+                    75%, 100% { transform: scale(2); opacity: 0; }
+                }
+                .animate-ping {
+                    animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+                }
+            `}</style>
         </div>
     );
 }

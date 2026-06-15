@@ -35,6 +35,18 @@ export const adminService = {
         return data;
     },
 
+    async exportOrganizations(params: {
+        search?: string;
+        status?: string;
+        module?: string;
+    }) {
+        const { data } = await api.get("/organizations/export", {
+            params,
+            responseType: "blob",
+        });
+        return data as Blob;
+    },
+
     async createOrganization(payload: Record<string, unknown>) {
         const { data } = await api.post("/organizations", payload);
         return data;

@@ -28,6 +28,16 @@ export class OrganizationRepository {
                 role: true,
                 isActive: true,
                 lastLoginAt: true,
+                avatar: true,
+                phone: true,
+                jobTitle: true,
+            },
+            orderBy: { createdAt: "asc" },
+            },
+            subscription: {
+            select: {
+                status: true,
+                currentPeriodEnd: true,
             },
             },
             _count: { select: { users: true } },
@@ -259,5 +269,34 @@ export class OrganizationRepository {
         page,
         totalPages: Math.ceil(total / limit),
     };
+    }
+
+    /** Liste complète pour export CSV — mêmes filtres que findPaginated, sans pagination */
+    async findAllForExport(filters: { search?: string; status?: string; module?: string }) {
+    const { search, status, module } = filters;
+
+    const where: any = {};
+    if (search) {
+        where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { businessEmail: { contains: search, mode: "insensitive" } },
+        ];
+    }
+    if (status) where.status = status;
+    if (module === "CSE") where.hasCSE = true;
+    if (module === "VOYAGE") where.hasVoyage = true;
+
+    return prisma.organization.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: {
+            _count: { select: { users: true } },
+            users: {
+            where: { role: "ADMIN" },
+            select: { firstName: true, lastName: true, email: true },
+            take: 1,
+            },
+        },
+    });
     }
 }

@@ -12,6 +12,13 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
     console.log("🌱 Démarrage du seed...");
 
+    // Le seed ne doit s'exécuter qu'une seule fois : si des utilisateurs
+    // existent déjà (cas de la production), on ne touche à rien.
+    if (await prisma.user.count() > 0) {
+        console.log("DB already seeded");
+        return;
+    }
+
     //await prisma.post.deleteMany()
     // await prisma.user.deleteMany()
     // await prisma.organization.deleteMany()

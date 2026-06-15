@@ -463,7 +463,6 @@ export default function CompaniesPage() {
     const [total, setTotal]       = useState(0);
 
     // Modales
-    const [viewOrg, setViewOrg]   = useState<Org | null>(null);
     const [editOrg, setEditOrg]   = useState<Org | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [inviteOrg, setInviteOrg] = useState<Org | null>(null);
@@ -495,16 +494,6 @@ export default function CompaniesPage() {
     useEffect(() => { setPage(1); }, [search, status, module]);
 
     // ── Actions ─────────────────────────────────────────────
-
-    const handleView = async (org: Org) => {
-        try {
-        // Charge le détail complet
-        const full = await adminService.getOrganization(org.id);
-        setViewOrg(full);
-        } catch {
-        setViewOrg(org); // fallback sur les données de liste
-        }
-    };
 
     const handleEditOpen = (org: Org) => {
         setEditOrg(org);
@@ -599,6 +588,25 @@ export default function CompaniesPage() {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const handleExport = async () => {
+        setProcessing("export");
+        try {
+        const blob = await adminService.exportOrganizations({ search, status, module });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `organisations-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        } catch {
+        toast.error("Erreur lors de l'export");
+        } finally {
+        setProcessing(null);
+        }
+    };
+
     // ── Rendu ────────────────────────────────────────────────
     return (
         <div className="space-y-5">
@@ -613,10 +621,14 @@ export default function CompaniesPage() {
             </div>
             <div className="flex gap-2">
             <button
-                onClick={() => toast.info("Export à venir")}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm text-gray-600 hover:bg-gray-50"
+                onClick={handleExport}
+                disabled={processing === "export"}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-60"
             >
-                <Download size={15} /> Exporter
+                {processing === "export"
+                ? <Loader2 size={15} className="animate-spin" />
+                : <Download size={15} />}
+                Exporter
             </button>
             <button
                 onClick={() => router.push("/admin/companies/new")}
@@ -744,7 +756,7 @@ export default function CompaniesPage() {
                             <ActionBtn
                                 icon={<Eye size={14} />}
                                 title="Voir le détail"
-                                onClick={() => handleView(org)}
+                                onClick={() => router.push(`/admin/companies/${org.id}`)}
                             />
 
                             {/* Modifier */}
@@ -826,109 +838,6 @@ export default function CompaniesPage() {
             </div>
             </div>
         </div>
-
-        {/* ══════════════════════════════════════════
-            MODAL : VOIR DÉTAIL
-        ══════════════════════════════════════════ */}
-        {viewOrg && (
-            <Modal
-            title={`Détail — ${viewOrg.name}`}
-            onClose={() => setViewOrg(null)}
-            size="lg"
-            >
-            <div className="space-y-5">
-                {/* Header org */}
-                <div className="flex items-start gap-4">
-                <OrgAvatar name={viewOrg.name} size="lg" />
-                <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-lg font-bold text-gray-900">{viewOrg.name}</h2>
-                    <StatusBadge status={viewOrg.status} />
-                    </div>
-                    <p className="text-sm text-gray-500">{viewOrg.businessEmail}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                    Créée le {new Date(viewOrg.createdAt).toLocaleDateString("fr-FR")}
-                    {viewOrg.validatedAt && ` · Validée le ${new Date(viewOrg.validatedAt).toLocaleDateString("fr-FR")}`}
-                    </p>
-                </div>
-                </div>
-
-                {/* Infos en grille */}
-                <div className="grid grid-cols-2 gap-3">
-                {[
-                    { label: "Pays",       value: `${COUNTRY_FLAGS[viewOrg.country] ?? ""} ${viewOrg.country}` },
-                    { label: "Ville",      value: viewOrg.city ?? "—" },
-                    { label: "Téléphone",  value: viewOrg.phone ?? "—" },
-                    { label: "Taille",     value: viewOrg.size ?? "—" },
-                    { label: "Secteur",    value: viewOrg.industry ?? "—" },
-                    { label: "Plan",       value: viewOrg.plan },
-                    { label: "Utilisateurs", value: String(viewOrg._count?.users ?? 0) },
-                ].map((row) => (
-                    <div key={row.label} className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-xs text-gray-500">{row.label}</p>
-                    <p className="text-sm font-semibold text-gray-900 mt-0.5">{row.value}</p>
-                    </div>
-                ))}
-                </div>
-
-                {/* Modules */}
-                <div>
-                <p className="text-xs font-medium text-gray-700 mb-2">Modules activés</p>
-                <div className="flex gap-2">
-                    {viewOrg.hasCSE && <ModuleBadge label="AfrikCSE" color="#0f766e" />}
-                    {viewOrg.hasVoyage && <ModuleBadge label="AfrikVoyage" color="#f59e0b" />}
-                    {!viewOrg.hasCSE && !viewOrg.hasVoyage && (
-                    <span className="text-xs text-gray-400">Aucun module actif</span>
-                    )}
-                </div>
-                </div>
-
-                {/* Admin principal */}
-                {viewOrg.users?.[0] && (
-                <div className="border border-gray-200 rounded-xl p-3">
-                    <p className="text-xs font-medium text-gray-700 mb-1">Administrateur principal</p>
-                    <p className="text-sm font-semibold text-gray-900">
-                    {viewOrg.users[0].firstName} {viewOrg.users[0].lastName}
-                    </p>
-                    <p className="text-xs text-gray-500">{viewOrg.users[0].email}</p>
-                </div>
-                )}
-
-                {/* Actions rapides depuis la modal */}
-                <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-                <button
-                    onClick={() => { setViewOrg(null); handleEditOpen(viewOrg); }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-white text-xs font-medium"
-                    style={{ background: "var(--color-primary)" }}
-                >
-                    <Pencil size={13} /> Modifier
-                </button>
-                {viewOrg.status === "ACTIVE" && (
-                    <button
-                    onClick={() => { setViewOrg(null); handleSuspend(viewOrg); }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-white text-xs font-medium bg-amber-500"
-                    >
-                    <Pause size={13} /> Suspendre
-                    </button>
-                )}
-                {viewOrg.status === "SUSPENDED" && (
-                    <button
-                    onClick={() => { setViewOrg(null); handleReactivate(viewOrg); }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-white text-xs font-medium bg-green-500"
-                    >
-                    <Play size={13} /> Réactiver
-                    </button>
-                )}
-                <button
-                    onClick={() => { setViewOrg(null); handleGenerateInvite(viewOrg); }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50"
-                >
-                    <Copy size={13} /> Lien invitation
-                </button>
-                </div>
-            </div>
-            </Modal>
-        )}
 
         {/* ══════════════════════════════════════════
             MODAL : MODIFIER
@@ -1131,16 +1040,6 @@ function ModuleBadge({ label, color }: { label: string; color: string }) {
         <span className="text-xs font-medium px-2 py-0.5 rounded"
         style={{ color, background: color + "18" }}>
         {label}
-        </span>
-    );
-}
-
-function StatusBadge({ status }: { status: string }) {
-    const st = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
-    return (
-        <span className="text-xs font-medium px-2.5 py-1 rounded-full"
-        style={{ color: st.color, background: st.color + "18" }}>
-        {st.label}
         </span>
     );
 }

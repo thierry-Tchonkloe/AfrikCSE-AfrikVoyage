@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { EmployeeSpaceController } from "./employee-space.controller";
 import { authenticate } from "../../../core/middlewares/auth.middleware";
-import { receiptUpload } from "../../../core/middlewares/upload.middleware";
+import { receiptUpload, logoUpload } from "../../../core/middlewares/upload.middleware";
 
 const router = Router();
 const ctrl = new EmployeeSpaceController();
@@ -30,6 +30,8 @@ router.patch("/benefits/requests/:id/cancel", ctrl.cancelBenefitRequest.bind(ctr
 // ── Profil ────────────────────────────────────────────────────────────────────
 router.get("/profile",     ctrl.getProfile.bind(ctrl));
 router.patch("/profile",   ctrl.updateProfile.bind(ctrl));
+router.post("/avatar",     logoUpload.single("file"), ctrl.uploadAvatar.bind(ctrl));
+router.get("/activity-log", ctrl.getActivityLog.bind(ctrl));
 
 // ── Documents ─────────────────────────────────────────────────────────────────
 router.get("/documents",         ctrl.getDocuments.bind(ctrl));

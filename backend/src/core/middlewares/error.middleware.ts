@@ -3,6 +3,7 @@
 import { Request, Response, NextFunction } from "express";
 import { MulterError } from "multer";
 import { AppError } from "../errors/app.error";
+import { logger } from "../utils/logger";
 
 export function errorMiddleware(
     err: Error,
@@ -33,7 +34,7 @@ export function errorMiddleware(
         return;
     }
 
-    console.error("[Unhandled Error]", err);
+    logger.error({ err }, "Unhandled error");
     res.status(500).json({
         success: false,
         message: "Erreur interne du serveur",

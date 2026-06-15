@@ -255,7 +255,7 @@ export default function FraisPage() {
                 🌱 Carbon Neutral Goal: 2025
             </span>
             </div>
-            <div className="grid grid-cols-3 gap-6 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-4">
             {[
                 { label: "Flight Emissions",    value: "8.2t CO₂", icon: "✈️", color: "#ef4444" },
                 { label: "Ground Transport",    value: "2.8t CO₂", icon: "🚗", color: "#3b82f6" },

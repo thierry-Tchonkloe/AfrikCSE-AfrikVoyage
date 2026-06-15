@@ -7,7 +7,7 @@ import {
     CreateContactInput,
 } from "../domain/contact.entity";
 import { AppError } from "../../../core/errors/app.error";
-import { sendMail } from "../../../core/config/mailer";
+import { sendMail } from "../../../core/services/email.service";
 import { contactNotificationEmail } from "../../../core/mailer/email.templates";
 
 export class ContactService {

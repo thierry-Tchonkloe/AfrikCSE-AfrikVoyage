@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Loader2, Upload } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { companyService } from "@/services/companies/company.service";
+import { applyTheme } from "@/lib/theme";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
 
 // ── Types ──────────────────────────────────────────────
 interface CompanySettings {
@@ -44,6 +46,7 @@ export default function CompanySettingsPage() {
     const [activeSection, setActiveSection] = useState("info");
     const [saving, setSaving]   = useState(false);
     const [changed, setChanged] = useState(false);
+    const logoInputRef = useRef<HTMLInputElement>(null);
 
     const [settings, setSettings] = useState<CompanySettings>({
         name:               "",
@@ -69,12 +72,15 @@ export default function CompanySettingsPage() {
                 if (!org) return;
                 setSettings((prev) => ({
                     ...prev,
-                    name:         org.name ?? prev.name,
-                    phone:        org.phone ?? prev.phone,
-                    primaryEmail: org.businessEmail ?? prev.primaryEmail,
-                    address:      org.address ?? prev.address,
-                    industry:     org.industry ?? prev.industry,
-                    size:         org.size ?? prev.size,
+                    name:           org.name ?? prev.name,
+                    phone:          org.phone ?? prev.phone,
+                    primaryEmail:   org.businessEmail ?? prev.primaryEmail,
+                    address:        org.address ?? prev.address,
+                    industry:       org.industry ?? prev.industry,
+                    size:           org.size ?? prev.size,
+                    logoUrl:        org.logoUrl ?? prev.logoUrl,
+                    primaryColor:   org.primaryColor ?? prev.primaryColor,
+                    secondaryColor: org.secondaryColor ?? prev.secondaryColor,
                 }));
             })
             .catch(() => {
@@ -87,32 +93,50 @@ export default function CompanySettingsPage() {
     }, []);
 
     const update = (key: keyof CompanySettings, value: string | null) => {
-        setSettings((prev) => ({ ...prev, [key]: value }));
+        setSettings((prev) => {
+            const next = { ...prev, [key]: value };
+            // Aperçu couleur en temps réel
+            if (key === "primaryColor" || key === "secondaryColor") {
+                applyTheme({ primaryColor: next.primaryColor, secondaryColor: next.secondaryColor });
+            }
+            return next;
+        });
         setChanged(true);
-
-        // Aperçu couleur temps réel
-        if (key === "primaryColor" && value) {
-        document.documentElement.style.setProperty("--color-primary", value);
-        }
     };
 
     const handleSave = async () => {
         setSaving(true);
         try {
             await companyService.updateMyOrg({
-                name:          settings.name || undefined,
-                phone:         settings.phone || undefined,
-                businessEmail: settings.primaryEmail || undefined,
-                address:       settings.address || undefined,
-                industry:      settings.industry || undefined,
-                size:          settings.size || undefined,
+                name:           settings.name || undefined,
+                phone:          settings.phone || undefined,
+                businessEmail:  settings.primaryEmail || undefined,
+                address:        settings.address || undefined,
+                industry:       settings.industry || undefined,
+                size:           settings.size || undefined,
+                primaryColor:   settings.primaryColor || undefined,
+                secondaryColor: settings.secondaryColor || undefined,
             });
             toast.success("Paramètres enregistrés");
             setChanged(false);
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? "Erreur sauvegarde");
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Erreur sauvegarde"));
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const { logoUrl } = await companyService.uploadLogo(file);
+            setSettings((prev) => ({ ...prev, logoUrl }));
+            toast.success("Logo mis à jour");
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Erreur lors de l'upload du logo"));
+        } finally {
+            e.target.value = "";
         }
     };
 
@@ -157,9 +181,9 @@ export default function CompanySettingsPage() {
                 </button>
                 ))}
                 <button
-                onClick={() => router.push("/billing")}
-                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left border-t border-gray-200 mt-2"
-                style={{ color: "#0f766e", background: "#f0fdf4" }}
+                    onClick={() => router.push("/companies/integrations")}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left border-t border-gray-200 mt-2"
+                    style={{ color: "#0f766e", background: "#f0fdf4" }}
                 >
                 🔗 Integrations & API RH
                 </button>
@@ -241,36 +265,62 @@ export default function CompanySettingsPage() {
                 desc="Personnalisez l'apparence de votre plateforme">
                 {/* Logo + Favicon */}
                 <div className="grid grid-cols-2 gap-6 mb-5">
-                    {[
-                    { key: "logoUrl" as const, label: "Company Logo", size: "260×56" },
-                    { key: "faviconUrl" as const, label: "Favicon", size: "128×128" },
-                    ].map((item) => (
-                    <div key={item.key}>
-                        <p className="text-xs font-medium text-gray-700 mb-2">{item.label}</p>
+                    {/* Logo — fonctionnel (upload Cloudinary) */}
+                    <div>
+                        <p className="text-xs font-medium text-gray-700 mb-2">Company Logo</p>
+                        <input
+                            ref={logoInputRef}
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/svg+xml,image/webp"
+                            className="hidden"
+                            onChange={handleLogoChange}
+                        />
                         <div
                         className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-teal-300 transition-colors"
-                        onClick={() => toast.info("Upload d'image — à connecter à Cloudinary")}
+                        onClick={() => logoInputRef.current?.click()}
                         >
-                        {settings[item.key] ? (
-                            <img src={settings[item.key]!} alt={item.label} className="max-h-12 mx-auto object-contain" />
+                        {settings.logoUrl ? (
+                            <img src={settings.logoUrl} alt="Logo" className="max-h-12 mx-auto object-contain" />
                         ) : (
                             <>
                             <Upload size={20} className="mx-auto text-gray-400 mb-2" />
                             <p className="text-xs text-gray-500">
-                                Current: {item.size}px
+                                Recommandé : 260×56px
                             </p>
                             </>
                         )}
-                        <button className="mt-2 text-xs text-teal-600 font-medium hover:underline">
-                            Change {item.label.split(" ")[1]}
+                        <button type="button" className="mt-2 text-xs text-teal-600 font-medium hover:underline">
+                            Change Logo
                         </button>
                         </div>
                     </div>
-                    ))}
+
+                    {/* Favicon — non géré par cette section (hors périmètre) */}
+                    <div>
+                        <p className="text-xs font-medium text-gray-700 mb-2">Favicon</p>
+                        <div
+                        className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-teal-300 transition-colors"
+                        onClick={() => toast.info("Upload d'image — à connecter à Cloudinary")}
+                        >
+                        {settings.faviconUrl ? (
+                            <img src={settings.faviconUrl} alt="Favicon" className="max-h-12 mx-auto object-contain" />
+                        ) : (
+                            <>
+                            <Upload size={20} className="mx-auto text-gray-400 mb-2" />
+                            <p className="text-xs text-gray-500">
+                                Current: 128×128px
+                            </p>
+                            </>
+                        )}
+                        <button type="button" className="mt-2 text-xs text-teal-600 font-medium hover:underline">
+                            Change Favicon
+                        </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Couleurs */}
-                <div className="grid grid-cols-3 gap-4 mb-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                     {[
                     { key: "primaryColor" as const,   label: "Primary Color" },
                     { key: "secondaryColor" as const, label: "Secondary Color" },

@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Plus, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Loader2, CalendarPlus } from "lucide-react";
 import { employeeService } from "@/services/employes/employee.service";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
 
 interface CalEvent {
     id: string;
@@ -120,8 +121,8 @@ export default function EvenementsPage() {
             toast.success("Inscrit avec succès !");
         }
         load();
-        } catch (err: any) {
-        toast.error(err.response?.data?.message ?? "Erreur");
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Erreur"));
         } finally {
         setRegistering(null);
         }
@@ -142,6 +143,39 @@ export default function EvenementsPage() {
         setShowCreate(false);
         load();
         } catch { toast.error("Erreur création"); }
+    };
+
+    const formatICSDate = (date: Date) =>
+        date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+    const escapeICSText = (text: string) =>
+        text.replace(/[\\,;]/g, (c) => `\\${c}`).replace(/\n/g, "\\n");
+
+    const handleAddToCalendar = (ev: CalEvent) => {
+        const ics = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//AfrikCSE & AfrikVoyage//Events//FR",
+        "BEGIN:VEVENT",
+        `UID:${ev.id}@afrikcse`,
+        `DTSTAMP:${formatICSDate(new Date())}`,
+        `DTSTART:${formatICSDate(new Date(ev.startDate))}`,
+        `DTEND:${formatICSDate(new Date(ev.endDate))}`,
+        `SUMMARY:${escapeICSText(ev.title)}`,
+        ...(ev.location ? [`LOCATION:${escapeICSText(ev.location)}`] : []),
+        "END:VEVENT",
+        "END:VCALENDAR",
+        ].join("\r\n");
+
+        const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${ev.title.replace(/[^a-z0-9]+/gi, "-")}.ics`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     };
 
     const prevMonth = () => {
@@ -344,6 +378,15 @@ export default function EvenementsPage() {
                         ? "Se désinscrire"
                         : "S'inscrire"}
                     </button>
+
+                    {isRegistered && (
+                    <button
+                        onClick={() => handleAddToCalendar(ev)}
+                        className="w-full py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                        <CalendarPlus size={14} /> Ajouter au calendrier
+                    </button>
+                    )}
                 </div>
                 );
             })}
