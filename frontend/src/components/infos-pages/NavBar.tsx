@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-// Structure enrichie pour le Méga-Menu - PLUS DE DÉTAILS (version compacte)
+// Structure enrichie pour le Méga-Menu
 const ALL_SOLUTIONS = [
   {
     category: "Gestion des voyages",
@@ -56,7 +56,6 @@ const ALL_SOLUTIONS = [
   }
 ];
 
-// Plateforme en bref (infos sans tout visiter) - version compacte
 const PLATFORM_HIGHLIGHTS = [
   { label: "entreprises clientes", icon: "🏢", value: "500+" },
   { label: "pays couverts", icon: "🌍", value: "54" },
@@ -65,12 +64,12 @@ const PLATFORM_HIGHLIGHTS = [
 ];
 
 const NAV_LINKS = [
-    { label: "Accueil", href: "/infos" },
-    { label: "À propos", href: "/infos/about" },
-    { label: "Comment ça marche", href: "/infos/how-it-works" },
-    { label: "Tarifs", href: "/infos/pricing" },
-    { label: "Contact", href: "/infos/contact" },
-    { label: "Rejoignez-nous", href: "/infos/join-us" }
+  { label: "Accueil", href: "/infos" },
+  { label: "À propos", href: "/infos/about" },
+  { label: "Comment ça marche", href: "/infos/how-it-works" },
+  { label: "Tarifs", href: "/infos/pricing" },
+  { label: "Contact", href: "/infos/contact" },
+  { label: "Rejoignez-nous", href: "/infos/join-us" }
 ];
 
 export default function Navbar() {
@@ -93,6 +92,24 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Fermer le méga-menu lors du clic à l'extérieur
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        megaMenuOpen &&
+        solutionsButtonRef.current &&
+        !solutionsButtonRef.current.contains(event.target as Node) &&
+        megaMenuRef.current &&
+        !megaMenuRef.current.contains(event.target as Node)
+      ) {
+        setMegaMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [megaMenuOpen]);
+
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -104,7 +121,7 @@ export default function Navbar() {
   const handleMouseLeave = () => {
     timeoutRef.current = setTimeout(() => {
       setMegaMenuOpen(false);
-    }, 150);
+    }, 200);
   };
 
   const handleMegaMenuMouseEnter = () => {
@@ -133,273 +150,290 @@ export default function Navbar() {
           : "bg-white/95 backdrop-blur-md border-slate-200/60 shadow-sm shadow-slate-100"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 overflow-visible">
+        <div className="flex items-center justify-between h-16 md:h-20 gap-1 sm:gap-2">
           
-          {/* ── ZONE GAUCHE : LOGO ── */}
-          <div className="flex items-center gap-6 shrink-0">
-            <Link href="/infos" className="flex items-center gap-3 group">
-              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-emerald-500 flex items-center justify-center p-[1px] transition-transform duration-300 group-hover:scale-105">
+          {/* ── LOGO ── */}
+          <div className="flex items-center shrink-0">
+            <Link href="/infos" className="flex items-center gap-2 sm:gap-3 group">
+              <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-emerald-500 flex items-center justify-center p-[1px] transition-transform duration-300 group-hover:scale-105 shrink-0">
                 <div className={`w-full h-full rounded-[11px] flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-950" : "bg-white"}`}>
                   <svg
-                    className={`w-4 h-4 transition-colors ${isScrolled ? "text-emerald-400" : "text-indigo-600"}`}
+                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${isScrolled ? "text-emerald-400" : "text-indigo-600"}`}
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                   </svg>
                 </div>
               </div>
-              <div className="flex flex-col hidden sm:flex">
-                <span className={`text-base font-bold tracking-tight leading-none mb-0.5 transition-colors ${isScrolled ? "text-white" : "text-slate-900"}`}>
+              <div className="hidden lg:flex flex-col">
+                <span className={`text-sm md:text-base font-bold tracking-tight leading-none mb-0.5 transition-colors whitespace-nowrap ${isScrolled ? "text-white" : "text-slate-900"}`}>
                   Afrik<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-emerald-400">Workspace</span>
                 </span>
-                <span className={`text-[9px] font-black tracking-[0.12em] uppercase leading-none ${isScrolled ? "text-slate-400" : "text-slate-500"}`}>
+                <span className={`text-[8px] md:text-[9px] font-black tracking-[0.12em] uppercase leading-none whitespace-nowrap ${isScrolled ? "text-slate-400" : "text-slate-500"}`}>
                   SaaS Platform
+                </span>
+              </div>
+              <div className="hidden sm:flex lg:hidden flex-col">
+                <span className={`text-xs font-bold tracking-tight leading-none transition-colors ${isScrolled ? "text-white" : "text-slate-900"}`}>
+                  Afrik<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-emerald-400">Workspace</span>
                 </span>
               </div>
             </Link>
           </div>
 
-          {/* ── ZONE CENTRALE ACCENTUÉE : NAVIGATION CAPSULE EXTENSIBLE ── */}
-          <nav className={`hidden md:flex items-center xl:gap-2 lg:gap-1.5 gap-0.5 p-1.5 rounded-full border transition-all shrink-0 ${
-            isScrolled ? "bg-slate-950/40 border-slate-800/80" : "bg-white border-slate-200/60"
-          }`}>
-            {/* Déclencheur du Méga-Menu */}
-            <div
-              ref={solutionsButtonRef}
-              className="relative"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              <Link
-                href="/infos/solutions"
-                className={`inline-flex items-center gap-1.5 xl:px-4 lg:px-3 px-2.5 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
-                  isScrolled ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-900"
-                } ${megaMenuOpen ? (isScrolled ? "bg-slate-800/60" : "bg-slate-50") : ""} ${isSolutionsActive ? (isScrolled ? "text-indigo-400 bg-slate-900" : "text-indigo-600 bg-slate-100") : ""}`}
+          {/* ── NAVIGATION PRINCIPALE ── */}
+          <nav className="hidden md:flex items-center justify-end flex-1 mx-1 lg:mx-2">
+            <div className="flex items-center gap-0.5 lg:gap-1 p-1 rounded-full border transition-all bg-white/95 backdrop-blur-sm border-slate-200/60 shadow-sm">
+              {/* Méga-Menu avec positionnement à droite */}
+              <div
+                ref={solutionsButtonRef}
+                className="relative"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
               >
-                <span>Solutions</span>
-                <svg
-                  className={`w-3.5 h-3.5 transition-transform duration-300 ${megaMenuOpen ? "rotate-180 text-indigo-500" : "text-slate-400"}`}
-                  fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
+                <Link
+                  href="/infos/solutions"
+                  className={`inline-flex items-center gap-1 px-2 lg:px-3 py-1.5 lg:py-2 rounded-full text-xs lg:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
+                    isScrolled ? "text-slate-700 hover:text-slate-900" : "text-slate-700 hover:text-slate-900"
+                  } ${megaMenuOpen ? "bg-slate-100" : ""} ${isSolutionsActive ? "text-indigo-600 bg-slate-100" : ""}`}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                </svg>
-              </Link>
+                  <span>Solutions</span>
+                  <svg
+                    className={`w-3 h-3 transition-transform duration-300 ${megaMenuOpen ? "rotate-180 text-indigo-500" : "text-slate-400"}`}
+                    fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </Link>
 
-              {/* MÉGA-MENU ALIGNÉ */}
-              {megaMenuOpen && (
-                <div 
-                  ref={megaMenuRef}
-                  className="absolute top-full left-0 mt-3 w-[1000px] xl:w-[1100px] rounded-2xl border shadow-2xl transition-all duration-300 animate-fadeIn overflow-hidden z-50"
-                  style={{ transform: "translateX(-10%)" }} // Léger décalage pour recentrer la boîte géante
-                  onMouseEnter={handleMegaMenuMouseEnter}
-                  onMouseLeave={handleMegaMenuMouseLeave}
-                >
-                  <div className={`p-5 ${
-                    isScrolled ? "bg-slate-950 border-slate-800/80" : "bg-white border-slate-100"
-                  }`}>
-                    <div className="grid grid-cols-4 gap-5">
-                      {ALL_SOLUTIONS.map((category, idx) => (
-                        <div key={idx} className="space-y-2">
-                          <div className="flex items-center gap-2 px-2 pb-1.5 border-b border-slate-700/20">
-                            <span className="text-base">{category.icon}</span>
-                            <span className={`text-[10px] font-black uppercase tracking-wider ${
-                              category.color === 'indigo' ? 'text-indigo-500' :
-                              category.color === 'emerald' ? 'text-emerald-500' :
-                              category.color === 'purple' ? 'text-purple-500' :
-                              'text-slate-500'
-                            }`}>
-                              {category.category}
-                            </span>
-                          </div>
-                          <div className="space-y-1">
-                            {category.items.map((item, itemIdx) => (
-                              <button
-                                key={itemIdx}
-                                onClick={() => navigateToSolutions(item.href || category.href)}
-                                className="group/item flex gap-2 p-1.5 rounded-lg hover:bg-slate-800/20 transition-all cursor-pointer w-full text-left"
-                              >
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={`text-xs font-semibold ${isScrolled ? "text-slate-300 group-hover/item:text-indigo-400" : "text-slate-700 group-hover/item:text-indigo-600"}`}>
-                                      {item.label}
-                                    </span>
-                                    {item.tag && (
-                                      <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${
-                                        item.tagColor === 'indigo' ? 'bg-indigo-500/20 text-indigo-400' :
-                                        item.tagColor === 'emerald' ? 'bg-emerald-500/20 text-emerald-400' :
-                                        item.tagColor === 'purple' ? 'bg-purple-500/20 text-purple-400' :
-                                        item.tagColor === 'amber' ? 'bg-amber-500/20 text-amber-400' :
-                                        'bg-red-500/20 text-red-400'
-                                      }`}>
-                                        {item.tag}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">{item.desc}</p>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                          <button
-                            onClick={() => navigateToSolutions(category.href)}
-                            className="mt-2 text-[9px] font-semibold text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1"
-                          >
-                            Voir toute la catégorie
-                            <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="my-4 border-t border-slate-700/20" />
-
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs">📊</span>
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">La plateforme en bref</span>
-                      </div>
-                      <div className="grid grid-cols-4 gap-3">
-                        {PLATFORM_HIGHLIGHTS.map((highlight, idx) => (
-                          <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/10">
-                            <span className="text-lg">{highlight.icon}</span>
-                            <div>
-                              <p className="text-base font-black text-indigo-400 leading-tight">{highlight.value}</p>
-                              <p className="text-[9px] text-slate-400 leading-tight">{highlight.label}</p>
+                {/* MÉGA-MENU CORRIGÉ - Positionné à droite */}
+                {megaMenuOpen && (
+                  <div 
+                    ref={megaMenuRef}
+                    className="absolute top-full right-0 mt-2 w-[90vw] max-w-[1000px] rounded-2xl border shadow-2xl transition-all duration-300 animate-fadeIn overflow-hidden z-50 bg-white border-slate-100"
+                    style={{ right: 0 }}
+                    onMouseEnter={handleMegaMenuMouseEnter}
+                    onMouseLeave={handleMegaMenuMouseLeave}
+                  >
+                    <div className="p-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {ALL_SOLUTIONS.map((category, idx) => (
+                          <div key={idx} className="space-y-2">
+                            <div className="flex items-center gap-2 pb-1.5 border-b border-slate-200">
+                              <span className="text-sm">{category.icon}</span>
+                              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500">
+                                {category.category}
+                              </span>
                             </div>
+                            <div className="space-y-1">
+                              {category.items.map((item, itemIdx) => (
+                                <button
+                                  key={itemIdx}
+                                  onClick={() => navigateToSolutions(item.href || category.href)}
+                                  className="group/item flex gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-all cursor-pointer w-full text-left"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-xs font-semibold text-slate-700 group-hover/item:text-indigo-600">
+                                        {item.label}
+                                      </span>
+                                      {item.tag && (
+                                        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${
+                                          item.tagColor === 'indigo' ? 'bg-indigo-100 text-indigo-600' :
+                                          item.tagColor === 'emerald' ? 'bg-emerald-100 text-emerald-600' :
+                                          item.tagColor === 'purple' ? 'bg-purple-100 text-purple-600' :
+                                          item.tagColor === 'amber' ? 'bg-amber-100 text-amber-600' :
+                                          'bg-red-100 text-red-600'
+                                        }`}>
+                                          {item.tag}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10px] text-slate-500">{item.desc}</p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                            <button
+                              onClick={() => navigateToSolutions(category.href)}
+                              className="mt-1 text-[9px] font-semibold text-indigo-500 hover:text-indigo-600 transition flex items-center gap-1"
+                            >
+                              Voir toute la catégorie
+                              <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
                           </div>
                         ))}
                       </div>
-                    </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-700/20 flex items-center justify-between gap-3">
-                      <p className="text-[10px] text-slate-400">
-                        ✨ Découvrez comment AfrikWorkspace transforme la gestion des voyages
-                      </p>
-                      <Link
-                        href="/infos/solutions"
-                        className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 transition whitespace-nowrap"
-                        onClick={() => setMegaMenuOpen(false)}
-                      >
-                        Explorer la plateforme →
-                      </Link>
+                      <div className="my-3 border-t border-slate-200" />
+
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs">📊</span>
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">La plateforme en bref</span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {PLATFORM_HIGHLIGHTS.map((highlight, idx) => (
+                            <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50">
+                              <span className="text-base">{highlight.icon}</span>
+                              <div>
+                                <p className="text-sm font-black text-indigo-500">{highlight.value}</p>
+                                <p className="text-[9px] text-slate-500">{highlight.label}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between gap-2">
+                        <p className="text-[9px] text-slate-500">
+                          ✨ Découvrez comment AfrikWorkspace transforme la gestion
+                        </p>
+                        <Link
+                          href="/infos/solutions"
+                          className="text-[9px] font-semibold px-2 py-1 rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition whitespace-nowrap"
+                          onClick={() => setMegaMenuOpen(false)}
+                        >
+                          Explorer →
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            {/* Liens structurels corrigés (Pas de retour à la ligne + Espacement fluide) */}
-            {NAV_LINKS.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`xl:px-4 lg:px-3 px-2.5 py-2 rounded-full text-sm font-semibold transition-all duration-300 relative whitespace-nowrap ${
-                    isActive
-                      ? isScrolled ? "text-indigo-400 bg-slate-900" : "text-indigo-600 bg-slate-100"
-                      : isScrolled ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  {link.label}
-                  {isActive && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-500" />
-                  )}
-                </Link>
-              );
-            })}
+              {/* Liens navigation */}
+              {NAV_LINKS.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`px-1.5 lg:px-3 xl:px-4 py-1.5 lg:py-2 rounded-full text-xs lg:text-sm font-semibold transition-all duration-300 relative whitespace-nowrap ${
+                      isActive
+                        ? "text-indigo-600 bg-slate-100"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                    }`}
+                  >
+                    {link.label}
+                    {isActive && (
+                      <span className="absolute bottom-0 lg:bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-500" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
 
-          {/* ── ZONE DROITE : ACTIONS (Empêche l'écrasement de la nav) ── */}
-          <div className="hidden md:flex items-center xl:gap-5 lg:gap-3 gap-2 shrink-0 ml-auto">
-            {/* Sélecteur Région / Langue */}
-            <div className={`flex items-center text-[11px] font-bold border px-2.5 py-1.5 rounded-xl transition-colors ${
-              isScrolled ? "text-slate-400 border-slate-800 bg-slate-950/40" : "text-slate-500 border-slate-200 bg-slate-50"
-            }`}>
-              <button onClick={() => setLang("EN")} className={`px-1 transition-colors ${lang === "EN" ? "text-indigo-500 font-black" : "hover:text-slate-300"}`}>EN</button>
-              <span className="text-slate-700 mx-1">|</span>
-              <button onClick={() => setLang("FR")} className={`px-1 transition-colors ${lang === "FR" ? "text-indigo-500 font-black" : "hover:text-slate-300"}`}>FR</button>
+          {/* ── ACTIONS DROITE ── */}
+          <div className="hidden md:flex items-center gap-1 lg:gap-2 xl:gap-3 shrink-0">
+            <div className="relative">
+              <div className="flex flex-col items-center gap-0.5">
+                <button
+                  onClick={() => setLang("EN")}
+                  className={`text-[8px] lg:text-[9px] font-bold px-1.5 py-0.5 rounded-md transition-all ${
+                    lang === "EN" 
+                      ? "bg-indigo-600 text-white shadow-sm" 
+                      : isScrolled ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  EN
+                </button>
+                <button
+                  onClick={() => setLang("FR")}
+                  className={`text-[8px] lg:text-[9px] font-bold px-1.5 py-0.5 rounded-md transition-all ${
+                    lang === "FR" 
+                      ? "bg-indigo-600 text-white shadow-sm" 
+                      : isScrolled ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  FR
+                </button>
+              </div>
             </div>
 
-            {/* Bouton Connexion */}
             <Link
               href="/login"
-              className={`text-sm font-semibold transition-colors duration-200 flex items-center gap-1.5 whitespace-nowrap ${
-                isScrolled ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-900"
-              }`}
+              className="p-1.5 lg:p-2 rounded-full hover:bg-slate-100 transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
               </svg>
-              Connexion
             </Link>
 
-            {/* CTA Premium */}
             <Link
-              href="#"
+              href="/infos/demo"
               onMouseEnter={() => setHoverEffect(true)}
               onMouseLeave={() => setHoverEffect(false)}
-              className="relative text-xs font-black xl:px-5 lg:px-4 px-3.5 py-3 rounded-xl transition-all duration-300 overflow-hidden whitespace-nowrap group bg-gradient-to-r from-indigo-600 to-indigo-500 text-white"
+              className="relative text-[9px] lg:text-xs font-black px-2.5 lg:px-4 py-1.5 lg:py-2 rounded-xl transition-all duration-300 overflow-hidden whitespace-nowrap group bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md"
               style={{
                 boxShadow: hoverEffect 
-                  ? "0 0 30px rgba(99, 102, 241, 0.8), 0 0 15px rgba(99, 102, 241, 0.4)" 
-                  : "0 0 15px rgba(99, 102, 241, 0.3)"
+                  ? "0 0 20px rgba(99, 102, 241, 0.5), 0 0 10px rgba(99, 102, 241, 0.3)" 
+                  : "0 2px 8px rgba(99, 102, 241, 0.2)"
               }}
             >
               <span className="absolute inset-0 overflow-hidden rounded-xl">
-                <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" style={{ width: "100%", height: "100%" }} />
+                <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
               </span>
-              <span className="absolute inset-0 rounded-xl animate-pulse-ring" 
-                style={{
-                  boxShadow: "0 0 0 0 rgba(99, 102, 241, 0.5)",
-                  animation: "pulse-ring 2s infinite"
-                }} 
-              />
-              <span className="relative flex items-center gap-1.5">
-                Demander une démo
-                <svg className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="relative flex items-center gap-1">
+                Démo
+                <svg className="w-2.5 h-2.5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </span>
             </Link>
           </div>
 
-          {/* MOBILE TOGGLE */}
-          <div className="flex md:hidden items-center gap-4 ml-auto">
+          {/* ── MOBILE ── */}
+          <div className="flex md:hidden items-center gap-2">
+            <Link
+              href="/login"
+              className="p-1.5 rounded-lg bg-slate-100 text-slate-600"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              </svg>
+            </Link>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className={`p-2 rounded-xl border ${isScrolled ? "text-slate-400 bg-slate-900 border-slate-800" : "text-slate-600 bg-slate-50 border-slate-200"}`}
+              className={`p-1.5 rounded-lg border ${isScrolled ? "text-slate-400 bg-slate-900 border-slate-800" : "text-slate-600 bg-slate-50 border-slate-200"}`}
             >
               {menuOpen ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M6 18L18 6M6 6l12 12" /></svg>
               ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 6h16M4 12h16M4 18h16" /></svg>
               )}
             </button>
           </div>
-
         </div>
       </div>
 
-      {/* ── MOBILE ACCORDION ── */}
+      {/* ── MENU MOBILE ── */}
       {menuOpen && (
-        <div className={`md:hidden border-t px-6 pb-8 pt-4 space-y-4 backdrop-blur-xl ${
+        <div className={`md:hidden border-t px-4 pb-6 pt-4 space-y-3 backdrop-blur-xl ${
           isScrolled ? "border-slate-800/80 bg-slate-950/95 text-white" : "border-slate-200/60 bg-white/98 text-slate-900"
         }`}>
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-200/50 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center">
+              <span className="text-white text-xs font-bold">AW</span>
+            </div>
+            <span className="font-bold text-sm">AfrikWorkspace</span>
+          </div>
+
           <div className="space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block px-3">Solutions</span>
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 px-2">Solutions</p>
             {ALL_SOLUTIONS.flatMap(cat => cat.items).map((item, idx) => (
               <Link
                 key={idx}
                 href={item.href || "/infos/solutions"}
                 onClick={() => setMenuOpen(false)}
-                className="flex gap-3 p-2.5 rounded-xl hover:bg-slate-800/20"
+                className="flex gap-3 p-2.5 rounded-xl hover:bg-slate-800/20 transition-colors"
               >
                 <div className="flex flex-col flex-1">
-                  <span className="text-sm font-bold">{item.label}</span>
+                  <span className="text-sm font-semibold">{item.label}</span>
                   <span className="text-xs text-slate-400">{item.desc}</span>
                 </div>
               </Link>
@@ -410,21 +444,58 @@ export default function Navbar() {
 
           {NAV_LINKS.map((link) => (
             <Link
-              key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
-              className="block py-2.5 px-3 rounded-xl text-sm font-medium hover:bg-slate-800/20"
+              key={link.href}
+              href={link.href}
+              onClick={() => setMenuOpen(false)}
+              className="block py-2.5 px-3 rounded-xl text-sm font-medium hover:bg-slate-800/20 transition-colors"
             >
               {link.label}
             </Link>
           ))}
 
-          <div className="pt-4 border-t border-slate-800/60 flex flex-col gap-3">
-            <Link href="/login" className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border border-slate-800 bg-slate-900">
+          <div className="border-t border-slate-800/40 my-2" />
+
+          <div className="flex flex-col gap-2 pt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-400">Langue</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setLang("EN")}
+                  className={`px-3 py-1 rounded-lg text-sm font-semibold transition-all ${
+                    lang === "EN" 
+                      ? "bg-indigo-600 text-white" 
+                      : "bg-slate-800 text-slate-300"
+                  }`}
+                >
+                  ENGLISH
+                </button>
+                <button
+                  onClick={() => setLang("FR")}
+                  className={`px-3 py-1 rounded-lg text-sm font-semibold transition-all ${
+                    lang === "FR" 
+                      ? "bg-indigo-600 text-white" 
+                      : "bg-slate-800 text-slate-300"
+                  }`}
+                >
+                  FRANÇAIS
+                </button>
+              </div>
+            </div>
+            
+            <Link
+              href="/login"
+              className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border border-slate-800 bg-slate-900 mt-2"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
               </svg>
               Connexion
             </Link>
-            <Link href="#" className="block text-center text-sm font-black py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 text-white">
+            <Link
+              href="/infos/demo"
+              className="block text-center text-sm font-bold py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 text-white"
+              onClick={() => setMenuOpen(false)}
+            >
               Demander une démo
             </Link>
           </div>
@@ -444,20 +515,6 @@ export default function Navbar() {
         }
         .animate-fadeIn {
           animation: fadeIn 0.2s ease-out forwards;
-        }
-        @keyframes pulse-ring {
-          0% {
-            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
-          }
-          70% {
-            box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
-          }
-        }
-        .animate-pulse-ring {
-          animation: pulse-ring 2s infinite;
         }
       `}</style>
     </header>
