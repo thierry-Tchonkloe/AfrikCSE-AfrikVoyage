@@ -7,6 +7,8 @@ import {
     CreateContactInput,
 } from "../domain/contact.entity";
 import { AppError } from "../../../core/errors/app.error";
+import { sendMail } from "../../../core/services/email.service";
+import { contactNotificationEmail } from "../../../core/mailer/email.templates";
 
 export class ContactService {
     private repository: ContactRepository;
@@ -17,7 +19,19 @@ export class ContactService {
 
     async createContact(data: CreateContactInput): Promise<ContactEntity> {
         const contact = await this.repository.create(data);
-        // Optional: await sendNotificationEmail(contact);
+
+        const supportEmail = process.env.SUPPORT_EMAIL;
+        if (supportEmail) {
+        const { subject, html } = contactNotificationEmail({
+            fullName: data.fullName,
+            company: data.company,
+            email: data.email,
+            phone: data.phone,
+            message: data.message,
+        });
+        await sendMail({ to: supportEmail, subject, html });
+        }
+
         return contact;
     }
 

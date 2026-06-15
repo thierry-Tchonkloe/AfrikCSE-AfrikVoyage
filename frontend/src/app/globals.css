@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Active la variante `dark:` basée sur la classe `.dark` (ajoutée sur <html>
+   via applyDarkMode), au lieu de la préférence système par défaut de Tailwind v4. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* --- COULEURS ACTUELLES (Conservées) --- */
   --color-primary: #0f766e;
@@ -65,6 +69,8 @@ body {
 .btn-primary-vibrant:hover {
   background-color: var(--electric-indigo-glow);
   box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); /* Effet de lueur moderne */
+}
+
 :root {
   /*
    * Palette de marque par défaut (fallback) — appliquée tant qu'aucun
@@ -87,5 +93,4 @@ body {
   --color-border: #e2e8f0;
   --color-text: var(--color-brand-dark);
   --color-muted: #64748b;
-}
 }

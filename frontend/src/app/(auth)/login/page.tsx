@@ -11,6 +11,7 @@ import { authService } from "@/services/auth.service";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import Image from "next/image";
+import { getErrorMessage } from "@/lib/errors";
 
 const schema = z.object({
     email: z.string().email("Email invalide"),
@@ -72,8 +73,9 @@ export default function LoginPage() {
             }
 
             window.location.href = destination;
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || "Erreur de connexion");
+
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Erreur de connexion"));
         } finally {
             setLoading(false);
         }

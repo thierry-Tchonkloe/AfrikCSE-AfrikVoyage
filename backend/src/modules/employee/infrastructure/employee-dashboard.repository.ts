@@ -10,7 +10,8 @@ export class EmployeeDashboardRepository {
             travelRequests,
             expenseReports,
             nextTravel,
-            recentActivity,
+            recentExpenses,
+            recentTravels,
             benefitBalance,
         ] = await Promise.all([
             prisma.benefitRequest.count({
@@ -45,19 +46,43 @@ export class EmployeeDashboardRepository {
             }),
             prisma.expenseReport.findMany({
                 where: { employee: { userId } },
-                take: 4,
+                take: 5,
                 orderBy: { createdAt: "desc" },
                 select: { id: true, title: true, amount: true, status: true, createdAt: true },
             }),
-            prisma.benefitCategory.aggregate({
-                where: { organizationId: orgId },
-                _sum: { perEmployeeLimit: true },
+            prisma.travelRequest.findMany({
+                where: { requestedById: userId },
+                take: 5,
+                orderBy: { createdAt: "desc" },
+                select: { id: true, destination: true, estimatedCost: true, status: true, createdAt: true },
             }),
+            this.getBenefitBalance(userId, orgId),
         ]);
+
+        const recentActivity = [
+            ...recentExpenses.map((e) => ({
+                id: e.id,
+                type: "expense" as const,
+                title: e.title,
+                amount: e.amount,
+                status: e.status as string,
+                createdAt: e.createdAt,
+            })),
+            ...recentTravels.map((t) => ({
+                id: t.id,
+                type: "travel" as const,
+                title: `Voyage vers ${t.destination}`,
+                amount: t.estimatedCost ?? 0,
+                status: t.status as string,
+                createdAt: t.createdAt,
+            })),
+        ]
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .slice(0, 5);
 
         return {
             stats: {
-                cseBalance: benefitBalance._sum.perEmployeeLimit ?? 0,
+                cseBalance: benefitBalance.totalRemaining,
                 nextTripDays: nextTravel
                     ? Math.ceil(
                         (new Date(nextTravel.departureDate).getTime() - Date.now()) /
@@ -118,15 +143,40 @@ export class EmployeeDashboardRepository {
         destination?: string;
         description?: string;
         department?: string;
+        category?: string;
+        paymentMethod?: string;
+        expenseDate?: Date;
         departureDate?: Date;
         returnDate?: Date;
+        travelId?: string;
+        receipts?: string[];
     }) {
         const emp = await prisma.employee.findUnique({ where: { userId } });
         if (!emp) throw new Error("Profil employé introuvable");
 
+        let travel: { destination: string; department: string | null; departureDate: Date; returnDate: Date } | null = null;
+        if (data.travelId) {
+            travel = await prisma.travelRequest.findFirst({
+                where: { id: data.travelId, requestedById: userId },
+                select: { destination: true, department: true, departureDate: true, returnDate: true },
+            });
+            if (!travel) throw new Error("Voyage introuvable");
+        }
+
         return prisma.expenseReport.create({
             data: {
-                ...data,
+                title: data.title,
+                amount: data.amount,
+                description: data.description,
+                category: data.category,
+                paymentMethod: data.paymentMethod,
+                expenseDate: data.expenseDate,
+                receipts: data.receipts ?? [],
+                travelId: data.travelId,
+                destination: data.destination ?? travel?.destination,
+                department: data.department ?? travel?.department ?? undefined,
+                departureDate: data.departureDate ?? travel?.departureDate,
+                returnDate: data.returnDate ?? travel?.returnDate,
                 organizationId: orgId,
                 employeeId: emp.id,
                 status: "PENDING",
@@ -194,6 +244,7 @@ export class EmployeeDashboardRepository {
         amount: number;
         description?: string;
         urgency?: "LOW" | "MEDIUM" | "HIGH";
+        receipts?: string[];
     }) {
         const emp = await prisma.employee.findUnique({ where: { userId } });
         if (!emp) throw new Error("Profil employé introuvable");
@@ -226,6 +277,7 @@ export class EmployeeDashboardRepository {
         return prisma.benefitRequest.create({
             data: {
                 ...data,
+                receipts: data.receipts ?? [],
                 employeeId: emp.id,
                 organizationId: orgId,
                 status: "PENDING",
@@ -302,8 +354,39 @@ export class EmployeeDashboardRepository {
         phone?: string;
         jobTitle?: string;
         department?: string;
+        avatar?: string;
+        timezone?: string;
+        dateFormat?: string;
+        notificationPreferences?: {
+            email?: boolean;
+            travelAlerts?: boolean;
+            cseUpdates?: boolean;
+            systemUpdates?: boolean;
+        };
     }) {
         return prisma.user.update({ where: { id: userId }, data });
+    }
+
+    // ── Journal d'activité ───────────────────────────────────────────────────
+
+    async getActivityLog(userId: string, page: number, limit: number) {
+        const skip = (page - 1) * limit;
+        const [logs, total] = await Promise.all([
+            prisma.auditLog.findMany({
+                where: { userId },
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: limit,
+            }),
+            prisma.auditLog.count({ where: { userId } }),
+        ]);
+
+        return {
+            logs,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 
     // ── Documents ─────────────────────────────────────────────────────────────

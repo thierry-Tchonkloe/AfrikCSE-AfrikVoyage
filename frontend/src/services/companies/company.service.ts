@@ -13,9 +13,19 @@ export const companyService = {
         return data;
     },
 
-    // Users de l'organisation
-    async getUsers() {
-        const { data } = await api.get("/users");
+    // Upload du logo de l'organisation (ADMIN/MANAGER uniquement)
+    async uploadLogo(file: File) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const { data } = await api.post("/organizations/my/logo", formData, {
+            headers: { "Content-Type": undefined },
+        });
+        return data as { logoUrl: string };
+    },
+
+    // Users de l'organisation (paginé)
+    async getUsers(params?: { page?: number; limit?: number; search?: string; department?: string }) {
+        const { data } = await api.get("/users", { params });
         return data;
     },
 

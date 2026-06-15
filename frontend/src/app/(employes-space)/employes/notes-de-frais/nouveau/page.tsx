@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, ChevronLeft, Loader2 } from "lucide-react";
+import { Upload, X, ChevronLeft, Loader2, Camera } from "lucide-react";
 import { employeeService } from "@/services/employes/employee.service";
 import { toast } from "sonner";
+
+interface Travel {
+    id: string;
+    destination: string;
+    departureDate: string;
+}
 
 const CATEGORIES = [
     "Transport", "Hébergement", "Restauration", "Fournitures",
@@ -21,8 +27,10 @@ const PAYMENT_METHODS = [
 export default function NouvelleNotePage() {
     const router = useRouter();
     const [saving, setSaving]   = useState(false);
-    const [isDraft, setIsDraft] = useState(false);
     const [uploadedFile, setUploadedFile] = useState<{name: string; size: string} | null>(null);
+    const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [travels, setTravels] = useState<Travel[]>([]);
 
     const [form, setForm] = useState({
         title:         "",
@@ -34,33 +42,56 @@ export default function NouvelleNotePage() {
         description:   "",
     });
 
+    useEffect(() => {
+        employeeService.getMyTravels()
+        .then((data) => setTravels(data))
+        .catch(() => toast.error("Erreur lors du chargement des voyages"));
+    }, []);
+
     const upd = (k: keyof typeof form, v: string) =>
         setForm((prev) => ({ ...prev, [k]: v }));
 
-    const handleSubmit = async (draft = false) => {
+    const handleSubmit = async () => {
         if (!form.title || !form.amount) {
         toast.error("Titre et montant requis");
         return;
         }
         setSaving(true);
-        setIsDraft(draft);
         try {
         await employeeService.createExpense({
-            title:       form.title,
-            amount:      parseFloat(form.amount),
-            description: form.description,
-            status:      draft ? "PENDING" : "PENDING",
+            title:         form.title,
+            amount:        parseFloat(form.amount),
+            description:   form.description || undefined,
+            category:      form.category || undefined,
+            paymentMethod: form.paymentMethod,
+            expenseDate:   form.date || undefined,
+            travelId:      form.travelId || undefined,
+            receipts:      receiptUrl ? [receiptUrl] : [],
         });
-        toast.success(draft ? "Brouillon sauvegardé" : "Note soumise pour validation");
+        toast.success("Soumis pour validation");
         router.push("/employes/notes-de-frais");
-        } catch { toast.error("Erreur soumission"); }
+        } catch { toast.error("Erreur lors de la soumission"); }
         finally { setSaving(false); }
+    };
+
+    const handleFile = async (file: File) => {
+        setUploadedFile({ name: file.name, size: `${(file.size / 1024 / 1024).toFixed(1)} MB` });
+        setUploading(true);
+        try {
+        const res = await employeeService.uploadReceipt(file);
+        setReceiptUrl(res.url);
+        } catch {
+        toast.error("Erreur lors de l'envoi du justificatif");
+        setUploadedFile(null);
+        } finally {
+        setUploading(false);
+        }
     };
 
     const handleFileDrop = (e: React.DragEvent) => {
         e.preventDefault();
         const file = e.dataTransfer.files[0];
-        if (file) setUploadedFile({ name: file.name, size: `${(file.size / 1024 / 1024).toFixed(1)} MB` });
+        if (file) handleFile(file);
     };
 
     return (
@@ -119,8 +150,11 @@ export default function NouvelleNotePage() {
                 onChange={(e) => upd("travelId", e.target.value)}
                 className={inp}>
                 <option value="">Sélectionner un voyage...</option>
-                <option value="1">Paris → London (Dec 23)</option>
-                <option value="2">Lagos → Nairobi (Jan 15)</option>
+                {travels.map((t) => (
+                    <option key={t.id} value={t.id}>
+                    {t.destination} ({new Date(t.departureDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })})
+                    </option>
+                ))}
                 </select>
             </div>
             </div>
@@ -209,23 +243,28 @@ export default function NouvelleNotePage() {
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) setUploadedFile({
-                    name: f.name,
-                    size: `${(f.size / 1024 / 1024).toFixed(1)} MB`,
-                });
+                if (f) handleFile(f);
+                e.target.value = "";
+                }}
+            />
+            <input id="scan-input" type="file" className="hidden"
+                accept="image/*" capture="environment"
+                onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
+                e.target.value = "";
                 }}
             />
             <div className="flex gap-2 justify-center mt-3">
                 <button type="button"
+                onClick={(e) => { e.stopPropagation(); document.getElementById("file-input")?.click(); }}
                 className="text-xs px-4 py-1.5 border border-gray-200 rounded-lg text-gray-600">
                 Parcourir
                 </button>
                 <button type="button"
-                className="text-xs px-4 py-1.5 rounded-lg text-white"
-                style={{ background: "#0f766e" }}
-                onClick={(e) => { e.stopPropagation(); toast.info("Scanner — à connecter à un scanner"); }}
-                >
-                Scanner
+                onClick={(e) => { e.stopPropagation(); document.getElementById("scan-input")?.click(); }}
+                className="flex items-center gap-1.5 text-xs px-4 py-1.5 border border-gray-200 rounded-lg text-gray-600">
+                <Camera size={14} /> Scanner le reçu
                 </button>
             </div>
             </div>
@@ -233,12 +272,16 @@ export default function NouvelleNotePage() {
             {/* Fichier uploadé */}
             {uploadedFile && (
             <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl">
-                <span className="text-red-500 text-xl">📄</span>
+                {uploading
+                ? <Loader2 size={20} className="animate-spin text-gray-400" />
+                : <span className="text-red-500 text-xl">📄</span>}
                 <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{uploadedFile.name}</p>
-                <p className="text-xs text-gray-400">{uploadedFile.size}</p>
+                <p className="text-xs text-gray-400">
+                    {uploading ? "Envoi en cours..." : uploadedFile.size}
+                </p>
                 </div>
-                <button onClick={() => setUploadedFile(null)}
+                <button onClick={() => { setUploadedFile(null); setReceiptUrl(null); }}
                 className="text-red-400 hover:text-red-600 text-xl leading-none">
                 ×
                 </button>
@@ -247,31 +290,16 @@ export default function NouvelleNotePage() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-            <input type="checkbox" className="w-4 h-4"
-                style={{ accentColor: "#0f766e" }} />
-            Enregistrer comme brouillon
-            </label>
-            <div className="flex gap-2">
+        <div className="flex items-center justify-end">
             <button
-                onClick={() => handleSubmit(true)}
-                disabled={saving && isDraft}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600"
-            >
-                {saving && isDraft && <Loader2 size={14} className="animate-spin" />}
-                Sauvegarder
-            </button>
-            <button
-                onClick={() => handleSubmit(false)}
-                disabled={saving && !isDraft}
+                onClick={handleSubmit}
+                disabled={saving || uploading}
                 className="flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-70"
                 style={{ background: "#0f766e" }}
             >
-                {saving && !isDraft && <Loader2 size={14} className="animate-spin" />}
+                {saving && <Loader2 size={14} className="animate-spin" />}
                 Soumettre pour validation
             </button>
-            </div>
         </div>
 
         {/* Conseils */}

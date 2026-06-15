@@ -68,6 +68,7 @@ const NAV_LINKS = [
     { label: "Accueil", href: "/infos" },
     { label: "À propos", href: "/infos/about" },
     { label: "Comment ça marche", href: "/infos/how-it-works" },
+    { label: "Tarifs", href: "/infos/pricing" },
     { label: "Contact", href: "/infos/contact" },
     { label: "Rejoignez-nous", href: "/infos/join-us" }
 ];

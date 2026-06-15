@@ -1,7 +1,12 @@
 import { Request, Response } from "express";
 import { EventRepository } from "../infrastructure/event.repository";
+import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { sendMail } from "../../../core/services/email.service";
+import { eventRegistrationConfirmationEmail } from "../../../core/mailer/email.templates";
+import { createEventSchema } from "./event.validator";
 
 const repo = new EventRepository();
+const notificationRepo = new NotificationRepository();
 
 export class EventController {
     async getAll(req: Request, res: Response): Promise<void> {
@@ -16,22 +21,35 @@ export class EventController {
         res.json(events);
     }
 
+    async getRecent(req: Request, res: Response): Promise<void> {
+        const events = await repo.getRecent(req.user!.organizationId!);
+        res.json(events);
+    }
+
     async getStats(req: Request, res: Response): Promise<void> {
         const stats = await repo.getStats(req.user!.organizationId!);
         res.json(stats);
     }
 
     async create(req: Request, res: Response): Promise<void> {
+        const parsed = createEventSchema.safeParse(req.body);
+        if (!parsed.success) {
+        res.status(400).json({ errors: parsed.error.flatten() });
+        return;
+        }
         try {
         const event = await repo.create(
             req.user!.organizationId!,
             req.user!.userId,
-            {
-            ...req.body,
-            startDate: new Date(req.body.startDate),
-            endDate:   new Date(req.body.endDate),
-            }
+            parsed.data
         );
+
+        if (["ADMIN", "MANAGER", "RH"].includes(req.user!.role)) {
+            const dateLabel = event.startDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+            const body = event.description || `Un nouvel événement est prévu le ${dateLabel}.`;
+            await notificationRepo.createForOrg(req.user!.organizationId!, `Nouvel événement : ${event.title}`, body, "NEW_EVENT", req.user!.userId, "/employes/evenements");
+        }
+
         res.status(201).json(event);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -40,7 +58,17 @@ export class EventController {
 
     async register(req: Request, res: Response): Promise<void> {
         try {
-        await repo.register(req.params.id as string, req.user!.userId);
+        const registration = await repo.register(req.params.id as string, req.user!.userId);
+
+        const { subject, html } = eventRegistrationConfirmationEmail({
+            firstName: registration.user.firstName,
+            eventTitle: registration.event.title,
+            startDate: registration.event.startDate,
+            endDate: registration.event.endDate,
+            location: registration.event.location ?? undefined,
+        });
+        await sendMail({ to: registration.user.email, subject, html });
+
         res.json({ success: true });
         } catch (err: any) {
         res.status(400).json({ message: err.message });

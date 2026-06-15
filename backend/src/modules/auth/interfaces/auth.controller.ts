@@ -175,7 +175,9 @@ import {
     forgotPasswordSchema,
     resetPasswordSchema,
     completeProfileSchema,
+    changePasswordSchema,
 } from "./auth.validator";
+import { logAudit } from "../../../core/utils/audit";
 
 const service = new AuthService();
 
@@ -192,10 +194,14 @@ const COOKIE_BASE = {
 } as const;
 
 function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-    // accessToken — durée courte (15min), disponible sur toutes les routes
+    // accessToken — durée alignée sur le JWT (24h), disponible sur toutes les routes.
+    // Un maxAge trop court (ex: 15min) faisait expirer le cookie côté navigateur
+    // avant le JWT lui-même, et le middleware Edge Runtime (qui lit ce cookie
+    // directement, sans passer par l'intercepteur axios) redirigeait alors
+    // silencieusement vers /login malgré un refreshToken encore valide.
     res.cookie("accessToken", accessToken, {
         ...COOKIE_BASE,
-        maxAge: 15 * 60 * 1000,  // 15 minutes
+        maxAge: 24 * 60 * 60 * 1000,  // 1 jour
     });
 
     // refreshToken — durée longue (7j), accessible partout pour le refresh workflow
@@ -242,6 +248,15 @@ export class AuthController {
         try {
         const result = await service.login(parsed.data);
 
+        await logAudit({
+            action: "USER_LOGIN",
+            entity: "User",
+            entityId: result.user.id,
+            userId: result.user.id,
+            organizationId: result.user.organizationId,
+            req,
+        });
+
         // Pose les cookies HTTP-only (access + refresh) côté API
         setAuthCookies(res, result.accessToken, result.refreshToken);
 
@@ -273,6 +288,14 @@ export class AuthController {
     async logout(req: Request, res: Response) {
         try {
         await service.logout(req.user!.userId);
+        await logAudit({
+            action: "USER_LOGOUT",
+            entity: "User",
+            entityId: req.user!.userId,
+            userId: req.user!.userId,
+            organizationId: req.user!.organizationId,
+            req,
+        });
         clearAuthCookies(res);
         return res.status(200).json({ message: "Déconnecté avec succès" });
         } catch (err: any) {
@@ -338,6 +361,7 @@ export class AuthController {
             email:            true,
             firstName:        true,
             lastName:         true,
+            avatar:           true,
             role:             true,
             profileCompleted: true,
             organizationId:   true,
@@ -349,6 +373,9 @@ export class AuthController {
                 hasCSE:   true,
                 isHost:   true,
                 status:   true,
+                logoUrl:        true,
+                primaryColor:   true,
+                secondaryColor: true,
                 },
             },
             },
@@ -374,6 +401,28 @@ export class AuthController {
         return res.status(200).json({ message: "Profil complété" });
         } catch (err: any) {
         return res.status(500).json({ message: err.message });
+        }
+    }
+
+    // ── Change password ──────────────────────────────────────────────────
+    async changePassword(req: Request, res: Response) {
+        const parsed = changePasswordSchema.safeParse(req.body);
+        if (!parsed.success) {
+        return res.status(400).json({ errors: parsed.error.flatten() });
+        }
+        try {
+        await service.changePassword(req.user!.userId, parsed.data);
+        await logAudit({
+            action: "USER_PASSWORD_CHANGED",
+            entity: "User",
+            entityId: req.user!.userId,
+            userId: req.user!.userId,
+            organizationId: req.user!.organizationId,
+            req,
+        });
+        return res.status(200).json({ message: "Mot de passe modifié avec succès" });
+        } catch (err: any) {
+        return res.status(400).json({ message: err.message });
         }
     }
 

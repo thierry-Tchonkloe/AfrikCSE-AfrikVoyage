@@ -10,6 +10,7 @@ import { Loader2, ChevronLeft, ChevronRight, Check, ShieldCheck, CheckCircle2, B
 import { authService } from "@/services/auth.service";
 import Link from "next/link";
 import Image from "next/image";
+import { getErrorMessage } from "@/lib/errors";
 
 // ── Schémas par étape ────────────────────────────────────
 
@@ -157,11 +158,11 @@ export default function RegisterPage() {
         const payload = { ...formData, ...data, email: (data as any).adminEmail ?? (formData as any).adminEmail };
 
         try {
-            await authService.registerCompany(payload);
-            toast.success("Demande envoyée ! Vous serez notifié par email après validation.");
-            router.push("/login");
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || "Une erreur est survenue");
+        await authService.registerCompany(payload);
+        toast.success("Demande envoyée ! Vous serez notifié par email après validation.");
+        router.push("/login");
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Une erreur est survenue"));
         } finally {
             setLoading(false);
         }

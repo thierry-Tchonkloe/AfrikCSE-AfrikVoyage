@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, X, LayoutGrid, List, Copy } from "lucide-react";
 import { adminService } from "@/services/admin/admin.service";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
 
 interface PendingOrg {
     id: string;
@@ -58,8 +59,8 @@ export default function ValidationsPage() {
         setInvitationLink(res.invitationLink);
         toast.success("Organisation validée !");
         load();
-        } catch (err: any) {
-        toast.error(err.response?.data?.message || "Erreur validation");
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Erreur validation"));
         } finally {
         setProcessing(false);
         }

@@ -162,7 +162,7 @@ export default function HubPage() {
             </div>
 
             {/* ── Stats ── */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
                 { value: "2,450", label: "Collaborateurs actifs", color: "var(--color-primary)" },
                 { value: "98%", label: "Taux de satisfaction", color: "var(--color-text)" },

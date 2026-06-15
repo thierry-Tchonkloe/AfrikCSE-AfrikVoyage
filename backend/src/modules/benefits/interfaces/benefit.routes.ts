@@ -22,5 +22,6 @@ router.post("/requests/bulk-approve", authorize("SUPER_ADMIN", "ADMIN", "MANAGER
 
 // Rapports
 router.get("/report", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), ctrl.getBudgetReport.bind(ctrl));
+router.get("/compliance", authorize("SUPER_ADMIN", "ADMIN", "FINANCE"), ctrl.getComplianceReport.bind(ctrl));
 
 export default router;

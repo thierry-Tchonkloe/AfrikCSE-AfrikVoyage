@@ -1,12 +1,18 @@
 import { Request, Response } from "express";
 import { UserService } from "../application/user.service";
 import { createUserSchema, updateUserSchema, changeRoleSchema } from "./user.validator";
+import { logAudit } from "../../../core/utils/audit";
 
 const service = new UserService();
 
 export class UserController {
     async getAll(req: Request, res: Response): Promise<void> {
-        const users = await service.getAll(req.user!);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const search = req.query.search as string | undefined;
+        const department = req.query.department as string | undefined;
+
+        const users = await service.getAll(req.user!, { page, limit, search, department });
         res.status(200).json(users);
     }
 
@@ -28,6 +34,15 @@ export class UserController {
 
         try {
         const user = await service.create(req.user!, parsed.data);
+        await logAudit({
+            action: "USER_CREATED",
+            entity: "User",
+            entityId: user.id,
+            userId: req.user!.userId,
+            organizationId: user.organizationId,
+            newValue: { email: user.email, role: user.role },
+            req,
+        });
         res.status(201).json(user);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -58,6 +73,15 @@ export class UserController {
 
         try {
         const user = await service.changeRole(req.user!, req.params.id as string, parsed.data);
+        await logAudit({
+            action: "USER_ROLE_CHANGED",
+            entity: "User",
+            entityId: user.id,
+            userId: req.user!.userId,
+            organizationId: user.organizationId,
+            newValue: { role: user.role },
+            req,
+        });
         res.status(200).json(user);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -66,7 +90,15 @@ export class UserController {
 
     async deactivate(req: Request, res: Response): Promise<void> {
         try {
-        await service.deactivate(req.params.id as string);
+        const user = await service.deactivate(req.params.id as string);
+        await logAudit({
+            action: "USER_DEACTIVATED",
+            entity: "User",
+            entityId: user.id,
+            userId: req.user!.userId,
+            organizationId: user.organizationId,
+            req,
+        });
         res.status(200).json({ message: "Utilisateur désactivé" });
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -75,10 +107,24 @@ export class UserController {
 
     async activate(req: Request, res: Response): Promise<void> {
         try {
-        await service.activate(req.params.id as string);
+        const user = await service.activate(req.params.id as string);
+        await logAudit({
+            action: "USER_ACTIVATED",
+            entity: "User",
+            entityId: user.id,
+            userId: req.user!.userId,
+            organizationId: user.organizationId,
+            req,
+        });
         res.status(200).json({ message: "Utilisateur activé" });
         } catch (err: any) {
         res.status(400).json({ message: err.message });
         }
+    }
+
+    /** Membres de l'organisation hôte (Waxeho) — pour la gestion des accès Super Admin */
+    async getHostUsers(_req: Request, res: Response): Promise<void> {
+        const users = await service.getHostUsers();
+        res.status(200).json(users);
     }
 }

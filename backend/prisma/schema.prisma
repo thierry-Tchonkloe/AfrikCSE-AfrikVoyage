@@ -14,7 +14,7 @@ model Organization {
   status        OrgStatus  @default(PENDING)
   hasVoyage     Boolean    @default(false)
   hasCSE        Boolean    @default(false)
-  isHost        Boolean  @default(false) // True pour l'entreprise propriétaire
+  isHost        Boolean    @default(false) // True pour l'entreprise propriétaire
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @default(now())
   address       String?
@@ -31,6 +31,9 @@ model Organization {
   size          String?
   validatedAt   DateTime?
   validatedById String?
+  logoUrl        String?
+  primaryColor   String?
+  secondaryColor String?
   auditLogs     AuditLog[]
   users         User[]
   invitationTokens InvitationToken[]
@@ -38,6 +41,7 @@ model Organization {
   employees        Employee[]
   benefitCategories BenefitCategory[]
   benefitRequests  BenefitRequest[]
+  complianceRequirements ComplianceRequirement[]
   expenseReports   ExpenseReport[]
   travelRequests   TravelRequest[]
   conversations    Conversation[]
@@ -75,6 +79,9 @@ model User {
   profileCompleted       Boolean      @default(false)
   resetPasswordExpiresAt DateTime?
   resetPasswordToken     String?
+  timezone               String       @default("Africa/Lome")
+  dateFormat             String       @default("DD/MM/YYYY")
+  notificationPreferences Json        @default("{\"email\":true,\"travelAlerts\":true,\"cseUpdates\":true,\"systemUpdates\":true}")
   auditLogs              AuditLog[]
   manager                User?        @relation("UserManager", fields: [managerId], references: [id])
   managedUsers           User[]       @relation("UserManager")
@@ -90,6 +97,8 @@ model User {
   pollVotes          PollVote[]          @relation("PollVoter")
   authoredPosts      CsePost[]           @relation("PostAuthor")
   documents          UserDocument[]
+  travelRequests     TravelRequest[]     @relation("TravelRequester")
+  notifications      Notification[]
 
   @@map("users")
 }
@@ -266,6 +275,28 @@ model BenefitCategory {
   @@map("benefit_categories")
 }
 
+// ─── COMPLIANCE (rapport de conformité RGPD/légal) ─────
+enum ComplianceStatus {
+  CONFORME
+  NON_CONFORME
+  EN_COURS
+}
+
+model ComplianceRequirement {
+  id             String           @id @default(cuid())
+  label          String
+  description    String?
+  status         ComplianceStatus @default(EN_COURS)
+  lastAuditDate  DateTime?
+  nextAuditDate  DateTime?
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@map("compliance_requirements")
+}
+
 // ─── BENEFIT REQUEST (demande d'avantage) ──────────────
 enum RequestStatus {
   PENDING
@@ -284,6 +315,7 @@ model BenefitRequest {
   id             String        @id @default(cuid())
   amount         Float
   description    String?
+  receipts       String[]      @default([]) // URLs des justificatifs
   status         RequestStatus @default(PENDING)
   urgency        Urgency       @default(LOW)
   rejectionNote  String?
@@ -305,7 +337,13 @@ model BenefitRequest {
 model ExpenseReport {
   id             String        @id @default(cuid())
   title          String
+  description    String?
   destination    String?
+  expenseDate    DateTime?
+  category       String?
+  paymentMethod  String?
+  travelId       String?
+  travel         TravelRequest? @relation(fields: [travelId], references: [id])
   departureDate  DateTime?
   returnDate     DateTime?
   amount         Float
@@ -327,6 +365,15 @@ model ExpenseReport {
 }
 
 // ─── TRAVEL REQUEST (réservation voyage) ───────────────
+enum TravelStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  IN_PROGRESS
+  COMPLETED
+}
+
 model TravelRequest {
   id             String        @id @default(cuid())
   destination    String
@@ -336,27 +383,40 @@ model TravelRequest {
   estimatedCost  Float?
   actualCost     Float?
   department     String?
-  status         RequestStatus @default(PENDING)
+  status         TravelStatus  @default(PENDING)
   urgency        Urgency       @default(LOW)
   rejectionNote  String?
+  partnerName    String?
+  paymentStatus  PaymentStatus @default(PENDING)
+  paymentLink    String?
   organizationId String
   organization   Organization  @relation(fields: [organizationId], references: [id])
   requestedById  String
+  requestedBy    User          @relation("TravelRequester", fields: [requestedById], references: [id])
   approvedById   String?
   approvedAt     DateTime?
+  tripReminderSentAt DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  expenses       ExpenseReport[]
 
   @@map("travel_requests")
 }
 
 // ─── MESSAGE ───────────────────────────────────────────
+enum ConversationStatus {
+  OPEN
+  RESOLVED
+}
+
 model Conversation {
-  id             String       @id @default(cuid())
+  id             String             @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  status         ConversationStatus @default(OPEN)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   participants   ConversationParticipant[]
   messages       Message[]
@@ -511,12 +571,13 @@ model Event {
 }
 
 model EventRegistration {
-  id        String   @id @default(cuid())
-  eventId   String
-  event     Event    @relation(fields: [eventId], references: [id])
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  id             String    @id @default(cuid())
+  eventId        String
+  event          Event     @relation(fields: [eventId], references: [id])
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  createdAt      DateTime  @default(now())
+  reminderSentAt DateTime?
 
   @@unique([eventId, userId])
   @@map("event_registrations")
@@ -629,4 +690,29 @@ model UserDocument {
   createdAt DateTime @default(now())
 
   @@map("user_documents")
+}
+
+// ─── NOTIFICATION (notifications push in-app) ──────────
+enum NotificationType {
+  APPROVAL_REQUEST
+  REQUEST_APPROVED
+  REQUEST_REJECTED
+  TRIP_REMINDER
+  NEW_EVENT
+  MESSAGE_RECEIVED
+  SYSTEM_UPDATE
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  title     String
+  body      String
+  type      NotificationType @default(SYSTEM_UPDATE)
+  link      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@map("notifications")
 }

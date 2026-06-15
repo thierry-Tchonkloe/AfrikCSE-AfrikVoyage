@@ -3,29 +3,24 @@
 import { useState, useEffect, useLayoutEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import {
-    LayoutDashboard,
-    Building2,
-    ClipboardCheck,
-    Settings,
-    MessageSquare,
-    ChevronLeft,
-    ChevronRight,
-    Bell,
-    LogOut,
-    Menu,
-    Sun,
-    Moon,
-} from "lucide-react";
+import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck,} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
+import { useTheme } from "@/hooks/useTheme";
+import { adminService } from "@/services/admin/admin.service";
+import { GlobalSearch } from "@/components/shared/GlobalSearch";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 
 const NAV_ITEMS = [
     { href: "/admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { href: "/admin/companies", label: "Entreprises", icon: Building2 },
     { href: "/admin/validations", label: "Validations", icon: ClipboardCheck, badge: true },
-    { href: "/admin/settings", label: "Paramètres", icon: Settings },
     { href: "/admin/messages", label: "Messagerie", icon: MessageSquare },
+    { href: "/admin/notifications", label: "Notifications", icon: Bell },
+    { href: "/admin/logs", label: "Historique des Logs", icon: Logs },
+    { href: "/admin/plans", label: "Gérer les Plans", icon: LayoutTemplate },
+    { href: "/admin/access", label: "Gérer les Accès", icon: ShieldCheck },
+    { href: "/admin/settings", label: "Paramètres", icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -35,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     // sidebar ouverte par défaut sur grand écran, fermée sur petit
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [darkMode, setDarkMode] = useState(false);
+    const { darkMode, setDarkMode } = useTheme();
     const [pendingCount, setPendingCount] = useState(0);
 
     // useLayoutEffect (et non useEffect) pour fixer l'état AVANT le premier paint :
@@ -51,9 +46,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return () => window.removeEventListener("resize", applyFromViewport);
     }, []);
 
+    // Nombre d'entreprises en attente de validation — alimente le badge
+    // de la sidebar et la cloche de notifications, rafraîchi toutes les 60s.
     useEffect(() => {
-        document.documentElement.classList.toggle("dark", darkMode);
-    }, [darkMode]);
+        const loadPendingCount = () => {
+            adminService
+                .getOrganizations({ status: "PENDING", limit: 1 })
+                .then((res) => setPendingCount(res.total ?? 0))
+                .catch(() => {});
+        };
+        loadPendingCount();
+        const interval = setInterval(loadPendingCount, 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     const { user, loading } = useRouteGuard("super-admin");
 
@@ -215,10 +220,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
 
             {/* Titre de la page courant */}
-            <div className="hidden lg:block">
+            <div className="hidden lg:block shrink-0">
                 <p className="text-sm font-semibold">
                 {NAV_ITEMS.find((n) => pathname.startsWith(n.href))?.label || "Admin"}
                 </p>
+            </div>
+
+            {/* Barre de recherche globale */}
+            <div className="hidden sm:flex items-center flex-1 max-w-md mx-4">
+                <GlobalSearch scope="admin" darkMode={darkMode} placeholder="Rechercher entreprises, utilisateurs..." />
             </div>
 
             {/* Actions navbar */}
@@ -233,13 +243,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </button>
 
                 {/* Notifications */}
-                <button className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                style={{ color: darkMode ? "#9ca3af" : "#6b7280" }}>
-                <Bell size={18} />
-                {pendingCount > 0 && (
-                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
-                )}
-                </button>
+                <NotificationBell darkMode={darkMode} notificationsHref="/admin/notifications" />
 
                 {/* Avatar */}
                 <div

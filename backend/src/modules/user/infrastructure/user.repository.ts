@@ -1,16 +1,35 @@
 import { prisma } from "../../../core/config/prisma";
 import { Role } from "@prisma/client";
 import crypto from "node:crypto";
+import { logger } from "../../../core/utils/logger";
 
 export class UserRepository {
     /**
-     * Liste les users d'une organisation
-     * SUPER_ADMIN peut voir toutes les organisations (organizationId = null)
+     * Liste paginée des users d'une organisation, avec recherche et filtre par département
      */
-    async findByOrganization(organizationId: string) {
-        return prisma.user.findMany({
-        where: { organizationId },
-        select: {
+    async findByOrganization(organizationId: string, params: {
+        page: number;
+        limit: number;
+        search?: string;
+        department?: string;
+    }) {
+        const { page, limit, search, department } = params;
+        const skip = (page - 1) * limit;
+
+        const where: any = { organizationId };
+        if (department) where.department = department;
+        if (search) {
+        where.OR = [
+            { firstName: { contains: search, mode: "insensitive" } },
+            { lastName: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+        ];
+        }
+
+        const [data, total] = await Promise.all([
+        prisma.user.findMany({
+            where,
+            select: {
             id: true,
             email: true,
             firstName: true,
@@ -24,11 +43,17 @@ export class UserRepository {
             lastLoginAt: true,
             createdAt: true,
             manager: {
-            select: { id: true, firstName: true, lastName: true },
+                select: { id: true, firstName: true, lastName: true },
             },
-        },
-        orderBy: { createdAt: "desc" },
-        });
+            },
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: limit,
+        }),
+        prisma.user.count({ where }),
+        ]);
+
+        return { data, total, page, totalPages: Math.ceil(total / limit) };
     }
 
     async findById(id: string) {
@@ -84,13 +109,11 @@ export class UserRepository {
         },
         });
 
-        // TODO: Envoyer email d'invitation avec le lien :
-        // ${FRONTEND_URL}/auth/set-password?token=${inviteToken}
         if (process.env.NODE_ENV !== "production") {
-            console.log(`[DEV] Invitation token pour ${data.email}: ${inviteToken}`);
+            logger.debug(`Invitation token pour ${data.email}: ${inviteToken}`);
         }
 
-        return user;
+        return { user, inviteToken };
     }
 
     async update(id: string, data: {
@@ -120,9 +143,32 @@ export class UserRepository {
         return prisma.user.update({ where: { id }, data: { isActive: true } });
     }
 
-    async findAll() {
-        return prisma.user.findMany({
-        select: {
+    /**
+     * Liste paginée de tous les users, toutes organisations confondues (Super Admin)
+     */
+    async findAllPaginated(params: {
+        page: number;
+        limit: number;
+        search?: string;
+        department?: string;
+    }) {
+        const { page, limit, search, department } = params;
+        const skip = (page - 1) * limit;
+
+        const where: any = {};
+        if (department) where.department = department;
+        if (search) {
+        where.OR = [
+            { firstName: { contains: search, mode: "insensitive" } },
+            { lastName: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+        ];
+        }
+
+        const [data, total] = await Promise.all([
+        prisma.user.findMany({
+            where,
+            select: {
             id: true,
             email: true,
             firstName: true,
@@ -132,8 +178,32 @@ export class UserRepository {
             organizationId: true,
             organization: { select: { name: true } },
             createdAt: true,
+            },
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: limit,
+        }),
+        prisma.user.count({ where }),
+        ]);
+
+        return { data, total, page, totalPages: Math.ceil(total / limit) };
+    }
+
+    /** Membres de l'organisation hôte (Waxeho) — pour la gestion des accès Super Admin */
+    async findHostUsers() {
+        return prisma.user.findMany({
+        where: { organization: { isHost: true } },
+        select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            isActive: true,
+            lastLoginAt: true,
+            createdAt: true,
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ role: "asc" }, { createdAt: "asc" }],
         });
     }
 }

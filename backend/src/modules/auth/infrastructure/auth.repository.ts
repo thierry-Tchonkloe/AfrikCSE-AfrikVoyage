@@ -126,6 +126,15 @@ export class AuthRepository {
         });
     }
 
+    /** Emails des SUPER_ADMIN actifs — utilisés pour les notifications internes */
+    async findSuperAdminEmails(): Promise<string[]> {
+        const admins = await prisma.user.findMany({
+        where: { role: "SUPER_ADMIN", isActive: true },
+        select: { email: true },
+        });
+        return admins.map((a) => a.email);
+    }
+
     /**
      * Transaction atomique : crée l'org puis l'admin
      * On utilise UserUncheckedCreateInput (champs scalaires directs)
@@ -229,6 +238,13 @@ export class AuthRepository {
             resetPasswordToken: null,
             resetPasswordExpiresAt: null,
         },
+        });
+    }
+
+    async updatePassword(userId: string, hashedPassword: string) {
+        return prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
         });
     }
 

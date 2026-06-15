@@ -8,16 +8,16 @@ const FOOTER_LINKS = {
         { label: "API", href: "/api" },
     ],
     Entreprise: [
-        { label: "A Propos", href: "/about" },
-        { label: "Carrières", href: "/careers" },
-        { label: "Contact", href: "/contact" },
-        { label: "Partenaires", href: "/partners" },
+        { label: "A Propos", href: "/infos/about" },
+        { label: "Comment ça marche", href: "/infos/how-it-works" },
+        { label: "Contact", href: "/infos/contact" },
+        { label: "Rejoignez-nous", href: "/infos/join-us" },
     ],
     Support: [
-        { label: "Centre d'aide", href: "/help" },
-        { label: "Documentation", href: "/docs" },
-        { label: "Privacy Policy", href: "/privacy" },
-        { label: "Contact", href: "/contact" },
+        { label: "Centre d'aide", href: "/infos/contact" },
+        { label: "Tarifs", href: "/infos/pricing" },
+        { label: "Privacy Policy", href: "/infos/privacy" },
+        { label: "Contact", href: "/infos/contact" },
     ],
 };
 
@@ -115,13 +115,17 @@ export default function Footer() {
                 © 2024 AfrikCSE &amp; AfrikVoyage. All rights reserved.
             </p>
             <div className="flex items-center gap-5">
-                {["Confidentialité", "Conditions", "Cookies"].map((item) => (
+                {[
+                { label: "Confidentialité", href: "/infos/privacy" },
+                { label: "Conditions", href: "/infos/legal" },
+                { label: "Cookies", href: "/infos/privacy" },
+                ].map((item) => (
                 <Link
-                    key={item}
-                    href={`/${item.toLowerCase()}`}
+                    key={item.label}
+                    href={item.href}
                     className="text-gray-400 hover:text-white text-sm transition-colors duration-200"
                 >
-                    {item}
+                    {item.label}
                 </Link>
                 ))}
             </div>

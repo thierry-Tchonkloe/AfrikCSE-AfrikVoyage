@@ -1,8 +1,20 @@
 import { Request, Response } from "express";
 import { EmployeeDashboardRepository } from "../infrastructure/employee-dashboard.repository";
 import { prisma } from "../../../core/config/prisma";
+import { cloudinary } from "../../../core/config/cloudinary";
+import { UploadApiResponse } from "cloudinary";
+import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { logAudit } from "../../../core/utils/audit";
+import {
+    createTravelRequestSchema,
+    createExpenseSchema,
+    submitBenefitRequestSchema,
+    updateProfileSchema,
+    addDocumentSchema,
+} from "./employee-space.validator";
 
 const repo = new EmployeeDashboardRepository();
+const notificationRepo = new NotificationRepository();
 
 export class EmployeeSpaceController {
 
@@ -28,16 +40,27 @@ export class EmployeeSpaceController {
     }
 
     async createTravel(req: Request, res: Response): Promise<void> {
+        const parsed = createTravelRequestSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({ errors: parsed.error.flatten() });
+            return;
+        }
         try {
             const travel = await repo.createTravelRequest(
                 req.user!.userId,
                 req.user!.organizationId!,
-                {
-                    ...req.body,
-                    departureDate: new Date(req.body.departureDate),
-                    returnDate: new Date(req.body.returnDate),
-                }
+                parsed.data
             );
+
+            await notificationRepo.createForRoles(
+                req.user!.organizationId!,
+                ["ADMIN", "MANAGER"],
+                "Nouvelle demande de voyage",
+                `Une nouvelle demande de voyage pour ${travel.destination} est en attente d'approbation.`,
+                "APPROVAL_REQUEST",
+                "/companies/AfrikVoyage/approbations"
+            );
+
             res.status(201).json(travel);
         } catch (err: any) {
             res.status(400).json({ message: err.message });
@@ -52,15 +75,61 @@ export class EmployeeSpaceController {
     }
 
     async createExpense(req: Request, res: Response): Promise<void> {
+        const parsed = createExpenseSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({ errors: parsed.error.flatten() });
+            return;
+        }
         try {
             const expense = await repo.createExpense(
                 req.user!.userId,
                 req.user!.organizationId!,
-                req.body
+                parsed.data
             );
+
+            await notificationRepo.createForRoles(
+                req.user!.organizationId!,
+                ["ADMIN", "MANAGER"],
+                "Nouvelle note de frais",
+                `Une nouvelle note de frais « ${expense.title} » est en attente d'approbation.`,
+                "APPROVAL_REQUEST",
+                "/companies/AfrikVoyage/frais"
+            );
+
             res.status(201).json(expense);
         } catch (err: any) {
             res.status(400).json({ message: err.message });
+        }
+    }
+
+    async uploadReceipt(req: Request, res: Response): Promise<void> {
+        if (!req.file) {
+            res.status(400).json({ message: "Aucun fichier fourni" });
+            return;
+        }
+
+        try {
+            const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: `afrikcse/receipts/${req.user!.organizationId}`,
+                        resource_type: "auto",
+                    },
+                    (err, uploadResult) => {
+                        if (err || !uploadResult) reject(err ?? new Error("Échec de l'upload"));
+                        else resolve(uploadResult);
+                    }
+                );
+                stream.end(req.file!.buffer);
+            });
+
+            res.status(201).json({
+                url: result.secure_url,
+                name: req.file.originalname,
+                size: `${(req.file.size / 1024 / 1024).toFixed(1)} MB`,
+            });
+        } catch (err: any) {
+            res.status(500).json({ message: err.message ?? "Échec de l'upload du fichier" });
         }
     }
 
@@ -88,12 +157,27 @@ export class EmployeeSpaceController {
     }
 
     async submitBenefitRequest(req: Request, res: Response): Promise<void> {
+        const parsed = submitBenefitRequestSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({ errors: parsed.error.flatten() });
+            return;
+        }
         try {
             const request = await repo.createBenefitRequest(
                 req.user!.userId,
                 req.user!.organizationId!,
-                req.body
+                parsed.data
             );
+
+            await notificationRepo.createForRoles(
+                req.user!.organizationId!,
+                ["ADMIN", "MANAGER", "RH"],
+                "Nouvelle demande d'avantage",
+                `Une nouvelle demande « ${request.category.name} » est en attente d'approbation.`,
+                "APPROVAL_REQUEST",
+                "/companies/AfrikCSE/avantages"
+            );
+
             res.status(201).json(request);
         } catch (err: any) {
             res.status(400).json({ message: err.message });
@@ -138,11 +222,62 @@ export class EmployeeSpaceController {
     }
 
     async updateProfile(req: Request, res: Response): Promise<void> {
+        const parsed = updateProfileSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({ errors: parsed.error.flatten() });
+            return;
+        }
         try {
-            const user = await repo.updateProfile(req.user!.userId, req.body);
+            const user = await repo.updateProfile(req.user!.userId, parsed.data);
+            await logAudit({
+                action: "USER_PROFILE_UPDATED",
+                entity: "User",
+                entityId: req.user!.userId,
+                userId: req.user!.userId,
+                organizationId: req.user!.organizationId,
+                newValue: parsed.data,
+                req,
+            });
             res.json(user);
         } catch (err: any) {
             res.status(400).json({ message: err.message });
+        }
+    }
+
+    // ── Journal d'activité ───────────────────────────────────────────────────
+
+    async getActivityLog(req: Request, res: Response): Promise<void> {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const data = await repo.getActivityLog(req.user!.userId, page, limit);
+        res.json(data);
+    }
+
+    async uploadAvatar(req: Request, res: Response): Promise<void> {
+        if (!req.file) {
+            res.status(400).json({ message: "Aucun fichier fourni" });
+            return;
+        }
+
+        try {
+            const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: `afrikcse/avatars/${req.user!.organizationId}`,
+                        resource_type: "image",
+                    },
+                    (err, uploadResult) => {
+                        if (err || !uploadResult) reject(err ?? new Error("Échec de l'upload"));
+                        else resolve(uploadResult);
+                    }
+                );
+                stream.end(req.file!.buffer);
+            });
+
+            const user = await repo.updateProfile(req.user!.userId, { avatar: result.secure_url });
+            res.json({ avatar: user.avatar });
+        } catch (err: any) {
+            res.status(500).json({ message: err.message ?? "Échec de l'upload de la photo" });
         }
     }
 
@@ -154,8 +289,13 @@ export class EmployeeSpaceController {
     }
 
     async addDocument(req: Request, res: Response): Promise<void> {
+        const parsed = addDocumentSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({ errors: parsed.error.flatten() });
+            return;
+        }
         try {
-            const doc = await repo.addDocument(req.user!.userId, req.body);
+            const doc = await repo.addDocument(req.user!.userId, parsed.data);
             res.status(201).json(doc);
         } catch (err: any) {
             res.status(400).json({ message: err.message });

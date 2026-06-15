@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { employeeService } from "@/services/employes/employee.service";
 import { Save, Upload, Download, Trash2, Eye, EyeOff, Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { UserAvatar } from "@/components/employes/UserAvatar";
 
 interface Document {
     id: string; name: string; url: string; size: string | null; createdAt: string;
@@ -17,8 +18,10 @@ const ROOM_TYPES   = ["Single", "Double", "Suite", "No Preference"];
 const DEPARTMENTS  = ["Direction", "RH", "Finance", "Commercial", "Marketing", "Technologie", "Opérations"];
 
 export default function ProfilePage() {
-    const { user } = useAuth();
+    const { user, reload } = useAuth();
     const [saving, setSaving]   = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const avatarInputRef = useRef<HTMLInputElement>(null);
     const [docs, setDocs]       = useState<Document[]>([]);
     const [show2FA, setShow2FA] = useState(true);
     const [twoFA, setTwoFA]     = useState(true);
@@ -75,6 +78,22 @@ export default function ProfilePage() {
         finally { setSaving(false); }
     };
 
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+        setUploadingAvatar(true);
+        try {
+            await employeeService.uploadAvatar(file);
+            await reload();
+            toast.success("Photo de profil mise à jour");
+        } catch {
+            toast.error("Erreur lors de l'envoi de la photo");
+        } finally {
+            setUploadingAvatar(false);
+        }
+    };
+
     const handleDeleteDoc = async (id: string) => {
         try {
         await employeeService.deleteDocument(id);
@@ -88,15 +107,25 @@ export default function ProfilePage() {
         {/* En-tête */}
         <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
-            <div
-                className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold relative cursor-pointer"
-                style={{ background: "#0f766e" }}
-                onClick={() => toast.info("Upload photo — à connecter à Cloudinary")}
-            >
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
+            <div className="relative cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+                <UserAvatar
+                avatar={user?.avatar}
+                firstName={user?.firstName}
+                lastName={user?.lastName}
+                className="w-14 h-14 text-xl"
+                />
                 <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-gray-700 border-2 border-white flex items-center justify-center">
-                <Upload size={10} className="text-white" />
+                {uploadingAvatar
+                    ? <Loader2 size={10} className="text-white animate-spin" />
+                    : <Upload size={10} className="text-white" />}
                 </div>
+                <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                className="hidden"
+                onChange={handleAvatarChange}
+                />
             </div>
             <div>
                 <h1 className="text-lg font-bold text-gray-900">
