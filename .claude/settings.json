@@ -3,7 +3,18 @@
     "allow": [
       "Bash(npx tsx -e ' *)",
       "Bash(npx tsx *)",
-      "Bash(grep -E \"app.use\\\\\\(\\\\\"\\\\/api\" backend/src/app.ts)"
+      "Bash(grep -E \"app.use\\\\\\(\\\\\"\\\\/api\" backend/src/app.ts)",
+      "Bash(awk \"/^model SyncLog /,/^}/\" schema.prisma)",
+      "Bash(awk '/^model BenefitCategory/,/^}/' \"c:/Users/Thierry/Documents/WAXEHO/AfrikCSE-AfrikVoyage/backend/prisma/schema.prisma\")",
+      "Bash(awk '/^model ComplianceRequirement/,/^}/' \"c:/Users/Thierry/Documents/WAXEHO/AfrikCSE-AfrikVoyage/backend/prisma/schema.prisma\")",
+      "Bash(awk '/^model TravelRequest/,/^}/' \"c:/Users/Thierry/Documents/WAXEHO/AfrikCSE-AfrikVoyage/backend/prisma/schema.prisma\")",
+      "Bash(awk '/^model ExpenseReport/,/^}/' \"c:/Users/Thierry/Documents/WAXEHO/AfrikCSE-AfrikVoyage/backend/prisma/schema.prisma\")",
+      "Bash(awk '/^enum TravelStatus/,/^}/' \"c:/Users/Thierry/Documents/WAXEHO/AfrikCSE-AfrikVoyage/backend/prisma/schema.prisma\")",
+      "Bash(awk '/^model ApiIntegration/,/^}/' \"c:/Users/Thierry/Documents/WAXEHO/AfrikCSE-AfrikVoyage/backend/prisma/schema.prisma\")",
+      "Bash(awk '/^model SyncLog/,/^}/' \"c:/Users/Thierry/Documents/WAXEHO/AfrikCSE-AfrikVoyage/backend/prisma/schema.prisma\")",
+      "Bash(grep -iE \"^\\(receipt|layout-dashboard|calendar|arrow-right|clock\\)\\\\.js$\")",
+      "Bash(cd backend/../frontend && npx eslint \"src/app/\\(company-space\\)/companies/integrations/page.tsx\" 2>&1)",
+      "Read(//c/Users/Thierry/Documents/WAXEHO/AfrikCSE-AfrikVoyage/frontend/src/app/\\(company-space\\)/companies/integrations/**)"
     ]
   }
 }

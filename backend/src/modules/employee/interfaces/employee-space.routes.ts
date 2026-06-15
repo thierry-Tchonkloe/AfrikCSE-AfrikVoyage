@@ -31,6 +31,7 @@ router.patch("/benefits/requests/:id/cancel", ctrl.cancelBenefitRequest.bind(ctr
 router.get("/profile",     ctrl.getProfile.bind(ctrl));
 router.patch("/profile",   ctrl.updateProfile.bind(ctrl));
 router.post("/avatar",     logoUpload.single("file"), ctrl.uploadAvatar.bind(ctrl));
+router.get("/activity-log", ctrl.getActivityLog.bind(ctrl));
 
 // ── Documents ─────────────────────────────────────────────────────────────────
 router.get("/documents",         ctrl.getDocuments.bind(ctrl));

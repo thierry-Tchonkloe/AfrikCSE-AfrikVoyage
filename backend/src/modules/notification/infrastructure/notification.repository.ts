@@ -1,5 +1,35 @@
 import { prisma } from "../../../core/config/prisma";
 import { NotificationType, Role } from "@prisma/client";
+import { sendMail } from "../../../core/services/email.service";
+import { genericNotificationEmail } from "../../../core/mailer/email.templates";
+
+interface NotificationPreferences {
+    email: boolean;
+    travelAlerts: boolean;
+    cseUpdates: boolean;
+    systemUpdates: boolean;
+}
+
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+    email: true,
+    travelAlerts: true,
+    cseUpdates: true,
+    systemUpdates: true,
+};
+
+function parseNotificationPreferences(value: unknown): NotificationPreferences {
+    if (value && typeof value === "object") {
+        return { ...DEFAULT_NOTIFICATION_PREFERENCES, ...(value as Partial<NotificationPreferences>) };
+    }
+    return DEFAULT_NOTIFICATION_PREFERENCES;
+}
+
+/** Types non-critiques, soumis aux préférences de notification de l'utilisateur */
+const PREFERENCE_KEY_BY_TYPE: Partial<Record<NotificationType, keyof NotificationPreferences>> = {
+    TRIP_REMINDER: "travelAlerts",
+    NEW_EVENT: "cseUpdates",
+    SYSTEM_UPDATE: "systemUpdates",
+};
 
 export class NotificationRepository {
     async createForUsers(
@@ -11,9 +41,35 @@ export class NotificationRepository {
     ) {
         if (!userIds.length) return;
 
+        const preferenceKey = PREFERENCE_KEY_BY_TYPE[type];
+        let targetUserIds = userIds;
+        let emailRecipients: string[] = [];
+
+        if (preferenceKey) {
+            const users = await prisma.user.findMany({
+                where: { id: { in: userIds } },
+                select: { id: true, email: true, notificationPreferences: true },
+            });
+
+            targetUserIds = [];
+            for (const user of users) {
+                const prefs = parseNotificationPreferences(user.notificationPreferences);
+                if (!prefs[preferenceKey]) continue;
+                targetUserIds.push(user.id);
+                if (prefs.email) emailRecipients.push(user.email);
+            }
+
+            if (!targetUserIds.length) return;
+        }
+
         await prisma.notification.createMany({
-        data: userIds.map((userId) => ({ userId, title, body, type, link })),
+        data: targetUserIds.map((userId) => ({ userId, title, body, type, link })),
         });
+
+        if (emailRecipients.length) {
+            const { subject, html } = genericNotificationEmail({ title, body, link });
+            await sendMail({ to: emailRecipients, subject, html });
+        }
     }
 
     async createForOrg(

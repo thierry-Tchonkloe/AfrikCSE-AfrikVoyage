@@ -39,6 +39,7 @@ router.post("/reset-password", strictAuthLimiter, ctrl.resetPassword.bind(ctrl))
 router.post("/logout", authenticate, ctrl.logout.bind(ctrl));
 router.get("/me", authenticate, ctrl.me.bind(ctrl));
 router.patch("/complete-profile", authenticate, ctrl.completeProfile.bind(ctrl));
+router.patch("/change-password", authenticate, ctrl.changePassword.bind(ctrl));
 router.post("/activate", strictAuthLimiter, ctrl.activateAccount.bind(ctrl));
 
 

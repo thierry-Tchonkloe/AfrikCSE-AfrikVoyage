@@ -125,6 +125,7 @@ import planConfigRoutes     from "./modules/plan-config/interfaces/plan-config.r
 import auditLogRoutes       from "./modules/audit-log/interfaces/audit-log.routes";
 import notificationRoutes   from "./modules/notification/interfaces/notification.routes";
 import searchRoutes         from "./modules/search/interfaces/search.routes";
+import integrationRoutes    from "./modules/integrations/interfaces/api-integration.routes";
 import { errorMiddleware }  from "./core/middlewares/error.middleware";
 
 const app = express();
@@ -409,6 +410,7 @@ app.use("/api/plan-configs",   planConfigRoutes);
 app.use("/api/audit-logs",     auditLogRoutes);
 app.use("/api/notifications",  notificationRoutes);
 app.use("/api/search",         searchRoutes);
+app.use("/api/integrations",   integrationRoutes);
 
 // ── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

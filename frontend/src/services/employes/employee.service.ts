@@ -84,6 +84,10 @@ export const employeeService = {
         });
         return data as { avatar: string };
     },
+    async getActivityLog(page = 1, limit = 10) {
+        const { data } = await api.get("/employee/activity-log", { params: { page, limit } });
+        return data;
+    },
 
     // ── Documents ─────────────────────────────────────────────────────────────
     async getDocuments() {

@@ -4,6 +4,7 @@ import { prisma } from "../../../core/config/prisma";
 import { cloudinary } from "../../../core/config/cloudinary";
 import { UploadApiResponse } from "cloudinary";
 import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { logAudit } from "../../../core/utils/audit";
 import {
     createTravelRequestSchema,
     createExpenseSchema,
@@ -228,10 +229,28 @@ export class EmployeeSpaceController {
         }
         try {
             const user = await repo.updateProfile(req.user!.userId, parsed.data);
+            await logAudit({
+                action: "USER_PROFILE_UPDATED",
+                entity: "User",
+                entityId: req.user!.userId,
+                userId: req.user!.userId,
+                organizationId: req.user!.organizationId,
+                newValue: parsed.data,
+                req,
+            });
             res.json(user);
         } catch (err: any) {
             res.status(400).json({ message: err.message });
         }
+    }
+
+    // ── Journal d'activité ───────────────────────────────────────────────────
+
+    async getActivityLog(req: Request, res: Response): Promise<void> {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const data = await repo.getActivityLog(req.user!.userId, page, limit);
+        res.json(data);
     }
 
     async uploadAvatar(req: Request, res: Response): Promise<void> {

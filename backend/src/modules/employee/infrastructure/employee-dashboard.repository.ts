@@ -355,8 +355,38 @@ export class EmployeeDashboardRepository {
         jobTitle?: string;
         department?: string;
         avatar?: string;
+        timezone?: string;
+        dateFormat?: string;
+        notificationPreferences?: {
+            email?: boolean;
+            travelAlerts?: boolean;
+            cseUpdates?: boolean;
+            systemUpdates?: boolean;
+        };
     }) {
         return prisma.user.update({ where: { id: userId }, data });
+    }
+
+    // ── Journal d'activité ───────────────────────────────────────────────────
+
+    async getActivityLog(userId: string, page: number, limit: number) {
+        const skip = (page - 1) * limit;
+        const [logs, total] = await Promise.all([
+            prisma.auditLog.findMany({
+                where: { userId },
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: limit,
+            }),
+            prisma.auditLog.count({ where: { userId } }),
+        ]);
+
+        return {
+            logs,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 
     // ── Documents ─────────────────────────────────────────────────────────────

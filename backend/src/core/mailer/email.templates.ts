@@ -264,6 +264,22 @@ export function eventReminderEmail(params: {
     };
 }
 
+/** Email générique envoyé en complément d'une notification in-app (selon préférences utilisateur) */
+export function genericNotificationEmail(params: {
+    title: string;
+    body: string;
+    link?: string;
+}): EmailContent {
+    const fullLink = params.link ? `${process.env.FRONTEND_URL}${params.link}` : undefined;
+    return {
+        subject: params.title,
+        html: layout(escapeHtml(params.title), `
+            <p>${escapeHtml(params.body)}</p>
+            ${fullLink ? button("Voir sur l'application", fullLink) : ""}
+        `),
+    };
+}
+
 /** Email de notification envoyé au support lors d'une nouvelle demande de contact */
 export function contactNotificationEmail(params: {
     fullName: string;

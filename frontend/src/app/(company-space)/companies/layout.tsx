@@ -47,6 +47,8 @@ function useNavItems(hasCSE: boolean, hasVoyage: boolean, pathname: string) {
             { href: "/companies/users", label: "Utilisateurs", icon: Users },
             { href: "/companies/settings", label: "Paramètres", icon: Settings },
             { href: "/companies/billing", label: "Billing", icon: Bell },
+            { href: "/companies/notifications", label: "Notifications", icon: Bell },
+            { href: "/companies/integrations", label: "Intégrations", icon: Users },
         );
         if (hasCSE) items.splice(1, 0, {
             href: "/companies/AfrikCSE/dashboard",

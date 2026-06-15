@@ -42,6 +42,14 @@ export const updateProfileSchema = z.object({
     jobTitle: z.string().optional(),
     department: z.string().optional(),
     avatar: z.string().optional(),
+    timezone: z.string().optional(),
+    dateFormat: z.enum(["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"]).optional(),
+    notificationPreferences: z.object({
+        email: z.boolean(),
+        travelAlerts: z.boolean(),
+        cseUpdates: z.boolean(),
+        systemUpdates: z.boolean(),
+    }).partial().optional(),
 });
 
 export const addDocumentSchema = z.object({

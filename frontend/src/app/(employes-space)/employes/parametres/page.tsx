@@ -1,25 +1,166 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import api from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import { DateFormat, DATE_FORMATS, TIMEZONES } from "@/lib/date";
+import { employeeService } from "@/services/employes/employee.service";
 
-// Mock activité
-const ACTIVITY_LOG = [
-    { action: "Login from Chrome on Windows", detail: "192.168.1.1 · Chrome 120", time: "2 hours ago", icon: "🔐" },
-    { action: "Password changed",              detail: "Security update",           time: "3 days ago",  icon: "🔑" },
-    { action: "Profile information updated",   detail: "Name and phone updated",    time: "1 week ago",  icon: "✏️" },
-    { action: "Login from Safari on iPhone",   detail: "192.168.1.2 · Safari",     time: "2 weeks ago", icon: "📱" },
-];
+// ── Journal d'activité ──────────────────────────────────────────────────────
+type ActivityLogEntry = {
+    id: string;
+    action: string;
+    createdAt: string;
+    ipAddress?: string | null;
+};
+
+const ACTION_META: Record<string, { label: string; icon: string }> = {
+    USER_LOGIN: { label: "Connexion au compte", icon: "🔐" },
+    USER_LOGOUT: { label: "Déconnexion", icon: "🚪" },
+    USER_PASSWORD_CHANGED: { label: "Mot de passe modifié", icon: "🔑" },
+    USER_PROFILE_UPDATED: { label: "Profil mis à jour", icon: "✏️" },
+};
+
+// ── Préférences de notification ──────────────────────────────────────────────
+type NotificationPreferences = {
+    email: boolean;
+    travelAlerts: boolean;
+    cseUpdates: boolean;
+    systemUpdates: boolean;
+};
+
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+    email: true,
+    travelAlerts: true,
+    cseUpdates: true,
+    systemUpdates: true,
+};
+
+function formatRelativeTime(dateStr: string): string {
+    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "À l'instant";
+    if (diffMin < 60) return `Il y a ${diffMin} min`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return `Il y a ${diffHour} h`;
+    const diffDay = Math.floor(diffHour / 24);
+    if (diffDay < 7) return `Il y a ${diffDay} j`;
+    const diffWeek = Math.floor(diffDay / 7);
+    if (diffWeek < 4) return `Il y a ${diffWeek} sem.`;
+    const diffMonth = Math.floor(diffDay / 30);
+    if (diffMonth < 12) return `Il y a ${diffMonth} mois`;
+    const diffYear = Math.floor(diffDay / 365);
+    return `Il y a ${diffYear} an${diffYear > 1 ? "s" : ""}`;
+}
 
 export default function ParametresPage() {
-    const { user, logout } = useAuth();
+    const { logout } = useAuth();
     const { darkMode, setDarkMode } = useTheme();
     const [saving, setSaving] = useState(false);
+
+    // Profil
+    const [profileLoading, setProfileLoading] = useState(true);
+    const [savingProfile, setSavingProfile] = useState(false);
+    const [profile, setProfile] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        jobTitle: "",
+        department: "",
+        timezone: "Africa/Lome",
+        dateFormat: "DD/MM/YYYY" as DateFormat,
+        notificationPreferences: DEFAULT_NOTIFICATION_PREFERENCES,
+    });
+
+    useEffect(() => {
+        const loadProfile = async () => {
+            try {
+                const data = await employeeService.getProfile();
+                setProfile({
+                    firstName: data.firstName ?? "",
+                    lastName: data.lastName ?? "",
+                    email: data.email ?? "",
+                    phone: data.phone ?? "",
+                    jobTitle: data.jobTitle ?? "",
+                    department: data.department ?? "",
+                    timezone: data.timezone ?? "Africa/Lome",
+                    dateFormat: (data.dateFormat ?? "DD/MM/YYYY") as DateFormat,
+                    notificationPreferences: {
+                        ...DEFAULT_NOTIFICATION_PREFERENCES,
+                        ...(data.notificationPreferences ?? {}),
+                    },
+                });
+            } catch (err) {
+                toast.error(getErrorMessage(err, "Erreur lors du chargement du profil"));
+            } finally {
+                setProfileLoading(false);
+            }
+        };
+        loadProfile();
+    }, []);
+
+    const handleSaveProfile = async () => {
+        setSavingProfile(true);
+        try {
+            await employeeService.updateProfile({
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                phone: profile.phone,
+                jobTitle: profile.jobTitle,
+                department: profile.department,
+                timezone: profile.timezone,
+                dateFormat: profile.dateFormat,
+                notificationPreferences: profile.notificationPreferences,
+            });
+            toast.success("Informations sauvegardées");
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Erreur lors de l'enregistrement"));
+        } finally {
+            setSavingProfile(false);
+        }
+    };
+
+    // Journal d'activité
+    const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+    const [activityLoading, setActivityLoading] = useState(true);
+    const [activityLoadingMore, setActivityLoadingMore] = useState(false);
+    const [activityPage, setActivityPage] = useState(1);
+    const [activityTotalPages, setActivityTotalPages] = useState(1);
+
+    useEffect(() => {
+        const loadActivity = async () => {
+            try {
+                const data = await employeeService.getActivityLog(1);
+                setActivityLog(data.logs);
+                setActivityPage(data.page);
+                setActivityTotalPages(data.totalPages);
+            } catch (err) {
+                toast.error(getErrorMessage(err, "Erreur lors du chargement du journal d'activité"));
+            } finally {
+                setActivityLoading(false);
+            }
+        };
+        loadActivity();
+    }, []);
+
+    const loadMoreActivity = async () => {
+        setActivityLoadingMore(true);
+        try {
+            const data = await employeeService.getActivityLog(activityPage + 1);
+            setActivityLog((prev) => [...prev, ...data.logs]);
+            setActivityPage(data.page);
+            setActivityTotalPages(data.totalPages);
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Erreur lors du chargement du journal d'activité"));
+        } finally {
+            setActivityLoadingMore(false);
+        }
+    };
 
     // Sécurité
     const [currentPwd, setCurrentPwd]   = useState("");
@@ -27,22 +168,6 @@ export default function ParametresPage() {
     const [confirmPwd, setConfirmPwd]   = useState("");
     const [showCurrentPwd, setShowCurrentPwd] = useState(false);
     const [showNewPwd, setShowNewPwd]   = useState(false);
-
-    // Notifications
-    const [notifSettings, setNotifSettings] = useState({
-        emailNotifs:  true,
-        pushNotifs:   false,
-        travelAlerts: true,
-        cseUpdates:   true,
-    });
-
-    // Préférences
-    const [prefs, setPrefs] = useState({
-        language: "English",
-        currency: "USD - US Dollar",
-        timezone: "EST - Eastern Standard Time",
-        dateFormat: "MM/DD/YY",
-    });
 
     // 2FA
     const [twoFA, setTwoFA] = useState(true);
@@ -78,13 +203,6 @@ export default function ParametresPage() {
         }
     };
 
-    const handleSavePrefs = async () => {
-        setSaving(true);
-        await new Promise((r) => setTimeout(r, 800));
-        setSaving(false);
-        toast.success("Préférences enregistrées");
-    };
-
     return (
         <div className="space-y-5 px-4">
         <div>
@@ -95,31 +213,78 @@ export default function ParametresPage() {
         {/* Informations de base */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
             <h3 className="font-semibold text-gray-900">Profile Infos</h3>
+            {profileLoading ? (
             <div className="grid grid-cols-2 gap-3">
-            {[
-                { label: "Firstname",     value: user?.firstName ?? "" },
-                { label: "Lastname",      value: user?.lastName  ?? "" },
-                { label: "Email address", value: user?.email     ?? "", colSpan: true },
-                { label: "Phone Number",  value: "+1 (555) 123-4587" },
-                { label: "Job Title",     value: "HR Manager" },
-                { label: "Department",    value: "Human Resources", colSpan: true },
-            ].map((f) => (
-                <div key={f.label} className={f.colSpan ? "col-span-2" : ""}>
-                <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
-                <input defaultValue={f.value}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-400" />
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="h-9 bg-gray-100 rounded-lg animate-pulse" />
+                ))}
+            </div>
+            ) : (
+            <>
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                <label className="block text-xs text-gray-500 mb-1">Firstname</label>
+                <input
+                    value={profile.firstName}
+                    onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-400"
+                />
                 </div>
-            ))}
+                <div>
+                <label className="block text-xs text-gray-500 mb-1">Lastname</label>
+                <input
+                    value={profile.lastName}
+                    onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-400"
+                />
+                </div>
+                <div className="col-span-2">
+                <label className="block text-xs text-gray-500 mb-1">Email address</label>
+                <input
+                    value={profile.email}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-gray-50 text-gray-500"
+                />
+                </div>
+                <div>
+                <label className="block text-xs text-gray-500 mb-1">Phone Number</label>
+                <input
+                    value={profile.phone}
+                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                    placeholder="+229 …"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-400"
+                />
+                </div>
+                <div>
+                <label className="block text-xs text-gray-500 mb-1">Job Title</label>
+                <input
+                    value={profile.jobTitle}
+                    onChange={(e) => setProfile({ ...profile, jobTitle: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-400"
+                />
+                </div>
+                <div className="col-span-2">
+                <label className="block text-xs text-gray-500 mb-1">Department</label>
+                <input
+                    value={profile.department}
+                    onChange={(e) => setProfile({ ...profile, department: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-400"
+                />
+                </div>
             </div>
             <div className="flex justify-end">
-            <button
-                onClick={() => toast.success("Informations sauvegardées")}
-                className="px-5 py-2 rounded-lg text-white text-sm font-medium"
+                <button
+                onClick={handleSaveProfile}
+                disabled={savingProfile}
+                className="flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-70"
                 style={{ background: "#0f766e" }}
-            >
+                >
+                {savingProfile && <Loader2 size={14} className="animate-spin" />}
                 Save Changes
-            </button>
+                </button>
             </div>
+            </>
+            )}
         </div>
 
         {/* Sécurité — Mot de passe */}
@@ -239,10 +404,10 @@ export default function ParametresPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
             <h3 className="font-semibold text-gray-900">Notification Preferences</h3>
             {[
-            { key: "emailNotifs",  label: "Email Notifications",  desc: "Receive updates via email" },
-            { key: "pushNotifs",   label: "Push Notifications",   desc: "Browser push notifications" },
-            { key: "travelAlerts", label: "Travel Alerts",        desc: "Get alerts for your trip" },
-            { key: "cseUpdates",   label: "CSE Updates",          desc: "Notifications on CSE benefits" },
+            { key: "email",         label: "Email Notifications",  desc: "Receive updates via email" },
+            { key: "systemUpdates", label: "Notifications système", desc: "Mises à jour de l'application" },
+            { key: "travelAlerts",  label: "Travel Alerts",        desc: "Get alerts for your trip" },
+            { key: "cseUpdates",    label: "CSE Updates",          desc: "Notifications on CSE benefits" },
             ].map((s) => (
             <div key={s.key} className="flex items-center justify-between">
                 <div>
@@ -250,49 +415,61 @@ export default function ParametresPage() {
                 <p className="text-xs text-gray-400">{s.desc}</p>
                 </div>
                 <button
-                onClick={() => setNotifSettings((prev) => ({
+                onClick={() => setProfile((prev) => ({
                     ...prev,
-                    [s.key]: !prev[s.key as keyof typeof prev],
+                    notificationPreferences: {
+                        ...prev.notificationPreferences,
+                        [s.key]: !prev.notificationPreferences[s.key as keyof NotificationPreferences],
+                    },
                 }))}
                 className="relative w-9 h-5 rounded-full transition-colors"
                 style={{
-                    background: notifSettings[s.key as keyof typeof notifSettings]
+                    background: profile.notificationPreferences[s.key as keyof NotificationPreferences]
                     ? "#0f766e" : "#d1d5db",
                 }}
                 >
                 <span
                     className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
                     style={{
-                    transform: notifSettings[s.key as keyof typeof notifSettings]
+                    transform: profile.notificationPreferences[s.key as keyof NotificationPreferences]
                         ? "translateX(0px)" : "translateX(-16px)",
                     }}
                 />
                 </button>
             </div>
             ))}
+            <button onClick={handleSaveProfile} disabled={savingProfile}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium"
+            style={{ background: "#0f766e" }}>
+            {savingProfile && <Loader2 size={14} className="animate-spin" />}
+            Save Notification Preferences
+            </button>
         </div>
 
         {/* Préférences */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
             <h3 className="font-semibold text-gray-900">Preferences</h3>
             <div className="grid grid-cols-2 gap-3">
-            {[
-                { key: "language",   label: "Language", opts: ["English", "Français", "Português"] },
-                { key: "currency",   label: "Currency", opts: ["USD - US Dollar", "EUR - Euro", "XOF - Franc CFA"] },
-                { key: "timezone",   label: "Timezone", opts: ["EST - Eastern Standard Time", "WAT - West Africa Time", "CET - Central European Time"] },
-                { key: "dateFormat", label: "Date Format", opts: ["MM/DD/YY", "DD/MM/YY", "YYYY-MM-DD"] },
-            ].map((f) => (
-                <div key={f.key}>
-                <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
+            <div>
+                <label className="block text-xs text-gray-500 mb-1">Fuseau horaire</label>
                 <select
-                    value={prefs[f.key as keyof typeof prefs] as string}
-                    onChange={(e) => setPrefs({ ...prefs, [f.key]: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none"
+                value={profile.timezone}
+                onChange={(e) => setProfile({ ...profile, timezone: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none"
                 >
-                    {f.opts.map((o) => <option key={o}>{o}</option>)}
+                {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
                 </select>
-                </div>
-            ))}
+            </div>
+            <div>
+                <label className="block text-xs text-gray-500 mb-1">Format de date</label>
+                <select
+                value={profile.dateFormat}
+                onChange={(e) => setProfile({ ...profile, dateFormat: e.target.value as DateFormat })}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none"
+                >
+                {DATE_FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+                </select>
+            </div>
             </div>
             <div className="flex items-center justify-between">
             <div>
@@ -310,10 +487,10 @@ export default function ParametresPage() {
                 />
             </button>
             </div>
-            <button onClick={handleSavePrefs} disabled={saving}
+            <button onClick={handleSaveProfile} disabled={savingProfile}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium"
             style={{ background: "#0f766e" }}>
-            {saving && <Loader2 size={14} className="animate-spin" />}
+            {savingProfile && <Loader2 size={14} className="animate-spin" />}
             Save Preferences
             </button>
         </div>
@@ -323,22 +500,38 @@ export default function ParametresPage() {
             <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-gray-900">Activity Log</h3>
             </div>
+            {activityLoading ? (
             <div className="space-y-3">
-            {ACTIVITY_LOG.map((log) => (
-                <div key={log.action}
-                className="flex items-start gap-3 p-3 rounded-xl bg-gray-50">
-                <span className="text-lg shrink-0">{log.icon}</span>
-                <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{log.action}</p>
-                    <p className="text-xs text-gray-500">{log.detail}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{log.time}</p>
-                </div>
-                </div>
-            ))}
+                {[1, 2, 3].map((i) => (
+                <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />
+                ))}
             </div>
-            <button className="mt-3 text-xs hover:underline" style={{ color: "#0f766e" }}>
-            View Full Activity Log
+            ) : activityLog.length === 0 ? (
+            <p className="text-sm text-gray-400">Aucune activité récente</p>
+            ) : (
+            <div className="space-y-3">
+                {activityLog.map((log) => {
+                const meta = ACTION_META[log.action] ?? { label: log.action, icon: "📋" };
+                return (
+                    <div key={log.id}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-gray-50">
+                    <span className="text-lg shrink-0">{meta.icon}</span>
+                    <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">{meta.label}</p>
+                        {log.ipAddress && <p className="text-xs text-gray-500">IP : {log.ipAddress}</p>}
+                        <p className="text-xs text-gray-400 mt-0.5">{formatRelativeTime(log.createdAt)}</p>
+                    </div>
+                    </div>
+                );
+                })}
+            </div>
+            )}
+            {activityPage < activityTotalPages && (
+            <button onClick={loadMoreActivity} disabled={activityLoadingMore}
+                className="mt-3 text-xs hover:underline disabled:opacity-50" style={{ color: "#0f766e" }}>
+                {activityLoadingMore ? "Chargement…" : "Voir plus"}
             </button>
+            )}
         </div>
         </div>
     );

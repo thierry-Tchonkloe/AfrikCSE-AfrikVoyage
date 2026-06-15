@@ -32,7 +32,7 @@ export class ApiIntegrationRepository {
     }
 
     async create(organizationId: string, data: ApiIntegrationInput) {
-        return prisma.apiIntegration.create({
+        const integration = await prisma.apiIntegration.create({
             data: {
                 organizationId,
                 name: data.name,
@@ -43,10 +43,14 @@ export class ApiIntegrationRepository {
                 syncConfig: data.syncConfig,
             },
         });
+        return {
+            ...integration,
+            apiKey: integration.apiKey ? decrypt(integration.apiKey) : null,
+        };
     }
 
     async update(id: string, data: Partial<ApiIntegrationInput>) {
-        return prisma.apiIntegration.update({
+        const integration = await prisma.apiIntegration.update({
             where: { id },
             data: {
                 name: data.name,
@@ -57,9 +61,46 @@ export class ApiIntegrationRepository {
                 syncConfig: data.syncConfig,
             },
         });
+        return {
+            ...integration,
+            apiKey: integration.apiKey ? decrypt(integration.apiKey) : null,
+        };
     }
 
     async delete(id: string) {
         return prisma.apiIntegration.delete({ where: { id } });
+    }
+
+    async touchLastSync(id: string) {
+        return prisma.apiIntegration.update({
+            where: { id },
+            data: { lastSyncAt: new Date() },
+        });
+    }
+
+    async getSyncLogs(integrationId: string) {
+        return prisma.syncLog.findMany({
+            where: { integrationId },
+            orderBy: { createdAt: "desc" },
+        });
+    }
+
+    async createSyncLog(integrationId: string, data: {
+        type: string;
+        employeesCreated?: number;
+        employeesUpdated?: number;
+        errors?: number;
+        status: string;
+    }) {
+        return prisma.syncLog.create({
+            data: {
+                integrationId,
+                type: data.type,
+                employeesCreated: data.employeesCreated ?? 0,
+                employeesUpdated: data.employeesUpdated ?? 0,
+                errors: data.errors ?? 0,
+                status: data.status,
+            },
+        });
     }
 }

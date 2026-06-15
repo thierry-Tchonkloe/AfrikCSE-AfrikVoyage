@@ -52,7 +52,7 @@
 import { AuthRepository } from "../infrastructure/auth.repository";
 import { hashPassword, comparePassword, generateSecureToken, hashToken, } from "../../../core/utils/hash";
 import { signAccessToken, signRefreshToken, verifyRefreshToken, JwtPayload } from "../../../core/utils/jwt";
-import { RegisterCompanyDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, CompleteProfileDto, } from "../interfaces/auth.validator";
+import { RegisterCompanyDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, CompleteProfileDto, ChangePasswordDto, } from "../interfaces/auth.validator";
 import { sendMail } from "../../../core/services/email.service";
 import { companyRegistrationReceivedEmail, newCompanyPendingValidationEmail, passwordResetEmail, } from "../../../core/mailer/email.templates";
 import { logger } from "../../../core/utils/logger";
@@ -305,5 +305,21 @@ export class AuthService {
     /** Complétion du profil au premier login */
     async completeProfile(userId: string, dto: CompleteProfileDto) {
         return this.repo.completeProfile(userId, dto);
+    }
+
+    /** Changement de mot de passe (utilisateur connecté) */
+    async changePassword(userId: string, dto: ChangePasswordDto) {
+        const user = await this.repo.findUserById(userId);
+        if (!user) {
+        throw new Error("Utilisateur introuvable");
+        }
+
+        const passwordOk = await comparePassword(dto.currentPassword, user.password);
+        if (!passwordOk) {
+        throw new Error("Mot de passe actuel incorrect");
+        }
+
+        const hashedPassword = await hashPassword(dto.newPassword);
+        await this.repo.updatePassword(userId, hashedPassword);
     }
 }

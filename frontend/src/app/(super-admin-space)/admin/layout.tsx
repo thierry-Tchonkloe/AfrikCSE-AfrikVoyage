@@ -3,19 +3,7 @@
 import { useState, useEffect, useLayoutEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import {
-    LayoutDashboard,
-    Building2,
-    ClipboardCheck,
-    Settings,
-    MessageSquare,
-    ChevronLeft,
-    ChevronRight,
-    LogOut,
-    Menu,
-    Sun,
-    Moon,
-} from "lucide-react";
+import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck,} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
 import { useTheme } from "@/hooks/useTheme";
@@ -27,8 +15,12 @@ const NAV_ITEMS = [
     { href: "/admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { href: "/admin/companies", label: "Entreprises", icon: Building2 },
     { href: "/admin/validations", label: "Validations", icon: ClipboardCheck, badge: true },
-    { href: "/admin/settings", label: "Paramètres", icon: Settings },
     { href: "/admin/messages", label: "Messagerie", icon: MessageSquare },
+    { href: "/admin/notifications", label: "Notifications", icon: Bell },
+    { href: "/admin/logs", label: "Historique des Logs", icon: Logs },
+    { href: "/admin/plans", label: "Gérer les Plans", icon: LayoutTemplate },
+    { href: "/admin/access", label: "Gérer les Accès", icon: ShieldCheck },
+    { href: "/admin/settings", label: "Paramètres", icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

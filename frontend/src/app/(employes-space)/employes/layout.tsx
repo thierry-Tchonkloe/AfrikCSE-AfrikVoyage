@@ -7,7 +7,7 @@ import {
     LayoutDashboard, Plane, FileText, Calendar,
     Gift, MessageSquare, CalendarDays, User, Settings,
     ChevronLeft, ChevronRight, LogOut, Menu,
-    Mail, Sun, Moon, LifeBuoy,
+    Mail, Sun, Moon, LifeBuoy, Bell,FileClock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
@@ -26,6 +26,8 @@ const NAV_ITEMS = [
     { href: "/employes/communication",  label: "Communication CSE",    icon: MessageSquare },
     { href: "/employes/evenements",     label: "Calendrier des Évènements", icon: CalendarDays },
     { href: "/employes/support",        label: "Support",              icon: LifeBuoy },
+    { href: "/employes/notifications", label: "Notifications",       icon: Bell, badge: true },
+    { href: "/employes/mes-demandes", label: "Mes demandes", icon: FileClock },
 ];
 
 const NAV_BOTTOM = [

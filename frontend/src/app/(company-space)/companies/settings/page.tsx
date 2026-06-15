@@ -181,9 +181,9 @@ export default function CompanySettingsPage() {
                 </button>
                 ))}
                 <button
-                onClick={() => router.push("/billing")}
-                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left border-t border-gray-200 mt-2"
-                style={{ color: "#0f766e", background: "#f0fdf4" }}
+                    onClick={() => router.push("/companies/integrations")}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left border-t border-gray-200 mt-2"
+                    style={{ color: "#0f766e", background: "#f0fdf4" }}
                 >
                 🔗 Integrations & API RH
                 </button>
