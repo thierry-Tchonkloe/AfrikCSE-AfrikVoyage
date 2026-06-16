@@ -14,7 +14,9 @@
       "Bash(awk '/^model SyncLog/,/^}/' \"c:/Users/Thierry/Documents/WAXEHO/AfrikCSE-AfrikVoyage/backend/prisma/schema.prisma\")",
       "Bash(grep -iE \"^\\(receipt|layout-dashboard|calendar|arrow-right|clock\\)\\\\.js$\")",
       "Bash(cd backend/../frontend && npx eslint \"src/app/\\(company-space\\)/companies/integrations/page.tsx\" 2>&1)",
-      "Read(//c/Users/Thierry/Documents/WAXEHO/AfrikCSE-AfrikVoyage/frontend/src/app/\\(company-space\\)/companies/integrations/**)"
+      "Read(//c/Users/Thierry/Documents/WAXEHO/AfrikCSE-AfrikVoyage/frontend/src/app/\\(company-space\\)/companies/integrations/**)",
+      "Bash(node -e \"const { Resend } = require\\('resend'\\); const r = new Resend\\(process.env.RESEND_API_KEY || 'test'\\); console.log\\(typeof r.emails?.send\\)\")",
+      "Bash(node -e ' *)"
     ]
   }
 }

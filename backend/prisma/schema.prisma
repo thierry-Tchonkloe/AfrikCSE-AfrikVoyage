@@ -31,9 +31,13 @@ model Organization {
   size          String?
   validatedAt   DateTime?
   validatedById String?
-  logoUrl        String?
-  primaryColor   String?
-  secondaryColor String?
+  logoUrl            String?
+  primaryColor       String?
+  secondaryColor     String?
+  accentColor        String?
+  legalName          String?
+  registrationNumber String?
+  vatNumber          String?
   auditLogs     AuditLog[]
   users         User[]
   invitationTokens InvitationToken[]

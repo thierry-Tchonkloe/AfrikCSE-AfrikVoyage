@@ -48,9 +48,20 @@ export async function sendMail({ to, subject, html }: MailOptions): Promise<void
             html,
         });
         if (error) {
-            logger.error({ err: error }, "Échec de l'envoi d'email via Resend");
+            const e = error as { statusCode?: number; message?: string };
+            logger.error(
+                { err: error, to, subject },
+                `Échec de l'envoi d'email — ${e.message ?? "erreur inconnue"}`
+            );
+            if (e.statusCode === 403) {
+                logger.warn(
+                    `[EMAIL] Domaine non vérifié sur Resend : EMAIL_FROM="${fromEmail}" ne peut envoyer ` +
+                    `qu'à l'adresse du compte Resend. ` +
+                    `→ Vérifiez un domaine sur https://resend.com/domains, puis mettez à jour EMAIL_FROM dans .env.`
+                );
+            }
         }
     } catch (err: any) {
-        logger.error({ err }, "Échec de l'envoi d'email via Resend");
+        logger.error({ err, to, subject }, `Échec de l'envoi d'email — exception inattendue`);
     }
 }
