@@ -23,6 +23,9 @@ const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Couleur invalide (format
 
 export const updateOrgSchema = z.object({
     name: z.string().min(1).optional(),
+    legalName: z.string().nullable().optional(),
+    registrationNumber: z.string().nullable().optional(),
+    vatNumber: z.string().nullable().optional(),
     email: z.string().email().nullable().optional(),
     businessEmail: z.string().email().nullable().optional(),
     phone: z.string().nullable().optional(),
@@ -35,6 +38,7 @@ export const updateOrgSchema = z.object({
     size: z.string().nullable().optional(),
     primaryColor: hexColor.nullable().optional(),
     secondaryColor: hexColor.nullable().optional(),
+    accentColor: hexColor.nullable().optional(),
 }).strict();
 
 export type ValidateOrgDto = z.infer<typeof validateOrgSchema>;

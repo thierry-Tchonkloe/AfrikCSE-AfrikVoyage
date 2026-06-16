@@ -235,7 +235,18 @@ export class OrganizationController {
                 select: {
                 id: true, name: true, status: true, plan: true,
                 hasCSE: true, hasVoyage: true,
-                logoUrl: true, primaryColor: true, secondaryColor: true,
+                logoUrl: true,
+                primaryColor: true, secondaryColor: true, accentColor: true,
+                phone: true,
+                businessEmail: true,
+                address: true,
+                city: true,
+                country: true,
+                industry: true,
+                size: true,
+                legalName: true,
+                registrationNumber: true,
+                vatNumber: true,
                 _count: { select: { users: true } },
                 },
             }),
@@ -317,6 +328,15 @@ export class OrganizationController {
             const org = await prisma.organization.update({
                 where: { id: orgId },
                 data: parsed.data,
+            });
+            await logAudit({
+                action: "ORG_UPDATED",
+                entity: "Organization",
+                entityId: orgId,
+                userId: req.user!.userId,
+                organizationId: orgId,
+                newValue: parsed.data,
+                req,
             });
             res.json(org);
         } catch (err: any) {

@@ -89,7 +89,7 @@ export function resolveThemePalette(
  * Résout puis applique en une seule étape — pratique pour les aperçus
  * en temps réel (ex : page de réglages Super Admin).
  */
-export function applyTheme(colors: { primaryColor?: string; secondaryColor?: string }): void {
+export function applyTheme(colors: { primaryColor?: string; secondaryColor?: string; accentColor?: string }): void {
     applyThemePalette(
         resolveThemePalette(null, {
             primary: colors.primaryColor,
@@ -97,6 +97,9 @@ export function applyTheme(colors: { primaryColor?: string; secondaryColor?: str
             warning: colors.secondaryColor,
         })
     );
+    if (typeof document !== "undefined" && colors.accentColor) {
+        document.documentElement.style.setProperty("--color-accent", colors.accentColor);
+    }
 }
 
 /** Bascule dark/light mode */
