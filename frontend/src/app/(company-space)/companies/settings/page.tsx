@@ -72,15 +72,19 @@ export default function CompanySettingsPage() {
                 if (!org) return;
                 setSettings((prev) => ({
                     ...prev,
-                    name:           org.name ?? prev.name,
-                    phone:          org.phone ?? prev.phone,
-                    primaryEmail:   org.businessEmail ?? prev.primaryEmail,
-                    address:        org.address ?? prev.address,
-                    industry:       org.industry ?? prev.industry,
-                    size:           org.size ?? prev.size,
-                    logoUrl:        org.logoUrl ?? prev.logoUrl,
-                    primaryColor:   org.primaryColor ?? prev.primaryColor,
-                    secondaryColor: org.secondaryColor ?? prev.secondaryColor,
+                    name:               org.name               ?? prev.name,
+                    legalName:          org.legalName          ?? prev.legalName,
+                    registrationNumber: org.registrationNumber ?? prev.registrationNumber,
+                    vatNumber:          org.vatNumber          ?? prev.vatNumber,
+                    phone:              org.phone              ?? prev.phone,
+                    primaryEmail:       org.businessEmail      ?? prev.primaryEmail,
+                    address:            org.address            ?? prev.address,
+                    industry:           org.industry           ?? prev.industry,
+                    size:               org.size               ?? prev.size,
+                    logoUrl:            org.logoUrl            ?? prev.logoUrl,
+                    primaryColor:       org.primaryColor       ?? prev.primaryColor,
+                    secondaryColor:     org.secondaryColor     ?? prev.secondaryColor,
+                    accentColor:        org.accentColor        ?? prev.accentColor,
                 }));
             })
             .catch(() => {
@@ -96,8 +100,8 @@ export default function CompanySettingsPage() {
         setSettings((prev) => {
             const next = { ...prev, [key]: value };
             // Aperçu couleur en temps réel
-            if (key === "primaryColor" || key === "secondaryColor") {
-                applyTheme({ primaryColor: next.primaryColor, secondaryColor: next.secondaryColor });
+            if (key === "primaryColor" || key === "secondaryColor" || key === "accentColor") {
+                applyTheme({ primaryColor: next.primaryColor, secondaryColor: next.secondaryColor, accentColor: next.accentColor ?? undefined });
             }
             return next;
         });
@@ -108,14 +112,18 @@ export default function CompanySettingsPage() {
         setSaving(true);
         try {
             await companyService.updateMyOrg({
-                name:           settings.name || undefined,
-                phone:          settings.phone || undefined,
-                businessEmail:  settings.primaryEmail || undefined,
-                address:        settings.address || undefined,
-                industry:       settings.industry || undefined,
-                size:           settings.size || undefined,
-                primaryColor:   settings.primaryColor || undefined,
-                secondaryColor: settings.secondaryColor || undefined,
+                name:               settings.name               || undefined,
+                legalName:          settings.legalName          || undefined,
+                registrationNumber: settings.registrationNumber || undefined,
+                vatNumber:          settings.vatNumber          || undefined,
+                phone:              settings.phone              || undefined,
+                businessEmail:      settings.primaryEmail       || undefined,
+                address:            settings.address            || undefined,
+                industry:           settings.industry           || undefined,
+                size:               settings.size               || undefined,
+                primaryColor:       settings.primaryColor       || undefined,
+                secondaryColor:     settings.secondaryColor     || undefined,
+                accentColor:        settings.accentColor        || undefined,
             });
             toast.success("Paramètres enregistrés");
             setChanged(false);
