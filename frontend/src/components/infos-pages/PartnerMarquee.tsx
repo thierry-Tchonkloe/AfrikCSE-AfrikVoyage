@@ -111,7 +111,6 @@ const TrustMarquee = () => {
                         <div
                             key={idx}
                             className="inline-flex items-center justify-center px-4 py-2 transition-all duration-300 grayscale hover:grayscale-0 hover:scale-110 cursor-pointer"
-                            style={{ transition: "all 0.3s ease" }}
                         >
                             <span className="text-slate-400 text-xl font-bold tracking-wider hover:text-slate-800 transition-colors">
                                 {logo.name}
@@ -164,10 +163,17 @@ const PartnerCarousel = () => {
     };
 
     return (
-        <div className="relative">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-slate-800 font-bold text-lg">Nos partenaires stratégiques</h3>
-                <div className="flex gap-2">
+        <div className="w-full">
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col gap-1">
+                    <span className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full inline-block w-fit">
+                        Écosystème
+                    </span>
+                    <h3 className="text-slate-900 font-bold text-2xl md:text-3xl tracking-tight mt-2">
+                        Nos partenaires stratégiques
+                    </h3>
+                </div>
+                <div className="flex gap-2 self-end">
                     <button 
                         onClick={prevSlide}
                         className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 shadow-sm"
@@ -191,9 +197,9 @@ const PartnerCarousel = () => {
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.4 }}
-                className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+                className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm hover:shadow-md transition-shadow"
             >
-                <div className="flex items-center gap-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                     <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-indigo-50 to-emerald-50 flex items-center justify-center shrink-0">
                         {PARTNERS[activeIndex].logoSvg}
                     </div>
@@ -203,14 +209,14 @@ const PartnerCarousel = () => {
                             {PARTNERS[activeIndex].city}, {PARTNERS[activeIndex].country}
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        <Link href={PARTNERS[activeIndex].websiteUrl} target="_blank" className="p-2 rounded-lg bg-slate-100 hover:bg-indigo-100 transition-colors">
-                            <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex gap-2 self-end sm:self-center">
+                        <Link href={PARTNERS[activeIndex].websiteUrl} target="_blank" className="p-2.5 rounded-xl bg-slate-100 hover:bg-indigo-100 transition-colors">
+                            <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4-3-9s1.34-9 3-9" />
                             </svg>
                         </Link>
-                        <Link href={PARTNERS[activeIndex].linkedinUrl} target="_blank" className="p-2 rounded-lg bg-slate-100 hover:bg-emerald-100 transition-colors">
-                            <svg className="w-4 h-4 text-slate-600" fill="currentColor" viewBox="0 0 24 24">
+                        <Link href={PARTNERS[activeIndex].linkedinUrl} target="_blank" className="p-2.5 rounded-xl bg-slate-100 hover:bg-emerald-100 transition-colors">
+                            <svg className="w-5 h-5 text-slate-600" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
                             </svg>
                         </Link>
@@ -218,7 +224,7 @@ const PartnerCarousel = () => {
                 </div>
             </motion.div>
             
-            <div className="flex items-center justify-center gap-2 mt-4">
+            <div className="flex items-center justify-center gap-2 mt-6">
                 {PARTNERS.map((_, i) => (
                     <button
                         key={i}
@@ -280,24 +286,12 @@ export default function PartnerMarquee() {
     };
 
     const cardVariants = {
-        hidden: { opacity: 0, x: -30 },
+        hidden: { opacity: 0, y: 30 },
         visible: { 
             opacity: 1, 
-            x: 0, 
+            y: 0, 
             transition: { 
                 duration: 0.7
-            }
-        }
-    };
-
-    const cardRightVariants = {
-        hidden: { opacity: 0, x: 30 },
-        visible: { 
-            opacity: 1, 
-            x: 0, 
-            transition: { 
-                duration: 0.7,
-                delay: 0.2
             }
         }
     };
@@ -320,105 +314,82 @@ export default function PartnerMarquee() {
                 initial="hidden"
                 animate={controls}
                 variants={containerVariants}
-                className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
+                className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-24"
             >
                 {/* Trust Bar */}
                 <motion.div variants={itemVariants}>
                     <TrustMarquee />
                 </motion.div>
 
-                {/* ── SECTION "THE WHY" - PAROLES DES FONDATEURS ── */}
-                <div className="text-center max-w-3xl mx-auto mb-16">
-                    <span className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full inline-block">
-                        Notre manifeste
-                    </span>
-                    <h3 
-                        style={titleStyle} 
-                        className="mt-4 tracking-tight hidden sm:block"
-                    >
-                        Pourquoi avoir créé cette solution ?
-                    </h3>
-                    <h3 
-                        style={{ ...titleStyle, fontSize: "32px", lineHeight: "40px" }} 
-                        className="mt-4 tracking-tight sm:hidden"
-                    >
-                        Pourquoi avoir créé cette solution ?
-                    </h3>
-                    <p className="text-slate-500 mt-4 text-base sm:text-lg font-medium max-w-2xl mx-auto">
-                        L'histoire derrière la convergence unique d'AfrikVoyage et AfrikCSE racontée par ses concepteurs.
-                    </p>
-                </div>
+                {/* ── SECTION "THE WHY" - MANIFESTE ET FONDATEURS ── */}
+                <div className="space-y-16">
+                    <div className="text-center max-w-3xl mx-auto">
+                        <span className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full inline-block">
+                            Notre manifeste
+                        </span>
+                        <h3 style={titleStyle} className="mt-4 tracking-tight hidden sm:block">
+                            Pourquoi avoir créé cette solution ?
+                        </h3>
+                        <h3 style={{ ...titleStyle, fontSize: "32px", lineHeight: "40px" }} className="mt-4 tracking-tight sm:hidden">
+                            Pourquoi avoir créé cette solution ?
+                        </h3>
+                        <p className="text-slate-500 mt-4 text-base sm:text-lg font-medium max-w-2xl mx-auto">
+                            L'histoire derrière la convergence unique d'AfrikVoyage et AfrikCSE racontée par ses concepteurs.
+                        </p>
+                    </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-                    
-                    {/* Colonne gauche - Témoignage Richnel (animé depuis la gauche) */}
-                    <motion.div 
-                        variants={cardVariants}
-                        className="lg:col-span-7"
-                    >
-                        <div className="gradient-border-card relative p-0.5 rounded-[2.5rem] flex flex-col transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 group">
-                            <div className="h-full bg-white rounded-[2.40rem] p-8 sm:p-10 flex flex-col justify-between overflow-hidden relative z-10">
-                                <div>
-                                    <div className="flex items-center justify-between w-full flex-wrap gap-2">
-                                        <span className="text-[10px] font-black text-slate-800 tracking-widest uppercase bg-slate-100 px-3 py-1.5 rounded-lg">
-                                            Fondateur & CEO
-                                        </span>
-                                        <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-full">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Focus AfrikVoyage
-                                        </span>
-                                    </div>
-                                    
-                                    <motion.p 
-                                        initial={{ opacity: 0, y: 20 }}
-                                        whileInView={{ opacity: 1, y: 0 }}
-                                        viewport={{ once: true }}
-                                        transition={{ delay: 0.3, duration: 0.5 }}
-                                        className="text-slate-700 font-medium text-base sm:text-lg leading-relaxed italic mt-8 relative pl-4 border-l-2 border-indigo-500"
-                                    >
-                                        "Nous avons constaté que les entreprises africaines perdaient une énergie folle à synchroniser les déplacements terrains et la satisfaction des collaborateurs. Centraliser les dépenses de voyage et les avantages sociaux sur une interface unique était la seule réponse logique pour catalyser la croissance."
-                                    </motion.p>
-                                </div>
-
-                                <div className="flex items-end justify-between gap-4 mt-12 border-t border-slate-100 pt-6 flex-wrap">
-                                    <div className="flex items-center gap-4">
-                                        <motion.div 
-                                            className="relative w-18 h-18 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0"
-                                            whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-                                        >
-                                            <img 
-                                                src="/richnel.jpg" 
-                                                alt="Richnel AGAZOUNON" 
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </motion.div>
-                                        <div className="flex flex-col">
-                                            <h4 style={{ fontFamily: "Sanomat, ui-serif" }} className="text-slate-900 font-bold text-lg tracking-tight">
-                                                Richnel AGAZOUNON
-                                            </h4>
-                                            <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-0.5">
-                                                Ex-McKinsey // Tech Visionary
+                    {/* Grille harmonisée et symétrique pour les cartes de fondateurs */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+                        
+                        {/* Carte Richnel (Uniformisée) */}
+                        <motion.div variants={cardVariants} className="flex">
+                            <div className="gradient-border-card relative p-0.5 rounded-[2.5rem] flex flex-col w-full transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 group">
+                                <div className="h-full bg-white rounded-[2.40rem] p-8 sm:p-10 flex flex-col justify-between overflow-hidden relative z-10">
+                                    <div>
+                                        <div className="flex items-center justify-between w-full flex-wrap gap-2">
+                                            <span className="text-[10px] font-black text-slate-800 tracking-widest uppercase bg-slate-100 px-3 py-1.5 rounded-lg">
+                                                Fondateur & CEO
+                                            </span>
+                                            <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-full">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Focus AfrikVoyage
                                             </span>
                                         </div>
+                                        
+                                        <p className="text-slate-700 font-medium text-base sm:text-lg leading-relaxed italic mt-8 relative pl-4 border-l-2 border-indigo-500">
+                                            "Nous avons constaté que les entreprises africaines perdaient une énergie folle à synchroniser les déplacements terrains et la satisfaction des collaborateurs. Centraliser les dépenses de voyage et les avantages sociaux sur une interface unique était la seule réponse logique pour catalyser la croissance."
+                                        </p>
                                     </div>
-                                    <motion.div 
-                                        className="flex flex-col items-end text-right bg-slate-50 border border-slate-100 p-3 rounded-xl"
-                                        whileHover={{ scale: 1.02, backgroundColor: "#f0fdf4", borderColor: "#10b981" }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <span className="text-xs font-black text-indigo-600 uppercase tracking-wider">Optimisation</span>
-                                        <span className="text-lg font-black text-slate-900 mt-0.5">-30% de coûts</span>
-                                    </motion.div>
+
+                                    <div className="flex items-end justify-between gap-4 mt-12 border-t border-slate-100 pt-6 flex-wrap">
+                                        <div className="flex items-center gap-4">
+                                            <div className="relative w-18 h-18 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
+                                                <img 
+                                                    src="/richnel.jpg" 
+                                                    alt="Richnel AGAZOUNON" 
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <h4 style={{ fontFamily: "Sanomat, ui-serif" }} className="text-slate-900 font-bold text-lg tracking-tight">
+                                                    Richnel AGAZOUNON
+                                                </h4>
+                                                <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-0.5">
+                                                    Ex-McKinsey // Tech Visionary
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end text-right bg-slate-50 border border-slate-100 p-3 rounded-xl transition-all duration-300 group-hover:bg-emerald-50 group-hover:border-emerald-500">
+                                            <span className="text-xs font-black text-indigo-600 uppercase tracking-wider">Optimisation</span>
+                                            <span className="text-lg font-black text-slate-900 mt-0.5">-30% de coûts</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </motion.div>
+                        </motion.div>
 
-                    {/* Colonne droite - Témoignage Michaelis + Partenaires */}
-                    <div className="lg:col-span-5 space-y-6">
-                        <motion.div 
-                            variants={cardRightVariants}
-                        >
-                            <div className="gradient-border-card relative p-0.5 rounded-[2.5rem] flex flex-col transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-500/10 group">
+                        {/* Carte Michaelis (Uniformisée aux mêmes proportions) */}
+                        <motion.div variants={cardVariants} className="flex">
+                            <div className="gradient-border-card relative p-0.5 rounded-[2.5rem] flex flex-col w-full transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-500/10 group">
                                 <div className="h-full bg-white rounded-[2.40rem] p-8 sm:p-10 flex flex-col justify-between overflow-hidden relative z-10">
                                     <div>
                                         <div className="flex items-center justify-between w-full flex-wrap gap-2">
@@ -430,29 +401,20 @@ export default function PartnerMarquee() {
                                             </span>
                                         </div>
                                         
-                                        <motion.p 
-                                            initial={{ opacity: 0, y: 20 }}
-                                            whileInView={{ opacity: 1, y: 0 }}
-                                            viewport={{ once: true }}
-                                            transition={{ delay: 0.4, duration: 0.5 }}
-                                            className="text-slate-700 font-medium text-base sm:text-lg leading-relaxed italic mt-8 relative pl-4 border-l-2 border-emerald-500"
-                                        >
+                                        <p className="text-slate-700 font-medium text-base sm:text-lg leading-relaxed italic mt-8 relative pl-4 border-l-2 border-emerald-500">
                                             "La tech n'a de valeur que si elle sert l'humain. Avec le volet CSE, nous redonnons du pouvoir d'achat et une reconnaissance directe aux salariés via un catalogue fluide, tandis que la branche Voyage élimine la friction administrative pour les équipes financières."
-                                        </motion.p>
+                                        </p>
                                     </div>
 
                                     <div className="flex items-end justify-between gap-4 mt-12 border-t border-slate-100 pt-6 flex-wrap">
                                         <div className="flex items-center gap-4">
-                                            <motion.div 
-                                                className="relative w-18 h-18 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0"
-                                                whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-                                            >
+                                            <div className="relative w-18 h-18 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
                                                 <img 
                                                     src="/michaelis.jpg" 
                                                     alt="Michaelis MAHOUTO" 
                                                     className="w-full h-full object-cover"
                                                 />
-                                            </motion.div>
+                                            </div>
                                             <div className="flex flex-col">
                                                 <h4 style={{ fontFamily: "Sanomat, ui-serif" }} className="text-slate-900 font-bold text-lg tracking-tight">
                                                     Michaelis MAHOUTO
@@ -462,28 +424,22 @@ export default function PartnerMarquee() {
                                                 </span>
                                             </div>
                                         </div>
-                                        <motion.div 
-                                            className="flex flex-col items-end text-right bg-slate-50 border border-slate-100 p-3 rounded-xl"
-                                            whileHover={{ scale: 1.02, backgroundColor: "#eef2ff", borderColor: "#6366f1" }}
-                                            transition={{ duration: 0.2 }}
-                                        >
+                                        <div className="flex flex-col items-end text-right bg-slate-50 border border-slate-100 p-3 rounded-xl transition-all duration-300 group-hover:bg-indigo-50 group-hover:border-indigo-500">
                                             <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">Indicateur</span>
                                             <span className="text-lg font-black text-slate-900 mt-0.5">Retours 100% Zen</span>
-                                        </motion.div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </motion.div>
 
-                        {/* Partner Carousel */}
-                        <motion.div 
-                            variants={cardRightVariants}
-                        >
-                            <PartnerCarousel />
-                        </motion.div>
                     </div>
-
                 </div>
+
+                {/* ── 5. SECTION "NOS PARTENAIRES STRATÉGIQUES" ── */}
+                <motion.div variants={itemVariants} className="pt-8">
+                </motion.div>
+
             </motion.div>
 
             <style jsx global>{`
@@ -502,7 +458,6 @@ export default function PartnerMarquee() {
                     animation: marquee 25s linear infinite;
                 }
 
-                /* Style de la bordure magique à dégradé ruisselant */
                 .gradient-border-card {
                     overflow: hidden;
                 }
