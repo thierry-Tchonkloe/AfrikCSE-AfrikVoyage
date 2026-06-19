@@ -98,10 +98,10 @@ const certifications = [
 
 // ─── COMPOSANTS ────────────────────────────────────────────────────────────────
 
-// Hero Section
+// Hero Section - MODIFIÉE : Suppression des statistiques et centrage du contenu
 function HeroSection() {
     return (
-        <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-white">
+        <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-white">
             <div className="absolute inset-0 z-0">
                 <video 
                     autoPlay 
@@ -116,81 +116,54 @@ function HeroSection() {
                 <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/80" />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
-                    <div>
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6 }}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-200 mb-6"
-                        >
-                            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                            <span className="text-xs font-semibold text-indigo-700">Basé en Afrique · Rayonnement mondial</span>
-                        </motion.div>
+            <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-200 mb-6"
+                >
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                    <span className="text-xs font-semibold text-indigo-700">Basé en Afrique · Rayonnement mondial</span>
+                </motion.div>
 
-                        <motion.h1 
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.1 }}
-                            className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-slate-900 mb-6"
-                            style={{ fontFamily: "Sanomat, ui-serif" }}
-                        >
-                            L'architecte d'une gestion{" "}
-                            <span className="bg-gradient-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
-                                moderne
-                            </span>
-                            <br />
-                            pour l'entreprise africaine
-                        </motion.h1>
+                <motion.h1 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                    className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-slate-900 mb-6"
+                    style={{ fontFamily: "Sanomat, ui-serif" }}
+                >
+                    L'architecte d'une gestion{" "}
+                    <span className="bg-gradient-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
+                        moderne
+                    </span>
+                    <br />
+                    pour l'entreprise africaine
+                </motion.h1>
 
-                        <motion.p 
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.2 }}
-                            className="text-lg text-slate-600 max-w-lg mb-8"
-                        >
-                            Nous transformons la complexité administrative en avantage compétitif — en unifiant la gestion des voyages d'affaires et des services aux salariés sur une seule plateforme.
-                        </motion.p>
+                <motion.p 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                    className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-10"
+                >
+                    Nous transformons la complexité administrative en avantage compétitif — en unifiant la gestion des voyages d'affaires et des services aux salariés sur une seule plateforme.
+                </motion.p>
 
-                        <motion.div 
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.3 }}
-                            className="flex flex-wrap gap-4"
-                        >
-                            <Link href="#" className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all hover:scale-105 shadow-lg">
-                                Découvrir notre histoire
-                            </Link>
-                            <Link href="#" className="px-6 py-3 border-2 border-slate-200 text-slate-700 rounded-xl font-semibold hover:border-indigo-300 hover:bg-indigo-50 transition-all">
-                                Rencontrer l'équipe
-                            </Link>
-                        </motion.div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white/90 backdrop-blur rounded-xl p-4 border border-indigo-100">
-                            <div className="text-3xl mb-2">🏆</div>
-                            <div className="font-bold text-slate-800">500+</div>
-                            <div className="text-xs text-slate-500">entreprises clientes</div>
-                        </div>
-                        <div className="bg-white/90 backdrop-blur rounded-xl p-4 border border-emerald-100">
-                            <div className="text-3xl mb-2">🌍</div>
-                            <div className="font-bold text-slate-800">54</div>
-                            <div className="text-xs text-slate-500">pays couverts</div>
-                        </div>
-                        <div className="bg-white/90 backdrop-blur rounded-xl p-4 border border-amber-100">
-                            <div className="text-3xl mb-2">⭐</div>
-                            <div className="font-bold text-slate-800">95%</div>
-                            <div className="text-xs text-slate-500">taux d'adoption</div>
-                        </div>
-                        <div className="bg-white/90 backdrop-blur rounded-xl p-4 border border-emerald-100">
-                            <div className="text-3xl mb-2">📉</div>
-                            <div className="font-bold text-slate-800">-30%</div>
-                            <div className="text-xs text-slate-500">de réduction des coûts</div>
-                        </div>
-                    </div>
-                </div>
+                <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                    className="flex flex-wrap gap-4 justify-center"
+                >
+                    <Link href="#" className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all hover:scale-105 shadow-lg">
+                        Découvrir notre histoire
+                    </Link>
+                    <Link href="#" className="px-8 py-3.5 border-2 border-slate-200 text-slate-700 rounded-xl font-semibold hover:border-indigo-300 hover:bg-indigo-50 transition-all">
+                        Rencontrer l'équipe
+                    </Link>
+                </motion.div>
             </div>
         </section>
     );

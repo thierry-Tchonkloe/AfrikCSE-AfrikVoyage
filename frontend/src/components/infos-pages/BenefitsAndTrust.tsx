@@ -20,20 +20,6 @@ interface Testimonial {
     date: string;
 }
 
-interface VideoTestimonial {
-    id: number;
-    name: string;
-    role: string;
-    company: string;
-    avatar: string;
-    avatarBg: string;
-    metric: string;
-    metricLabel: string;
-    text: string;
-    videoThumbnail: string;
-    videoUrl: string;
-}
-
 interface PricingPlan {
     id: number;
     name: string;
@@ -52,7 +38,7 @@ interface FAQItem {
     answer: string;
 }
 
-// Tableau comparatif enrichi selon les standards 2026
+// Tableau comparatif
 const COMPARISONS = [
     {
         criterion: "Gestion des reçus & frais",
@@ -128,7 +114,7 @@ const INTEGRATION_STEPS = [
     }
 ];
 
-// Plans tarifaires
+// Plans tarifaires - BOUTONS HARMONISÉS
 const PRICING_PLANS: PricingPlan[] = [
     {
         id: 1,
@@ -181,12 +167,12 @@ const PRICING_PLANS: PricingPlan[] = [
             "Audit et optimisation RSE"
         ],
         buttonText: "Nous contacter",
-        buttonVariant: "secondary",
+        buttonVariant: "primary",
         icon: "🏛️"
     }
 ];
 
-// Témoignages avec notes étoiles
+// Témoignages
 const REVIEWS: Testimonial[] = [
     {
         id: 1,
@@ -255,49 +241,6 @@ const REVIEWS: Testimonial[] = [
     }
 ];
 
-// Témoignages vidéo
-const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
-    {
-        id: 1,
-        name: "Marie Dubois",
-        role: "Directrice RH",
-        company: "TechAfrik",
-        avatar: "MD",
-        avatarBg: "bg-teal-600",
-        metric: "-30%",
-        metricLabel: "De frais de voyage",
-        text: "AfrikVoyage a révolutionné notre gestion. Nous avons divisé nos coûts tout en offrant une autonomie totale à nos équipes sur le terrain.",
-        videoThumbnail: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=600&auto=format&fit=crop",
-        videoUrl: "#"
-    },
-    {
-        id: 2,
-        name: "Jean-Paul Kouassi",
-        role: "CFO",
-        company: "InnovCorp",
-        avatar: "JK",
-        avatarBg: "bg-blue-600",
-        metric: "100%",
-        metricLabel: "Conformité Audit",
-        text: "La sérénité fiscale que nous apporte la plateforme est inestimable. Chaque centime dépensé est tracé, catégorisé et conforme aux lois de finances locales sans aucune ressaisie manuelle.",
-        videoThumbnail: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=600&auto=format&fit=crop",
-        videoUrl: "#"
-    },
-    {
-        id: 3,
-        name: "Amina Diop",
-        role: "Head of People",
-        company: "Baobab Digital",
-        avatar: "AD",
-        avatarBg: "bg-amber-500",
-        metric: "+45%",
-        metricLabel: "Engagement CSE",
-        text: "Le catalogue d'avantages digitalisé fonctionne comme une galerie de services premium personnalisée. Les employés adorent la flexibilité de l'application et l'accès instantané aux offres.",
-        videoThumbnail: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=600&auto=format&fit=crop",
-        videoUrl: "#"
-    }
-];
-
 // FAQ
 const FAQ_ITEMS: FAQItem[] = [
     {
@@ -323,6 +266,14 @@ const FAQ_ITEMS: FAQItem[] = [
     {
         question: "Quel est le support inclus ?",
         answer: "Le support est inclus 24/7 par chat et email. Les clients Enterprise bénéficient d'un account manager dédié et d'un SLA de 99.9%."
+    },
+    {
+        question: "Pouvons-nous personnaliser les politiques de voyage ?",
+        answer: "Absolument. Notre plateforme permet de configurer des politiques de voyage par département, par région ou par type de collaborateur, avec des niveaux d'approbation personnalisables."
+    },
+    {
+        question: "Comment est gérée la confidentialité des données ?",
+        answer: "Nous appliquons le principe de minimisation des données avec un chiffrement AES-256 au repos et TLS 1.3 en transit. L'accès aux données est strictement contrôlé par des rôles et permissions."
     }
 ];
 
@@ -348,7 +299,7 @@ const StarRating = ({ rating }: { rating: number }) => (
     </div>
 );
 
-// Badge de confiance (version simplifiée sans classes dynamiques Tailwind problématiques)
+// Badge de confiance
 const TrustBadge = ({ children, icon, color }: { children: React.ReactNode; icon: string; color: string }) => {
     const colorClasses = {
         indigo: "border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50",
@@ -485,10 +436,101 @@ function ReviewsCarousel() {
     );
 }
 
+// ── FORMULAIRE DE CONTACT RAPIDE ─────────────────────────────────────────────
+const QuickContactForm = () => {
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        message: ""
+    });
+    const [isSubmitted, setIsSubmitted] = useState(false);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        // Simulation d'envoi
+        setIsSubmitted(true);
+        setTimeout(() => setIsSubmitted(false), 3000);
+        setFormData({ name: "", email: "", message: "" });
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    };
+
+    return (
+        <div className="bg-indigo-600 rounded-2xl p-6 md:p-8 text-white">
+            <div className="text-center mb-6">
+                <div className="text-4xl mb-3">💬</div>
+                <h3 className="text-xl font-black mb-1">Une question spécifique ?</h3>
+                <p className="text-indigo-200 text-sm">
+                    Notre équipe est disponible pour vous accompagner dans votre projet.
+                </p>
+            </div>
+
+            {isSubmitted ? (
+                <div className="bg-emerald-500/20 border border-emerald-400/30 rounded-xl p-4 text-center">
+                    <p className="text-emerald-300 font-semibold">✅ Message envoyé !</p>
+                    <p className="text-emerald-200/70 text-sm mt-1">Nous vous répondrons dans les meilleurs délais.</p>
+                </div>
+            ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <input
+                            type="text"
+                            name="name"
+                            placeholder="Votre nom"
+                            value={formData.name}
+                            onChange={handleChange}
+                            required
+                            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-indigo-200/60 focus:outline-none focus:ring-2 focus:ring-white/50 transition"
+                        />
+                    </div>
+                    <div>
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="Votre email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required
+                            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-indigo-200/60 focus:outline-none focus:ring-2 focus:ring-white/50 transition"
+                        />
+                    </div>
+                    <div>
+                        <textarea
+                            name="message"
+                            placeholder="Votre message..."
+                            rows={3}
+                            value={formData.message}
+                            onChange={handleChange}
+                            required
+                            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-indigo-200/60 focus:outline-none focus:ring-2 focus:ring-white/50 transition resize-none"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        className="w-full bg-white text-indigo-600 py-3 rounded-xl font-bold text-sm hover:bg-indigo-50 transition-colors"
+                    >
+                        Envoyer le message
+                    </button>
+                </form>
+            )}
+
+            <div className="mt-6 pt-6 border-t border-indigo-500/30 text-center">
+                <p className="text-indigo-200 text-xs mb-2">Ou contactez-nous directement</p>
+                <a href="tel:+33123456789" className="text-lg font-black hover:text-white transition-colors">
+                    +33 1 23 45 67 89
+                </a>
+            </div>
+        </div>
+    );
+};
+
 export default function BenefitsTrustAndProcess() {
     const [activeStep, setActiveStep] = useState(0);
-    const [activeVideoTestimonial, setActiveVideoTestimonial] = useState(0);
-    const [isVideoOpen, setIsVideoOpen] = useState(false);
     const [openFAQ, setOpenFAQ] = useState<number | null>(null);
     const stepIntervalRef = useRef<NodeJS.Timeout | null>(null);
     
@@ -512,8 +554,6 @@ export default function BenefitsTrustAndProcess() {
         };
     }, []);
 
-    const currentVideoTestimonial = VIDEO_TESTIMONIALS[activeVideoTestimonial];
-
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -528,6 +568,21 @@ export default function BenefitsTrustAndProcess() {
     const itemVariants = {
         hidden: { opacity: 0, y: 30 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+    };
+
+    // Style de bouton harmonisé pour tous les plans
+    const getButtonStyles = (variant: "primary" | "secondary" | "outline") => {
+        const baseStyles = "block w-full text-center py-3 rounded-xl font-bold text-sm transition-all duration-300";
+        switch(variant) {
+            case "primary":
+                return `${baseStyles} bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200/50 hover:scale-[1.02]`;
+            case "secondary":
+                return `${baseStyles} bg-slate-800 text-white hover:bg-slate-700 hover:scale-[1.02]`;
+            case "outline":
+                return `${baseStyles} border-2 border-indigo-200 text-indigo-600 hover:border-indigo-400 hover:bg-indigo-50 hover:scale-[1.02]`;
+            default:
+                return baseStyles;
+        }
     };
 
     return (
@@ -556,7 +611,7 @@ export default function BenefitsTrustAndProcess() {
                         {PRICING_PLANS.map((plan) => (
                             <div 
                                 key={plan.id}
-                                className={`relative rounded-2xl border p-8 transition-all duration-300 hover:shadow-xl ${
+                                className={`relative rounded-2xl border p-8 transition-all duration-300 hover:shadow-xl flex flex-col ${
                                     plan.popular 
                                         ? "border-indigo-300 bg-indigo-50/30 shadow-lg scale-[1.02]" 
                                         : "border-slate-200 bg-white hover:border-indigo-200"
@@ -576,7 +631,7 @@ export default function BenefitsTrustAndProcess() {
                                 </div>
                                 <p className="text-slate-500 text-sm mb-6">{plan.description}</p>
                                 
-                                <ul className="space-y-3 mb-8">
+                                <ul className="space-y-3 mb-8 flex-1">
                                     {plan.features.map((feature, i) => (
                                         <li key={i} className="flex items-center gap-2 text-sm text-slate-600">
                                             <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -587,15 +642,10 @@ export default function BenefitsTrustAndProcess() {
                                     ))}
                                 </ul>
                                 
+                                {/* BOUTON HARMONISÉ - Même style pour tous les plans */}
                                 <Link
                                     href="#"
-                                    className={`block text-center py-3 rounded-xl font-bold text-sm transition-all ${
-                                        plan.buttonVariant === "primary"
-                                            ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                                            : plan.buttonVariant === "secondary"
-                                            ? "bg-slate-800 text-white hover:bg-slate-700"
-                                            : "border-2 border-indigo-200 text-indigo-600 hover:border-indigo-400 hover:bg-indigo-50"
-                                    }`}
+                                    className={getButtonStyles(plan.buttonVariant)}
                                 >
                                     {plan.buttonText}
                                 </Link>
@@ -605,7 +655,7 @@ export default function BenefitsTrustAndProcess() {
                 </motion.div>
             </section>
 
-            {/* ── 1. TABLEAU COMPARATIF RADICAL : AVANT VS AFRIK ── */}
+            {/* ── 1. TABLEAU COMPARATIF ── */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 border-t border-slate-100">
                 <motion.div
                     initial="hidden"
@@ -653,7 +703,7 @@ export default function BenefitsTrustAndProcess() {
                 </motion.div>
             </section>
 
-            {/* ── 2. PROCESSUS D'INTÉGRATION EN 4 ÉTAPES ── */}
+            {/* ── 2. PROCESSUS D'INTÉGRATION ── */}
             <section className="bg-slate-50 text-slate-900 py-28 relative border-y border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     
@@ -799,7 +849,7 @@ export default function BenefitsTrustAndProcess() {
                 </div>
             </section>
 
-            {/* ── 3. SOCLE DE CONFIANCE : BADGES ── */}
+            {/* ── 3. SOCLE DE CONFIANCE ── */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-28">
                 <motion.div
                     initial="hidden"
@@ -837,7 +887,7 @@ export default function BenefitsTrustAndProcess() {
                 </motion.div>
             </section>
 
-            {/* ── 4. CARROUSSEL D'AVIS AVEC NOTES ÉTOILES ── */}
+            {/* ── 4. CARROUSSEL D'AVIS ── */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-28">
                 <motion.div
                     initial="hidden"
@@ -859,7 +909,7 @@ export default function BenefitsTrustAndProcess() {
                 </motion.div>
             </section>
 
-            {/* ── 5. FAQ & CONTACT RAPIDE ── */}
+            {/* ── 5. FAQ + FORMULAIRE DE CONTACT RAPIDE ── */}
             <section className="bg-slate-50 border-t border-slate-200 py-28">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
@@ -879,14 +929,14 @@ export default function BenefitsTrustAndProcess() {
                             </p>
                         </motion.div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                            {/* FAQ Accordéon */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* FAQ Accordéon - Colonne principale */}
                             <div className="lg:col-span-2 space-y-4">
                                 {FAQ_ITEMS.map((item, idx) => (
                                     <motion.div
                                         key={idx}
                                         variants={itemVariants}
-                                        className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
+                                        className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                                     >
                                         <button
                                             onClick={() => setOpenFAQ(openFAQ === idx ? null : idx)}
@@ -904,25 +954,9 @@ export default function BenefitsTrustAndProcess() {
                                 ))}
                             </div>
 
-                            {/* Bloc Contact Rapide */}
-                            <motion.div variants={itemVariants} className="bg-indigo-600 rounded-2xl p-8 text-white text-center">
-                                <div className="text-5xl mb-4">💬</div>
-                                <h3 className="text-xl font-black mb-2">Une question spécifique ?</h3>
-                                <p className="text-indigo-200 text-sm mb-6">
-                                    Notre équipe est disponible pour vous accompagner dans votre projet.
-                                </p>
-                                <Link
-                                    href="/infos/contact"
-                                    className="block w-full bg-white text-indigo-600 py-3 rounded-xl font-bold text-sm hover:bg-indigo-50 transition-colors"
-                                >
-                                    Contacter un expert
-                                </Link>
-                                <div className="mt-6 pt-6 border-t border-indigo-500">
-                                    <p className="text-indigo-200 text-xs mb-2">Ou appelez-nous directement</p>
-                                    <a href="tel:+33123456789" className="text-lg font-black hover:text-white transition-colors">
-                                        +33 1 23 45 67 89
-                                    </a>
-                                </div>
+                            {/* Formulaire de contact rapide - Colonne de droite */}
+                            <motion.div variants={itemVariants}>
+                                <QuickContactForm />
                             </motion.div>
                         </div>
                     </motion.div>
