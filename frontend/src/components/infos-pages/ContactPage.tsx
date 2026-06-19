@@ -203,88 +203,6 @@ function ContactPopover({
   );
 }
 
-// ─── Africa Map avec vraie image ───────────────────────────────────────────────
-
-const hubs = [
-  { name: "Casablanca", left: "39%", top: "16%", color: "#6366F1" },
-  { name: "Dakar", left: "23%", top: "37%", color: "#10B981" },
-  { name: "Abidjan", left: "34%", top: "48%", color: "#10B981" },
-  { name: "Cotonou", left: "43%", top: "47%", color: "#10B981" },
-  { name: "Lagos", left: "47%", top: "46%", color: "#F59E0B" },
-  { name: "Nairobi", left: "63%", top: "54%", color: "#6366F1" },
-  { name: "Antananarivo", left: "72%", top: "72%", color: "#10B981" },
-  { name: "Johannesburg", left: "55%", top: "82%", color: "#6366F1" },
-];
-
-function AfricaMap() {
-  const [hovered, setHovered] = useState<string | null>(null);
-
-  return (
-    <div className="relative w-full h-[440px]">
-      <Image
-        src="/images/carte-d-afrique.avif"
-        alt="Carte d'Afrique - Présence d'AfrikVoyage et AfrikCSE"
-        fill
-        className="object-contain rounded-lg"
-        priority
-      />
-      
-      {/* Points de présence interactifs */}
-      {hubs.map((hub) => (
-        <div
-          key={hub.name}
-          className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20 group"
-          style={{ left: hub.left, top: hub.top }}
-          onMouseEnter={() => setHovered(hub.name)}
-          onMouseLeave={() => setHovered(null)}
-        >
-          {/* Point lumineux */}
-          <div className="relative">
-            <div
-              className="w-4 h-4 rounded-full shadow-lg animate-pulse"
-              style={{ backgroundColor: hub.color, boxShadow: `0 0 0 2px white, 0 0 0 4px ${hub.color}40` }}
-            />
-            <div
-              className="absolute inset-0 w-4 h-4 rounded-full animate-ping opacity-75"
-              style={{ backgroundColor: hub.color }}
-            />
-          </div>
-          
-          {/* Tooltip */}
-          {hovered === hub.name && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-white rounded-lg shadow-lg border border-indigo-200 whitespace-nowrap z-30">
-              <p className="text-xs font-bold text-slate-800">{hub.name}</p>
-              <p className="text-[10px] text-indigo-600">Hub actif</p>
-            </div>
-          )}
-        </div>
-      ))}
-      
-      {/* Légende */}
-      <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 px-3 py-2.5 shadow-sm z-20">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
-          Hubs actifs
-        </p>
-        {[
-          { color: "#10B981", label: "AfrikVoyage" },
-          { color: "#6366F1", label: "AfrikCSE" },
-          { color: "#F59E0B", label: "Hub régional" },
-        ].map((item) => (
-          <div key={item.label} className="flex items-center gap-2">
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ background: item.color }}
-            />
-            <span className="text-[11px] font-medium text-slate-600">
-              {item.label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── FAQ Item ─────────────────────────────────────────────────────────────────
 
 function FAQItem({ faq }: { faq: (typeof faqs)[0] }) {
@@ -674,56 +592,57 @@ function Sidebar() {
 export default function ContactPage() {
   return (
     <main className="min-h-screen font-sans antialiased bg-white text-slate-900">
-      {/* ── HERO ── */}
+      {/* ── HERO RECENTRÉE ── */}
       <section className="border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white py-20 lg:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Texte */}
-            <div className="lg:col-span-5 text-center lg:text-left space-y-5">
-              <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
-                Connectivité Souveraine B2B
-              </span>
-              <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl leading-[1.05]">
-                Une expertise locale,{" "}
-                <span className="text-indigo-600">une plateforme globale</span>
-              </h1>
-              <p className="text-base text-slate-500 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                Déployez la puissance d&apos;AfrikVoyage &amp; AfrikCSE dans
-                votre organisation. Nos équipes régionales vous assurent un
-                support de proximité et un déploiement sur-mesure.
-              </p>
-              <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
-                {[
-                  "🌍 8 hubs panafricains",
-                  "⚡ Déploiement 48h",
-                  "🔒 RGPD & UEMOA",
-                ].map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+          <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
+            Connectivité Souveraine B2B
+          </span>
+          <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl md:text-6xl leading-[1.1]">
+            Une expertise locale,{" "}
+            <span className="text-indigo-600">une plateforme globale</span>
+          </h1>
+          <p className="mt-4 text-lg text-slate-500 leading-relaxed max-w-2xl mx-auto">
+            Déployez la puissance d&apos;AfrikVoyage &amp; AfrikCSE dans
+            votre organisation. Nos équipes régionales vous assurent un
+            support de proximité et un déploiement sur-mesure.
+          </p>
 
-            {/* Carte interactive avec vraie image */}
-            <div className="lg:col-span-7 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <div className="px-4 pt-4 pb-0 flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                  Réseau actif — passez la souris sur un hub
-                </span>
-              </div>
-              <AfricaMap />
-            </div>
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <a
+              href="#contact-form"
+              className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-8 py-3.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-all hover:scale-105"
+            >
+              Prendre contact
+            </a>
+            <a
+              href="/infos/about"
+              className="inline-flex items-center justify-center rounded-full border-2 border-slate-200 px-8 py-3.5 text-sm font-bold text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 transition-all"
+            >
+              Découvrir la plateforme
+            </a>
+          </div>
+
+          <div className="mt-10 flex flex-wrap justify-center gap-3">
+            {[
+              "🌍 8 hubs panafricains",
+              "⚡ Déploiement 48h",
+              "🔒 RGPD & UEMOA",
+              "🤝 Support 7j/7",
+            ].map((tag) => (
+              <span
+                key={tag}
+                className="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full"
+              >
+                {tag}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── FORM + SIDEBAR ── */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <section id="contact-form" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
           <ContactForm />
           <Sidebar />

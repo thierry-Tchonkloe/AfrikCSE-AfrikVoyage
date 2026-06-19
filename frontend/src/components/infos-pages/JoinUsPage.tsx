@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import Image from "next/image";
 
 // ─── TYPES & INTERFACES ──────────────────────────────────────────────────────
 
@@ -77,75 +78,75 @@ function AvatarGroup() {
   );
 }
 
-// ─── 1. SECTION: HERO (IMMERSION NARRATIVE CLAIRE) ───────────────────────────
+// ─── 1. SECTION: HERO AVEC IMAGE DE FOND ─────────────────────────────────────
 
 function HeroSection() {
   return (
-    <section className="relative min-h-[85vh] w-full overflow-hidden flex items-center bg-white pt-24 pb-16">
+    <section className="relative min-h-[80vh] w-full overflow-hidden flex items-center justify-center bg-white pt-24 pb-16">
+      {/* Image de fond */}
       <div className="absolute inset-0 z-0">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover opacity-20"
-          poster="/images/hero-fallback.jpg"
-        >
-          <source src="/videos/join-us-loop.mp4" type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-transparent" />
+        <Image
+          src="https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=2074&auto=format"
+          alt="RH planning - équipe en réunion"
+          fill
+          className="object-cover"
+          priority
+        />
+        {/* Overlay pour lisibilité */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-white/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-white/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-white/40 via-transparent to-transparent" />
+        
+        {/* Blobs décoratifs */}
         <div className="absolute top-1/4 right-0 w-[500px] h-[500px] rounded-full opacity-10 blur-[150px] bg-[#6366F1]" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full opacity-10 blur-[150px] bg-[#10B981]" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-        <div className="lg:col-span-8 space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 border border-slate-200 px-4 py-1.5 text-xs font-semibold text-indigo-600">
-            <span className="flex h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
-            Nous recrutons activement
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-slate-900 leading-tight">
-            Bâtissez le futur de <br />
-            <span className="bg-gradient-to-r from-indigo-600 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
-              l'entreprise africaine
-            </span>{" "}
-            avec nous.
-          </h1>
-
-          <p className="max-w-2xl text-lg text-slate-600 leading-relaxed">
-            Rejoignez une équipe passionnée qui unifie la rigueur de la performance 
-            financière et l'épanouissement des collaborateurs au sein d'une seule 
-            interface intelligente.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-            <button className="rounded-xl bg-[#6366F1] px-6 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition-all duration-300 hover:bg-[#5053db] hover:-translate-y-0.5 active:translate-y-0 text-center">
-              Voir les postes ouverts
-            </button>
-            <button className="rounded-xl border border-slate-300 bg-white px-6 py-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:bg-slate-50 text-center">
-              Découvrir notre manifeste
-            </button>
-          </div>
-
-          <AvatarGroup />
+      {/* Contenu centré */}
+      <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/80 backdrop-blur-sm border border-slate-200 px-4 py-1.5 text-xs font-semibold text-indigo-600 mb-6 shadow-sm">
+          <span className="flex h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
+          Nous recrutons activement
         </div>
 
-        <div className="lg:col-span-4 flex justify-center lg:justify-end">
-          <div className="relative group p-6 rounded-2xl bg-white border border-slate-200 shadow-xl max-w-sm transform transition-transform duration-500 hover:scale-[1.02]">
-            <div className="absolute -top-3 -right-3 flex h-6 w-6 items-center justify-center rounded-full bg-[#10B981] text-white font-bold text-xs shadow">
-              ✓
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-slate-900 leading-tight">
+          Bâtissez le futur de{" "}
+          <span className="bg-gradient-to-r from-indigo-600 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
+            l'entreprise africaine
+          </span>{" "}
+          avec nous.
+        </h1>
+
+        <p className="mt-6 max-w-2xl mx-auto text-lg text-slate-700 leading-relaxed bg-white/50 backdrop-blur-sm px-6 py-3 rounded-2xl inline-block shadow-sm">
+          Rejoignez une équipe passionnée qui unifie la rigueur de la performance 
+          financière et l'épanouissement des collaborateurs au sein d'une seule 
+          interface intelligente.
+        </p>
+
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button className="rounded-xl bg-[#6366F1] px-8 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition-all duration-300 hover:bg-[#5053db] hover:-translate-y-0.5 active:translate-y-0">
+            Voir les postes ouverts
+          </button>
+          <button className="rounded-xl border border-slate-300 bg-white/80 backdrop-blur-sm px-8 py-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:bg-white">
+            Découvrir notre manifeste
+          </button>
+        </div>
+
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-6">
+          <AvatarGroup />
+          
+          <div className="flex items-center gap-6 text-sm text-slate-600">
+            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
+              <span className="h-7 w-7 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">🌍</span>
+              <span>12 pays</span>
             </div>
-            <div className="space-y-4">
-              <div className="text-4xl font-black text-[#10B981] tracking-tight">
-                -30%
-              </div>
-              <p className="text-sm font-medium text-slate-800 leading-snug">
-                de coûts de voyage économisés pour nos{" "}
-                <span className="text-indigo-600 font-bold">500+ clients</span>.
-              </p>
-              <div className="pt-3 border-t border-slate-100 text-xs text-slate-400 font-bold tracking-wider uppercase">
-                Rejoignez l'excellence.
-              </div>
+            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
+              <span className="h-7 w-7 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">🚀</span>
+              <span>500+ clients</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
+              <span className="h-7 w-7 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">⭐</span>
+              <span>4.9/5 eNPS</span>
             </div>
           </div>
         </div>
@@ -363,7 +364,7 @@ function BentoGridSection() {
   );
 }
 
-// ─── 4. SECTION: COMMENT SOUHAITONS-NOUS CONTRIBUER ? (RÉINTÉGRÉE) ───────────
+// ─── 4. SECTION: COMMENT SOUHAITONS-NOUS CONTRIBUER ? ───────────────────────
 
 function ContributionCard({ number, title, description, tag }: ContributionCardProps) {
   return (
@@ -447,7 +448,7 @@ function ContributionSection() {
   );
 }
 
-// ─── 5. SECTION: VISION & VALEURS (FOND GRIS TRÈS CLAIR) ─────────────────────
+// ─── 5. SECTION: VISION & VALEURS ────────────────────────────────────────────
 
 function ValuesSection() {
   const ref = useRef<HTMLDivElement>(null);
