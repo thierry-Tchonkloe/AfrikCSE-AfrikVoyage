@@ -1,13 +1,14 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Image from "next/image";
+import { Zap, ShieldCheck, TrendingUp, RefreshCw, Plane, Gift, BarChart2 } from "lucide-react";
 
 // ─── Interfaces & Types Typés Premium ────────────────────────────────────────
 
 interface Step {
     number: string;
-    icon: string;
+    Icon: React.ComponentType<{ className?: string }>;
     title: string;
     subtitle: string;
     description: string;
@@ -22,7 +23,7 @@ interface Step {
 }
 
 interface Benefit {
-    icon: string;
+    Icon: React.ComponentType<{ className?: string }>;
     title: string;
     description: string;
     metric: string;
@@ -34,7 +35,7 @@ interface Benefit {
 const steps: Step[] = [
     {
         number: "01",
-        icon: "🔄",
+        Icon: RefreshCw,
         title: "Configurez en 5 minutes",
         subtitle: "Centralisez tous vos services",
         description: "Connectez vos équipes RH, Finance et Voyages en quelques clics. Notre interface intuitive vous guide pas à pas, tandis que l'IA synchronise automatiquement vos données et budgets en arrière-plan.",
@@ -70,7 +71,7 @@ const steps: Step[] = [
     },
     {
         number: "02",
-        icon: "✈️",
+        Icon: Plane,
         title: "Réservez en toute simplicité",
         subtitle: "Des voyages optimisés et conformes",
         description: "Vos collaborateurs trouvent et réservent leurs déplacements en moins de 3 minutes. Les budgets s'affichent en temps réel avec des alertes intelligentes pour maîtriser vos coûts.",
@@ -86,26 +87,26 @@ const steps: Step[] = [
             "Politiques de voyage personnalisées"
         ],
         mediaType: "dual-grid",
-        imageUrl: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600&h=400&fit=crop",
-        imageAlt: "Voyage d'affaires optimisé",
+        imageUrl: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=400&fit=crop",
+        imageAlt: "Réservation de voyage professionnelle",
         illustration: (
             <div className="relative w-full h-full min-h-[250px] rounded-xl overflow-hidden">
-                <Image 
-                    src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600&h=400&fit=crop"
-                    alt="Voyages d'affaires"
+                <Image
+                    src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=400&fit=crop"
+                    alt="Réservation de voyage professionnelle"
                     fill
                     className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-bold text-emerald-600">✈️ Réservation rapide</span>
+                    <span className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-bold text-emerald-600">Réservation en 3 minutes</span>
                 </div>
             </div>
         )
     },
     {
         number: "03",
-        icon: "🎁",
+        Icon: Gift,
         title: "Valorisez vos équipes",
         subtitle: "Des avantages sociaux à portée de clic",
         description: "Offrez à vos collaborateurs un accès 24/7 à une galerie d'avantages moderne. Ils parcourent, choisissent et utilisent leurs bénéfices en quelques secondes pour un bien-être renforcé.",
@@ -141,7 +142,7 @@ const steps: Step[] = [
     },
     {
         number: "04",
-        icon: "📊",
+        Icon: BarChart2,
         title: "Pilotez votre performance",
         subtitle: "Des données claires pour des décisions éclairées",
         description: "Accédez à une vue unifiée de vos indicateurs clés. Le tableau de bord fusionne les données d'engagement et de dépenses avec des alertes automatisées pour optimiser vos performances.",
@@ -179,21 +180,21 @@ const steps: Step[] = [
 
 const benefits: Benefit[] = [
     {
-        icon: "⚡",
+        Icon: Zap,
         title: "Gagnez un temps précieux",
         description: "Automatisez vos processus complexes et réduisez drastiquement le temps consacré à la gestion administrative quotidienne.",
         metric: "-70% de temps administratif",
         gradient: "from-indigo-500 to-blue-500"
     },
     {
-        icon: "🛡️",
+        Icon: ShieldCheck,
         title: "Sécurisez vos opérations",
         description: "Suivez en temps réel les réglementations locales et internationales pour une conformité totale et une sérénité juridique.",
         metric: "Zéro risque juridique",
         gradient: "from-emerald-500 to-teal-500"
     },
     {
-        icon: "📈",
+        Icon: TrendingUp,
         title: "Optimisez vos budgets",
         description: "Maîtrisez vos dépenses grâce à des analyses prédictives et des alertes intelligentes au moment de chaque achat.",
         metric: "Jusqu'à 30% d'économies",
@@ -409,9 +410,9 @@ function HeroSection() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
-                    
-                    <div className="lg:col-span-5 text-center lg:text-left relative z-10">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-20 items-center">
+
+                    <div className="lg:col-span-4 text-center lg:text-left relative z-10">
                         <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 mb-4 sm:mb-6">
                             <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
@@ -445,7 +446,7 @@ function HeroSection() {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-1 hidden lg:block" />
+                    <div className="lg:col-span-2 hidden lg:block" />
 
                     <div className="lg:col-span-6 relative z-10">
                         <div className="relative rounded-2xl border border-slate-200 bg-white/80 p-3 sm:p-4 shadow-[0_24px_70px_rgba(15,23,42,0.12)] backdrop-blur-xl group transition-all duration-500">
@@ -588,7 +589,7 @@ function StepCard({ step, index }: { step: Step; index: number }) {
                         {step.number}
                     </span>
                     <div className="flex items-center gap-2">
-                        <span className="text-2xl">{step.icon}</span>
+                        <step.Icon className="w-6 h-6 text-indigo-500" />
                         <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
                             Étape {step.number}
                         </span>
@@ -678,8 +679,8 @@ function WhySection() {
             key={i} 
             className="group relative bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-2"
         >
-            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${benefit.gradient} text-white text-xl sm:text-2xl flex items-center justify-center mb-5 shadow-lg transition-transform duration-300 group-hover:scale-110`}>
-                {benefit.icon}
+            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r ${benefit.gradient} text-white flex items-center justify-center mb-5 shadow-lg transition-transform duration-300 group-hover:scale-110`}>
+                <benefit.Icon className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">
                 {benefit.title}

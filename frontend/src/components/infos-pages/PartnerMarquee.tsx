@@ -317,9 +317,9 @@ export default function PartnerMarquee() {
                 className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-24"
             >
                 {/* Trust Bar */}
-                <motion.div variants={itemVariants}>
+                {/* <motion.div variants={itemVariants}>
                     <TrustMarquee />
-                </motion.div>
+                </motion.div> */}
 
                 {/* ── SECTION "THE WHY" - MANIFESTE ET FONDATEURS ── */}
                 <div className="space-y-16">

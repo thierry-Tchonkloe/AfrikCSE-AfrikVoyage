@@ -3,6 +3,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useAnimation, useInView } from "framer-motion";
 import Link from "next/link";
+import {
+    Rocket, Building2, Landmark, ShieldCheck, Smartphone, Users,
+    Settings, Link2, TrendingUp, ChevronDown, ChevronLeft, ChevronRight,
+    Check
+} from "lucide-react";
 
 // ── TYPES & CONFIGURATIONS DATA ───────────────────────────────────────
 
@@ -86,7 +91,8 @@ const INTEGRATION_STEPS = [
         desc: "Analyse de votre politique voyage et paramétrage sur-mesure de votre espace de travail.",
         tag: "Setup Express",
         color: "from-teal-500 to-emerald-500",
-        icon: "⚙️"
+        Icon: Settings,
+        label: "CONFIGURATION INTELLIGENTE"
     },
     {
         num: "02",
@@ -94,7 +100,8 @@ const INTEGRATION_STEPS = [
         desc: "Connexion API sécurisée à vos outils (SAP, Odoo, Salesforce) pour une donnée unique et éviter la double saisie.",
         tag: "Intégration Native",
         color: "from-indigo-500 to-blue-600",
-        icon: "🔗"
+        Icon: Link2,
+        label: "SYNCHRONISATION ERP"
     },
     {
         num: "03",
@@ -102,7 +109,8 @@ const INTEGRATION_STEPS = [
         desc: "Formation des administrateurs et activation de l'application mobile pour les voyageurs.",
         tag: "Onboarding",
         color: "from-purple-500 to-pink-600",
-        icon: "🚀"
+        Icon: Rocket,
+        label: "DÉPLOIEMENT ACCOMPAGNÉ"
     },
     {
         num: "04",
@@ -110,7 +118,8 @@ const INTEGRATION_STEPS = [
         desc: "Analyse des rapports de dépenses et ajustements stratégiques pour atteindre les -30% d'économies.",
         tag: "Santé Système",
         color: "from-amber-500 to-orange-600",
-        icon: "📈"
+        Icon: TrendingUp,
+        label: "OPTIMISATION CONTINUE"
     }
 ];
 
@@ -131,7 +140,7 @@ const PRICING_PLANS: PricingPlan[] = [
         ],
         buttonText: "Commencer",
         buttonVariant: "outline",
-        icon: "🚀"
+        icon: "rocket"
     },
     {
         id: 2,
@@ -150,7 +159,7 @@ const PRICING_PLANS: PricingPlan[] = [
         buttonText: "Commencer",
         buttonVariant: "primary",
         popular: true,
-        icon: "🏢"
+        icon: "building"
     },
     {
         id: 3,
@@ -167,8 +176,8 @@ const PRICING_PLANS: PricingPlan[] = [
             "Audit et optimisation RSE"
         ],
         buttonText: "Nous contacter",
-        buttonVariant: "primary",
-        icon: "🏛️"
+        buttonVariant: "outline",
+        icon: "landmark"
     }
 ];
 
@@ -300,22 +309,22 @@ const StarRating = ({ rating }: { rating: number }) => (
 );
 
 // Badge de confiance
-const TrustBadge = ({ children, icon, color }: { children: React.ReactNode; icon: string; color: string }) => {
+const TrustBadge = ({ children, icon, color }: { children: React.ReactNode; icon: React.ReactNode; color: string }) => {
     const colorClasses = {
         indigo: "border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50",
         emerald: "border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50",
         purple: "border-purple-200 bg-purple-50/50 hover:bg-purple-50"
     };
-    
+
     const iconColorClasses = {
-        indigo: "bg-indigo-100",
-        emerald: "bg-emerald-100",
-        purple: "bg-purple-100"
+        indigo: "bg-indigo-100 text-indigo-600",
+        emerald: "bg-emerald-100 text-emerald-600",
+        purple: "bg-purple-100 text-purple-600"
     };
-    
+
     return (
         <div className={`flex items-start gap-4 p-5 rounded-2xl border transition-all hover:shadow-md ${colorClasses[color as keyof typeof colorClasses]}`}>
-            <div className={`w-10 h-10 rounded-xl ${iconColorClasses[color as keyof typeof iconColorClasses]} flex items-center justify-center text-xl shrink-0`}>
+            <div className={`w-10 h-10 rounded-xl ${iconColorClasses[color as keyof typeof iconColorClasses]} flex items-center justify-center shrink-0`}>
                 {icon}
             </div>
             <div className="flex-1">
@@ -383,11 +392,11 @@ function ReviewsCarousel() {
                     <p className="text-slate-500 text-sm">Basé sur {REVIEWS.length} avis clients</p>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={prevReview} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all">
-                        ←
+                    <button onClick={prevReview} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-all" aria-label="Avis précédent">
+                        <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <button onClick={nextReview} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all">
-                        →
+                    <button onClick={nextReview} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-all" aria-label="Avis suivant">
+                        <ChevronRight className="w-5 h-5" />
                     </button>
                 </div>
             </div>
@@ -570,16 +579,23 @@ export default function BenefitsTrustAndProcess() {
         visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
     };
 
-    // Style de bouton harmonisé pour tous les plans
+    const getPlanIcon = (icon: string) => {
+        const cls = "w-8 h-8";
+        if (icon === "rocket") return <Rocket className={cls} />;
+        if (icon === "building") return <Building2 className={cls} />;
+        return <Landmark className={cls} />;
+    };
+
+    // Style de bouton harmonisé : outline pour les plans non-featured, primary pour le plan mis en avant
     const getButtonStyles = (variant: "primary" | "secondary" | "outline") => {
-        const baseStyles = "block w-full text-center py-3 rounded-xl font-bold text-sm transition-all duration-300";
+        const baseStyles = "block w-full text-center py-3 rounded-xl font-bold text-sm transition-all duration-300 active:scale-[0.98]";
         switch(variant) {
             case "primary":
                 return `${baseStyles} bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200/50 hover:scale-[1.02]`;
             case "secondary":
                 return `${baseStyles} bg-slate-800 text-white hover:bg-slate-700 hover:scale-[1.02]`;
             case "outline":
-                return `${baseStyles} border-2 border-indigo-200 text-indigo-600 hover:border-indigo-400 hover:bg-indigo-50 hover:scale-[1.02]`;
+                return `${baseStyles} border-2 border-slate-300 text-slate-700 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 hover:scale-[1.02]`;
             default:
                 return baseStyles;
         }
@@ -623,7 +639,9 @@ export default function BenefitsTrustAndProcess() {
                                     </div>
                                 )}
                                 
-                                <div className="text-4xl mb-4">{plan.icon}</div>
+                                <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 mb-4 border border-indigo-100">
+                                    {getPlanIcon(plan.icon)}
+                                </div>
                                 <h3 className="text-xl font-black text-slate-800 mb-2">{plan.name}</h3>
                                 <div className="flex items-baseline gap-1 mb-2">
                                     <span className="text-3xl font-black text-indigo-600">{plan.price}</span>
@@ -634,9 +652,7 @@ export default function BenefitsTrustAndProcess() {
                                 <ul className="space-y-3 mb-8 flex-1">
                                     {plan.features.map((feature, i) => (
                                         <li key={i} className="flex items-center gap-2 text-sm text-slate-600">
-                                            <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
+                                            <Check className="w-4 h-4 text-emerald-500 shrink-0" />
                                             {feature}
                                         </li>
                                     ))}
@@ -742,8 +758,8 @@ export default function BenefitsTrustAndProcess() {
                                         </div>
                                     )}
                                     
-                                    <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${step.color} flex items-center justify-center text-xl mb-4 shadow-lg`}>
-                                        {step.icon}
+                                    <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${step.color} flex items-center justify-center mb-4 shadow-lg text-white`}>
+                                        <step.Icon className="w-6 h-6" />
                                     </div>
                                     
                                     <div className="flex items-center gap-2 mb-2">
@@ -776,7 +792,7 @@ export default function BenefitsTrustAndProcess() {
                                 <div className="py-8 flex-1 flex flex-col justify-center">
                                     {activeStep === 0 && (
                                         <div className="space-y-4">
-                                            <div className="text-xs font-bold text-indigo-600">⚙️ CONFIGURATION INTELLIGENTE</div>
+                                            <div className="text-xs font-bold text-indigo-600 flex items-center gap-1.5"><Settings className="w-3.5 h-3.5" /> CONFIGURATION INTELLIGENTE</div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 {["Politique voyage", "Plafonds budgétaires", "Workflows validation", "Profils utilisateurs"].map((item, i) => (
                                                     <div key={i} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between">
@@ -789,7 +805,7 @@ export default function BenefitsTrustAndProcess() {
                                     )}
                                     {activeStep === 1 && (
                                         <div className="space-y-4">
-                                            <div className="text-xs font-bold text-blue-600">🔗 SYNCHRONISATION ERP</div>
+                                            <div className="text-xs font-bold text-blue-600 flex items-center gap-1.5"><Link2 className="w-3.5 h-3.5" /> SYNCHRONISATION ERP</div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 {["SAP", "Odoo", "Salesforce", "Sage"].map((erp, i) => (
                                                     <div key={i} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between">
@@ -803,7 +819,7 @@ export default function BenefitsTrustAndProcess() {
                                     )}
                                     {activeStep === 2 && (
                                         <div className="space-y-4">
-                                            <div className="text-xs font-bold text-purple-600">🚀 DÉPLOIEMENT ACCOMPAGNÉ</div>
+                                            <div className="text-xs font-bold text-purple-600 flex items-center gap-1.5"><Rocket className="w-3.5 h-3.5" /> DÉPLOIEMENT ACCOMPAGNÉ</div>
                                             <div className="bg-white p-5 rounded-xl border border-slate-200">
                                                 <div className="flex justify-between items-center mb-3">
                                                     <span className="text-xs font-black text-slate-700">Formation des administrateurs</span>
@@ -821,7 +837,7 @@ export default function BenefitsTrustAndProcess() {
                                     )}
                                     {activeStep === 3 && (
                                         <div className="space-y-4">
-                                            <div className="text-xs font-bold text-amber-600">📈 OPTIMISATION CONTINUE</div>
+                                            <div className="text-xs font-bold text-amber-600 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> OPTIMISATION CONTINUE</div>
                                             <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-semibold text-slate-700">Économies réalisées</span>
@@ -869,17 +885,17 @@ export default function BenefitsTrustAndProcess() {
                     </motion.div>
 
                     <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
-                        <TrustBadge icon="🛡️" color="indigo">
+                        <TrustBadge icon={<ShieldCheck className="w-5 h-5" />} color="indigo">
                             <span className="font-bold text-indigo-600">Conformité intégrée (Compliance Guardrails)</span><br />
                             Les politiques de voyage et règles fiscales sont des garde-fous automatiques bloquant les dépassements à la source.
                         </TrustBadge>
-                        
-                        <TrustBadge icon="📱" color="emerald">
+
+                        <TrustBadge icon={<Smartphone className="w-5 h-5" />} color="emerald">
                             <span className="font-bold text-emerald-600">Preuve mobile : zéro saisie, 100% légal</span><br />
                             Notre IA scanne et catégorise vos reçus. La version numérique a valeur probante – le papier peut être jeté.
                         </TrustBadge>
-                        
-                        <TrustBadge icon="🤝" color="purple">
+
+                        <TrustBadge icon={<Users className="w-5 h-5" />} color="purple">
                             <span className="font-bold text-purple-600">Expertise humaine 24/7</span><br />
                             Assistance multicanal basée en Afrique et en Europe. Un expert dédié prend le relais pour les situations complexes.
                         </TrustBadge>
@@ -929,7 +945,7 @@ export default function BenefitsTrustAndProcess() {
                             </p>
                         </motion.div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className=" gap-8">
                             {/* FAQ Accordéon - Colonne principale */}
                             <div className="lg:col-span-2 space-y-4">
                                 {FAQ_ITEMS.map((item, idx) => (
@@ -940,24 +956,24 @@ export default function BenefitsTrustAndProcess() {
                                     >
                                         <button
                                             onClick={() => setOpenFAQ(openFAQ === idx ? null : idx)}
-                                            className="w-full flex items-center justify-between p-6 text-left font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
+                                            className="w-full flex items-center justify-between px-6 py-5 text-left font-semibold text-slate-800 hover:bg-slate-50/80 transition-colors"
                                         >
                                             <span>{item.question}</span>
-                                            <svg className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${openFAQ === idx ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
+                                            <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ml-4 shrink-0 ${openFAQ === idx ? "rotate-180 text-indigo-500" : ""}`} />
                                         </button>
-                                        <div className={`px-6 pb-6 ${openFAQ === idx ? "block" : "hidden"}`}>
-                                            <p className="text-slate-500 text-sm leading-relaxed">{item.answer}</p>
+                                        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${openFAQ === idx ? "max-h-48 border-t border-slate-100" : "max-h-0"}`}>
+                                            <div className="px-6 py-4 text-sm leading-relaxed text-slate-500">
+                                                {item.answer}
+                                            </div>
                                         </div>
                                     </motion.div>
                                 ))}
                             </div>
 
                             {/* Formulaire de contact rapide - Colonne de droite */}
-                            <motion.div variants={itemVariants}>
+                            {/* <motion.div variants={itemVariants}>
                                 <QuickContactForm />
-                            </motion.div>
+                            </motion.div> */}
                         </div>
                     </motion.div>
                 </div>

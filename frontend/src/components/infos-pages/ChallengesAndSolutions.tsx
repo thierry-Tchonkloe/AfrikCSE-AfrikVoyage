@@ -3,13 +3,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, useAnimation, useInView } from "framer-motion";
+import { DollarSign, Plane, CheckCircle2, TrendingDown, BarChart2, Target, Zap } from "lucide-react";
 
 // ─── DONNÉES DU DASHBOARD ──────────────────────────────────────────────────────
 const DASHBOARD_STATS = [
-  { label: "Dépenses totales", value: "2.4M €", change: "+12.5%", trend: "up", icon: "💰" },
-  { label: "Voyages actifs", value: "1,847", change: "+8.3%", trend: "up", icon: "✈️" },
-  { label: "Taux de conformité", value: "94.2%", change: "+3.1%", trend: "up", icon: "✅" },
-  { label: "Économies réalisées", value: "342K €", change: "-18.6%", trend: "down", icon: "📉" },
+  { label: "Dépenses totales", value: "2.4M €", change: "+12.5%", trend: "up", Icon: DollarSign },
+  { label: "Voyages actifs", value: "1,847", change: "+8.3%", trend: "up", Icon: Plane },
+  { label: "Taux de conformité", value: "94.2%", change: "+3.1%", trend: "up", Icon: CheckCircle2 },
+  { label: "Économies réalisées", value: "342K €", change: "-18.6%", trend: "down", Icon: TrendingDown },
 ];
 
 const WEEKLY_DATA = [
@@ -101,7 +102,9 @@ const ModernDashboard = () => {
           {DASHBOARD_STATS.map((stat, idx) => (
             <div key={idx} className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">{stat.icon}</span>
+                <div className="w-8 h-8 rounded-lg bg-slate-700/60 flex items-center justify-center">
+                  <stat.Icon className="w-4 h-4 text-slate-300" />
+                </div>
                 <span className={`text-xs font-bold flex items-center gap-1 ${
                   stat.trend === "up" ? "text-emerald-400" : "text-rose-400"
                 }`}>
@@ -349,8 +352,8 @@ export default function AuditInterface() {
           {/* Indicateurs supplémentaires */}
           <motion.div variants={itemVariants} className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl shrink-0">
-                📊
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                <BarChart2 className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
                 <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">ROI Moyen</p>
@@ -360,8 +363,8 @@ export default function AuditInterface() {
             </div>
 
             <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl shrink-0">
-                🎯
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+                <Target className="w-6 h-6 text-indigo-600" />
               </div>
               <div>
                 <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Conformité</p>
@@ -371,8 +374,8 @@ export default function AuditInterface() {
             </div>
 
             <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-2xl shrink-0">
-                ⚡
+              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                <Zap className="w-6 h-6 text-amber-600" />
               </div>
               <div>
                 <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Délai moyen</p>

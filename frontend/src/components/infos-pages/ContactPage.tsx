@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import { Globe, Zap, Lock, Users, Phone, Mail, MapPin, Copy, MessageCircle, ChevronDown, Settings } from "lucide-react";
 
 // ─── Types & Data ────────────────────────────────────────────────────────────
 
@@ -118,34 +119,34 @@ function ContactPopover({
     type === "email"
       ? [
           {
-            icon: "📋",
+            Icon: Copy,
             label: copied ? "Copié !" : "Copier l'adresse",
             onClick: copy,
           },
           {
-            icon: "✉️",
+            Icon: Mail,
             label: "Ouvrir dans l'app Mail",
             href: `mailto:${value}`,
           },
           {
-            icon: "💬",
+            Icon: MessageCircle,
             label: "Envoyer un message",
             href: `mailto:${value}?subject=${encodeURIComponent("Contact AfrikVoyage / AfrikCSE")}`,
           },
         ]
       : [
           {
-            icon: "📋",
+            Icon: Copy,
             label: copied ? "Copié !" : "Copier le numéro",
             onClick: copy,
           },
           {
-            icon: "📞",
+            Icon: Phone,
             label: "Appeler directement",
             href: `tel:${contactPhoneCompact}`,
           },
           {
-            icon: "💚",
+            Icon: MessageCircle,
             label: "WhatsApp",
             href: `https://wa.me/${whatsappPhone}`,
             external: true,
@@ -181,7 +182,7 @@ function ContactPopover({
                 className={cls}
                 onClick={() => setOpen(false)}
               >
-                <span className="text-base">{action.icon}</span>
+                <action.Icon className="w-4 h-4 text-slate-400 shrink-0" />
                 {action.label}
               </a>
             ) : (
@@ -191,7 +192,7 @@ function ContactPopover({
                 onClick={action.onClick}
                 className={cls}
               >
-                <span className="text-base">{action.icon}</span>
+                <action.Icon className="w-4 h-4 text-slate-400 shrink-0" />
                 {action.label}
               </button>
             );
@@ -210,23 +211,21 @@ function FAQItem({ faq }: { faq: (typeof faqs)[0] }) {
 
   return (
     <div
-      className={`border rounded-xl overflow-hidden bg-white transition-all duration-200 ${open ? "border-indigo-200 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}
+      className={`border rounded-2xl overflow-hidden bg-white transition-all duration-200 shadow-sm hover:shadow-md ${open ? "border-indigo-200" : "border-slate-200 hover:border-slate-300"}`}
     >
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50/80 transition-colors"
+        className="w-full flex items-center justify-between px-6 py-5 text-left font-semibold text-slate-800 hover:bg-slate-50/80 transition-colors"
       >
         <span>{faq.question}</span>
-        <span
-          className={`text-slate-400 transition-transform duration-300 ml-4 shrink-0 ${open ? "rotate-180 text-indigo-500" : ""}`}
-        >
-          ▾
-        </span>
+        <ChevronDown
+          className={`w-5 h-5 text-slate-400 transition-transform duration-300 ml-4 shrink-0 ${open ? "rotate-180 text-indigo-500" : ""}`}
+        />
       </button>
       <div
         className={`transition-all duration-300 ease-in-out overflow-hidden ${open ? "max-h-48 border-t border-slate-100" : "max-h-0"}`}
       >
-        <div className="px-5 py-4 text-sm leading-relaxed text-slate-600">
+        <div className="px-6 py-4 text-sm leading-relaxed text-slate-600">
           {faq.answer}
         </div>
       </div>
@@ -304,7 +303,7 @@ function ContactForm() {
 
       {status === "success" && (
         <div className="mb-6 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 font-medium flex items-center gap-3">
-          <span>✅</span>
+          <ChevronDown className="w-4 h-4 text-emerald-500 rotate-[-90deg] shrink-0" />
           <span>
             Votre demande a bien été enregistrée ! Traitement prioritaire actif.
           </span>
@@ -313,7 +312,7 @@ function ContactForm() {
 
       {status === "error" && (
         <div className="mb-6 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 font-medium flex items-center gap-3">
-          <span>⚠️</span>
+          <Settings className="w-4 h-4 text-red-400 shrink-0" />
           <span>Échec du routage. Veuillez réessayer.</span>
         </div>
       )}
@@ -500,29 +499,13 @@ function ContactForm() {
 function Sidebar() {
   return (
     <div className="space-y-5">
-      {/* Expert call card */}
-      <div className="rounded-2xl bg-slate-900 p-5 text-white border border-slate-800 shadow-sm">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-xl">
-            ⚡
-          </div>
-          <div>
-            <p className="font-bold text-sm">Ligne directe experts</p>
-            <p className="text-slate-400 text-xs">Cadrage de projet immédiat</p>
-          </div>
-        </div>
-        <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-900 hover:bg-slate-100 transition-colors active:scale-[0.97]">
-          📞 Programmer un appel
-        </button>
-      </div>
-
       {/* Coordonnées avec popover */}
       <div className="rounded-2xl bg-white border border-slate-200 p-5 space-y-5 shadow-sm">
         <h3 className="font-bold text-slate-800 text-sm">Canaux officiels</h3>
 
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm">
-            ✉️
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+            <Mail className="w-4 h-4 text-slate-500" />
           </div>
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
@@ -539,8 +522,8 @@ function Sidebar() {
         </div>
 
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm">
-            📞
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+            <Phone className="w-4 h-4 text-slate-500" />
           </div>
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
@@ -554,8 +537,8 @@ function Sidebar() {
         </div>
 
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm">
-            📍
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+            <MapPin className="w-4 h-4 text-slate-500" />
           </div>
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
@@ -572,7 +555,7 @@ function Sidebar() {
       {/* SLA badge */}
       <div className="rounded-2xl bg-indigo-50 border border-indigo-100 p-4">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-indigo-500 text-base">⚙️</span>
+          <Settings className="w-4 h-4 text-indigo-500" />
           <p className="text-sm font-bold text-indigo-800">
             Engagement SLA & Réactivité
           </p>
@@ -582,6 +565,23 @@ function Sidebar() {
           fourni sous{" "}
           <span className="font-bold text-indigo-700">24h ouvrées max</span>.
         </p>
+      </div>
+
+      {/* Expert call card — déplacé en bas */}
+      <div className="rounded-2xl bg-slate-900 p-5 text-white border border-slate-800 shadow-sm">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="font-bold text-sm">Ligne directe experts</p>
+            <p className="text-slate-400 text-xs">Cadrage de projet immédiat</p>
+          </div>
+        </div>
+        <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-900 hover:bg-slate-100 transition-colors active:scale-[0.97]">
+          <Phone className="w-4 h-4" />
+          Programmer un appel
+        </button>
       </div>
     </div>
   );
@@ -611,13 +611,13 @@ export default function ContactPage() {
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <a
               href="#contact-form"
-              className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-8 py-3.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-all hover:scale-105"
+              className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-8 py-3.5 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-all duration-300 hover:scale-105 active:scale-[0.98]"
             >
               Prendre contact
             </a>
             <a
               href="/infos/about"
-              className="inline-flex items-center justify-center rounded-full border-2 border-slate-200 px-8 py-3.5 text-sm font-bold text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 transition-all"
+              className="inline-flex items-center justify-center rounded-full border-2 border-slate-200 px-8 py-3.5 text-sm font-bold text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-300 hover:scale-105 active:scale-[0.98]"
             >
               Découvrir la plateforme
             </a>
@@ -625,16 +625,17 @@ export default function ContactPage() {
 
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             {[
-              "🌍 8 hubs panafricains",
-              "⚡ Déploiement 48h",
-              "🔒 RGPD & UEMOA",
-              "🤝 Support 7j/7",
-            ].map((tag) => (
+              { Icon: Globe, label: "8 hubs panafricains" },
+              { Icon: Zap, label: "Déploiement 48h" },
+              { Icon: Lock, label: "RGPD & UEMOA" },
+              { Icon: Users, label: "Support 7j/7" },
+            ].map(({ Icon, label }) => (
               <span
-                key={tag}
-                className="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full"
+                key={label}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full"
               >
-                {tag}
+                <Icon className="w-3.5 h-3.5" />
+                {label}
               </span>
             ))}
           </div>
