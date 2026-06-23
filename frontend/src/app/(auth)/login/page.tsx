@@ -138,17 +138,9 @@ export default function LoginPage() {
 
                         {/* Champ Mot de passe */}
                         <div className="space-y-1.5">
-                            <div className="flex justify-between items-center">
-                                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                    Mot de passe
-                                </label>
-                                <Link
-                                    href="/forgot-password"
-                                    className="text-xs font-medium text-cyan-600 hover:text-cyan-700 hover:underline transition-colors"
-                                >
-                                    Oublié ?
-                                </Link>
-                            </div>
+                            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                Mot de passe
+                            </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                                     <Lock className="h-4 w-4 text-slate-400 group-focus-within:text-cyan-600 transition-colors" />
@@ -174,6 +166,14 @@ export default function LoginPage() {
                             {errors.password && (
                                 <p className="text-xs font-medium text-red-500 pl-1">{errors.password.message}</p>
                             )}
+                            <div className="flex justify-end pt-0.5">
+                                <Link
+                                    href="/forgot-password"
+                                    className="text-xs font-medium text-cyan-600 hover:text-cyan-700 hover:underline transition-colors"
+                                >
+                                    Mot de passe oublié ?
+                                </Link>
+                            </div>
                         </div>
 
                         {/* Options secondaires */}

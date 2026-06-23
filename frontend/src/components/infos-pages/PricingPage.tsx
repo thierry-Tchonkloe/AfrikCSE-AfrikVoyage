@@ -5,6 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, useAnimation, useInView } from "framer-motion";
 import { plansService, PublicPlan } from "@/services/admin/plans.service";
+import {
+    Rocket, Building2, Landmark, Check, ChevronDown,
+    DollarSign, Lock, Smartphone, ShieldCheck, Leaf, Trophy
+} from "lucide-react";
 
 // Types
 interface PlanDetails {
@@ -48,7 +52,7 @@ const PLANS_DATA: PlanDetails[] = [
         ],
         hasVoyage: true,
         hasCSE: false,
-        icon: "🚀",
+        icon: "rocket",
         color: "indigo",
         buttonText: "Commencer",
         buttonVariant: "outline"
@@ -71,7 +75,7 @@ const PLANS_DATA: PlanDetails[] = [
         hasVoyage: true,
         hasCSE: true,
         popular: true,
-        icon: "🏢",
+        icon: "building",
         color: "emerald",
         buttonText: "Commencer",
         buttonVariant: "primary"
@@ -93,10 +97,10 @@ const PLANS_DATA: PlanDetails[] = [
         ],
         hasVoyage: true,
         hasCSE: true,
-        icon: "🏛️",
+        icon: "landmark",
         color: "purple",
         buttonText: "Nous contacter",
-        buttonVariant: "primary"
+        buttonVariant: "outline"
     }
 ];
 
@@ -133,19 +137,26 @@ const PARTNERS = [
 ];
 
 const CERTIFICATIONS = [
-    { name: "SOC 2 Type II", icon: "🔒", description: "Sécurité des données" },
-    { name: "ISO 27001", icon: "✓", description: "Management de la sécurité" },
-    { name: "RGPD", icon: "🇪🇺", description: "Conformité européenne" },
-    { name: "EcoVadis", icon: "🌱", description: "Performance RSE" }
+    { name: "SOC 2 Type II", Icon: ShieldCheck, description: "Sécurité des données" },
+    { name: "ISO 27001", Icon: Check, description: "Management de la sécurité" },
+    { name: "RGPD", Icon: Lock, description: "Conformité européenne" },
+    { name: "EcoVadis", Icon: Leaf, description: "Performance RSE" }
 ];
 
 // ─── COMPOSANTS INTERNES ───────────────────────────────────────────────────
 
+function getPlanIcon(icon: string) {
+    const cls = "w-6 h-6";
+    if (icon === "rocket") return <Rocket className={cls} />;
+    if (icon === "building") return <Building2 className={cls} />;
+    return <Landmark className={cls} />;
+}
+
 function PlanCard({ plan, isAnnual }: { plan: PlanDetails; isAnnual: boolean }) {
     return (
-        <div className={`relative rounded-2xl border p-6 flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+        <div className={`relative rounded-2xl border p-6 flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
             plan.popular
-                ? "border-indigo-300 bg-gradient-to-b from-white to-indigo-50/30 shadow-xl scale-[1.02]"
+                ? "border-indigo-300 bg-gradient-to-b from-white to-indigo-50/30 shadow-xl"
                 : "border-slate-200 bg-white hover:border-indigo-200"
         }`}>
             {plan.popular && (
@@ -153,10 +164,10 @@ function PlanCard({ plan, isAnnual }: { plan: PlanDetails; isAnnual: boolean }) 
                     Le plus populaire
                 </div>
             )}
-            
+
             <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-emerald-100 flex items-center justify-center text-2xl">
-                    {plan.icon}
+                <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                    {getPlanIcon(plan.icon)}
                 </div>
                 <div>
                     <h3 className="text-lg font-black text-slate-800">{plan.label}</h3>
@@ -187,7 +198,7 @@ function PlanCard({ plan, isAnnual }: { plan: PlanDetails; isAnnual: boolean }) 
             <ul className="space-y-3 flex-1 mb-6">
                 {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                        <span className="text-emerald-500 mt-0.5">✓</span>
+                        <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                         {feature}
                     </li>
                 ))}
@@ -195,10 +206,10 @@ function PlanCard({ plan, isAnnual }: { plan: PlanDetails; isAnnual: boolean }) 
 
             <Link
                 href="/infos/contact"
-                className={`block text-center rounded-xl px-4 py-3 text-sm font-bold transition-all ${
+                className={`block text-center rounded-xl px-4 py-3 text-sm font-bold transition-all duration-300 active:scale-[0.98] hover:scale-[1.02] ${
                     plan.buttonVariant === "primary"
                         ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md"
-                        : "bg-slate-800 text-white hover:bg-slate-700"
+                        : "border-2 border-slate-300 text-slate-700 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700"
                 }`}
             >
                 {plan.buttonText}
@@ -209,18 +220,16 @@ function PlanCard({ plan, isAnnual }: { plan: PlanDetails; isAnnual: boolean }) 
 
 function FAQItemComponent({ faq, isOpen, onClick }: { faq: FAQItem; isOpen: boolean; onClick: () => void }) {
     return (
-        <div className="border rounded-xl overflow-hidden bg-white transition-all duration-200 hover:border-indigo-200">
+        <div className={`border rounded-2xl overflow-hidden bg-white transition-all duration-200 shadow-sm hover:shadow-md ${isOpen ? "border-indigo-200" : "border-slate-200 hover:border-slate-300"}`}>
             <button
                 onClick={onClick}
-                className="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50/80 transition-colors"
+                className="w-full flex items-center justify-between px-6 py-5 text-left font-semibold text-slate-800 hover:bg-slate-50/80 transition-colors"
             >
                 <span>{faq.question}</span>
-                <span className={`text-slate-400 transition-transform duration-300 ${isOpen ? "rotate-180 text-indigo-500" : ""}`}>
-                    ▾
-                </span>
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ml-4 shrink-0 ${isOpen ? "rotate-180 text-indigo-500" : ""}`} />
             </button>
             <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? "max-h-48 border-t border-slate-100" : "max-h-0"}`}>
-                <div className="px-5 py-4 text-sm leading-relaxed text-slate-600">
+                <div className="px-6 py-4 text-sm leading-relaxed text-slate-600">
                     {faq.answer}
                 </div>
             </div>
@@ -370,7 +379,7 @@ export default function PricingPage() {
 
                     {activeTab === "all" && (
                         <div className="mt-4 inline-flex items-center gap-2 bg-emerald-100/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-emerald-200">
-                            <span className="text-emerald-600 text-sm">✨</span>
+                            <Trophy className="w-4 h-4 text-emerald-600" />
                             <span className="text-xs font-semibold text-emerald-700">Pack unifié : -15% sur l'ensemble</span>
                         </div>
                     )}
@@ -467,22 +476,22 @@ export default function PricingPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="bg-white rounded-xl p-6 text-center border border-slate-200 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
-                            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-xl mx-auto mb-3">
-                                💰
+                            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
+                                <DollarSign className="w-6 h-6 text-emerald-600" />
                             </div>
                             <h3 className="font-bold text-slate-800 mb-1">Zéro commission</h3>
                             <p className="text-sm text-slate-500">Pas de frais cachés sur vos réservations</p>
                         </div>
                         <div className="bg-white rounded-xl p-6 text-center border border-slate-200 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
-                            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-xl mx-auto mb-3">
-                                🔒
+                            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-3">
+                                <Lock className="w-6 h-6 text-indigo-600" />
                             </div>
                             <h3 className="font-bold text-slate-800 mb-1">Conformité automatisée</h3>
                             <p className="text-sm text-slate-500">RGPD & régulations locales africaines</p>
                         </div>
                         <div className="bg-white rounded-xl p-6 text-center border border-slate-200 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
-                            <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-xl mx-auto mb-3">
-                                📱
+                            <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-3">
+                                <Smartphone className="w-6 h-6 text-purple-600" />
                             </div>
                             <h3 className="font-bold text-slate-800 mb-1">Application mobile</h3>
                             <p className="text-sm text-slate-500">Pour tous vos collaborateurs</p>
@@ -515,7 +524,9 @@ export default function PricingPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
                         {CERTIFICATIONS.map((cert, i) => (
                             <div key={i} className="text-center p-3 rounded-lg bg-slate-50 border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all">
-                                <div className="text-2xl mb-1">{cert.icon}</div>
+                                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center mx-auto mb-1.5">
+                                    <cert.Icon className="w-4 h-4 text-indigo-600" />
+                                </div>
                                 <div className="font-semibold text-slate-700 text-sm">{cert.name}</div>
                                 <div className="text-xs text-slate-400">{cert.description}</div>
                             </div>

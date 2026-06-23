@@ -366,7 +366,7 @@ export default function HeroSection() {
                       Rechercher
                     </button>
                   </div>
-                  <div className="flex items-center justify-center gap-4 mt-2 text-xs text-white/80 drop-shadow-md">
+                  {/* <div className="flex items-center justify-center gap-4 mt-2 text-xs text-white/80 drop-shadow-md">
                     <span className="flex items-center gap-1">
                       <span className="text-indigo-400">✈️</span> Vols
                     </span>
@@ -379,7 +379,7 @@ export default function HeroSection() {
                     <span className="flex items-center gap-1">
                       <span className="text-purple-400">📊</span> Analytics
                     </span>
-                  </div>
+                  </div> */}
                 </div>
               </motion.div>
             </motion.div>
