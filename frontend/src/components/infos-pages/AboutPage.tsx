@@ -4,6 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useAnimation, useInView } from "framer-motion";
+import {
+    Rocket, Target, Globe, Building2, MapPin, Star,
+    ShieldCheck, Leaf, Award, Lightbulb, Trophy, Users, Zap,
+    Medal
+} from "lucide-react";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface TeamMember { 
@@ -70,30 +75,30 @@ const offices: Office[] = [
 
 // Timeline d'expansion
 const expansionMilestones = [
-    { year: "2024", title: "Lancement officiel", description: "Création de la plateforme à Dakar", color: "indigo", icon: "🚀" },
-    { year: "Janvier 2025", title: "Premiers clients", description: "Signature des 10 premières entreprises", color: "emerald", icon: "🎯" },
-    { year: "Mars 2025", title: "Expansion Afrique Ouest", description: "Ouverture à Abidjan et Lomé", color: "purple", icon: "🌍" },
-    { year: "Juillet 2025", title: "Afrique Centrale", description: "Bureaux à Douala et Libreville", color: "amber", icon: "🏢" },
-    { year: "Octobre 2025", title: "Afrique de l'Est", description: "Lancement à Nairobi", color: "emerald", icon: "🦁" },
-    { year: "2026", title: "Objectif Afrique Australe", description: "Johannesburg et Luanda en vue", color: "indigo", icon: "⭐" },
+    { year: "2024", title: "Lancement officiel", description: "Création de la plateforme à Dakar", color: "indigo", Icon: Rocket },
+    { year: "Janvier 2025", title: "Premiers clients", description: "Signature des 10 premières entreprises", color: "emerald", Icon: Target },
+    { year: "Mars 2025", title: "Expansion Afrique Ouest", description: "Ouverture à Abidjan et Lomé", color: "purple", Icon: Globe },
+    { year: "Juillet 2025", title: "Afrique Centrale", description: "Bureaux à Douala et Libreville", color: "amber", Icon: Building2 },
+    { year: "Octobre 2025", title: "Afrique de l'Est", description: "Lancement à Nairobi", color: "emerald", Icon: MapPin },
+    { year: "2026", title: "Objectif Afrique Australe", description: "Johannesburg et Luanda en vue", color: "indigo", Icon: Star },
 ];
 
 // Valeurs
 const values = [
-    { icon: "💡", title: "Innovation", description: "Nous repoussons constamment les limites technologiques pour offrir des solutions toujours plus performantes.", color: "indigo" },
-    { icon: "🛡️", title: "Confiance", description: "La sécurité des données et la conformité réglementaire sont au cœur de chacune de nos décisions.", color: "emerald" },
-    { icon: "🏆", title: "Performance", description: "Nous mesurons notre succès par le retour sur investissement concret de nos clients.", color: "amber" },
-    { icon: "🤝", title: "Proximité", description: "Une équipe locale à votre écoute, comprenant vos enjeux et votre culture.", color: "purple" },
-    { icon: "🌱", title: "Durabilité", description: "Les enjeux RSE sont intégrés dans notre ADN pour un impact positif durable.", color: "emerald" },
-    { icon: "⚡", title: "Agilité", description: "Des solutions qui s'adaptent rapidement à vos besoins et à l'évolution du marché.", color: "indigo" },
+    { Icon: Lightbulb, title: "Innovation", description: "Nous repoussons constamment les limites technologiques pour offrir des solutions toujours plus performantes.", color: "indigo" },
+    { Icon: ShieldCheck, title: "Confiance", description: "La sécurité des données et la conformité réglementaire sont au cœur de chacune de nos décisions.", color: "emerald" },
+    { Icon: Trophy, title: "Performance", description: "Nous mesurons notre succès par le retour sur investissement concret de nos clients.", color: "amber" },
+    { Icon: Users, title: "Proximité", description: "Une équipe locale à votre écoute, comprenant vos enjeux et votre culture.", color: "purple" },
+    { Icon: Leaf, title: "Durabilité", description: "Les enjeux RSE sont intégrés dans notre ADN pour un impact positif durable.", color: "emerald" },
+    { Icon: Zap, title: "Agilité", description: "Des solutions qui s'adaptent rapidement à vos besoins et à l'évolution du marché.", color: "indigo" },
 ];
 
 // Certifications
 const certifications = [
-    { name: "ISO 27001", description: "Sécurité des données", icon: "🔒", color: "indigo" },
-    { name: "RGPD", description: "Conformité européenne", icon: "🇪🇺", color: "blue" },
-    { name: "EcoVadis", description: "Performance RSE", icon: "🌱", color: "emerald" },
-    { name: "FinTech Africa", description: "Label Innovation", icon: "🏆", color: "amber" },
+    { name: "ISO 27001", description: "Sécurité des données", Icon: ShieldCheck, color: "indigo" },
+    { name: "RGPD", description: "Conformité européenne", Icon: Globe, color: "blue" },
+    { name: "EcoVadis", description: "Performance RSE", Icon: Leaf, color: "emerald" },
+    { name: "FinTech Africa", description: "Label Innovation", Icon: Award, color: "amber" },
 ];
 
 // ─── COMPOSANTS ────────────────────────────────────────────────────────────────
@@ -151,16 +156,16 @@ function HeroSection() {
                     Nous transformons la complexité administrative en avantage compétitif — en unifiant la gestion des voyages d'affaires et des services aux salariés sur une seule plateforme.
                 </motion.p>
 
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.3 }}
                     className="flex flex-wrap gap-4 justify-center"
                 >
-                    <Link href="#" className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all hover:scale-105 shadow-lg">
+                    <Link href="#" className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all duration-300 hover:scale-105 active:scale-[0.98] shadow-lg shadow-indigo-200/50">
                         Découvrir notre histoire
                     </Link>
-                    <Link href="#" className="px-8 py-3.5 border-2 border-slate-200 text-slate-700 rounded-xl font-semibold hover:border-indigo-300 hover:bg-indigo-50 transition-all">
+                    <Link href="#" className="px-8 py-3.5 border-2 border-slate-200 text-slate-700 rounded-xl font-semibold hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-300 hover:scale-105 active:scale-[0.98]">
                         Rencontrer l'équipe
                     </Link>
                 </motion.div>
@@ -263,17 +268,23 @@ function MissionSection() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-200">
-                            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">🎯</div>
+                            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Target className="w-7 h-7 text-indigo-600" />
+                            </div>
                             <h3 className="font-bold text-slate-800 mb-2">Notre vision</h3>
                             <p className="text-sm text-slate-500">Devenir la plateforme de référence pour la gestion d'entreprise en Afrique.</p>
                         </div>
                         <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-200">
-                            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">✨</div>
+                            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Zap className="w-7 h-7 text-emerald-600" />
+                            </div>
                             <h3 className="font-bold text-slate-800 mb-2">Notre promesse</h3>
                             <p className="text-sm text-slate-500">Unifier déplacements professionnels et avantages sociaux en une seule interface.</p>
                         </div>
                         <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-200">
-                            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">🤝</div>
+                            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Users className="w-7 h-7 text-purple-600" />
+                            </div>
                             <h3 className="font-bold text-slate-800 mb-2">Notre engagement</h3>
                             <p className="text-sm text-slate-500">Accompagner nos clients dans leur transformation digitale.</p>
                         </div>
@@ -374,8 +385,8 @@ function AfricaMapSection() {
                                         variants={{ hidden: { opacity: 0, x: 30 }, visible: { opacity: 1, x: 0, transition: { duration: 0.5, delay: idx * 0.1 } } }}
                                         className="flex items-start gap-4 p-4 rounded-xl hover:bg-white transition-all group cursor-pointer"
                                     >
-                                        <div className={`w-12 h-12 rounded-full bg-${milestone.color}-100 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform`}>
-                                            {milestone.icon}
+                                        <div className={`w-12 h-12 rounded-full bg-${milestone.color}-100 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
+                                            <milestone.Icon className={`w-5 h-5 text-${milestone.color}-600`} />
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
@@ -394,13 +405,15 @@ function AfricaMapSection() {
                             {/* Certifications */}
                             <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
                                 <div className="flex items-center gap-2 mb-4">
-                                    <span className="text-lg">🏅</span>
+                                    <Medal className="w-5 h-5 text-amber-500" />
                                     <h3 className="font-bold text-slate-800">Certifications & Labels</h3>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     {certifications.map((cert, idx) => (
                                         <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                            <div className="text-2xl">{cert.icon}</div>
+                                            <div className={`w-8 h-8 rounded-lg bg-${cert.color}-100 flex items-center justify-center shrink-0`}>
+                                                <cert.Icon className={`w-4 h-4 text-${cert.color}-600`} />
+                                            </div>
                                             <div>
                                                 <div className="font-semibold text-slate-800 text-sm">{cert.name}</div>
                                                 <div className="text-xs text-slate-500">{cert.description}</div>
@@ -454,16 +467,16 @@ function ValuesSection() {
                         </p>
                     </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {values.map((value, idx) => (
                             <motion.div
                                 key={idx}
                                 variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay: idx * 0.05 } } }}
-                                whileHover={{ y: -5 }}
-                                className="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:border-indigo-200 hover:shadow-lg transition-all group"
+                                whileHover={{ y: -3 }}
+                                className="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:border-indigo-200 hover:shadow-lg transition-all group will-change-transform"
                             >
-                                <div className={`w-14 h-14 rounded-xl bg-${value.color}-50 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 group-hover:bg-${value.color}-100 transition-all`}>
-                                    {value.icon}
+                                <div className={`w-14 h-14 rounded-xl bg-${value.color}-50 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-${value.color}-100 transition-all`}>
+                                    <value.Icon className={`w-7 h-7 text-${value.color}-600`} />
                                 </div>
                                 <h3 className={`text-lg font-bold text-slate-800 mb-2 group-hover:text-${value.color}-600 transition-colors`}>
                                     {value.title}
@@ -518,13 +531,13 @@ function TeamSection() {
                         </p>
                     </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {teamMembers.map((member, idx) => (
                             <motion.div
                                 key={idx}
                                 variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay: idx * 0.05 } } }}
-                                whileHover={{ y: -8 }}
-                                className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group border border-slate-100"
+                                whileHover={{ y: -4 }}
+                                className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group border border-slate-100 will-change-transform"
                             >
                                 <div className="relative h-64 overflow-hidden bg-gradient-to-br from-indigo-100 to-emerald-100">
                                     <div className="w-full h-full flex items-center justify-center">
