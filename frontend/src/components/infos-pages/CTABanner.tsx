@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { Rocket, Star, Trophy, Globe } from "lucide-react";
 
 interface CTABannerProps {
     title?: string;
@@ -90,7 +91,7 @@ export default function CTABanner({
                         <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
                         
                         <span className="relative flex items-center gap-3">
-                            <span className="text-xl">🚀</span>
+                            <Rocket className="w-5 h-5" />
                             {primaryLabel}
                             <svg className="w-5 h-5 transform group-hover:translate-x-1.5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -122,17 +123,17 @@ export default function CTABanner({
                 {/* ── INDICATEUR DE CONFIANCE SUPPLÉMENTAIRE ── */}
                 <div className="mt-6 flex flex-wrap justify-center items-center gap-4 text-xs text-slate-600">
                     <span className="flex items-center gap-1.5">
-                        <span className="text-slate-500">⭐</span>
+                        <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />
                         <span>4.9/5 satisfaction client</span>
                     </span>
                     <span className="w-px h-3 bg-slate-800" />
                     <span className="flex items-center gap-1.5">
-                        <span className="text-slate-500">🏆</span>
+                        <Trophy className="w-3.5 h-3.5 text-amber-400" />
                         <span>500+ entreprises clientes</span>
                     </span>
                     <span className="w-px h-3 bg-slate-800" />
                     <span className="flex items-center gap-1.5">
-                        <span className="text-slate-500">🌍</span>
+                        <Globe className="w-3.5 h-3.5 text-indigo-400" />
                         <span>54 pays couverts</span>
                     </span>
                 </div>

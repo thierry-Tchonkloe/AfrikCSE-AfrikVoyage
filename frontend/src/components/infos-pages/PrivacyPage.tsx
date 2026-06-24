@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Lock, Sparkles } from "lucide-react";
 
 const COOKIE_CATEGORIES = [
   {
@@ -142,7 +143,8 @@ export default function PrivacyPage() {
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-100/30 via-transparent to-transparent" />
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50/80 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-indigo-600 backdrop-blur-sm">
-            🔒 Confiance absolue
+            <Lock className="w-3.5 h-3.5" />
+            Confiance absolue
           </div>
           <h1 className="mt-6 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
             Politique de confidentialité
@@ -281,8 +283,9 @@ export default function PrivacyPage() {
         <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/30 to-white p-6">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-lg font-bold text-indigo-600">
-                ✨ Tableau de bord de conformité
+              <h3 className="flex items-center gap-2 text-lg font-bold text-indigo-600">
+                <Sparkles className="w-5 h-5 shrink-0" />
+                Tableau de bord de conformité
               </h3>
               <p className="text-sm text-slate-600">
                 Visualisez et contrôlez l’état de vos données en temps réel.
