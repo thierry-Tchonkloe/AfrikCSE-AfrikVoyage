@@ -2,16 +2,16 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { motion, useAnimation, useInView } from "framer-motion";
-import Link from "next/link";
-import Image from "next/image";
+import { Plane, Gift, Bot, ShieldCheck, BarChart2, Smartphone, TrendingUp, Link2, MessageCircle, Heart, DollarSign, Lock, FileText, CheckCircle2, Ticket, Pill, Dumbbell, BookOpen, Bike } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 // ── COMPOSANT STICKY SUB-NAVIGATION ──────────────────────────────────────────
 const StickySubNav = ({ activeSection, setActiveSection }: { activeSection: string; setActiveSection: (section: string) => void }) => {
-    const sections = [
-        { id: "voyage", label: "Gestion des voyages", icon: "✈️", color: "indigo" },
-        { id: "cse", label: "Avantages collaborateurs", icon: "🎁", color: "emerald" },
-        { id: "intelligence", label: "Intelligence & Support", icon: "🤖", color: "purple" },
-        { id: "security", label: "Sécurité & Conformité", icon: "🛡️", color: "slate" }
+    const sections: { id: string; label: string; Icon: LucideIcon; color: string }[] = [
+        { id: "voyage", label: "Gestion des voyages", Icon: Plane, color: "indigo" },
+        { id: "cse", label: "Avantages collaborateurs", Icon: Gift, color: "emerald" },
+        { id: "intelligence", label: "Intelligence & Support", Icon: Bot, color: "purple" },
+        { id: "security", label: "Sécurité & Conformité", Icon: ShieldCheck, color: "slate" }
     ];
 
     return (
@@ -31,7 +31,7 @@ const StickySubNav = ({ activeSection, setActiveSection }: { activeSection: stri
                                     : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
                             }`}
                         >
-                            <span className="text-base">{section.icon}</span>
+                            <section.Icon className="w-4 h-4" />
                             {section.label}
                         </button>
                     ))}
@@ -90,23 +90,25 @@ const SmartSearchWidget = () => {
             <div className="flex gap-2 mb-6 border-b border-white/20 pb-3">
                 <button
                     onClick={() => setSearchType("flight")}
-                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                         searchType === "flight"
                             ? "bg-indigo-600 text-white shadow-lg"
                             : "text-slate-300 hover:text-white"
                     }`}
                 >
-                    ✈️ Rechercher un vol
+                    <Plane className="w-4 h-4 shrink-0" />
+                    Rechercher un vol
                 </button>
                 <button
                     onClick={() => setSearchType("cse")}
-                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                         searchType === "cse"
                             ? "bg-emerald-600 text-white shadow-lg"
                             : "text-slate-300 hover:text-white"
                     }`}
                 >
-                    🎁 Avantage CSE
+                    <Gift className="w-4 h-4 shrink-0" />
+                    Avantage CSE
                 </button>
             </div>
             
@@ -138,9 +140,14 @@ const SmartSearchWidget = () => {
                         className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-400"
                     />
                     <div className="grid grid-cols-3 gap-3">
-                        {["🎁 Chèque cadeau", "🎟️ Billetterie", "💊 Mutuelle"].map((item, i) => (
-                            <div key={i} className="bg-white/5 rounded-xl p-3 text-center text-xs text-slate-300 hover:bg-white/10 transition cursor-pointer">
-                                {item}
+                        {[
+                            { label: "Chèque cadeau", Icon: Gift },
+                            { label: "Billetterie", Icon: Ticket },
+                            { label: "Mutuelle", Icon: Pill }
+                        ].map((item, i) => (
+                            <div key={i} className="bg-white/5 rounded-xl p-3 text-center text-xs text-slate-300 hover:bg-white/10 transition cursor-pointer flex flex-col items-center gap-1">
+                                <item.Icon className="w-4 h-4" />
+                                {item.label}
                             </div>
                         ))}
                     </div>
@@ -363,7 +370,7 @@ function TravelManagementSection() {
                             <SolutionCard
                                 title="Réservation centralisée"
                                 description="Vols, hôtels, trains et visas sur une seule interface. Approbation en 1 clic."
-                                icon="✈️"
+                                icon={<Plane className="w-5 h-5 text-indigo-600" />}
                                 badge="Nouveau"
                                 color="indigo"
                                 imageUrl="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format"
@@ -372,7 +379,7 @@ function TravelManagementSection() {
                                 <SolutionCard
                                     title="Contrôle budgétaire"
                                     description="Politiques de voyage automatisées et plafonds personnalisés."
-                                    icon="📊"
+                                    icon={<BarChart2 className="w-5 h-5 text-indigo-600" />}
                                     badge="Populaire"
                                     color="indigo"
                                     imageUrl="https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=2074&auto=format"
@@ -380,7 +387,7 @@ function TravelManagementSection() {
                                 <SolutionCard
                                     title="Notes de frais IA"
                                     description="Scan automatique par IA et validation simplifiée."
-                                    icon="📱"
+                                    icon={<Smartphone className="w-5 h-5 text-indigo-600" />}
                                     badge="IA"
                                     color="indigo"
                                     imageUrl="https://images.unsplash.com/photo-1563013544-824ae1b704d3?q=80&w=2070&auto=format"
@@ -389,7 +396,7 @@ function TravelManagementSection() {
                             <SolutionCard
                                 title="Reporting & ROI"
                                 description="Analyses financières en temps réel et heatmaps de dépenses."
-                                icon="📈"
+                                icon={<TrendingUp className="w-5 h-5 text-indigo-600" />}
                                 color="indigo"
                                 imageUrl="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format"
                             />
@@ -423,13 +430,13 @@ function CSEBenefitsSection() {
         if (isInView) controls.start("visible");
     }, [isInView, controls]);
     
-    const benefits = [
-        { name: "Chèques cadeaux", icon: "🎁", description: "Utilisables immédiatement" },
-        { name: "Billetterie", icon: "🎟️", description: "Cinéma, concerts" },
-        { name: "Mutuelle santé", icon: "💊", description: "Couverture optimisée" },
-        { name: "Sport & bien-être", icon: "🏋️", description: "Abonnements sport" },
-        { name: "Formation", icon: "📚", description: "E-learning" },
-        { name: "Mobilité", icon: "🛴", description: "Forfaits mobilité" }
+    const benefits: { name: string; Icon: LucideIcon; description: string }[] = [
+        { name: "Chèques cadeaux", Icon: Gift, description: "Utilisables immédiatement" },
+        { name: "Billetterie", Icon: Ticket, description: "Cinéma, concerts" },
+        { name: "Mutuelle santé", Icon: Pill, description: "Couverture optimisée" },
+        { name: "Sport & bien-être", Icon: Dumbbell, description: "Abonnements sport" },
+        { name: "Formation", Icon: BookOpen, description: "E-learning" },
+        { name: "Mobilité", Icon: Bike, description: "Forfaits mobilité" }
     ];
     
     return (
@@ -480,7 +487,7 @@ function CSEBenefitsSection() {
                             <SolutionCard
                                 title="Service Gallery"
                                 description="Catalogue d'avantages personnalisé avec recommandations IA. Style Netflix pour vos employés."
-                                icon="🎁"
+                                icon={<Gift className="w-5 h-5 text-emerald-600" />}
                                 badge="Netflix-like"
                                 color="emerald"
                                 imageUrl="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=2074&auto=format"
@@ -488,14 +495,14 @@ function CSEBenefitsSection() {
                             <SolutionCard
                                 title="Suivi de satisfaction"
                                 description="Sondages instantanés et analytics d'engagement pour mesurer le climat social."
-                                icon="❤️"
+                                icon={<Heart className="w-5 h-5 text-emerald-600" />}
                                 color="emerald"
                                 imageUrl="https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=2070&auto=format"
                             />
                             <SolutionCard
                                 title="Gestion des subventions"
                                 description="Distribution automatisée des budgets par bénéficiaire avec reporting transparent."
-                                icon="💰"
+                                icon={<DollarSign className="w-5 h-5 text-emerald-600" />}
                                 color="emerald"
                                 imageUrl="https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=2074&auto=format"
                             />
@@ -510,7 +517,7 @@ function CSEBenefitsSection() {
                                 whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
                                 className="bg-white rounded-xl p-4 text-center border border-emerald-100 shadow-sm hover:shadow-md cursor-pointer"
                             >
-                                <div className="text-3xl mb-2">{benefit.icon}</div>
+                                <div className="mb-2 flex items-center justify-center"><benefit.Icon className="w-7 h-7 text-emerald-600" /></div>
                                 <div className="font-semibold text-sm text-slate-700">{benefit.name}</div>
                                 <div className="text-[10px] text-slate-400 mt-1">{benefit.description}</div>
                             </motion.div>
@@ -561,7 +568,7 @@ function IntelligenceSection() {
                             <SolutionCard
                                 title="IA prédictive"
                                 description="Anticipe les dépenses et propose des optimisations en temps réel."
-                                icon="🤖"
+                                icon={<Bot className="w-5 h-5 text-purple-600" />}
                                 badge="Beta"
                                 color="purple"
                                 imageUrl="https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=2072&auto=format"
@@ -570,14 +577,14 @@ function IntelligenceSection() {
                                 <SolutionCard
                                     title="Dashboard personnalisable"
                                     description="KPI sur mesure pour chaque département."
-                                    icon="📊"
+                                    icon={<BarChart2 className="w-5 h-5 text-purple-600" />}
                                     color="purple"
                                     imageUrl="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format"
                                 />
                                 <SolutionCard
                                     title="Intégrations API"
                                     description="Connectez votre ERP (SAP, Oracle, Odoo)."
-                                    icon="🔗"
+                                    icon={<Link2 className="w-5 h-5 text-purple-600" />}
                                     badge="Enterprise"
                                     color="purple"
                                     imageUrl="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format"
@@ -586,7 +593,7 @@ function IntelligenceSection() {
                             <SolutionCard
                                 title="Assistant voyage 24/7"
                                 description="Support multicanal en temps réel pour vos collaborateurs."
-                                icon="💬"
+                                icon={<MessageCircle className="w-5 h-5 text-purple-600" />}
                                 color="purple"
                                 imageUrl="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=2076&auto=format"
                             />
@@ -600,13 +607,13 @@ function IntelligenceSection() {
                             />
                             <div className="p-6">
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">🤖</div>
+                                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center"><Bot className="w-5 h-5 text-purple-600" /></div>
                                     <div>
                                         <div className="font-semibold text-slate-800">Sam - IA Assistant</div>
                                         <div className="text-xs text-slate-500">Prédiction voyage</div>
                                     </div>
                                 </div>
-                                <p className="text-slate-600 text-sm">✈️ Vol AF 821 (Paris → Dakar) susceptible d'être retardé. Proposition de reprogrammation automatique vers vol AF 823.</p>
+                                <p className="text-slate-600 text-sm flex items-start gap-1.5"><Plane className="w-4 h-4 shrink-0 mt-0.5 text-purple-500" /><span>Vol AF 821 (Paris → Dakar) susceptible d&apos;être retardé. Proposition de reprogrammation automatique vers vol AF 823.</span></p>
                                 <div className="flex gap-2 mt-4">
                                     <button className="text-sm bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">Accepter</button>
                                     <button className="text-sm bg-slate-200 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-300 transition">Voir alternatives</button>
@@ -667,7 +674,7 @@ function SecuritySection() {
                             <SolutionCard
                                 title="Alertes sécurité voyage"
                                 description="Notifications en temps réel des situations à risque."
-                                icon="🛡️"
+                                icon={<ShieldCheck className="w-5 h-5 text-slate-600" />}
                                 badge="Live"
                                 color="slate"
                                 imageUrl="https://images.unsplash.com/photo-1589330694653-ded6df03f754?q=80&w=2070&auto=format"
@@ -675,7 +682,7 @@ function SecuritySection() {
                             <SolutionCard
                                 title="Conformité RGPD"
                                 description="Protection des données et hébergement sécurisé."
-                                icon="🔒"
+                                icon={<Lock className="w-5 h-5 text-slate-600" />}
                                 color="slate"
                                 imageUrl="https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=2070&auto=format"
                             />
@@ -683,13 +690,13 @@ function SecuritySection() {
                                 <SolutionCard
                                     title="Assurance voyage"
                                     description="Couverture automatique pour chaque déplacement."
-                                    icon="📄"
+                                    icon={<FileText className="w-5 h-5 text-slate-600" />}
                                     color="slate"
                                 />
                                 <SolutionCard
                                     title="Validation multi-niveaux"
                                     description="Workflow d'approbation personnalisable."
-                                    icon="✅"
+                                    icon={<CheckCircle2 className="w-5 h-5 text-slate-600" />}
                                     color="slate"
                                 />
                             </div>
@@ -722,7 +729,7 @@ function SecuritySection() {
                             
                             <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">✓</div>
+                                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center"><CheckCircle2 className="w-4 h-4 text-indigo-600" /></div>
                                     <div>
                                         <div className="text-xs font-bold">Valeur probante</div>
                                         <div className="text-[10px] text-slate-400">Dématérialisation légale</div>

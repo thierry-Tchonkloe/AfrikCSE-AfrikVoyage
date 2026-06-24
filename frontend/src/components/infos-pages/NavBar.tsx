@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Plane, Gift, Bot, ShieldCheck, Building2, Globe, Star, TrendingDown, BarChart2, Sparkles } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 // Structure enrichie pour le Méga-Menu
-const ALL_SOLUTIONS = [
+const ALL_SOLUTIONS: { category: string; Icon: LucideIcon; color: string; href: string; items: { label: string; desc: string; tag: string | null; tagColor?: string; href: string }[] }[] = [
   {
     category: "Gestion des voyages",
-    icon: "✈️",
+    Icon: Plane,
     color: "indigo",
     href: "/infos/solutions#voyage",
     items: [
@@ -20,7 +22,7 @@ const ALL_SOLUTIONS = [
   },
   {
     category: "Avantages collaborateurs",
-    icon: "🎁",
+    Icon: Gift,
     color: "emerald",
     href: "/infos/solutions#cse",
     items: [
@@ -32,7 +34,7 @@ const ALL_SOLUTIONS = [
   },
   {
     category: "Intelligence & Support",
-    icon: "🤖",
+    Icon: Bot,
     color: "purple",
     href: "/infos/solutions#intelligence",
     items: [
@@ -44,7 +46,7 @@ const ALL_SOLUTIONS = [
   },
   {
     category: "Sécurité & Conformité",
-    icon: "🛡️",
+    Icon: ShieldCheck,
     color: "slate",
     href: "/infos/solutions#security",
     items: [
@@ -56,11 +58,11 @@ const ALL_SOLUTIONS = [
   }
 ];
 
-const PLATFORM_HIGHLIGHTS = [
-  { label: "entreprises clientes", icon: "🏢", value: "500+" },
-  { label: "pays couverts", icon: "🌍", value: "54" },
-  { label: "satisfaction", icon: "⭐", value: "95%" },
-  { label: "économies", icon: "📉", value: "-30%" },
+const PLATFORM_HIGHLIGHTS: { label: string; Icon: LucideIcon; value: string }[] = [
+  { label: "entreprises clientes", Icon: Building2, value: "500+" },
+  { label: "pays couverts", Icon: Globe, value: "54" },
+  { label: "satisfaction", Icon: Star, value: "95%" },
+  { label: "économies", Icon: TrendingDown, value: "-30%" },
 ];
 
 // Liens de navigation avec breakpoints pour affichage conditionnel
@@ -162,9 +164,9 @@ export default function Navbar() {
   const handleLanguageChange = (newLang: "FR" | "EN") => {
     setLang(newLang);
     setLangDropdownOpen(false);
-    const message = newLang === "FR" 
-      ? "🌍 Langue changée : Français" 
-      : "🌍 Language changed: English";
+    const message = newLang === "FR"
+      ? "Langue changée : Français"
+      : "Language changed: English";
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
   };
@@ -275,7 +277,7 @@ export default function Navbar() {
                           {ALL_SOLUTIONS.map((category, idx) => (
                             <div key={idx} className="space-y-2">
                               <div className="flex items-center gap-2 pb-1.5 border-b border-slate-200">
-                                <span className="text-sm">{category.icon}</span>
+                                <category.Icon className="w-4 h-4 text-indigo-500" />
                                 <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500">
                                   {category.category}
                                 </span>
@@ -326,13 +328,13 @@ export default function Navbar() {
 
                         <div>
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs">📊</span>
+                            <BarChart2 className="w-3.5 h-3.5 text-slate-400" />
                             <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">La plateforme en bref</span>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             {PLATFORM_HIGHLIGHTS.map((highlight, idx) => (
                               <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50">
-                                <span className="text-base">{highlight.icon}</span>
+                                <highlight.Icon className="w-4 h-4 text-indigo-500 shrink-0" />
                                 <div>
                                   <p className="text-sm font-black text-indigo-500">{highlight.value}</p>
                                   <p className="text-[9px] text-slate-500">{highlight.label}</p>
@@ -343,8 +345,9 @@ export default function Navbar() {
                         </div>
 
                         <div className="mt-3 pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2">
-                          <p className="text-[9px] text-slate-500 text-center sm:text-left">
-                            ✨ Découvrez comment AfrikWorkspace transforme la gestion
+                          <p className="inline-flex items-center gap-1 text-[9px] text-slate-500 text-center sm:text-left">
+                            <Sparkles className="w-3 h-3 text-indigo-400 shrink-0" />
+                            Découvrez comment AfrikWorkspace transforme la gestion
                           </p>
                           <Link
                             href="/infos/solutions"
@@ -396,7 +399,7 @@ export default function Navbar() {
                       : "border-slate-200 text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  <span className="text-sm">🌍</span>
+                  <Globe className="w-4 h-4 shrink-0" />
                   <span className="hidden sm:inline">{LANGUAGE_LABELS[lang]}</span>
                   <span className="sm:hidden">{lang}</span>
                   <svg

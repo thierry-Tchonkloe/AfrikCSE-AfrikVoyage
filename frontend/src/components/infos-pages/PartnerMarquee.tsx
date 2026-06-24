@@ -364,8 +364,8 @@ export default function PartnerMarquee() {
                                         <div className="flex items-center gap-4">
                                             <div className="relative w-18 h-18 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
                                                 <img 
-                                                    src="/richnel.jpg" 
-                                                    alt="Richnel AGAZOUNON" 
+                                                    src="/images/richnel.png"
+                                                    alt="Richnel AGAZOUNON"
                                                     className="w-full h-full object-cover"
                                                 />
                                             </div>
@@ -410,7 +410,7 @@ export default function PartnerMarquee() {
                                         <div className="flex items-center gap-4">
                                             <div className="relative w-18 h-18 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
                                                 <img 
-                                                    src="/michaelis.jpg" 
+                                                    src="/images/michaelis.png" 
                                                     alt="Michaelis MAHOUTO" 
                                                     className="w-full h-full object-cover"
                                                 />
