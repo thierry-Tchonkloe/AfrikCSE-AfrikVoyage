@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { MapPin, Landmark, FileText, DollarSign, Hash, Zap, Scale, MailOpen, Mail, Lock, Phone, Building2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 const LEGAL_SECTIONS = [
   {
@@ -116,13 +118,13 @@ Pour toute question relative à ces mentions légales ou pour exercer vos droits
   },
 ];
 
-const HIGHLIGHTS = [
-  { label: "Siège social", value: "Paris, France", icon: "📍" },
-  { label: "RCS", value: "924 852 741", icon: "🏛️" },
-  { label: "SIRET", value: "924 852 741 00012", icon: "📄" },
-  { label: "Capital", value: "150 000 €", icon: "💰" },
-  { label: "TVE", value: "FR44924852741", icon: "🔢" },
-  { label: "Garantie", value: "99,9% SLA", icon: "⚡" },
+const HIGHLIGHTS: { label: string; value: string; Icon: LucideIcon }[] = [
+  { label: "Siège social", value: "Paris, France", Icon: MapPin },
+  { label: "RCS", value: "924 852 741", Icon: Landmark },
+  { label: "SIRET", value: "924 852 741 00012", Icon: FileText },
+  { label: "Capital", value: "150 000 €", Icon: DollarSign },
+  { label: "TVE", value: "FR44924852741", Icon: Hash },
+  { label: "Garantie", value: "99,9% SLA", Icon: Zap },
 ];
 
 export default function LegalPage() {
@@ -135,7 +137,8 @@ export default function LegalPage() {
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-100/20 via-transparent to-transparent" />
         <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50/80 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-indigo-600 backdrop-blur-sm">
-            ⚖️ Cadre juridique et conformité
+            <Scale className="w-3.5 h-3.5" />
+            Cadre juridique et conformité
           </div>
           <h1 className="mt-6 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
             Mentions légales
@@ -172,7 +175,7 @@ export default function LegalPage() {
               key={item.label}
               className="flex flex-col items-center gap-1 rounded-xl border border-slate-100 bg-slate-50/50 p-2 text-center transition hover:border-indigo-200"
             >
-              <span className="text-lg">{item.icon}</span>
+              <item.Icon className="w-5 h-5 text-indigo-600" />
               <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600">
                 {item.label}
               </span>
@@ -254,8 +257,9 @@ export default function LegalPage() {
         <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/30 to-white p-6">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-lg font-bold text-indigo-600">
-                📬 Questions juridiques ou conformité ?
+              <h3 className="flex items-center gap-2 text-lg font-bold text-indigo-600">
+                <MailOpen className="w-5 h-5 shrink-0" />
+                Questions juridiques ou conformité ?
               </h3>
               <p className="text-sm text-slate-600">
                 Notre équipe juridique et notre DPO sont à votre disposition.
@@ -270,19 +274,19 @@ export default function LegalPage() {
           </div>
           <div className="mt-4 grid grid-cols-1 gap-2 text-xs text-slate-500 sm:grid-cols-2">
             <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-indigo-600">✉️</span>
+              <Mail className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               legal@afrikworkspace.com
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-indigo-600">🔒</span>
+              <Lock className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               DPO : dpo@afrikworkspace.com
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-indigo-600">📞</span>
+              <Phone className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               +33 1 23 45 67 89 (standard)
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-indigo-600">🏢</span>
+              <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               15 rue de la Paix, 75002 Paris
             </div>
           </div>

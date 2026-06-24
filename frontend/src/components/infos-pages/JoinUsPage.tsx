@@ -2,11 +2,12 @@
 
 import { useRef, useEffect, useState } from "react";
 import Image from "next/image";
+import { Globe, Rocket, Star, Briefcase, Theater, Gift, TrendingUp, Film, Brain, Sparkles, Lightbulb, ShieldCheck } from "lucide-react";
 
 // ─── TYPES & INTERFACES ──────────────────────────────────────────────────────
 
 interface Value {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   description: string;
 }
@@ -15,7 +16,7 @@ interface BentoCardProps {
   title: string;
   description: string;
   badge?: string;
-  icon: string;
+  icon: React.ReactNode;
   className?: string;
 }
 
@@ -137,15 +138,15 @@ function HeroSection() {
           
           <div className="flex items-center gap-6 text-sm text-slate-600">
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
-              <span className="h-7 w-7 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">🌍</span>
+              <span className="h-7 w-7 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600"><Globe className="w-4 h-4" /></span>
               <span>12 pays</span>
             </div>
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
-              <span className="h-7 w-7 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">🚀</span>
+              <span className="h-7 w-7 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><Rocket className="w-4 h-4" /></span>
               <span>500+ clients</span>
             </div>
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
-              <span className="h-7 w-7 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">⭐</span>
+              <span className="h-7 w-7 rounded-full bg-amber-50 flex items-center justify-center text-amber-600"><Star className="w-4 h-4" /></span>
               <span>4.9/5 eNPS</span>
             </div>
           </div>
@@ -207,7 +208,7 @@ function DualMissionSection() {
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    💼 AfrikVoyage
+                    <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />AfrikVoyage</span>
                   </button>
                   <button
                     onClick={() => setActiveTab("cse")}
@@ -217,7 +218,7 @@ function DualMissionSection() {
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    🎭 AfrikCSE
+                    <span className="flex items-center gap-1"><Theater className="w-3 h-3" />AfrikCSE</span>
                   </button>
                 </div>
                 <div className="w-16 h-2 bg-slate-200 rounded-full" />
@@ -258,16 +259,16 @@ function DualMissionSection() {
                     <h4 className="text-lg font-bold text-slate-900">Service Gallery & Satisfaction Collaborateur</h4>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 bg-gradient-to-tr from-white to-indigo-50/40 rounded-xl border border-indigo-100">
-                        <span className="text-xs font-bold text-slate-900 block mb-1">🎁 Catalogue d'avantages</span>
+                        <span className="flex items-center gap-1 text-xs font-bold text-slate-900 mb-1"><Gift className="w-3 h-3 text-indigo-600 shrink-0" />Catalogue d&apos;avantages</span>
                         <span className="text-[11px] text-slate-500">Cinéma, chèques cadeaux, loisirs illimités.</span>
                       </div>
                       <div className="p-3 bg-gradient-to-tr from-white to-emerald-50/40 rounded-xl border border-emerald-100">
-                        <span className="text-xs font-bold text-slate-900 block mb-1">📈 Score Engagement</span>
+                        <span className="flex items-center gap-1 text-xs font-bold text-slate-900 mb-1"><TrendingUp className="w-3 h-3 text-emerald-600 shrink-0" />Score Engagement</span>
                         <span className="text-sm font-black text-[#10B981]">eNPS: +72</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-indigo-700 bg-indigo-50 p-2 rounded-lg border border-indigo-100">
-                      <span>🎬</span>
+                      <Film className="w-3.5 h-3.5 shrink-0" />
                       <span>Les collaborateurs naviguent leurs privilèges de façon fluide et ludique.</span>
                     </div>
                   </div>
@@ -295,7 +296,7 @@ function BentoCard({ title, description, badge, icon, className = "" }: BentoCar
       <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all duration-500" />
       <div>
         <div className="flex items-center justify-between mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-2xl border border-slate-100 group-hover:scale-110 transition-transform duration-300">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 border border-slate-100 group-hover:scale-110 transition-transform duration-300">
             {icon}
           </div>
           {badge && (
@@ -341,19 +342,19 @@ function BentoGridSection() {
           }`}
         >
           <BentoCard
-            icon="🧠"
+            icon={<Brain className="w-6 h-6 text-slate-600" />}
             badge="IA & Prédictif"
             title="L'IA au service de l'humain"
             description="Travaillez sur des algorithmes prédictifs complexes qui redéfinissent entièrement la logistique et la gestion des voyages."
           />
           <BentoCard
-            icon="🌍"
+            icon={<Globe className="w-6 h-6 text-slate-600" />}
             badge="Scale Panafricain"
             title="Un rayonnement continental"
             description="Rejoignez une solution technologique majeure déjà adoptée de façon critique par plus de 500 entreprises africaines et internationales."
           />
           <BentoCard
-            icon="✨"
+            icon={<Sparkles className="w-6 h-6 text-slate-600" />}
             badge="B2C UX en SaaS"
             title="L'expérience B2C en entreprise"
             description="Nous croyons fermement que les outils professionnels doivent être aussi intuitifs, vibrants et agréables que les meilleures applications grand public."
@@ -456,17 +457,17 @@ function ValuesSection() {
 
   const corporateValues: Value[] = [
     {
-      icon: "💡",
+      icon: <Lightbulb className="w-6 h-6 text-slate-600" />,
       title: "Innovation",
       description: "Repousser sans cesse les frontières du possible et concevoir l'écosystème de demain.",
     },
     {
-      icon: "🛡️",
+      icon: <ShieldCheck className="w-6 h-6 text-slate-600" />,
       title: "Confiance",
       description: "Garantir une transparence absolue et une fiabilité infaillible envers nos talents et partenaires.",
     },
     {
-      icon: "📈",
+      icon: <TrendingUp className="w-6 h-6 text-slate-600" />,
       title: "Performance",
       description: "Allier rigueur algorithmique, exécution d'élite et création de valeur quantifiable.",
     },
@@ -504,7 +505,7 @@ function ValuesSection() {
                 <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wide">Secure</span>
               </div>
 
-              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-slate-50 text-2xl border border-slate-100 group-hover:scale-105 transition-transform">
+              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-slate-50 border border-slate-100 group-hover:scale-105 transition-transform">
                 {val.icon}
               </div>
 
