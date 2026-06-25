@@ -593,7 +593,7 @@ export default function ContactPage() {
   return (
     <main className="min-h-screen font-sans antialiased bg-white text-slate-900">
       {/* ── HERO RECENTRÉE ── */}
-      <section className="border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white py-20 lg:py-28">
+      <section className="border-b border-slate-100 bg-linear-to-b from-slate-50 to-white py-20 lg:py-28">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
           <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
             Connectivité Souveraine B2B
@@ -652,7 +652,7 @@ export default function ContactPage() {
 
       {/* ── FAQ ── */}
       <section className="py-20 border-t border-slate-100 bg-slate-50/50">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 text-center">
             <h2 className="text-3xl font-black text-slate-900 tracking-tight">
               Questions fréquentes
