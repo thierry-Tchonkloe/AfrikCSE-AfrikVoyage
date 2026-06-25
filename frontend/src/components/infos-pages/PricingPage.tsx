@@ -156,11 +156,11 @@ function PlanCard({ plan, isAnnual }: { plan: PlanDetails; isAnnual: boolean }) 
     return (
         <div className={`relative rounded-2xl border p-6 flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
             plan.popular
-                ? "border-indigo-300 bg-gradient-to-b from-white to-indigo-50/30 shadow-xl"
+                ? "border-indigo-300 bg-linear-to-b from-white to-indigo-50/30 shadow-xl"
                 : "border-slate-200 bg-white hover:border-indigo-200"
         }`}>
             {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-emerald-500 text-white text-[10px] font-black uppercase tracking-wider shadow-md whitespace-nowrap">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-linear-to-r from-indigo-600 to-emerald-500 text-white text-[10px] font-black uppercase tracking-wider shadow-md whitespace-nowrap">
                     Le plus populaire
                 </div>
             )}
@@ -172,7 +172,7 @@ function PlanCard({ plan, isAnnual }: { plan: PlanDetails; isAnnual: boolean }) 
                 <div>
                     <h3 className="text-lg font-black text-slate-800">{plan.label}</h3>
                     {plan.maxUsers && (
-                        <p className="text-xs text-slate-400">Jusqu'à {plan.maxUsers} utilisateurs</p>
+                        <p className="text-xs text-slate-400">Jusqu&#39;à {plan.maxUsers} utilisateurs</p>
                     )}
                 </div>
             </div>
@@ -305,8 +305,8 @@ export default function PricingPage() {
                         priority
                     />
                     {/* Multi-overlays riches pour préserver les contrastes du texte premium */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/70" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/30" />
+                    <div className="absolute inset-0 bg-linear-to-r from-white via-white/95 to-white/70" />
+                    <div className="absolute inset-0 bg-linear-to-b from-white/10 via-transparent to-white/30" />
                 </div>
 
                 {/* Blobs décoratifs Hero */}
@@ -319,7 +319,7 @@ export default function PricingPage() {
                     </span>
                     <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl md:text-6xl leading-[1.1]">
                         Une plateforme qui{" "}
-                        <span className="text-emerald-600">s'autofinance</span>
+                        <span className="text-emerald-600">s&#39;autofinance</span>
                         <br />
                         par vos économies
                     </h1>
@@ -380,22 +380,22 @@ export default function PricingPage() {
                     {activeTab === "all" && (
                         <div className="mt-4 inline-flex items-center gap-2 bg-emerald-100/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-emerald-200">
                             <Trophy className="w-4 h-4 text-emerald-600" />
-                            <span className="text-xs font-semibold text-emerald-700">Pack unifié : -15% sur l'ensemble</span>
+                            <span className="text-xs font-semibold text-emerald-700">Pack unifié : -15% sur l&#39;ensemble</span>
                         </div>
                     )}
                 </div>
             </section>
 
             {/* ── BANDE DE TRANSITION GRADIENT ── */}
-            <div className="relative h-16 bg-gradient-to-b from-white via-indigo-50/30 to-slate-50/50" />
+            <div className="relative h-16 bg-linear-to-b from-white via-indigo-50/30 to-slate-50/50" />
             
             {/* ── ZONE DE TRANSITION AVEC BLOCS ── */}
             <div className="relative bg-slate-50/50 py-2">
                 <div className="mx-auto max-w-7xl px-4">
                     <div className="flex items-center justify-center gap-4 text-sm text-slate-400">
-                        <span className="w-12 h-px bg-gradient-to-r from-transparent to-slate-300" />
+                        <span className="w-12 h-px bg-linear-to-r from-transparent to-slate-300" />
                         <span className="font-medium text-slate-500">Choisissez votre offre</span>
-                        <span className="w-12 h-px bg-gradient-to-l from-transparent to-slate-300" />
+                        <span className="w-12 h-px bg-linear-to-l from-transparent to-slate-300" />
                     </div>
                 </div>
             </div>
@@ -456,7 +456,7 @@ export default function PricingPage() {
                                 variants={itemVariants}
                                 className="relative group"
                             >
-                                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/10 to-emerald-500/10 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="absolute -inset-1 bg-linear-to-r from-indigo-500/10 to-emerald-500/10 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <PlanCard plan={plan} isAnnual={billingCycle === "yearly"} />
                             </motion.div>
                         ))}
@@ -465,8 +465,8 @@ export default function PricingPage() {
             </section>
 
             {/* ── TRANSMARENCE TOTALE ── */}
-            <section className="relative bg-gradient-to-b from-white to-slate-50/50 py-16 border-y border-slate-100 overflow-hidden">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-indigo-100/10 blur-3xl pointer-events-none" />
+            <section className="relative bg-linear-to-b from-white to-slate-50/50 py-16 border-y border-slate-100 overflow-hidden">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 rounded-full bg-indigo-100/10 blur-3xl pointer-events-none" />
                 
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
@@ -534,26 +534,26 @@ export default function PricingPage() {
                     </div>
 
                     <div className="mt-8 text-center">
-                        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-indigo-50 to-emerald-50 rounded-full px-5 py-2.5 border border-indigo-100">
+                        <div className="inline-flex items-center gap-3 bg-linear-to-r from-indigo-50 to-emerald-50 rounded-full px-5 py-2.5 border border-indigo-100">
                             <span className="relative flex h-3 w-3">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
                             </span>
-                            <span className="text-sm font-semibold text-indigo-700">Assistance d'un expert 24/7</span>
-                            <span className="text-xs text-indigo-500">— L'IA ne remplace pas l'humain</span>
+                            <span className="text-sm font-semibold text-indigo-700">Assistance d&#39;un expert 24/7</span>
+                            <span className="text-xs text-indigo-500">— L&#39;IA ne remplace pas l&#39;humain</span>
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* ── FAQ ── */}
-            <section className="py-16 bg-gradient-to-b from-slate-50 to-white border-t border-slate-100 relative overflow-hidden">
+            <section className="py-16 bg-linear-to-b from-slate-50 to-white border-t border-slate-100 relative overflow-hidden">
                 <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-emerald-100/20 blur-3xl pointer-events-none" />
                 
-                <div className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+                <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-10">
                         <h2 className="text-3xl font-black text-slate-800">Questions <span className="text-indigo-600">fréquentes</span></h2>
-                        <p className="text-slate-500 mt-2">Tout ce qu'il faut savoir</p>
+                        <p className="text-slate-500 mt-2">Tout ce qu&#39;il faut savoir</p>
                     </div>
                     <div className="space-y-3">
                         {FAQ_ITEMS.map((faq, idx) => (
