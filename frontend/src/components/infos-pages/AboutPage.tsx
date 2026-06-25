@@ -458,12 +458,12 @@ function ValuesSection() {
                         </span>
                         <h2 className="text-3xl md:text-5xl font-bold text-slate-800 mb-4" style={{ fontFamily: "Sanomat, ui-serif" }}>
                             Des principes qui nous{" "}
-                            <span className="bg-gradient-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
+                            <span className="bg-linear-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
                                 guident
                             </span>
                         </h2>
                         <p className="text-slate-500 text-lg">
-                            L'humain, la confiance et l'innovation au cœur de notre action
+                            L&#39;humain, la confiance et l&#39;innovation au cœur de notre action
                         </p>
                     </motion.div>
 

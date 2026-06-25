@@ -96,7 +96,7 @@ function ImageCarousel() {
           />
 
           {/* Overlay dégradé de couleur par-dessus l'image pour garantir la lisibilité du texte */}
-          <div className={`absolute inset-0 bg-gradient-to-br ${image.bgColor} mix-blend-multiply`} />
+          <div className={`absolute inset-0 bg-linear-to-br ${image.bgColor} mix-blend-multiply`} />
           <div className="absolute inset-0 bg-slate-900/40" />
 
           {/* Motif décoratif en arrière-plan */}
@@ -239,7 +239,7 @@ export default function HeroSection() {
         Propulsez vos <span className="text-emerald-600">avantages</span>.
       </h2>
       <p className="text-slate-700 text-sm leading-relaxed">
-        L'unique plateforme qui unifie la rigueur de la performance financière et l'épanouissement des collaborateurs.
+        L&#39;unique plateforme qui unifie la rigueur de la performance financière et l&#39;épanouissement des collaborateurs.
       </p>
       <div className="flex flex-col gap-3 mt-2">
         <Link href="/infos/demo" className="inline-flex items-center justify-center bg-indigo-600 text-white font-bold text-sm px-6 py-3 rounded-xl">
@@ -277,10 +277,10 @@ export default function HeroSection() {
       <ImageCarousel />
       
       {/* ─── OVERLAY GRADIENT LÉGER ─── */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50 z-5 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-b from-black/30 via-transparent to-black/50 z-5 pointer-events-none" />
 
       {/* ─── CONTENU PRINCIPAL ─── */}
-      <div className="relative flex-1 flex items-center justify-center z-10 py-16 md:py-20">
+      <div className="relative flex-1 flex items-center justify-center z-10 py-16 md:py-20 opacity-75">
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           
           {/* ─── VERSION DESKTOP ─── */}
@@ -318,9 +318,9 @@ export default function HeroSection() {
                 variants={textItemVariants} 
                 className="text-slate-800 text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl text-center"
               >
-                L'unique plateforme qui unifie la rigueur de la performance financière 
-                <span className="font-semibold text-indigo-600"> (AfrikVoyage)</span> et l'épanouissement des collaborateurs 
-                <span className="font-semibold text-emerald-600"> (AfrikCSE)</span> grâce à l'IA prédictive.
+                L&#39;unique plateforme qui unifie la rigueur de la performance financière 
+                <span className="font-semibold text-indigo-600"> (AfrikVoyage)</span> et l&#39;épanouissement des collaborateurs 
+                <span className="font-semibold text-emerald-600"> (AfrikCSE)</span> grâce à l&#39;IA prédictive.
               </motion.p>
 
               {/* Boutons */}
@@ -339,7 +339,7 @@ export default function HeroSection() {
                 </Link>
                 <Link
                   href="/infos/solutions"
-                  className="inline-flex items-center justify-center border-2 border-slate-300/70 hover:border-indigo-400 hover:bg-indigo-50/50 text-slate-700 font-semibold text-base px-8 py-3.5 rounded-xl transition-all duration-300 backdrop-blur-sm"
+                  className="inline-flex items-center justify-center border-2 border-slate-300/70 hover:border-indigo-400 hover:bg-indigo-50/50 text-slate-700 font-semibold text-base px-8 py-3.5 rounded-xl transition-all duration-300 backdrop-blur-sm hover:scale-[1.02] transform"
                 >
                   Découvrir la plateforme
                 </Link>
@@ -353,7 +353,7 @@ export default function HeroSection() {
                 <div className="relative">
                   <div className="flex items-center bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200/50 shadow-sm overflow-hidden focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-200/50 transition">
                     <div className="flex-1 flex items-center px-4">
-                      <svg className="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                       <input

@@ -208,7 +208,7 @@ export default function Navbar() {
             {/* ── LOGO ── */}
             <div className="flex items-center shrink-0">
               <Link href="/infos" className="flex items-center gap-2 sm:gap-3 group">
-                <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-emerald-500 flex items-center justify-center p-[1px] transition-transform duration-300 group-hover:scale-105 shrink-0">
+                <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-linear-to-br from-indigo-500 via-purple-500 to-emerald-500 flex items-center justify-center p-[1px] transition-transform duration-300 group-hover:scale-105 shrink-0">
                   <div className={`w-full h-full rounded-[11px] flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-950" : "bg-white"}`}>
                     <svg
                       className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${isScrolled ? "text-emerald-400" : "text-indigo-600"}`}
@@ -220,7 +220,7 @@ export default function Navbar() {
                 </div>
                 <div className="hidden lg:flex flex-col">
                   <span className={`text-sm md:text-base font-bold tracking-tight leading-none mb-0.5 transition-colors whitespace-nowrap ${isScrolled ? "text-white" : "text-slate-900"}`}>
-                    Afrik<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-emerald-400">Workspace</span>
+                    Afrik<span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-500 to-emerald-400">Workspace</span>
                   </span>
                   <span className={`text-[8px] md:text-[9px] font-black tracking-[0.12em] uppercase leading-none whitespace-nowrap ${isScrolled ? "text-slate-400" : "text-slate-500"}`}>
                     SaaS Platform
@@ -228,7 +228,7 @@ export default function Navbar() {
                 </div>
                 <div className="hidden sm:flex lg:hidden flex-col">
                   <span className={`text-xs font-bold tracking-tight leading-none transition-colors ${isScrolled ? "text-white" : "text-slate-900"}`}>
-                    Afrik<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-emerald-400">Workspace</span>
+                    Afrik<span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-500 to-emerald-400">Workspace</span>
                   </span>
                 </div>
               </Link>
@@ -278,7 +278,7 @@ export default function Navbar() {
                             <div key={idx} className="space-y-2">
                               <div className="flex items-center gap-2 pb-1.5 border-b border-slate-200">
                                 <category.Icon className="w-4 h-4 text-indigo-500" />
-                                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500">
+                                <span className="text-[12px] font-black uppercase tracking-wider text-indigo-500">
                                   {category.category}
                                 </span>
                               </div>
@@ -295,7 +295,7 @@ export default function Navbar() {
                                           {item.label}
                                         </span>
                                         {item.tag && (
-                                          <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${
+                                          <span className={`text-[10px] font-bold px-1 py-0.5 rounded-full ${
                                             item.tagColor === 'indigo' ? 'bg-indigo-100 text-indigo-600' :
                                             item.tagColor === 'emerald' ? 'bg-emerald-100 text-emerald-600' :
                                             item.tagColor === 'purple' ? 'bg-purple-100 text-purple-600' :
@@ -306,14 +306,14 @@ export default function Navbar() {
                                           </span>
                                         )}
                                       </div>
-                                      <p className="text-[10px] text-slate-500 truncate">{item.desc}</p>
+                                      <p className="text-[12px] text-slate-500 truncate">{item.desc}</p>
                                     </div>
                                   </button>
                                 ))}
                               </div>
                               <button
                                 onClick={() => navigateToSolutions(category.href)}
-                                className="mt-1 text-[9px] font-semibold text-indigo-500 hover:text-indigo-600 transition flex items-center gap-1"
+                                className="mt-1 text-[11px] font-semibold text-indigo-500 hover:text-indigo-600 transition flex items-center gap-1"
                               >
                                 Voir toute la catégorie
                                 <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -329,7 +329,7 @@ export default function Navbar() {
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <BarChart2 className="w-3.5 h-3.5 text-slate-400" />
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">La plateforme en bref</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">La plateforme en bref</span>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             {PLATFORM_HIGHLIGHTS.map((highlight, idx) => (
@@ -337,7 +337,7 @@ export default function Navbar() {
                                 <highlight.Icon className="w-4 h-4 text-indigo-500 shrink-0" />
                                 <div>
                                   <p className="text-sm font-black text-indigo-500">{highlight.value}</p>
-                                  <p className="text-[9px] text-slate-500">{highlight.label}</p>
+                                  <p className="text-[11px] text-slate-500">{highlight.label}</p>
                                 </div>
                               </div>
                             ))}
@@ -351,7 +351,7 @@ export default function Navbar() {
                           </p>
                           <Link
                             href="/infos/solutions"
-                            className="text-[9px] font-semibold px-2 py-1 rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition whitespace-nowrap"
+                            className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition whitespace-nowrap"
                             onClick={() => setMegaMenuOpen(false)}
                           >
                             Explorer →

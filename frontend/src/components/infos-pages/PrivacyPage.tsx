@@ -174,7 +174,7 @@ export default function PrivacyPage() {
       </section>
 
       {/* ── CONTENU PRINCIPAL (ACCORDÉON POUR LES SECTIONS) ── */}
-      <section className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="space-y-3">
           {SECTIONS.map((section, idx) => (
             <div
@@ -279,7 +279,7 @@ export default function PrivacyPage() {
       </section>
 
       {/* ── SECTION SPÉCIFIQUE : DROITS DES UTILISATEURS (AVEC DASHBOARD) ── */}
-      <section className="mx-auto max-w-4xl px-4 pb-16 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/30 to-white p-6">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -331,7 +331,7 @@ export default function PrivacyPage() {
       </section>
 
       {/* ── FAQ ADDITIONNELLE (DIVULGATION PROGRESSIVE) ── */}
-      <section className="mx-auto max-w-4xl px-4 pb-20 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
         <h2 className="mb-6 text-2xl font-bold text-slate-900">
           Questions fréquentes sur la confidentialité
         </h2>
