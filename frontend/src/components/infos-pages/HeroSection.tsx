@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useAnimation, useInView } from "framer-motion";
+import {Plane, Users, Smile, ChartBar, Compass} from "lucide-react";
 
 // ─── IMAGES HAUTE RÉSOLUTION LIBRES DE DROIT POUR LE FOND DU CARROUSEL ──────
 const HERO_IMAGES = [
@@ -11,35 +12,40 @@ const HERO_IMAGES = [
     src: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1920&q=80",
     fallbackSrc: "https://placehold.co/1920x1080/1e293b/ffffff?text=✈️+Voyages+daffaires",
     alt: "Avion de ligne en plein vol - Voyages d'affaires",
-    label: "✈️ Voyages d'affaires",
+    icon: <Plane size={16} className="text-blue-500 mt-1 mx-2" />,
+    label: " Voyages d'affaires",
     bgColor: "from-blue-950/40 to-slate-900/60",
   },
   {
     src: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=1920&q=80",
     fallbackSrc: "https://placehold.co/1920x1080/064e3b/ffffff?text=👥+Gestion+RH",
     alt: "Équipe professionnelle qui collabore - Gestion RH",
-    label: "👥 Gestion RH",
+    label: " Gestion RH",
+    icon: <Users size={16} className="text-blue-500 mt-1 mx-2" />,
     bgColor: "from-emerald-950/40 to-slate-900/60",
   },
   {
     src: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1920&q=80",
     fallbackSrc: "https://placehold.co/1920x1080/7c2d12/ffffff?text=😊+Bien-être+au+travail",
     alt: "Collaborateurs souriants au bureau - Bien-être au travail",
-    label: "😊 Bien-être au travail",
+    label: " Bien-être au travail",
+    icon: <Smile size={16} className="text-blue-500 mt-1 mx-2" />,
     bgColor: "from-orange-950/40 to-slate-900/60",
   },
   {
     src: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1920&q=80",
     fallbackSrc: "https://placehold.co/1920x1080/581c87/ffffff?text=📊+Performance+financière",
     alt: "Graphiques et analyse financière sur écran - Performance financière",
-    label: "📊 Performance financière",
+    label: " Performance financière",
+    icon: <ChartBar size={16} className="text-blue-500 mt-1 mx-2" />,
     bgColor: "from-purple-950/40 to-slate-900/60",
   },
   {
     src: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
     fallbackSrc: "https://placehold.co/1920x1080/172554/ffffff?text=🌅+Évasion+et+voyages",
     alt: "Plage paradisiaque au coucher du soleil - Évasion et voyages",
-    label: "🌅 Évasion et voyages",
+    label: " Évasion et voyages",
+    icon: <Compass size={16} className="text-blue-500 mt-1 mx-2" />,
     bgColor: "from-sky-950/40 to-slate-900/60",
   },
 ];
@@ -77,8 +83,8 @@ function ImageCarousel() {
       {HERO_IMAGES.map((image, index) => (
         <div
           key={index}
-          className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ${
-            index === currentIndex ? "opacity-100 z-0" : "opacity-0 -z-10"
+          className={`absolute inset-0 w-full h-full  ${
+            index === currentIndex ? "opacity-100 z-0" : "opacity-85 -z-10"
           }`}
         >
           {/* L'image Next.js configurée pour occuper tout l'arrière-plan */}
@@ -107,8 +113,8 @@ function ImageCarousel() {
 
           {/* Label en bas */}
           <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 z-10">
-            <span className="text-white text-sm md:text-base font-medium tracking-wide">
-              {image.label}
+            <span className="text-white text-sm md:text-base font-medium tracking-wide flex flex-row">
+              {image?.icon} <span> {image.label}</span>
             </span>
           </div>
         </div>
@@ -277,10 +283,10 @@ export default function HeroSection() {
       <ImageCarousel />
       
       {/* ─── OVERLAY GRADIENT LÉGER ─── */}
-      <div className="absolute inset-0 bg-linear-to-b from-black/30 via-transparent to-black/50 z-5 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-b from-black/1 via-transparent to-black/5 z-5 pointer-events-none" />
 
       {/* ─── CONTENU PRINCIPAL ─── */}
-      <div className="relative flex-1 flex items-center justify-center z-10 py-16 md:py-20 opacity-75">
+      <div className="relative flex-1 flex items-center justify-center z-10 py-16 md:py-20 opacity-100">
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           
           {/* ─── VERSION DESKTOP ─── */}
@@ -295,7 +301,7 @@ export default function HeroSection() {
               {/* Badge */}
               <motion.div 
                 variants={textItemVariants} 
-                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100/80 rounded-full border border-indigo-200/50"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100/95 rounded-full border border-indigo-200/50"
               >
                 <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
                 <span className="text-xs font-semibold text-indigo-700 tracking-wide uppercase">
