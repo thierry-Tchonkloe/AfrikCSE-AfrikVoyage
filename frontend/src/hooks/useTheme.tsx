@@ -55,6 +55,8 @@ interface ThemeContextValue {
     darkMode: boolean;
     /** Active/désactive le mode sombre et persiste la préférence */
     setDarkMode: (dark: boolean) => void;
+    /** Message de bienvenue personnalisé de l'organisation (null si non défini) */
+    welcomeMessage: string | null;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -116,10 +118,30 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const org = user?.organization;
         if (!org || (!org.primaryColor && !org.secondaryColor)) return null;
         return {
-            primary: org.primaryColor ?? undefined,
+            primary:   org.primaryColor   ?? undefined,
             secondary: org.secondaryColor ?? undefined,
-            warning: org.secondaryColor ?? undefined,
+            warning:   org.secondaryColor ?? undefined,
         };
+    }, [space, user]);
+
+    // Branding étendu : accent color, fond personnalisé, favicon dynamique
+    useEffect(() => {
+        if (space !== "company" && space !== "employee") return;
+        const org = user?.organization;
+        if (!org) return;
+        if (typeof document === "undefined") return;
+        const root = document.documentElement;
+        if (org.accentColor)     root.style.setProperty("--color-accent", org.accentColor);
+        if (org.backgroundColor) root.style.setProperty("--color-bg-org", org.backgroundColor);
+        if (org.faviconUrl) {
+            let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement("link");
+                link.rel = "icon";
+                document.head.appendChild(link);
+            }
+            link.href = org.faviconUrl;
+        }
     }, [space, user]);
 
     // Ne retient le résultat récupéré que s'il correspond à l'espace courant
@@ -184,9 +206,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         window.localStorage.setItem(DARK_MODE_STORAGE_KEY, String(dark));
     }, []);
 
+    const welcomeMessage = useMemo(
+        () => (space === "company" || space === "employee")
+            ? (user?.organization?.welcomeMessage ?? null)
+            : null,
+        [space, user]
+    );
+
     const value = useMemo<ThemeContextValue>(
-        () => ({ space, colors, defaultColors: DEFAULT_PALETTE, setUserColors, darkMode, setDarkMode }),
-        [space, colors, setUserColors, darkMode, setDarkMode]
+        () => ({ space, colors, defaultColors: DEFAULT_PALETTE, setUserColors, darkMode, setDarkMode, welcomeMessage }),
+        [space, colors, setUserColors, darkMode, setDarkMode, welcomeMessage]
     );
 
     return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

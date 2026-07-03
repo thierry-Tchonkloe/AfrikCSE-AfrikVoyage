@@ -38,11 +38,19 @@ model Organization {
   legalName          String?
   registrationNumber String?
   vatNumber          String?
+  // ─── Branding V2 Sprint 1 ───────────────────────────
+  backgroundColor    String?
+  faviconUrl         String?
+  welcomeMessage     String?
+  customDomain       String?
+  maxFamilyMembers   Int      @default(5)
   auditLogs     AuditLog[]
   users         User[]
   invitationTokens InvitationToken[]
 
   employees        Employee[]
+  familyMembers    FamilyMember[]
+  tickets          Ticket[]
   benefitCategories BenefitCategory[]
   benefitRequests  BenefitRequest[]
   complianceRequirements ComplianceRequirement[]
@@ -55,6 +63,12 @@ model Organization {
   events           Event[]
   csePosts         CsePost[]
   benefitCatalog   BenefitCatalogItem[]
+  travelPolicies   TravelPolicy[]
+  groupTravels     GroupTravel[]
+  travelRewards    TravelReward[]
+  ocrScans         OcrScan[]
+  eventPhotos      EventPhoto[]
+  faqEntries       FaqEntry[]
 
   @@map("organizations")
 }
@@ -103,6 +117,16 @@ model User {
   documents          UserDocument[]
   travelRequests     TravelRequest[]     @relation("TravelRequester")
   notifications      Notification[]
+  familyMembers      FamilyMember[]
+  tickets            Ticket[]
+  travelRewards      TravelReward[]      @relation("TravelRewardUser")
+  ocrScans           OcrScan[]           @relation("OcrScanUser")
+  ledGroupTravels    GroupTravel[]       @relation("GroupTravelLeader")
+  groupParticipations GroupTravelParticipant[] @relation("GroupTravelParticipant")
+  uploadedPhotos     EventPhoto[]        @relation("EventPhotoUploader")
+  eventPhotoLikes    EventPhotoLike[]    @relation("EventPhotoLiker")
+  faqEntriesAuthored FaqEntry[]          @relation("FaqEntryAuthor")
+  faqVotes           FaqVote[]           @relation("FaqVoter")
 
   @@map("users")
 }
@@ -403,6 +427,13 @@ model TravelRequest {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
+  // ─── Sprint 3 ────────────────────────────────────────
+  policyId       String?
+  policy         TravelPolicy?  @relation(fields: [policyId], references: [id])
+  groupTravelId  String?
+  groupTravel    GroupTravel?   @relation(fields: [groupTravelId], references: [id])
+  reward         TravelReward?  @relation("TravelRequestReward")
+
   expenses       ExpenseReport[]
 
   @@map("travel_requests")
@@ -524,7 +555,8 @@ model ApiIntegration {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  syncLogs       SyncLog[]
+  syncLogs        SyncLog[]
+  integrationType String   @default("HR_SYSTEM")
 
   @@map("api_integrations")
 }
@@ -570,6 +602,7 @@ model Event {
   updatedAt      DateTime    @updatedAt
 
   registrations  EventRegistration[]
+  photos         EventPhoto[]
 
   @@map("events")
 }
@@ -663,21 +696,47 @@ model PollVote {
 
 // ─── BENEFIT CATALOG (catalogue avantages employé) ─────
 model BenefitCatalogItem {
-  id             String   @id @default(cuid())
-  title          String
-  description    String?
-  imageUrl       String?
-  category       String   // "Sports et bien-être", "Restauration", etc.
-  subsidyPct     Int      // % subventionné par l'entreprise
-  employeePrice  Float    // ce que paie l'employé
-  companyPrice   Float    // ce que paie l'entreprise
-  validUntil     DateTime?
-  maxPerFamily   Int?
-  isActive       Boolean  @default(true)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id               String    @id @default(cuid())
+  title            String
+  description      String?
+  imageUrl         String?
+  category         String
+  subsidyPct       Int       // % existant V1 — voir subsidyAmount pour le montant fixe V2
+  employeePrice    Float
+  companyPrice     Float
+  validUntil       DateTime?
+  maxPerFamily     Int?
+  isActive         Boolean   @default(true)
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // ─── Champs V2 Sprint 1 ─────────────────────────────
+  partnerId          String?
+  partner            Partner?  @relation(fields: [partnerId], references: [id])
+  offerType          OfferType @default(VOUCHER)
+  isFeatured         Boolean   @default(false)
+  isCommitteeChoice  Boolean   @default(false)
+  boostUntil         DateTime?
+  boostLabel         String?
+  subsidyAmount      Decimal?  @db.Decimal(10,2)
+  subsidyStart       DateTime?
+  subsidyEnd         DateTime?
+  city               String?
+  region             String?
+  country            String?
+  latitude           Decimal?  @db.Decimal(9,6)
+  longitude          Decimal?  @db.Decimal(9,6)
+  requiresTicket     Boolean   @default(false)
+  requiresFamilyMember Boolean @default(false)
+  publishedAt        DateTime?
+  unpublishedAt      DateTime?
+  validFrom          DateTime?
+  stock              Int?
+
+  auditEntries     OfferAuditEntry[]
+  tickets          Ticket[]
 
   @@map("benefit_catalog_items")
 }
@@ -705,6 +764,8 @@ enum NotificationType {
   NEW_EVENT
   MESSAGE_RECEIVED
   SYSTEM_UPDATE
+  NEW_PARTNER_OFFER
+  PHOTO_PENDING_MODERATION
 }
 
 model Notification {
@@ -719,4 +780,369 @@ model Notification {
   createdAt DateTime         @default(now())
 
   @@map("notifications")
+}
+
+// ─── PARTNER (V2 Sprint 1) ─────────────────────────────
+
+enum PartnerStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PartnerScope {
+  CSE
+  VOYAGE
+  BOTH
+}
+
+enum OfferType {
+  VOUCHER
+  BOOKING
+  DISCOUNT_CODE
+}
+
+model Partner {
+  id              String        @id @default(cuid())
+  name            String
+  sector          String
+  logoUrl         String?
+  contactEmail    String?
+  websiteUrl      String?
+  notes           String?
+  status          PartnerStatus @default(DRAFT)
+  scopeType       PartnerScope  @default(CSE)
+  apiEnabled      Boolean       @default(false)
+  apiBaseUrl      String?
+  apiKeyEncrypted String?
+  apiFormat       String?
+  syncFrequencyH  Int           @default(24)
+  isGlobal        Boolean       @default(true)
+  organizationIds String[]
+  partnerToken    String?       @unique
+  warningCount    Int           @default(0)
+  flaggedAt       DateTime?
+  createdBy       String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  offers       BenefitCatalogItem[]
+  syncLogs     PartnerSyncLog[]
+  auditEntries OfferAuditEntry[]
+
+  @@map("partners")
+}
+
+model PartnerSyncLog {
+  id            String   @id @default(cuid())
+  partnerId     String
+  partner       Partner  @relation(fields: [partnerId], references: [id])
+  type          String
+  offersCreated Int      @default(0)
+  offersUpdated Int      @default(0)
+  errors        Int      @default(0)
+  status        String
+  errorDetail   String?
+  createdAt     DateTime @default(now())
+
+  @@map("partner_sync_logs")
+}
+
+model OfferAuditEntry {
+  id        String   @id @default(cuid())
+  offerId   String
+  offer     BenefitCatalogItem @relation(fields: [offerId], references: [id])
+  partnerId String?
+  partner   Partner? @relation(fields: [partnerId], references: [id])
+  action    String
+  changedBy String
+  snapshot  Json
+  version   Int
+  createdAt DateTime @default(now())
+
+  @@map("offer_audit_entries")
+}
+
+// ─── FAMILY MEMBER (V2 Sprint 2) ──────────────────────────
+
+enum FamilyRelationship {
+  SPOUSE
+  CHILD
+  PARENT
+  SIBLING
+  OTHER
+}
+
+model FamilyMember {
+  id             String             @id @default(cuid())
+  userId         String
+  user           User               @relation(fields: [userId], references: [id])
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  firstName      String
+  lastName       String
+  relationship   FamilyRelationship
+  birthDate      DateTime?
+  documentUrl    String?
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  tickets        Ticket[]
+
+  @@map("family_members")
+}
+
+// ─── TICKET QR (V2 Sprint 2) ──────────────────────────────
+
+enum TicketStatus {
+  VALID
+  USED
+  EXPIRED
+  CANCELLED
+}
+
+model Ticket {
+  id              String            @id @default(cuid())
+  code            String            @unique
+  organizationId  String
+  organization    Organization      @relation(fields: [organizationId], references: [id])
+  offerId         String
+  offer           BenefitCatalogItem @relation(fields: [offerId], references: [id])
+  userId          String
+  user            User              @relation(fields: [userId], references: [id])
+  familyMemberId  String?
+  familyMember    FamilyMember?     @relation(fields: [familyMemberId], references: [id])
+  qrPayload       String            // JSON HMAC-signé — ne jamais exposer directement
+  status          TicketStatus      @default(VALID)
+  usedAt          DateTime?
+  expiresAt       DateTime?
+  idempotencyKey  String            @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("tickets")
+}
+
+// ─── TRAVEL POLICY (V2 Sprint 3) ─────────────────────────
+
+model TravelPolicy {
+  id                     String       @id @default(cuid())
+  organizationId         String
+  organization           Organization @relation(fields: [organizationId], references: [id])
+  name                   String
+  description            String?
+  isDefault              Boolean      @default(false)
+  isActive               Boolean      @default(true)
+  maxFlightBudget        Decimal?     @db.Decimal(10,2)
+  maxHotelBudgetPerNight Decimal?     @db.Decimal(10,2)
+  maxDailyAllowance      Decimal?     @db.Decimal(10,2)
+  currency               String       @default("XOF")
+  allowedFlightClass     String?      // "ECONOMY" | "BUSINESS" | "FIRST"
+  maxAdvanceBookingDays  Int?
+  requiresApproval       Boolean      @default(true)
+  approvalThreshold      Decimal?     @db.Decimal(10,2)
+  allowedDestinations    String[]     @default([])
+  restrictedDestinations String[]     @default([])
+  appliesToDepartments   String[]     @default([])
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  travelRequests TravelRequest[]
+
+  @@map("travel_policies")
+}
+
+// ─── GROUP TRAVEL (V2 Sprint 3) ──────────────────────────
+
+enum GroupTravelStatus {
+  DRAFT
+  OPEN
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum ParticipantStatus {
+  INVITED
+  CONFIRMED
+  DECLINED
+  CANCELLED
+}
+
+model GroupTravel {
+  id              String            @id @default(cuid())
+  organizationId  String
+  organization    Organization      @relation(fields: [organizationId], references: [id])
+  leaderId        String
+  leader          User              @relation("GroupTravelLeader", fields: [leaderId], references: [id])
+  title           String
+  description     String?
+  destination     String
+  departureDate   DateTime
+  returnDate      DateTime
+  estimatedCost   Decimal?          @db.Decimal(10,2)
+  maxParticipants Int?
+  status          GroupTravelStatus @default(DRAFT)
+  currency        String            @default("XOF")
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  participants   GroupTravelParticipant[]
+  travelRequests TravelRequest[]
+
+  @@map("group_travels")
+}
+
+model GroupTravelParticipant {
+  id            String            @id @default(cuid())
+  groupTravelId String
+  groupTravel   GroupTravel       @relation(fields: [groupTravelId], references: [id])
+  userId        String
+  user          User              @relation("GroupTravelParticipant", fields: [userId], references: [id])
+  status        ParticipantStatus @default(INVITED)
+  note          String?
+  invitedAt     DateTime          @default(now())
+  respondedAt   DateTime?
+
+  @@unique([groupTravelId, userId])
+  @@map("group_travel_participants")
+}
+
+// ─── TRAVEL REWARD (V2 Sprint 3) ─────────────────────────
+
+enum RewardStatus {
+  EARNED
+  REDEEMED
+  EXPIRED
+  CANCELLED
+}
+
+model TravelReward {
+  id              String        @id @default(cuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  userId          String
+  user            User          @relation("TravelRewardUser", fields: [userId], references: [id])
+  travelRequestId String?       @unique
+  travelRequest   TravelRequest? @relation("TravelRequestReward", fields: [travelRequestId], references: [id])
+  points          Int
+  reason          String        // "ECONOMY_BOOKING" | "EARLY_BOOKING" | "MANUAL"
+  status          RewardStatus  @default(EARNED)
+  estimatedCost   Decimal?      @db.Decimal(10,2)
+  actualCost      Decimal?      @db.Decimal(10,2)
+  savedAmount     Decimal?      @db.Decimal(10,2)
+  currency        String        @default("XOF")
+  expiresAt       DateTime?
+  redeemedAt      DateTime?
+  createdAt       DateTime      @default(now())
+
+  @@map("travel_rewards")
+}
+
+// ─── OCR SCAN (V2 Sprint 3) ──────────────────────────────
+
+enum OcrStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+model OcrScan {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation("OcrScanUser", fields: [userId], references: [id])
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  fileUrl         String
+  rawText         String?
+  extractedData   Json?         // { amount, date, vendor, currency }
+  status          OcrStatus     @default(PENDING)
+  errorMessage    String?
+  expenseReportId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("ocr_scans")
+}
+
+// ─── EVENT PHOTO (V2 Sprint 4) ────────────────────────────
+
+enum PhotoStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model EventPhoto {
+  id             String      @id @default(cuid())
+  eventId        String
+  event          Event       @relation(fields: [eventId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  uploadedBy     String
+  uploader       User        @relation("EventPhotoUploader", fields: [uploadedBy], references: [id])
+  url            String
+  caption        String?
+  status         PhotoStatus @default(PENDING)
+  createdAt      DateTime    @default(now())
+
+  likes          EventPhotoLike[]
+
+  @@map("event_photos")
+}
+
+model EventPhotoLike {
+  id        String     @id @default(cuid())
+  photoId   String
+  photo     EventPhoto @relation(fields: [photoId], references: [id])
+  userId    String
+  user      User       @relation("EventPhotoLiker", fields: [userId], references: [id])
+  createdAt DateTime   @default(now())
+
+  @@unique([photoId, userId])
+  @@map("event_photo_likes")
+}
+
+// ─── FAQ ENTRY (V2 Sprint 4) ──────────────────────────────
+
+enum FaqStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model FaqEntry {
+  id             String    @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  question       String
+  answer         String
+  category       String?
+  order          Int       @default(0)
+  status         FaqStatus @default(DRAFT)
+  createdById    String
+  createdBy      User      @relation("FaqEntryAuthor", fields: [createdById], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  votes          FaqVote[]
+
+  @@map("faq_entries")
+}
+
+model FaqVote {
+  id         String   @id @default(cuid())
+  faqEntryId String
+  faqEntry   FaqEntry @relation(fields: [faqEntryId], references: [id])
+  userId     String
+  user       User     @relation("FaqVoter", fields: [userId], references: [id])
+  helpful    Boolean
+  createdAt  DateTime @default(now())
+
+  @@unique([faqEntryId, userId])
+  @@map("faq_votes")
 }

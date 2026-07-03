@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, X, Loader2, History, Upload } from "lucide-react";
+import { Search, Plus, X, Loader2, History, Upload, MapPin, Tag, Star, Sparkles, Clock } from "lucide-react";
 import { employeeService } from "@/services/employes/employee.service";
+import { catalogService } from "@/services/employes/catalog.service";
+import { CatalogItem } from "@/types";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -44,24 +46,117 @@ const URGENCY_OPTIONS = [
     { value: "HIGH",   label: "Urgent",  color: "#ef4444" },
 ];
 
+const OFFER_TYPE_LABELS: Record<string, string> = {
+    VOUCHER:       "Bon d'achat",
+    BOOKING:       "Réservation",
+    DISCOUNT_CODE: "Code promo",
+};
+
+// ── Carte offre catalogue ─────────────────────────────────────────────────────
+
+function OfferCard({ item }: { item: CatalogItem }) {
+    const router = useRouter();
+    return (
+        <div
+            onClick={() => router.push(`/employes/avantages/${item.id}`)}
+            className="flex-none w-56 bg-white rounded-xl border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-shadow space-y-2"
+        >
+            {item.imageUrl ? (
+                <img src={item.imageUrl} alt={item.title}
+                    className="w-full h-28 object-cover rounded-lg" />
+            ) : (
+                <div className="w-full h-28 rounded-lg flex items-center justify-center text-3xl"
+                    style={{ background: "#f0fdf4" }}>
+                    🎁
+                </div>
+            )}
+            <div>
+                <p className="font-semibold text-gray-900 text-sm line-clamp-1">{item.title}</p>
+                {item.partner && (
+                    <p className="text-xs text-gray-500 line-clamp-1">{item.partner.name}</p>
+                )}
+            </div>
+            <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
+                    style={{ background: "#f0fdf4", color: "#0f766e" }}>
+                    <Tag size={10} /> {OFFER_TYPE_LABELS[item.offerType] ?? item.offerType}
+                </span>
+                {item.subsidyPct > 0 && (
+                    <span className="text-xs font-bold" style={{ color: "#0f766e" }}>
+                        -{item.subsidyPct}%
+                    </span>
+                )}
+            </div>
+            {(item.city || item.region) && (
+                <p className="flex items-center gap-1 text-xs text-gray-400">
+                    <MapPin size={10} /> {item.city ?? item.region}
+                </p>
+            )}
+        </div>
+    );
+}
+
+// ── Panneau horizontal scrollable ────────────────────────────────────────────
+
+function CatalogPanel({
+    icon, title, items, loading,
+}: {
+    icon: React.ReactNode;
+    title: string;
+    items: CatalogItem[];
+    loading: boolean;
+}) {
+    if (!loading && items.length === 0) return null;
+    return (
+        <div className="space-y-3">
+            <div className="flex items-center gap-2">
+                {icon}
+                <h2 className="font-bold text-gray-900 text-base">{title}</h2>
+                {!loading && <span className="text-xs text-gray-400">{items.length} offre{items.length > 1 ? "s" : ""}</span>}
+            </div>
+            {loading ? (
+                <div className="flex gap-4 overflow-hidden">
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className="flex-none w-56 h-52 bg-white rounded-xl border border-gray-200 animate-pulse" />
+                    ))}
+                </div>
+            ) : (
+                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-200">
+                    {items.map((item) => <OfferCard key={item.id} item={item} />)}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── Page principale ───────────────────────────────────────────────────────────
+
 export default function AvantagesPage() {
     const router = useRouter();
+
+    // CSE Avantages
     const [categories, setCategories] = useState<BenefitCategory[]>([]);
     const [requests, setRequests]     = useState<BenefitRequest[]>([]);
     const [balance, setBalance]       = useState<BenefitBalance | null>(null);
     const [loading, setLoading]       = useState(true);
     const [search, setSearch]         = useState("");
 
+    // Catalogue offres partenaires
+    const [featured,   setFeatured]   = useState<CatalogItem[]>([]);
+    const [committee,  setCommittee]  = useState<CatalogItem[]>([]);
+    const [newOffers,  setNewOffers]  = useState<CatalogItem[]>([]);
+    const [catalogLoading, setCatalogLoading] = useState(true);
+
     // Modal soumission
-    const [submitModal, setSubmitModal]   = useState<BenefitCategory | null>(null);
-    const [submitAmount, setSubmitAmount] = useState("");
-    const [submitDesc, setSubmitDesc]     = useState("");
-    const [submitUrgency, setSubmitUrgency] = useState<"LOW" | "MEDIUM" | "HIGH">("MEDIUM");
-    const [submitting, setSubmitting]     = useState(false);
+    const [submitModal, setSubmitModal]       = useState<BenefitCategory | null>(null);
+    const [submitAmount, setSubmitAmount]     = useState("");
+    const [submitDesc, setSubmitDesc]         = useState("");
+    const [submitUrgency, setSubmitUrgency]   = useState<"LOW" | "MEDIUM" | "HIGH">("MEDIUM");
+    const [submitting, setSubmitting]         = useState(false);
 
     // Upload justificatif
-    const [receiptFile, setReceiptFile] = useState<{ name: string; size: string } | null>(null);
-    const [receiptUrl, setReceiptUrl]   = useState<string | null>(null);
+    const [receiptFile, setReceiptFile]       = useState<{ name: string; size: string } | null>(null);
+    const [receiptUrl, setReceiptUrl]         = useState<string | null>(null);
     const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
     const loadAll = useCallback(async () => {
@@ -82,7 +177,28 @@ export default function AvantagesPage() {
         }
     }, []);
 
-    useEffect(() => { loadAll(); }, [loadAll]);
+    const loadCatalog = useCallback(async () => {
+        setCatalogLoading(true);
+        try {
+            const [f, c, n] = await Promise.all([
+                catalogService.getFeatured(),
+                catalogService.getCommitteeChoices(),
+                catalogService.getNew(),
+            ]);
+            setFeatured(f);
+            setCommittee(c);
+            setNewOffers(n);
+        } catch {
+            // Catalogue non disponible — on affiche silencieusement
+        } finally {
+            setCatalogLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadAll();
+        loadCatalog();
+    }, [loadAll, loadCatalog]);
 
     const handleSubmit = async () => {
         if (!submitModal) return;
@@ -141,13 +257,15 @@ export default function AvantagesPage() {
         (c) => !search || c.name.toLowerCase().includes(search.toLowerCase())
     );
 
+    const hasCatalog = catalogLoading || featured.length > 0 || committee.length > 0 || newOffers.length > 0;
+
     return (
-        <div className="space-y-5">
+        <div className="space-y-8">
             {/* En-tête */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h1 className="text-xl font-bold text-gray-900">Mes avantages CSE</h1>
-                    <p className="text-sm text-gray-500">Accédez à vos avantages et suivez vos demandes</p>
+                    <h1 className="text-xl font-bold text-gray-900">Mes avantages</h1>
+                    <p className="text-sm text-gray-500">Vos avantages CSE et les offres partenaires</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {balance && (
@@ -178,102 +296,135 @@ export default function AvantagesPage() {
                 </div>
             </div>
 
-            {/* ── Catalogue ─────────────────────────────────────────────────────────── */}
-            <>
-                    <div className="relative max-w-sm">
-                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Rechercher une catégorie..."
-                            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none"
-                        />
+            {/* ── Catalogue des offres partenaires ─────────────────────────────────── */}
+            {hasCatalog && (
+                <div className="space-y-6">
+                    <div className="border-b border-gray-100 pb-2">
+                        <h2 className="font-bold text-gray-900 text-base">Catalogue des offres</h2>
+                        <p className="text-xs text-gray-500">Offres négociées par votre CSE auprès de nos partenaires</p>
                     </div>
 
-                    {loading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {[...Array(6)].map((_, i) => (
-                                <div key={i} className="h-52 bg-white rounded-xl border border-gray-200 animate-pulse" />
-                            ))}
-                        </div>
-                    ) : filteredCategories.length === 0 ? (
-                        <div className="text-center py-16 text-gray-500">
-                            <p className="text-4xl mb-3">🎁</p>
-                            <p className="font-medium">Aucune catégorie d&apos;avantages configurée</p>
-                            <p className="text-xs mt-1">Contactez votre administrateur RH</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {filteredCategories.map((cat) => {
-                                const usagePercent = cat.perEmployeeLimit > 0
-                                    ? Math.min(100, (cat.usedAmount / cat.perEmployeeLimit) * 100)
-                                    : 0;
-                                const isExhausted = cat.remainingAmount <= 0;
-                                const icon = cat.icon ?? "🎁";
+                    <CatalogPanel
+                        icon={<Star size={18} className="text-amber-500" />}
+                        title="Offres du moment"
+                        items={featured}
+                        loading={catalogLoading}
+                    />
+                    <CatalogPanel
+                        icon={<Sparkles size={18} className="text-purple-500" />}
+                        title="Sélection comité"
+                        items={committee}
+                        loading={catalogLoading}
+                    />
+                    <CatalogPanel
+                        icon={<Clock size={18} className="text-blue-500" />}
+                        title="Nouveautés"
+                        items={newOffers}
+                        loading={catalogLoading}
+                    />
+                </div>
+            )}
 
-                                return (
-                                    <div
-                                        key={cat.id}
-                                        className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-3 hover:shadow-md transition-shadow"
-                                        style={isExhausted ? { opacity: 0.7 } : {}}
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <div
-                                                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-                                                style={{ background: "#f0fdf4" }}
-                                            >
-                                                {icon}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold text-gray-900 text-sm">{cat.name}</p>
-                                                {cat.description && (
-                                                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{cat.description}</p>
-                                                )}
-                                            </div>
-                                        </div>
+            {/* ── Avantages CSE ─────────────────────────────────────────────────────── */}
+            <div className="space-y-4">
+                <div className="border-b border-gray-100 pb-2">
+                    <h2 className="font-bold text-gray-900 text-base">Mes avantages CSE</h2>
+                    <p className="text-xs text-gray-500">Accédez à vos avantages et suivez vos demandes</p>
+                </div>
 
-                                        {/* Barre de progression */}
-                                        <div>
-                                            <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                                <span>Utilisé</span>
-                                                <span className="font-medium" style={{ color: isExhausted ? "#ef4444" : "#0f766e" }}>
-                                                    {cat.usedAmount.toLocaleString()} / {cat.perEmployeeLimit.toLocaleString()} XOF
-                                                </span>
-                                            </div>
-                                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full transition-all"
-                                                    style={{
-                                                        width: `${usagePercent}%`,
-                                                        background: usagePercent >= 90 ? "#ef4444" : usagePercent >= 70 ? "#f59e0b" : "#0f766e",
-                                                    }}
-                                                />
-                                            </div>
-                                            <p className="text-xs text-right mt-1 font-medium" style={{ color: "#0f766e" }}>
-                                                Reste : {cat.remainingAmount.toLocaleString()} XOF
-                                            </p>
-                                        </div>
+                <div className="relative max-w-sm">
+                    <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Rechercher une catégorie..."
+                        className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none"
+                    />
+                </div>
 
-                                        <button
-                                            onClick={() => !isExhausted && setSubmitModal(cat)}
-                                            disabled={isExhausted}
-                                            className="w-full py-2.5 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed"
-                                            style={isExhausted
-                                                ? { background: "#f3f4f6", color: "#9ca3af" }
-                                                : { background: "#0f766e", color: "white" }}
+                {loading ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="h-52 bg-white rounded-xl border border-gray-200 animate-pulse" />
+                        ))}
+                    </div>
+                ) : filteredCategories.length === 0 ? (
+                    <div className="text-center py-16 text-gray-500">
+                        <p className="text-4xl mb-3">🎁</p>
+                        <p className="font-medium">Aucune catégorie d&apos;avantages configurée</p>
+                        <p className="text-xs mt-1">Contactez votre administrateur RH</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredCategories.map((cat) => {
+                            const usagePercent = cat.perEmployeeLimit > 0
+                                ? Math.min(100, (cat.usedAmount / cat.perEmployeeLimit) * 100)
+                                : 0;
+                            const isExhausted = cat.remainingAmount <= 0;
+                            const icon = cat.icon ?? "🎁";
+
+                            return (
+                                <div
+                                    key={cat.id}
+                                    className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-3 hover:shadow-md transition-shadow"
+                                    style={isExhausted ? { opacity: 0.7 } : {}}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div
+                                            className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
+                                            style={{ background: "#f0fdf4" }}
                                         >
-                                            {isExhausted ? "Plafond atteint" : (
-                                                <span className="flex items-center justify-center gap-1.5">
-                                                    <Plus size={14} /> Faire une demande
-                                                </span>
+                                            {icon}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-gray-900 text-sm">{cat.name}</p>
+                                            {cat.description && (
+                                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{cat.description}</p>
                                             )}
-                                        </button>
+                                        </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
-            </>
+
+                                    <div>
+                                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                            <span>Utilisé</span>
+                                            <span className="font-medium" style={{ color: isExhausted ? "#ef4444" : "#0f766e" }}>
+                                                {cat.usedAmount.toLocaleString()} / {cat.perEmployeeLimit.toLocaleString()} XOF
+                                            </span>
+                                        </div>
+                                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full transition-all"
+                                                style={{
+                                                    width: `${usagePercent}%`,
+                                                    background: usagePercent >= 90 ? "#ef4444" : usagePercent >= 70 ? "#f59e0b" : "#0f766e",
+                                                }}
+                                            />
+                                        </div>
+                                        <p className="text-xs text-right mt-1 font-medium" style={{ color: "#0f766e" }}>
+                                            Reste : {cat.remainingAmount.toLocaleString()} XOF
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={() => !isExhausted && setSubmitModal(cat)}
+                                        disabled={isExhausted}
+                                        className="w-full py-2.5 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed"
+                                        style={isExhausted
+                                            ? { background: "#f3f4f6", color: "#9ca3af" }
+                                            : { background: "#0f766e", color: "white" }}
+                                    >
+                                        {isExhausted ? "Plafond atteint" : (
+                                            <span className="flex items-center justify-center gap-1.5">
+                                                <Plus size={14} /> Faire une demande
+                                            </span>
+                                        )}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
 
             {/* ── Modal soumission demande ──────────────────────────────────────────── */}
             {submitModal && (
