@@ -7,7 +7,8 @@ import {
     LayoutDashboard, Plane, FileText, Calendar,
     Gift, MessageSquare, CalendarDays, User, Settings,
     ChevronLeft, ChevronRight, LogOut, Menu,
-    Mail, Sun, Moon, LifeBuoy, Bell,FileClock,
+    Mail, Sun, Moon, LifeBuoy, Bell, FileClock, Users, Ticket, Trophy,
+    HelpCircle, Images,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
@@ -23,9 +24,15 @@ const NAV_ITEMS = [
     { href: "/employes/notes-de-frais", label: "Notes de frais",       icon: FileText },
     { href: "/employes/reserver",       label: "Réservez votre voyage", icon: Calendar },
     { href: "/employes/avantages",      label: "Mes avantages",        icon: Gift },
+    { href: "/employes/famille",        label: "Ma famille",           icon: Users },
+    { href: "/employes/tickets",        label: "Mes tickets",          icon: Ticket },
+    { href: "/employes/voyages/groupe", label: "Voyages de groupe",    icon: Users },
+    { href: "/employes/recompenses",    label: "Récompenses",          icon: Trophy },
     { href: "/employes/communication",  label: "Communication CSE",    icon: MessageSquare },
-    { href: "/employes/evenements",     label: "Calendrier des Évènements", icon: CalendarDays },
-    { href: "/employes/support",        label: "Support",              icon: LifeBuoy },
+    { href: "/employes/evenements",          label: "Calendrier des Évènements", icon: CalendarDays },
+    { href: "/employes/evenements/galerie", label: "Galerie photos",           icon: Images },
+    { href: "/employes/faq",                label: "FAQ",                      icon: HelpCircle },
+    { href: "/employes/support",            label: "Support",                  icon: LifeBuoy },
     { href: "/employes/notifications", label: "Notifications",       icon: Bell, badge: true },
     { href: "/employes/mes-demandes", label: "Mes demandes", icon: FileClock },
 ];
