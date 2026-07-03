@@ -29,17 +29,19 @@ function useNavItems(hasCSE: boolean, hasVoyage: boolean, pathname: string) {
             { href: "/companies/AfrikCSE/employes", label: "Employés", icon: Users },
             { href: "/companies/AfrikCSE/budget", label: "Subventions", icon: Users },
             { href: "/companies/AfrikCSE/rapport", label: "Rapport", icon: LayoutDashboard },
+            { href: "/companies/AfrikCSE/faq",      label: "FAQ",        icon: Users },
             { href: "/companies/AfrikCSE/messages", label: "Messagerie", icon: Users },
             { href: "/companies/AfrikCSE/settings", label: "Paramètres", icon: Settings },
         );
     } else if (isInVoyage && hasVoyage) {
         items.push(
-            { href: "/companies/AfrikVoyage/dashboard", label: "AfrikVoyage", icon: Users },
-            { href: "/companies/AfrikVoyage/approbations", label: "Approbations", icon: Users },
-            { href: "/companies/AfrikVoyage/reservations", label: "Réservations", icon: Users },
-            { href: "/companies/AfrikVoyage/frais", label: "Notes de frais", icon: Users },
-            { href: "/companies/AfrikVoyage/reporting", label: "Duty of Care", icon: Users },
-            { href: "/companies/AfrikVoyage/settings", label: "Paramètres", icon: Settings },
+            { href: "/companies/AfrikVoyage/dashboard",   label: "AfrikVoyage",   icon: Users },
+            { href: "/companies/AfrikVoyage/approbations", label: "Approbations",  icon: Users },
+            { href: "/companies/AfrikVoyage/reservations", label: "Réservations",  icon: Users },
+            { href: "/companies/AfrikVoyage/frais",       label: "Notes de frais", icon: Users },
+            { href: "/companies/AfrikVoyage/politiques",  label: "Politiques",     icon: Users },
+            { href: "/companies/AfrikVoyage/reporting",   label: "Duty of Care",   icon: Users },
+            { href: "/companies/AfrikVoyage/settings",    label: "Paramètres",     icon: Settings },
         );
     } else {
         // ── Affiche les modules comme liens de navigation ──
