@@ -3,26 +3,33 @@
 import { useState, useEffect, useLayoutEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck, Handshake, Plug,} from "lucide-react";
+import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck, Handshake, Plug, DollarSign, Headphones, BarChart3, Code2, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
 import { useTheme } from "@/hooks/useTheme";
 import { adminService } from "@/services/admin/admin.service";
 import { GlobalSearch } from "@/components/shared/GlobalSearch";
 import { NotificationBell } from "@/components/shared/NotificationBell";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
 const NAV_ITEMS = [
     { href: "/admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { href: "/admin/companies", label: "Entreprises", icon: Building2 },
     { href: "/admin/validations", label: "Validations", icon: ClipboardCheck, badge: true },
     { href: "/admin/messages", label: "Messagerie", icon: MessageSquare },
-    { href: "/admin/notifications", label: "Notifications", icon: Bell },
+    { href: "/admin/notifications/templates", label: "Templates notif.", icon: Bell },
+    { href: "/admin/notifications/logs",      label: "Logs notif.",      icon: Logs },
+    { href: "/admin/reporting",               label: "Reporting",         icon: BarChart3 },
     { href: "/admin/logs", label: "Historique des Logs", icon: Logs },
     { href: "/admin/plans", label: "Gérer les Plans", icon: LayoutTemplate },
     { href: "/admin/access",       label: "Gérer les Accès",  icon: ShieldCheck },
-    { href: "/admin/partners",     label: "Partenaires",       icon: Handshake },
-    { href: "/admin/integrations", label: "Intégrations GDS",  icon: Plug },
-    { href: "/admin/settings",     label: "Paramètres",        icon: Settings },
+    { href: "/admin/partners",       label: "Partenaires",       icon: Handshake },
+    { href: "/admin/commissions",    label: "Commissions",       icon: DollarSign },
+    { href: "/admin/service-client", label: "Service client",    icon: Headphones },
+    { href: "/admin/developer",       label: "API Développeur",   icon: Code2 },
+    { href: "/admin/countries",       label: "Pays & Devises",    icon: Globe },
+    { href: "/admin/integrations",   label: "Intégrations GDS",  icon: Plug },
+    { href: "/admin/settings",       label: "Paramètres",        icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -243,6 +250,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 >
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
+
+                {/* Langue */}
+                <LanguageSwitcher compact />
 
                 {/* Notifications */}
                 <NotificationBell darkMode={darkMode} notificationsHref="/admin/notifications" />

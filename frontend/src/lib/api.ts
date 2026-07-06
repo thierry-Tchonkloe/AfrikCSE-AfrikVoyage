@@ -123,7 +123,9 @@ api.interceptors.response.use(
                 "/unauthorized",
             ].some((prefix) => path === prefix || path.startsWith(prefix + "/"));
 
-            if (!isPublicPage) {
+            // /partner-portal a sa propre vérification de session dans le layout
+            const isPartnerPortal = path.startsWith("/partner-portal");
+            if (!isPublicPage && !isPartnerPortal) {
                 window.location.href = "/login";
             }
             }

@@ -4,7 +4,10 @@ export type Role =
     | "MANAGER"
     | "RH"
     | "FINANCE"
-    | "EMPLOYE";
+    | "EMPLOYE"
+    | "PLATFORM_MANAGER"
+    | "PARTNER_ADMIN"
+    | "PARTNER_STAFF";
 
 export type OrgStatus = "PENDING" | "ACTIVE" | "SUSPENDED" | "REJECTED";
 export type Plan = "STARTER" | "BUSINESS" | "ENTERPRISE";
@@ -37,6 +40,10 @@ export interface User {
     profileCompleted: boolean;
     organizationId: string | null;
     organization: Organization | null;
+    // Champs supplémentaires pour les utilisateurs partenaires
+    isPartner?: boolean;
+    partnerId?: string;
+    partnerName?: string;
 }
 
 export type NotificationType =
@@ -46,7 +53,20 @@ export type NotificationType =
     | "TRIP_REMINDER"
     | "NEW_EVENT"
     | "MESSAGE_RECEIVED"
-    | "SYSTEM_UPDATE";
+    | "SYSTEM_UPDATE"
+    | "NEW_PARTNER_OFFER"
+    | "PHOTO_PENDING_MODERATION"
+    | "BOOKING_CONFIRMED"
+    | "BOOKING_CANCELLED"
+    | "BOOKING_COMPLETED"
+    | "BOOKING_REJECTED"
+    | "WALLET_CREDITED"
+    | "CASHBACK_CREDITED"
+    | "ORDER_CONFIRMED"
+    | "ORDER_CANCELLED";
+
+export type NotificationChannel    = "IN_APP" | "EMAIL" | "SMS";
+export type NotificationLogStatus  = "PENDING" | "SENT" | "FAILED" | "SKIPPED";
 
 export interface Notification {
     id: string;
@@ -56,6 +76,33 @@ export interface Notification {
     type: NotificationType;
     link?: string | null;
     read: boolean;
+    createdAt: string;
+}
+
+export interface NotificationTemplate {
+    id:           string;
+    event:        NotificationType;
+    channels:     NotificationChannel[];
+    emailSubject: string | null;
+    emailBody:    string | null;
+    smsBody:      string | null;
+    inAppTitle:   string | null;
+    inAppBody:    string | null;
+    isActive:     boolean;
+    createdAt:    string;
+    updatedAt:    string;
+}
+
+export interface NotificationLog {
+    id:        string;
+    userId:    string | null;
+    email:     string | null;
+    phone:     string | null;
+    event:     NotificationType;
+    channel:   NotificationChannel;
+    status:    NotificationLogStatus;
+    error:     string | null;
+    sentAt:    string | null;
     createdAt: string;
 }
 
@@ -296,10 +343,256 @@ export interface FaqEntry {
 }
 
 export interface AuthResponse {
-    // access/refresh peuvent être absents car les cookies HTTP-only sont posés
-    accessToken?: string;
-    refreshToken?: string;
-    // jeton court signé fourni pour le middleware (lisible par le frontend)
+    type?: "user" | "partner";
     sessionToken?: string;
-    user: User;
+    user?: User;
+    // Renvoyé par le backend pour info immédiate avant useAuth.loadUser()
+    partnerUser?: {
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        role: "PARTNER_ADMIN" | "PARTNER_STAFF";
+        partnerId: string;
+        partnerName: string;
+    };
+}
+
+// ── Wallet ────────────────────────────────────────────────────────────────────
+
+export type WalletEntryType =
+    | "ALLOCATION"
+    | "DEBIT"
+    | "SUBSIDY_CREDIT"
+    | "CASHBACK_CREDIT"
+    | "CASHBACK_REVERSAL"
+    | "REFUND"
+    | "EXPIRY"
+    | "REWARD_CREDIT";
+
+export interface WalletEntry {
+    id:              string;
+    walletId:        string;
+    type:            WalletEntryType;
+    amount:          string; // Decimal serialized as string
+    runningBalance:  string;
+    idempotencyKey:  string;
+    description?:    string | null;
+    referenceId?:    string | null;
+    referenceType?:  string | null;
+    expiresAt?:      string | null;
+    createdAt:       string;
+}
+
+export interface Wallet {
+    id:             string;
+    userId:         string;
+    organizationId: string;
+    currencyCode:   string;
+    createdAt:      string;
+    _count?: { entries: number };
+    user?: { id: string; firstName: string; lastName: string; email: string; department?: string | null };
+}
+
+export interface WalletWithBalance extends Wallet {
+    balance: string; // Decimal serialized as string
+}
+
+// ── Cashback ──────────────────────────────────────────────────────────────────
+
+export type CashbackType   = "MERCHANT" | "EMPLOYER" | "HYBRID" | "CAMPAIGN";
+export type CashbackStatus = "CALCULATED" | "CREDITED" | "PENDING_REVIEW" | "REVERSED" | "EXPIRED";
+
+export interface CashbackRule {
+    id:              string;
+    organizationId?: string | null;
+    partnerId?:      string | null;
+    type:            CashbackType;
+    rate:            string;
+    fixedAmount?:    string | null;
+    maxPerEmployee?: string | null;
+    maxPerPeriod?:   string | null;
+    startDate?:      string | null;
+    endDate?:        string | null;
+    isActive:        boolean;
+    category?:       string | null;
+    currencyCode:    string;
+    createdAt:       string;
+    partner?: { id: string; name: string } | null;
+    _count?: { transactions: number; offers: number };
+}
+
+export interface CashbackTransaction {
+    id:              string;
+    userId:          string;
+    organizationId:  string;
+    orderId?:        string | null;
+    ticketId?:       string | null;
+    ruleId:          string;
+    rawAmount:       string;
+    creditedAmount:  string;
+    status:          CashbackStatus;
+    fraudScore?:     string | null;
+    currencyCode:    string;
+    createdAt:       string;
+    user?: { id: string; firstName: string; lastName: string };
+    rule?: { id: string; type: CashbackType; rate: string };
+}
+
+// ── Partner portal ────────────────────────────────────────────────────────────
+
+export interface PartnerUser {
+    id:          string;
+    partnerId:   string;
+    email:       string;
+    firstName:   string;
+    lastName:    string;
+    role:        "PARTNER_ADMIN" | "PARTNER_STAFF";
+    isActive:    boolean;
+    lastLoginAt?: string | null;
+    createdAt:   string;
+}
+
+export interface PartnerLocation {
+    id:        string;
+    partnerId: string;
+    name:      string;
+    address:   string;
+    city:      string;
+    country:   string;
+    latitude?: string | null;
+    longitude?: string | null;
+    phone?:    string | null;
+    isMain:    boolean;
+    createdAt: string;
+    updatedAt: string;
+    availabilities?: PartnerAvailability[];
+}
+
+export interface PartnerAvailability {
+    id:            string;
+    locationId:    string;
+    dayOfWeek?:    number | null;
+    openTime:      string;
+    closeTime:     string;
+    isClosed:      boolean;
+    exceptionDate?: string | null;
+    note?:         string | null;
+    createdAt:     string;
+}
+
+// ── Bookings ──────────────────────────────────────────────────────────────────
+
+export type BookingStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "REJECTED" | "NO_SHOW";
+
+export interface BookingRating {
+    score:    number;
+    comment?: string | null;
+}
+
+export interface Booking {
+    id:              string;
+    userId:          string;
+    organizationId:  string;
+    partnerId:       string;
+    offerId?:        string | null;
+    locationId?:     string | null;
+    orderId?:        string | null;
+    status:          BookingStatus;
+    bookingDate:     string;
+    numberOfPersons: number;
+    notes?:          string | null;
+    partnerNotes?:   string | null;
+    idempotencyKey:  string;
+    confirmedAt?:    string | null;
+    completedAt?:    string | null;
+    cancelledAt?:    string | null;
+    cancelReason?:   string | null;
+    createdAt:       string;
+    updatedAt:       string;
+    partner?: { id: string; name: string; logoUrl?: string | null };
+    offer?:   { id: string; title: string; category: string; imageUrl?: string | null } | null;
+    location?: { id: string; name: string; address: string; city: string } | null;
+    rating?:  BookingRating | null;
+    commissionEntry?: { id: string; commissionAmount: string; netAmount: string; status: string } | null;
+}
+
+// ── Commissions ───────────────────────────────────────────────────────────────
+
+export type CommissionType   = "PERCENTAGE" | "FIXED" | "MAX_OF_BOTH";
+export type CommissionStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "REVERSED";
+export type PayoutStatus     = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+export interface CommissionRule {
+    id:           string;
+    partnerId?:   string | null;
+    category?:    string | null;
+    type:         CommissionType;
+    rate:         string;
+    fixedAmount?: string | null;
+    currencyCode: string;
+    isActive:     boolean;
+    createdAt:    string;
+    partner?: { id: string; name: string } | null;
+}
+
+export interface CommissionEntry {
+    id:               string;
+    bookingId:        string;
+    ruleId:           string;
+    partnerId:        string;
+    grossAmount:      string;
+    commissionAmount: string;
+    netAmount:        string;
+    currencyCode:     string;
+    status:           CommissionStatus;
+    payoutId?:        string | null;
+    createdAt:        string;
+    partner?: { id: string; name: string };
+    booking?: { id: string; bookingDate: string; status: BookingStatus; organization?: { id: string; name: string } };
+}
+
+export interface PartnerPayout {
+    id:              string;
+    partnerId:       string;
+    period:          string;
+    totalGross:      string;
+    totalCommission: string;
+    netAmount:       string;
+    currencyCode:    string;
+    status:          PayoutStatus;
+    paymentMethod?:  string | null;
+    paidAt?:         string | null;
+    notes?:          string | null;
+    createdAt:       string;
+    partner?: { id: string; name: string };
+    entries?: CommissionEntry[];
+}
+
+// ── Orders ────────────────────────────────────────────────────────────────────
+
+export type OrderStatus        = "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED" | "COMPLETED";
+export type OrderPaymentStatus = "UNPAID" | "PAID" | "PARTIALLY_REFUNDED" | "REFUNDED" | "FAILED";
+
+export interface Order {
+    id:              string;
+    userId:          string;
+    organizationId:  string;
+    partnerId?:      string | null;
+    offerId?:        string | null;
+    amount:          string;
+    discountAmount:  string;
+    subsidyAmount:   string;
+    cashbackAmount:  string;
+    finalAmount:     string;
+    currencyCode:    string;
+    paymentMethod?:  string | null;
+    paymentStatus:   OrderPaymentStatus;
+    transactionId?:  string | null;
+    idempotencyKey:  string;
+    status:          OrderStatus;
+    cancelledAt?:    string | null;
+    cancelReason?:   string | null;
+    createdAt:       string;
+    updatedAt:       string;
 }

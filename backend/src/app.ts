@@ -34,6 +34,15 @@ import travelRewardRoutes    from "./modules/travel-rewards/interfaces/travel-re
 import ocrRoutes             from "./modules/ocr/interfaces/ocr.routes";
 import eventPhotoRoutes      from "./modules/event-photos/interfaces/event-photo.routes";
 import faqRoutes             from "./modules/faq/interfaces/faq.routes";
+import walletRoutes          from "./modules/wallet/interfaces/wallet.routes";
+import cashbackRoutes        from "./modules/cashback/interfaces/cashback.routes";
+import orderRoutes           from "./modules/orders/interfaces/order.routes";
+import partnerPortalRoutes   from "./modules/partner-portal/interfaces/partner-portal.routes";
+import bookingRoutes         from "./modules/bookings/interfaces/booking.routes";
+import commissionRoutes      from "./modules/commissions/interfaces/commission.routes";
+import reportingRoutes       from "./modules/reporting/interfaces/reporting.routes";
+import apiDeveloperRoutes    from "./modules/api-developer/interfaces/api-developer.routes";
+import countryConfigRoutes   from "./modules/country-config/interfaces/country-config.routes";
 import { errorMiddleware }   from "./core/middlewares/error.middleware";
 
 const app = express();
@@ -375,6 +384,15 @@ app.use("/api/travel-rewards",  travelRewardRoutes);
 app.use("/api/ocr",             ocrRoutes);
 app.use("/api/event-photos",   eventPhotoRoutes);
 app.use("/api/faq",            faqRoutes);
+app.use("/api/wallet",          walletRoutes);
+app.use("/api/cashback",        cashbackRoutes);
+app.use("/api/orders",          orderRoutes);
+app.use("/api/partner-portal",  partnerPortalRoutes);
+app.use("/api/bookings",        bookingRoutes);
+app.use("/api/commissions",     commissionRoutes);
+app.use("/api/reporting",       reportingRoutes);
+app.use("/api/developer",       apiDeveloperRoutes);
+app.use("/api/countries",       countryConfigRoutes);
 
 // ── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
