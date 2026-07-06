@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "profile": "My profile",
+    "logout": "Log out",
+    "bookings": "My bookings",
+    "wallet": "Wallet",
+    "benefits": "Benefits",
+    "travels": "Travels",
+    "events": "Events",
+    "faq": "FAQ",
+    "gallery": "Gallery"
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "confirm": "Confirm",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "actions": "Actions",
+    "status": "Status",
+    "date": "Date",
+    "name": "Name",
+    "email": "Email",
+    "total": "Total",
+    "error": "An error occurred",
+    "noData": "No data",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "auth": {
+    "login": "Log in",
+    "email": "Email address",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "loginButton": "Log in",
+    "loginTitle": "Sign in to your workspace"
+  },
+  "booking": {
+    "title": "Bookings",
+    "status": {
+      "PENDING": "Pending",
+      "CONFIRMED": "Confirmed",
+      "REJECTED": "Rejected",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "confirm": "Confirm",
+    "reject": "Reject",
+    "complete": "Complete",
+    "cancel": "Cancel",
+    "rate": "Rate"
+  },
+  "wallet": {
+    "title": "Wallet",
+    "balance": "Available balance",
+    "transactions": "Transactions",
+    "credit": "Credit",
+    "debit": "Debit",
+    "refund": "Refund"
+  },
+  "notification": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "noNotifications": "No notifications"
+  }
+}

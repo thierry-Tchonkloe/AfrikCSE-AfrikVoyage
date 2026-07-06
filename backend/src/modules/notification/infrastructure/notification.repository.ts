@@ -1,5 +1,5 @@
 import { prisma } from "../../../core/config/prisma";
-import { NotificationType, Role } from "@prisma/client";
+import { NotificationType, NotificationChannel, Role } from "@prisma/client";
 import { sendMail } from "../../../core/services/email.service";
 import { genericNotificationEmail } from "../../../core/mailer/email.templates";
 
@@ -142,5 +142,47 @@ export class NotificationRepository {
         where: { userId, read: false },
         data: { read: true },
         });
+    }
+
+    // ── Templates (SA) ────────────────────────────────────────────────────────
+
+    async listTemplates() {
+        return prisma.notificationTemplate.findMany({ orderBy: { event: "asc" } });
+    }
+
+    async upsertTemplate(data: {
+        event:        NotificationType;
+        channels?:    NotificationChannel[];
+        emailSubject?: string | null;
+        emailBody?:   string | null;
+        smsBody?:     string | null;
+        inAppTitle?:  string | null;
+        inAppBody?:   string | null;
+        isActive?:    boolean;
+    }) {
+        return prisma.notificationTemplate.upsert({
+            where:  { event: data.event },
+            update: { ...data },
+            create: { ...data, channels: data.channels ?? [] },
+        });
+    }
+
+    async deleteTemplate(event: NotificationType) {
+        return prisma.notificationTemplate.delete({ where: { event } });
+    }
+
+    // ── Logs (SA) ─────────────────────────────────────────────────────────────
+
+    async listLogs(page = 1, limit = 50, event?: NotificationType) {
+        const skip  = (page - 1) * limit;
+        const where = event ? { event } : {};
+        const [logs, total] = await Promise.all([
+            prisma.notificationLog.findMany({
+                where, skip, take: limit,
+                orderBy: { createdAt: "desc" },
+            }),
+            prisma.notificationLog.count({ where }),
+        ]);
+        return { logs, total, page, limit };
     }
 }

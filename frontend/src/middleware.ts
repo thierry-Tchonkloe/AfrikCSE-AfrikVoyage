@@ -85,6 +85,7 @@ const PUBLIC_PREFIXES = [
   "/infos",
   "/",
   "/unauthorized",
+  "/partner-portal", // Auth par localStorage Bearer, pas de cookie HTTP-only
 ];
 
 // ── Types ──────────────────────────────────────────────────

@@ -237,9 +237,8 @@ export class AuthController {
         }
     }
 
-    // ── Login ────────────────────────────────────────────────────────────
-    // Pose accessToken + refreshToken en cookies HTTP-only.
-    // Ne renvoie plus les tokens dans le body JSON.
+    // ── Login ─────────────────────────────────────────────────────────────
+    // Gère les utilisateurs standard ET les utilisateurs partenaires.
     async login(req: Request, res: Response) {
         const parsed = loginSchema.safeParse(req.body);
         if (!parsed.success) {
@@ -248,6 +247,18 @@ export class AuthController {
         try {
         const result = await service.login(parsed.data);
 
+        // ── Cas : utilisateur partenaire ──────────────────────────────────
+        // Même mécanisme cookie HTTP-only que les users standards.
+        // Plus de localStorage — le cookie accessToken fonctionne pour tous.
+        if (result.type === "partner") {
+            setAuthCookies(res, result.accessToken, result.refreshToken);
+            return res.status(200).json({
+                type: "partner",
+                partnerUser: result.partnerUser,
+            });
+        }
+
+        // ── Cas : utilisateur standard ────────────────────────────────────
         await logAudit({
             action: "USER_LOGIN",
             entity: "User",
@@ -257,12 +268,8 @@ export class AuthController {
             req,
         });
 
-        // Pose les cookies HTTP-only (access + refresh) côté API
         setAuthCookies(res, result.accessToken, result.refreshToken);
 
-        // Génère un petit token signé, court (1 minute), destiné uniquement
-        // à être placé en cookie lisible par le frontend (middleware Edge)
-        // NOTE: Ce token n'est PAS utilisé pour authentifier les appels API.
         const sessionSecret = process.env.SESSION_COOKIE_SECRET || process.env.JWT_SECRET;
         const sessionToken = jwt.sign(
             {
@@ -272,12 +279,10 @@ export class AuthController {
             isHost: result.user.organization?.isHost ?? false,
             },
             sessionSecret as jwt.Secret,
-            { expiresIn: "60s" } // aligné avec le max-age=60 du cookie posé côté frontend
+            { expiresIn: "60s" }
         );
 
-        // Retourne uniquement l'objet user + ce sessionToken court pour que
-        // le frontend puisse poser un cookie lisible par le middleware Edge.
-        return res.status(200).json({ user: result.user, sessionToken });
+        return res.status(200).json({ type: "user", user: result.user, sessionToken });
         } catch (err: any) {
         return res.status(401).json({ message: err.message });
         }
@@ -350,12 +355,52 @@ export class AuthController {
     }
 
     // ── Me ───────────────────────────────────────────────────────────────
-    // Inchangé — req.user est peuplé par le middleware d'auth qui lit
-    // le cookie accessToken HTTP-only et vérifie le JWT.
+    // Gère les deux types d'utilisateurs (User et PartnerUser) via le cookie
+    // HTTP-only — le rôle dans le JWT détermine la table à interroger.
     async me(req: Request, res: Response): Promise<void> {
         try {
+        const { role, userId } = req.user!;
+
+        // ── Cas partenaire ───────────────────────────────────────────
+        if (role === "PARTNER_ADMIN" || role === "PARTNER_STAFF") {
+            const partnerUser = await prisma.partnerUser.findUnique({
+                where: { id: userId },
+                include: { partner: { select: { id: true, name: true, status: true } } },
+            });
+            if (!partnerUser || !partnerUser.isActive) {
+                res.status(404).json({ message: "Partenaire introuvable" });
+                return;
+            }
+            const partner = partnerUser.partner as { id: string; name: string; status: string };
+            res.status(200).json({
+                user: {
+                    id:               partnerUser.id,
+                    email:            partnerUser.email,
+                    firstName:        partnerUser.firstName,
+                    lastName:         partnerUser.lastName,
+                    avatar:           null,
+                    role:             partnerUser.role,
+                    profileCompleted: true,
+                    organizationId:   partnerUser.partnerId,
+                    isPartner:        true,
+                    partnerId:        partnerUser.partnerId,
+                    partnerName:      partner.name,
+                    organization: {
+                        id:       partner.id,
+                        name:     partner.name,
+                        hasVoyage:true,
+                        hasCSE:   false,
+                        isHost:   false,
+                        status:   partner.status,
+                    },
+                },
+            });
+            return;
+        }
+
+        // ── Cas utilisateur standard ─────────────────────────────────
         const user = await prisma.user.findUnique({
-            where: { id: req.user!.userId },
+            where: { id: userId },
             select: {
             id:               true,
             email:            true,

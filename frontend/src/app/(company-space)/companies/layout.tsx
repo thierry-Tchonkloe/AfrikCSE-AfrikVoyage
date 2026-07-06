@@ -3,7 +3,7 @@
 import { useState, useLayoutEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import {LayoutDashboard, Users, Settings, ChevronLeft, ChevronRight, Bell, LogOut, Menu, Moon, Sun,} from "lucide-react";
+import { LayoutDashboard, Users, Settings, ChevronLeft, ChevronRight, Bell, LogOut, Menu, Moon, Sun, Wallet, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
 import { useTheme } from "@/hooks/useTheme";
@@ -29,8 +29,11 @@ function useNavItems(hasCSE: boolean, hasVoyage: boolean, pathname: string) {
             { href: "/companies/AfrikCSE/employes", label: "Employés", icon: Users },
             { href: "/companies/AfrikCSE/budget", label: "Subventions", icon: Users },
             { href: "/companies/AfrikCSE/rapport", label: "Rapport", icon: LayoutDashboard },
-            { href: "/companies/AfrikCSE/faq",      label: "FAQ",        icon: Users },
-            { href: "/companies/AfrikCSE/messages", label: "Messagerie", icon: Users },
+            { href: "/companies/AfrikCSE/faq",       label: "FAQ",           icon: Users },
+            { href: "/companies/AfrikCSE/wallet",    label: "Wallets",       icon: Wallet },
+            { href: "/companies/AfrikCSE/cashback",     label: "Cashback",     icon: Percent },
+            { href: "/companies/AfrikCSE/commissions", label: "Commissions", icon: Percent },
+            { href: "/companies/AfrikCSE/messages",  label: "Messagerie",    icon: Users },
             { href: "/companies/AfrikCSE/settings", label: "Paramètres", icon: Settings },
         );
     } else if (isInVoyage && hasVoyage) {

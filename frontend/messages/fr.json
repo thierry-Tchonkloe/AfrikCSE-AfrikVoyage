@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "profile": "Mon profil",
+    "logout": "Se déconnecter",
+    "bookings": "Mes réservations",
+    "wallet": "Wallet",
+    "benefits": "Avantages",
+    "travels": "Voyages",
+    "events": "Événements",
+    "faq": "FAQ",
+    "gallery": "Galerie"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "confirm": "Confirmer",
+    "close": "Fermer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "actions": "Actions",
+    "status": "Statut",
+    "date": "Date",
+    "name": "Nom",
+    "email": "Email",
+    "total": "Total",
+    "error": "Une erreur est survenue",
+    "noData": "Aucune donnée",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "auth": {
+    "login": "Se connecter",
+    "email": "Adresse email",
+    "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "loginButton": "Connexion",
+    "loginTitle": "Connexion à votre espace"
+  },
+  "booking": {
+    "title": "Réservations",
+    "status": {
+      "PENDING": "En attente",
+      "CONFIRMED": "Confirmée",
+      "REJECTED": "Refusée",
+      "COMPLETED": "Terminée",
+      "CANCELLED": "Annulée"
+    },
+    "confirm": "Confirmer",
+    "reject": "Refuser",
+    "complete": "Terminer",
+    "cancel": "Annuler",
+    "rate": "Noter"
+  },
+  "wallet": {
+    "title": "Wallet",
+    "balance": "Solde disponible",
+    "transactions": "Transactions",
+    "credit": "Crédit",
+    "debit": "Débit",
+    "refund": "Remboursement"
+  },
+  "notification": {
+    "title": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "noNotifications": "Aucune notification"
+  }
+}

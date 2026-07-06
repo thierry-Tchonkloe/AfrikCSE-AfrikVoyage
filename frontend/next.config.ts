@@ -1,6 +1,9 @@
-/** @type {import('next').NextConfig} */
+import createNextIntlPlugin from "next-intl/plugin";
+import type { NextConfig } from "next";
 
-const nextConfig = {
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       // Cloudinary (votre CDN principal)
@@ -56,4 +59,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

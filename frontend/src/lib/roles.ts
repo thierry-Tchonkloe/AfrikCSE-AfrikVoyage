@@ -14,5 +14,8 @@ export function getDefaultRoute(role: string, isHost: boolean): string {
     if (role === "EMPLOYE") {
         return "/employes/dashboard";
     }
+    if (role === "PARTNER_ADMIN" || role === "PARTNER_STAFF") {
+        return "/partner-portal/dashboard";
+    }
     return "/hub";
 }
