@@ -119,6 +119,20 @@ export class AuthRepository {
         });
     }
 
+    async findPartnerUserByEmail(email: string) {
+        return prisma.partnerUser.findUnique({
+            where: { email },
+            include: { partner: { select: { id: true, name: true, status: true } } },
+        });
+    }
+
+    async findPartnerUserById(id: string) {
+        return prisma.partnerUser.findUnique({
+            where: { id },
+            include: { partner: { select: { id: true, name: true, status: true } } },
+        });
+    }
+
     async findUserById(id: string) {
         return prisma.user.findUnique({
         where: { id },

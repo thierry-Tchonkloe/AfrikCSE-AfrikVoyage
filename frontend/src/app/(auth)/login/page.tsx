@@ -41,7 +41,18 @@ export default function LoginPage() {
         try {
             const result = await authService.login(data.email, data.password);
 
-            // Stockage du token et de l'utilisateur (logique inchangée)
+            // ── Cas partenaire ────────────────────────────────────────────────
+            // Le cookie HTTP-only est posé par le backend — même mécanisme que
+            // les autres rôles. On redirige directement vers l'espace partenaire.
+            if (result.type === "partner" && result.partnerUser) {
+                toast.success(`Bienvenue, ${result.partnerUser.firstName} !`);
+                window.location.href = "/partner-portal/dashboard";
+                return;
+            }
+
+            // ── Cas utilisateur standard ──────────────────────────────────────
+            if (!result.user) throw new Error("Réponse invalide du serveur");
+
             setAuthData(result.user);
 
             if (result.sessionToken && typeof window !== "undefined") {
@@ -61,7 +72,6 @@ export default function LoginPage() {
             }
 
             let destination: string;
-
             if (isHost && (role === "SUPER_ADMIN" || role === "MANAGER")) {
                 destination = "/admin/dashboard";
             } else if (["ADMIN", "MANAGER", "RH", "FINANCE"].includes(role)) {

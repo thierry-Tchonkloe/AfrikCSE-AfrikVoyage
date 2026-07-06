@@ -62,6 +62,10 @@ export class PlanConfigRepository {
         hasCSE: boolean;
         features: string[];
         isActive: boolean;
+        pricePerEmployee?: number;
+        billingCycle?: string;
+        apiAccess?: boolean;
+        webhookAccess?: boolean;
     }) {
         return prisma.planConfig.create({ data });
     }
@@ -74,6 +78,10 @@ export class PlanConfigRepository {
         hasCSE: boolean;
         features: string[];
         isActive: boolean;
+        pricePerEmployee: number;
+        billingCycle: string;
+        apiAccess: boolean;
+        webhookAccess: boolean;
     }>) {
         return prisma.planConfig.update({ where: { id }, data });
     }

@@ -56,6 +56,7 @@ import { RegisterCompanyDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, Comp
 import { sendMail } from "../../../core/services/email.service";
 import { companyRegistrationReceivedEmail, newCompanyPendingValidationEmail, passwordResetEmail, } from "../../../core/mailer/email.templates";
 import { logger } from "../../../core/utils/logger";
+import bcrypt from "bcrypt";
 
 export class AuthService {
     private repo = new AuthRepository();
@@ -141,125 +142,161 @@ export class AuthService {
     }
 
     /**
-     * Connexion
-     * Vérifie email/password, statut org, retourne les tokens
-    */
+     * Connexion unifiée : User ordinaire OU PartnerUser.
+     * Retourne un objet discriminé par le champ `type`.
+     */
     async login(dto: LoginDto) {
+        // ── Cas 1 : utilisateur standard ─────────────────────────────────────
         const user = await this.repo.findUserByEmail(dto.email);
 
-        // Message générique pour ne pas indiquer si l'email existe
-        if (!user) {
-        throw new Error("Email ou mot de passe incorrect");
+        if (user) {
+            const passwordOk = await comparePassword(dto.password, user.password);
+            if (!passwordOk) throw new Error("Email ou mot de passe incorrect");
+
+            if (!user.isActive) throw new Error("Ce compte a été désactivé. Contactez votre administrateur.");
+
+            if (user.organization) {
+                if (user.organization.status === "PENDING")
+                    throw new Error("Votre organisation est en attente de validation.");
+                if (user.organization.status === "SUSPENDED")
+                    throw new Error("Votre organisation est suspendue. Contactez le support.");
+                if (user.organization.status === "REJECTED")
+                    throw new Error("La demande de votre organisation a été refusée.");
+            }
+
+            const payload: JwtPayload = {
+                userId: user.id,
+                role: user.role,
+                organizationId: user.organizationId,
+                isHost: user.organization?.isHost ?? false,
+            };
+            const accessToken  = signAccessToken(payload);
+            const refreshToken = signRefreshToken(payload);
+
+            await this.repo.updateRefreshToken(user.id, hashToken(refreshToken));
+            await this.repo.updateLastLogin(user.id);
+
+            return {
+                type: "user" as const,
+                accessToken,
+                refreshToken,
+                user: {
+                    id: user.id, email: user.email,
+                    firstName: user.firstName, lastName: user.lastName,
+                    role: user.role, profileCompleted: user.profileCompleted,
+                    organizationId: user.organizationId,
+                    organization: user.organization
+                        ? {
+                            id: user.organization.id, name: user.organization.name,
+                            hasVoyage: user.organization.hasVoyage, hasCSE: user.organization.hasCSE,
+                            isHost: user.organization.isHost,
+                          }
+                        : null,
+                },
+            };
         }
 
-        const passwordOk = await comparePassword(dto.password, user.password);
-        if (!passwordOk) {
-        throw new Error("Email ou mot de passe incorrect");
-        }
+        // ── Cas 2 : utilisateur partenaire ────────────────────────────────────
+        const partnerUser = await this.repo.findPartnerUserByEmail(dto.email);
 
-        if (!user.isActive) {
-        throw new Error("Ce compte a été désactivé. Contactez votre administrateur.");
-        }
+        if (!partnerUser) throw new Error("Email ou mot de passe incorrect");
 
-        // Vérifie le statut de l'organisation (sauf Super Admin)
-        if (user.organization) {
-        if (user.organization.status === "PENDING") {
-            throw new Error(
-            "Votre organisation est en attente de validation. Vous serez notifié par email."
-            );
-        }
-        if (user.organization.status === "SUSPENDED") {
-            throw new Error(
-            "Votre organisation est suspendue. Contactez le support."
-            );
-        }
-        if (user.organization.status === "REJECTED") {
-            throw new Error(
-            "La demande de votre organisation a été refusée. Contactez le support."
-            );
-        }
-        }
+        if (!partnerUser.isActive) throw new Error("Ce compte partenaire a été désactivé.");
 
-        const payload: JwtPayload = {
-            userId: user.id,
-            role: user.role,
-            organizationId: user.organizationId,
-            isHost:      user.organization?.isHost ?? false,
+        const partner = partnerUser.partner as { id: string; name: string; status: string } | null;
+        if (!partner) throw new Error("Partenaire introuvable.");
+        if (partner.status === "SUSPENDED") throw new Error("L'accès partenaire est suspendu. Contactez le support.");
+
+        const passwordOk = await bcrypt.compare(dto.password, partnerUser.passwordHash);
+        if (!passwordOk) throw new Error("Email ou mot de passe incorrect");
+
+        // Même payload structure que les users standards :
+        // userId = partnerUser.id, organizationId = partnerId (contexte partenaire)
+        const partnerPayload: JwtPayload = {
+            userId:         partnerUser.id,
+            role:           partnerUser.role,
+            organizationId: partnerUser.partnerId,
+            isHost:         false,
         };
-
-        const accessToken = signAccessToken(payload);
-        const refreshToken = signRefreshToken(payload);
-
-        // Stocke le refresh token hashé en base
-        await this.repo.updateRefreshToken(user.id, hashToken(refreshToken));
-        await this.repo.updateLastLogin(user.id);
+        const accessToken  = signAccessToken(partnerPayload);
+        const refreshToken = signRefreshToken(partnerPayload);
 
         return {
-        accessToken,
-        refreshToken,
-        user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            role: user.role,
-            profileCompleted: user.profileCompleted,
-            organizationId: user.organizationId,
-            organization: user.organization
-            ? {
-                id: user.organization.id,
-                name: user.organization.name,
-                hasVoyage: user.organization.hasVoyage,
-                hasCSE: user.organization.hasCSE,
-                isHost: user.organization.isHost,
-                }
-            : null,
-        },
+            type: "partner" as const,
+            accessToken,
+            refreshToken,
+            partnerUser: {
+                id: partnerUser.id, email: partnerUser.email,
+                firstName: partnerUser.firstName, lastName: partnerUser.lastName,
+                role: partnerUser.role, partnerId: partnerUser.partnerId,
+                partnerName: partner.name,
+            },
         };
     }
 
-    /** Déconnexion : invalide le refresh token en base */
+    /** Déconnexion : invalide le refresh token en base (no-op pour les partenaires) */
     async logout(userId: string) {
-        await this.repo.updateRefreshToken(userId, null);
+        try {
+            await this.repo.updateRefreshToken(userId, null);
+        } catch {
+            // PartnerUser n'a pas de champ refreshToken — pas d'erreur à remonter
+        }
     }
 
     /**
-     * Renouvelle l'access token via le refresh token
-     * Double vérification : signature JWT + présence en base
+     * Renouvelle l'access token via le refresh token.
+     * Pour les users standard : double vérification signature + hash en base.
+     * Pour les partenaires : vérification signature uniquement (pas de hash en base,
+     * PartnerUser n'a pas de champ refreshToken).
      */
     async refresh(refreshToken: string) {
-        let payload;
+        let payload: JwtPayload;
         try {
-        payload = verifyRefreshToken(refreshToken);
+            payload = verifyRefreshToken(refreshToken);
         } catch {
-        throw new Error("Refresh token invalide");
+            throw new Error("Refresh token invalide");
         }
 
+        // ── Cas partner ───────────────────────────────────────────────────────
+        if (payload.role === "PARTNER_ADMIN" || payload.role === "PARTNER_STAFF") {
+            const partnerUser = await this.repo.findPartnerUserById(payload.userId);
+            if (!partnerUser || !partnerUser.isActive) {
+                throw new Error("Session partenaire expirée, veuillez vous reconnecter");
+            }
+            const partnerPayload: JwtPayload = {
+                userId:         partnerUser.id,
+                role:           partnerUser.role,
+                organizationId: partnerUser.partnerId,
+                isHost:         false,
+            };
+            return {
+                accessToken:  signAccessToken(partnerPayload),
+                refreshToken: signRefreshToken(partnerPayload),
+            };
+        }
+
+        // ── Cas utilisateur standard ──────────────────────────────────────────
         const user = await this.repo.findUserById(payload.userId);
         if (!user || !user.refreshToken) {
-        throw new Error("Session expirée, veuillez vous reconnecter");
+            throw new Error("Session expirée, veuillez vous reconnecter");
         }
 
-        // Vérifie que le token en base correspond
         if (user.refreshToken !== hashToken(refreshToken)) {
-        throw new Error("Refresh token invalide");
+            throw new Error("Refresh token invalide");
         }
 
-        const newAccessToken = signAccessToken({
-        userId: user.id,
-        role: user.role,
-        organizationId: user.organizationId,
-        isHost:      user.organization?.isHost ?? false,
+        const newAccessToken  = signAccessToken({
+            userId:         user.id,
+            role:           user.role,
+            organizationId: user.organizationId,
+            isHost:         user.organization?.isHost ?? false,
         });
-
-        const newRefreshToken = signRefreshToken(
-            {
-        userId: user.id,
-        role: user.role,
-        organizationId: user.organizationId,
-        isHost:      user.organization?.isHost ?? false,
-        }
-        );
+        const newRefreshToken = signRefreshToken({
+            userId:         user.id,
+            role:           user.role,
+            organizationId: user.organizationId,
+            isHost:         user.organization?.isHost ?? false,
+        });
 
         return { accessToken: newAccessToken, refreshToken: newRefreshToken };
     }

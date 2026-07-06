@@ -11,6 +11,10 @@ export interface PlanConfig {
     features: string[];
     isActive: boolean;
     orgCount: number;
+    pricePerEmployee: string | null;
+    billingCycle: string | null;
+    apiAccess: boolean;
+    webhookAccess: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -24,6 +28,10 @@ export type PlanConfigPayload = {
     hasCSE: boolean;
     features: string[];
     isActive: boolean;
+    pricePerEmployee?: number;
+    billingCycle?: string;
+    apiAccess?: boolean;
+    webhookAccess?: boolean;
 };
 
 export interface PublicPlan {

@@ -8,7 +8,7 @@ import {
     Gift, MessageSquare, CalendarDays, User, Settings,
     ChevronLeft, ChevronRight, LogOut, Menu,
     Mail, Sun, Moon, LifeBuoy, Bell, FileClock, Users, Ticket, Trophy,
-    HelpCircle, Images,
+    HelpCircle, Images, Wallet, CalendarCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
@@ -16,6 +16,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { UserAvatar } from "@/components/employes/UserAvatar";
 import { GlobalSearch } from "@/components/shared/GlobalSearch";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
 // Navigation principale employé
 const NAV_ITEMS = [
@@ -31,6 +32,8 @@ const NAV_ITEMS = [
     { href: "/employes/communication",  label: "Communication CSE",    icon: MessageSquare },
     { href: "/employes/evenements",          label: "Calendrier des Évènements", icon: CalendarDays },
     { href: "/employes/evenements/galerie", label: "Galerie photos",           icon: Images },
+    { href: "/employes/wallet",             label: "Mon wallet",               icon: Wallet },
+    { href: "/employes/reservations",       label: "Mes réservations",         icon: CalendarCheck },
     { href: "/employes/faq",                label: "FAQ",                      icon: HelpCircle },
     { href: "/employes/support",            label: "Support",                  icon: LifeBuoy },
     { href: "/employes/notifications", label: "Notifications",       icon: Bell, badge: true },
@@ -254,6 +257,7 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
 
+                <LanguageSwitcher compact />
                 <NotificationBell darkMode={darkMode} notificationsHref="/employes/notifications" />
                 <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
                 <Mail size={18} />

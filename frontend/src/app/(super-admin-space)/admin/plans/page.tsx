@@ -15,6 +15,10 @@ const emptyForm: PlanConfigPayload & { name: string } = {
     hasCSE: false,
     features: [],
     isActive: true,
+    pricePerEmployee: undefined,
+    billingCycle: "",
+    apiAccess: false,
+    webhookAccess: false,
 };
 
 export default function PlansPage() {
@@ -62,6 +66,10 @@ export default function PlansPage() {
         hasCSE: plan.hasCSE,
         features: plan.features,
         isActive: plan.isActive,
+        pricePerEmployee: plan.pricePerEmployee ? parseFloat(plan.pricePerEmployee) : undefined,
+        billingCycle: plan.billingCycle ?? "",
+        apiAccess: plan.apiAccess,
+        webhookAccess: plan.webhookAccess,
         });
         setFeaturesText(plan.features.join("\n"));
         setModalOpen(true);
@@ -85,6 +93,10 @@ export default function PlansPage() {
             hasCSE: form.hasCSE,
             features,
             isActive: form.isActive,
+            pricePerEmployee: form.pricePerEmployee,
+            billingCycle: form.billingCycle || undefined,
+            apiAccess: form.apiAccess,
+            webhookAccess: form.webhookAccess,
             });
             toast.success("Plan mis à jour");
         } else {
@@ -97,6 +109,10 @@ export default function PlansPage() {
             hasCSE: form.hasCSE,
             features,
             isActive: form.isActive,
+            pricePerEmployee: form.pricePerEmployee,
+            billingCycle: form.billingCycle || undefined,
+            apiAccess: form.apiAccess,
+            webhookAccess: form.webhookAccess,
             });
             toast.success("Plan créé");
         }
@@ -194,6 +210,13 @@ export default function PlansPage() {
                     <Users size={13} />
                     {plan.maxUsers ? `Jusqu'à ${plan.maxUsers} utilisateurs` : "Utilisateurs illimités"}
                 </div>
+
+                {plan.pricePerEmployee && (
+                    <p className="text-xs text-gray-500">
+                        {parseFloat(plan.pricePerEmployee).toLocaleString("fr-FR")} FCFA / employé actif
+                        {plan.billingCycle && ` · ${plan.billingCycle}`}
+                    </p>
+                )}
 
                 <div className="flex gap-1.5 flex-wrap">
                     {plan.hasCSE && (
@@ -316,6 +339,40 @@ export default function PlansPage() {
                         </label>
                     ))}
                     </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Prix par employé actif (FCFA)</label>
+                    <input
+                        type="number" min={0}
+                        value={form.pricePerEmployee ?? ""}
+                        onChange={(e) => setForm({ ...form, pricePerEmployee: e.target.value ? parseFloat(e.target.value) : undefined })}
+                        placeholder="Ex: 2500"
+                        className={inp}
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Cycle de facturation</label>
+                    <select value={form.billingCycle ?? ""} onChange={e => setForm({ ...form, billingCycle: e.target.value })} className={inp}>
+                        <option value="">—</option>
+                        <option value="mensuel">Mensuel</option>
+                        <option value="trimestriel">Trimestriel</option>
+                        <option value="annuel">Annuel</option>
+                    </select>
+                    </div>
+                </div>
+
+                <div className="flex gap-3">
+                    {[
+                    { key: "apiAccess" as const, label: "Accès API" },
+                    { key: "webhookAccess" as const, label: "Webhooks" },
+                    ].map(opt => (
+                    <label key={opt.key} className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer text-sm ${form[opt.key] ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-500"}`}>
+                        <input type="checkbox" checked={!!form[opt.key]} onChange={e => setForm({ ...form, [opt.key]: e.target.checked })} />
+                        {opt.label}
+                    </label>
+                    ))}
                 </div>
 
                 <div>

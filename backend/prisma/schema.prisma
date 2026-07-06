@@ -44,6 +44,12 @@ model Organization {
   welcomeMessage     String?
   customDomain       String?
   maxFamilyMembers   Int      @default(5)
+  // ─── V3 Sprint 1 ────────────────────────────────────
+  countryCode        String   @default("CI")
+  currencyCode       String   @default("XOF")
+  defaultLocale      String   @default("fr")
+  developerApiEnabled Boolean @default(false)
+
   auditLogs     AuditLog[]
   users         User[]
   invitationTokens InvitationToken[]
@@ -69,6 +75,12 @@ model Organization {
   ocrScans         OcrScan[]
   eventPhotos      EventPhoto[]
   faqEntries       FaqEntry[]
+  wallets          Wallet[]
+  cashbackRules    CashbackRule[]
+  orders           Order[]
+  bookings         Booking[]
+  apiClients       ApiClient[]
+  webhookEndpoints WebhookEndpoint[]
 
   @@map("organizations")
 }
@@ -127,6 +139,14 @@ model User {
   eventPhotoLikes    EventPhotoLike[]    @relation("EventPhotoLiker")
   faqEntriesAuthored FaqEntry[]          @relation("FaqEntryAuthor")
   faqVotes           FaqVote[]           @relation("FaqVoter")
+  // ─── V3 Sprint 1 ────────────────────────────────────
+  memberCardToken    String?
+  notifNewPartnerOffer Boolean           @default(true)
+  preferredLocale    String              @default("fr")
+  wallet             Wallet?
+  cashbackTransactions CashbackTransaction[]
+  orders             Order[]
+  bookings           Booking[]
 
   @@map("users")
 }
@@ -169,6 +189,9 @@ enum Role {
   FINANCE
   EMPLOYE
   SUPER_ADMIN
+  PLATFORM_MANAGER
+  PARTNER_ADMIN
+  PARTNER_STAFF
 }
 
 
@@ -202,19 +225,97 @@ model PlatformSettings {
 // ─── PLAN ──────────────────────────────────────────────
 
 model PlanConfig {
-  id          String   @id @default(cuid())
-  name        String   @unique // "STARTER", "BUSINESS", "ENTERPRISE"
-  label       String            // Nom affiché
-  price       String            // "Gratuit", "Sur devis", etc.
-  maxUsers    Int?              // null = illimité
-  hasVoyage   Boolean  @default(false)
-  hasCSE      Boolean  @default(false)
-  features    String[]          // Liste des fonctionnalités
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String   @id @default(cuid())
+  name              String   @unique // "STARTER", "BUSINESS", "ENTERPRISE"
+  label             String
+  price             String            // Libellé affiché ("Gratuit", "Sur devis")
+  pricePerEmployee  Decimal? @db.Decimal(10,2) // Prix/employé actif/mois
+  billingCycle      String?           // "MONTHLY" | "ANNUAL"
+  maxUsers          Int?
+  hasVoyage         Boolean  @default(false)
+  hasCSE            Boolean  @default(false)
+  features          String[]
+  apiAccess         Boolean  @default(false)
+  webhookAccess     Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@map("plan_configs")
+}
+
+// ─── API DEVELOPER (F29) ────────────────────────────────
+
+model ApiClient {
+  id          String       @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id])
+  name        String
+  keyPrefix   String       // Premiers 12 chars visibles en UI
+  keyHash     String       @unique // SHA-256 de la clé complète
+  scopes      String[]
+  isActive    Boolean      @default(true)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  webhooks    WebhookEndpoint[]
+
+  @@map("api_clients")
+}
+
+model WebhookEndpoint {
+  id          String       @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id])
+  apiClientId String?
+  apiClient   ApiClient?   @relation(fields: [apiClientId], references: [id])
+  url         String
+  secret      String
+  events      String[]
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  deliveries  WebhookDelivery[]
+
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id           String          @id @default(cuid())
+  endpointId   String
+  endpoint     WebhookEndpoint @relation(fields: [endpointId], references: [id])
+  event        String
+  payload      Json
+  statusCode   Int?
+  responseBody String?
+  attempts     Int             @default(1)
+  deliveredAt  DateTime?
+  nextRetryAt  DateTime?
+  failed       Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+
+  @@map("webhook_deliveries")
+}
+
+// ─── COUNTRY CONFIG (F31) ──────────────────────────────
+
+model CountryConfig {
+  id           String   @id @default(cuid())
+  code         String   @unique // "CI", "SN", "CM", "GN", "BF", "ML", "TG", "BJ"
+  name         String
+  currencyCode String   @default("XOF")
+  locale       String   @default("fr")
+  taxRate      Decimal  @default(0) @db.Decimal(5,4)
+  phonePrefix  String?  // "+225"
+  isActive     Boolean  @default(true)
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("country_configs")
 }
 
 // ─── INVITATION TOKEN ──────────────────────────────────// Token d'activation envoyé à l'admin après validation
@@ -734,9 +835,13 @@ model BenefitCatalogItem {
   unpublishedAt      DateTime?
   validFrom          DateTime?
   stock              Int?
+  // ─── V3 Sprint 1 ────────────────────────────────────
+  cashbackRuleId     String?
+  cashbackRule       CashbackRule? @relation(fields: [cashbackRuleId], references: [id])
 
   auditEntries     OfferAuditEntry[]
   tickets          Ticket[]
+  bookings         Booking[]
 
   @@map("benefit_catalog_items")
 }
@@ -766,6 +871,62 @@ enum NotificationType {
   SYSTEM_UPDATE
   NEW_PARTNER_OFFER
   PHOTO_PENDING_MODERATION
+  // V3 Sprint 3 — F24
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  BOOKING_COMPLETED
+  BOOKING_REJECTED
+  WALLET_CREDITED
+  CASHBACK_CREDITED
+  ORDER_CONFIRMED
+  ORDER_CANCELLED
+}
+
+// ─── NOTIFICATIONS V3 (F24) ────────────────────────────
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+}
+
+enum NotificationLogStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model NotificationTemplate {
+  id            String             @id @default(cuid())
+  event         NotificationType   @unique
+  channels      NotificationChannel[]
+  emailSubject  String?
+  emailBody     String?            @db.Text
+  smsBody       String?
+  inAppTitle    String?
+  inAppBody     String?
+  isActive      Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@map("notification_templates")
+}
+
+model NotificationLog {
+  id        String                @id @default(cuid())
+  userId    String?
+  email     String?
+  phone     String?
+  event     NotificationType
+  channel   NotificationChannel
+  status    NotificationLogStatus @default(PENDING)
+  error     String?
+  metadata  Json?
+  sentAt    DateTime?
+  createdAt DateTime              @default(now())
+
+  @@map("notification_logs")
 }
 
 model Notification {
@@ -823,13 +984,26 @@ model Partner {
   partnerToken    String?       @unique
   warningCount    Int           @default(0)
   flaggedAt       DateTime?
+  // ─── V3 Sprint 1 ────────────────────────────────────
+  cancellationPolicy            String?
+  paymentMethod                 String?  // MOBILE_MONEY | BANK_TRANSFER
+  mobileMoneyNumberEncrypted    String?
+  bankDetailsEncrypted          String?
   createdBy       String
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  offers       BenefitCatalogItem[]
-  syncLogs     PartnerSyncLog[]
-  auditEntries OfferAuditEntry[]
+  offers          BenefitCatalogItem[]
+  syncLogs        PartnerSyncLog[]
+  auditEntries    OfferAuditEntry[]
+  cashbackRules   CashbackRule[]
+  // ─── V3 Sprint 2 ────────────────────────────────────
+  partnerUsers    PartnerUser[]
+  locations       PartnerLocation[]
+  bookings        Booking[]
+  commissionRules CommissionRule[]
+  commissionEntries CommissionEntry[]
+  payouts         PartnerPayout[]
 
   @@map("partners")
 }
@@ -1145,4 +1319,384 @@ model FaqVote {
 
   @@unique([faqEntryId, userId])
   @@map("faq_votes")
+}
+
+// ─── WALLET (V3 Sprint 1) ─────────────────────────────────
+
+enum WalletEntryType {
+  ALLOCATION
+  DEBIT
+  SUBSIDY_CREDIT
+  CASHBACK_CREDIT
+  CASHBACK_REVERSAL
+  REFUND
+  EXPIRY
+  REWARD_CREDIT
+}
+
+model Wallet {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  currencyCode   String    @default("XOF")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  entries        WalletEntry[]
+
+  @@map("wallets")
+}
+
+model WalletEntry {
+  id              String          @id @default(cuid())
+  walletId        String
+  wallet          Wallet          @relation(fields: [walletId], references: [id])
+  type            WalletEntryType
+  // positif = crédit, négatif = débit — jamais modifié après insertion
+  amount          Decimal         @db.Decimal(14,2)
+  // snapshot du solde après cette entrée (dénormalisation pour perf)
+  runningBalance  Decimal         @db.Decimal(14,2)
+  description     String?
+  referenceId     String?
+  referenceType   String?         // ORDER | TICKET | CASHBACK | EXPENSE | ALLOCATION
+  idempotencyKey  String          @unique
+  expiresAt       DateTime?       // allocations uniquement
+  createdAt       DateTime        @default(now())
+
+  @@map("wallet_entries")
+}
+
+// ─── CASHBACK (V3 Sprint 1) ──────────────────────────────
+
+enum CashbackType {
+  MERCHANT
+  EMPLOYER
+  HYBRID
+  CAMPAIGN
+}
+
+enum CashbackStatus {
+  CALCULATED
+  CREDITED
+  PENDING_REVIEW
+  REVERSED
+  EXPIRED
+}
+
+model CashbackRule {
+  id             String       @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  partnerId      String?
+  partner        Partner?     @relation(fields: [partnerId], references: [id])
+  type           CashbackType
+  rate           Decimal      @db.Decimal(5,4)  // 0.0000 → 1.0000
+  fixedAmount    Decimal?     @db.Decimal(14,2)
+  maxPerEmployee Decimal?     @db.Decimal(14,2)
+  maxPerPeriod   Decimal?     @db.Decimal(14,2)
+  startDate      DateTime?
+  endDate        DateTime?
+  isActive       Boolean      @default(true)
+  category       String?
+  currencyCode   String       @default("XOF")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  transactions   CashbackTransaction[]
+  offers         BenefitCatalogItem[]
+
+  @@map("cashback_rules")
+}
+
+model CashbackTransaction {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  organizationId String
+  orderId        String?
+  ticketId       String?
+  ruleId         String
+  rule           CashbackRule   @relation(fields: [ruleId], references: [id])
+  rawAmount      Decimal        @db.Decimal(14,2)
+  creditedAmount Decimal        @db.Decimal(14,2)
+  status         CashbackStatus @default(CALCULATED)
+  fraudScore     Decimal?       @db.Decimal(5,4) @default(0)
+  idempotencyKey String         @unique
+  currencyCode   String         @default("XOF")
+  createdAt      DateTime       @default(now())
+
+  @@map("cashback_transactions")
+}
+
+model FraudSignal {
+  id            String   @id @default(cuid())
+  userId        String
+  transactionId String
+  signalType    String   // HIGH_FREQUENCY | SAME_MERCHANT | AMOUNT_ANOMALY
+  score         Decimal  @db.Decimal(5,4)
+  metadata      Json?
+  reviewed      Boolean  @default(false)
+  reviewedById  String?
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  @@map("fraud_signals")
+}
+
+// ─── ORDER (V3 Sprint 1) ─────────────────────────────────
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  REFUNDED
+  COMPLETED
+}
+
+enum OrderPaymentStatus {
+  UNPAID
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  FAILED
+}
+
+model Order {
+  id              String             @id @default(cuid())
+  userId          String
+  user            User               @relation(fields: [userId], references: [id])
+  organizationId  String
+  organization    Organization       @relation(fields: [organizationId], references: [id])
+  partnerId       String?
+  offerId         String?
+  amount          Decimal            @db.Decimal(14,2)
+  discountAmount  Decimal            @db.Decimal(14,2) @default(0)
+  subsidyAmount   Decimal            @db.Decimal(14,2) @default(0)
+  cashbackAmount  Decimal            @db.Decimal(14,2) @default(0)
+  finalAmount     Decimal            @db.Decimal(14,2)
+  currencyCode    String             @default("XOF")
+  paymentMethod   String?            // WALLET | MOBILE_MONEY | CARD
+  paymentStatus   OrderPaymentStatus @default(UNPAID)
+  transactionId   String?
+  idempotencyKey  String             @unique
+  status          OrderStatus        @default(PENDING)
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  booking         Booking?
+
+  @@map("orders")
+}
+// ═══════════════════════════════════════════════════════════════════════════
+// V3 SPRINT 2 — Portail partenaire (F21), Booking (F22), Commissions (F23)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Nouveaux enums ──────────────────────────────────────────────────────────
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  REJECTED
+  NO_SHOW
+}
+
+enum CommissionType {
+  PERCENTAGE
+  FIXED
+  MAX_OF_BOTH
+}
+
+enum CommissionStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  REVERSED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ─── Portail partenaire ──────────────────────────────────────────────────────
+
+model PartnerUser {
+  id           String    @id @default(cuid())
+  partnerId    String
+  partner      Partner   @relation(fields: [partnerId], references: [id])
+  email        String    @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         Role      @default(PARTNER_ADMIN)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  invitedById  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("partner_users")
+}
+
+model PartnerLocation {
+  id          String    @id @default(cuid())
+  partnerId   String
+  partner     Partner   @relation(fields: [partnerId], references: [id])
+  name        String
+  address     String
+  city        String
+  country     String    @default("CI")
+  latitude    Decimal?  @db.Decimal(10,7)
+  longitude   Decimal?  @db.Decimal(10,7)
+  phone       String?
+  isMain      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  availabilities PartnerAvailability[]
+  bookings       Booking[]
+
+  @@map("partner_locations")
+}
+
+model PartnerAvailability {
+  id            String    @id @default(cuid())
+  locationId    String
+  location      PartnerLocation @relation(fields: [locationId], references: [id])
+  dayOfWeek     Int?      // 0=Sun … 6=Sat — null = exception
+  openTime      String    // HH:MM
+  closeTime     String    // HH:MM
+  isClosed      Boolean   @default(false)
+  exceptionDate DateTime? // set → exception date, null → weekly schedule
+  note          String?
+  createdAt     DateTime  @default(now())
+
+  @@map("partner_availabilities")
+}
+
+// ─── Booking ─────────────────────────────────────────────────────────────────
+
+model Booking {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  partnerId       String
+  partner         Partner       @relation(fields: [partnerId], references: [id])
+  offerId         String?
+  offer           BenefitCatalogItem? @relation(fields: [offerId], references: [id])
+  locationId      String?
+  location        PartnerLocation?    @relation(fields: [locationId], references: [id])
+  orderId         String?       @unique
+  order           Order?        @relation(fields: [orderId], references: [id])
+
+  status          BookingStatus @default(PENDING)
+  bookingDate     DateTime
+  numberOfPersons Int           @default(1)
+  notes           String?
+  partnerNotes    String?
+  idempotencyKey  String        @unique
+
+  confirmedAt  DateTime?
+  completedAt  DateTime?
+  cancelledAt  DateTime?
+  cancelReason String?
+
+  commissionEntry CommissionEntry?
+  rating          BookingRating?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("bookings")
+}
+
+model BookingRating {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  userId    String
+  score     Int      // 1–5
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@map("booking_ratings")
+}
+
+// ─── Commissions ─────────────────────────────────────────────────────────────
+
+model CommissionRule {
+  id           String         @id @default(cuid())
+  partnerId    String?
+  partner      Partner?       @relation(fields: [partnerId], references: [id])
+  category     String?
+  type         CommissionType @default(PERCENTAGE)
+  rate         Decimal        @db.Decimal(5,4)    // 0.10 = 10%
+  fixedAmount  Decimal?       @db.Decimal(14,2)
+  currencyCode String         @default("XOF")
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  entries      CommissionEntry[]
+
+  @@map("commission_rules")
+}
+
+model CommissionEntry {
+  id               String           @id @default(cuid())
+  bookingId        String           @unique
+  booking          Booking          @relation(fields: [bookingId], references: [id])
+  ruleId           String
+  rule             CommissionRule   @relation(fields: [ruleId], references: [id])
+  partnerId        String
+  partner          Partner          @relation(fields: [partnerId], references: [id])
+
+  grossAmount      Decimal          @db.Decimal(14,2)
+  commissionAmount Decimal          @db.Decimal(14,2)
+  netAmount        Decimal          @db.Decimal(14,2)
+  currencyCode     String           @default("XOF")
+
+  status           CommissionStatus @default(PENDING)
+  payoutId         String?
+  payout           PartnerPayout?   @relation(fields: [payoutId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("commission_entries")
+}
+
+model PartnerPayout {
+  id              String      @id @default(cuid())
+  partnerId       String
+  partner         Partner     @relation(fields: [partnerId], references: [id])
+  period          String      // e.g., "2026-07"
+
+  totalGross      Decimal     @db.Decimal(14,2)
+  totalCommission Decimal     @db.Decimal(14,2)
+  netAmount       Decimal     @db.Decimal(14,2)
+  currencyCode    String      @default("XOF")
+
+  status          PayoutStatus @default(PENDING)
+  paymentMethod   String?
+  paidAt          DateTime?
+  notes           String?
+  triggeredById   String?
+
+  entries         CommissionEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("partner_payouts")
 }
