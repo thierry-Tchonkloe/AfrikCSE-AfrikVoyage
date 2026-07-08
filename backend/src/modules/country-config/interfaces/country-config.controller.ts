@@ -10,7 +10,7 @@ export async function findByCode(req: Request, res: Response, next: NextFunction
 }
 
 export async function upsert(req: Request, res: Response, next: NextFunction) {
-    try { res.json(await svc.upsert(req.body)); } catch (e) { next(e); }
+    try { res.json(await svc.upsert({ ...req.body, code: req.params.code })); } catch (e) { next(e); }
 }
 
 export async function remove(req: Request, res: Response, next: NextFunction) {
