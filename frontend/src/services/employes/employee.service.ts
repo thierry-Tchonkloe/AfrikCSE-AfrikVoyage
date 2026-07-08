@@ -213,21 +213,4 @@ export const employeeService = {
         return data;
     },
 
-    // ── Vols (Amadeus) ───────────────────────────────────────────────────────
-    async searchFlights(params: {
-        from: string;
-        to: string;
-        departureDate: string;
-        returnDate?: string;
-        adults?: number;
-        nonStop?: boolean;
-        currency?: string;
-    }) {
-        const { data } = await api.get("/flights/search", { params });
-        return data;
-    },
-    async searchAirports(keyword: string) {
-        const { data } = await api.get("/flights/locations", { params: { keyword } });
-        return data;
-    },
 };

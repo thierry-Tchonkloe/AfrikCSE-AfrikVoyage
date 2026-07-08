@@ -1,7 +1,9 @@
-import axios from "axios";
+import api from "@/lib/api";
 import { FamilyMember } from "@/types";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+function cfg() {
+    return { withCredentials: true };
+}
 
 export interface FamilyMemberInput {
     firstName:    string;
@@ -13,26 +15,26 @@ export interface FamilyMemberInput {
 
 export const familyService = {
     async getAll(): Promise<FamilyMember[]> {
-        const { data } = await axios.get(`${BASE}/api/family-members`, { withCredentials: true });
+        const { data } = await api.get(`/family-members`, cfg());
         return data;
     },
 
     async getById(id: string): Promise<FamilyMember> {
-        const { data } = await axios.get(`${BASE}/api/family-members/${id}`, { withCredentials: true });
+        const { data } = await api.get(`/family-members/${id}`, cfg());
         return data;
     },
 
     async create(payload: FamilyMemberInput): Promise<FamilyMember> {
-        const { data } = await axios.post(`${BASE}/api/family-members`, payload, { withCredentials: true });
+        const { data } = await api.post(`/family-members`, payload, cfg());
         return data;
     },
 
     async update(id: string, payload: Partial<FamilyMemberInput>): Promise<FamilyMember> {
-        const { data } = await axios.patch(`${BASE}/api/family-members/${id}`, payload, { withCredentials: true });
+        const { data } = await api.patch(`/family-members/${id}`, payload, cfg());
         return data;
     },
 
     async remove(id: string): Promise<void> {
-        await axios.delete(`${BASE}/api/family-members/${id}`, { withCredentials: true });
+        await api.delete(`/family-members/${id}`, cfg());
     },
 };
