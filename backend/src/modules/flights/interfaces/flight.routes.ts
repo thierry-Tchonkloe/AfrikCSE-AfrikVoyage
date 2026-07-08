@@ -1,13 +1,25 @@
 import { Router } from "express";
-import { FlightController } from "./flight.controller";
-import { authenticate } from "../../../core/middlewares/auth.middleware";
+import * as ctrl from "./flight.controller";
+import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 
 const router = Router();
-const ctrl = new FlightController();
 
 router.use(authenticate);
 
-router.get("/search",    ctrl.search.bind(ctrl));
-router.get("/locations", ctrl.locations.bind(ctrl));
+// ── Recherche employé ────────────────────────────────────────────────────────
+router.get("/search",   ctrl.search);
+router.get("/airports", ctrl.airports);
+
+// ── Admin — routes ────────────────────────────────────────────────────────────
+router.get(   "/admin/routes",     authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.adminListRoutes);
+router.post(  "/admin/routes",     authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.adminCreateRoute);
+router.patch( "/admin/routes/:id", authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.adminUpdateRoute);
+router.delete("/admin/routes/:id", authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.adminDeleteRoute);
+
+// ── Admin — aéroports ─────────────────────────────────────────────────────────
+router.get(   "/admin/airports",     authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.adminListAirports);
+router.post(  "/admin/airports",     authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.adminCreateAirport);
+router.patch( "/admin/airports/:id", authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.adminUpdateAirport);
+router.delete("/admin/airports/:id", authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.adminDeleteAirport);
 
 export default router;

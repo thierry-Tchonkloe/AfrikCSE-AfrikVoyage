@@ -1,7 +1,9 @@
-import axios from "axios";
+import api from "@/lib/api";
 import { TravelPolicy } from "@/types";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+function cfg() {
+    return { withCredentials: true };
+}
 
 export interface TravelPolicyInput {
     name:                   string;
@@ -23,22 +25,22 @@ export interface TravelPolicyInput {
 
 export const travelPoliciesService = {
     async getAll(): Promise<TravelPolicy[]> {
-        const { data } = await axios.get(`${BASE}/api/travel-policies`, { withCredentials: true });
+        const { data } = await api.get(`/travel-policies`, cfg());
         return data;
     },
     async getById(id: string): Promise<TravelPolicy> {
-        const { data } = await axios.get(`${BASE}/api/travel-policies/${id}`, { withCredentials: true });
+        const { data } = await api.get(`/travel-policies/${id}`, cfg());
         return data;
     },
     async create(payload: TravelPolicyInput): Promise<TravelPolicy> {
-        const { data } = await axios.post(`${BASE}/api/travel-policies`, payload, { withCredentials: true });
+        const { data } = await api.post(`/travel-policies`, payload, cfg());
         return data;
     },
     async update(id: string, payload: Partial<TravelPolicyInput>): Promise<TravelPolicy> {
-        const { data } = await axios.patch(`${BASE}/api/travel-policies/${id}`, payload, { withCredentials: true });
+        const { data } = await api.patch(`/travel-policies/${id}`, payload, cfg());
         return data;
     },
     async remove(id: string): Promise<void> {
-        await axios.delete(`${BASE}/api/travel-policies/${id}`, { withCredentials: true });
+        await api.delete(`/travel-policies/${id}`, cfg());
     },
 };

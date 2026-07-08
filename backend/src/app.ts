@@ -43,6 +43,9 @@ import commissionRoutes      from "./modules/commissions/interfaces/commission.r
 import reportingRoutes       from "./modules/reporting/interfaces/reporting.routes";
 import apiDeveloperRoutes    from "./modules/api-developer/interfaces/api-developer.routes";
 import countryConfigRoutes   from "./modules/country-config/interfaces/country-config.routes";
+import hotelRoutes           from "./modules/hotels/interfaces/hotel.routes";
+import trainRoutes           from "./modules/trains/interfaces/train.routes";
+import carRentalRoutes       from "./modules/car-rentals/interfaces/car-rental.routes";
 import { errorMiddleware }   from "./core/middlewares/error.middleware";
 
 const app = express();
@@ -278,10 +281,40 @@ const API_ROUTES = [
     },
     {
         prefix: "/api/flights",
-        description: "Recherche de vols et d'aéroports (Amadeus Self-Service)",
+        description: "Catalogue de vols DB-backed (recherche + CRUD admin)",
         methods: [
-            "GET /search    — Recherche de vols (from, to, departureDate, returnDate, adults, nonStop, currency)",
-            "GET /locations — Recherche d'aéroports/villes par mot-clé (autocomplétion)",
+            "GET /search        — Recherche de vols (from, to, departureDate, returnDate, adults, nonStop, currency)",
+            "GET /airports      — Recherche d'aéroports par mot-clé (autocomplétion)",
+            "GET/POST/PATCH/DELETE /admin/routes   — CRUD des routes (SUPER_ADMIN, PLATFORM_MANAGER)",
+            "GET/POST/PATCH/DELETE /admin/airports — CRUD des aéroports (SUPER_ADMIN, PLATFORM_MANAGER)",
+        ],
+    },
+    {
+        prefix: "/api/hotels",
+        description: "Catalogue d'hôtels DB-backed (recherche + CRUD admin)",
+        methods: [
+            "GET /search — Recherche d'hôtels par ville",
+            "GET /cities — Villes disponibles (autocomplétion)",
+            "GET/POST/PATCH/DELETE /admin/properties  — CRUD des propriétés (SUPER_ADMIN, PLATFORM_MANAGER)",
+            "GET/POST/PATCH/DELETE /admin/room-types  — CRUD des types de chambre (SUPER_ADMIN, PLATFORM_MANAGER)",
+        ],
+    },
+    {
+        prefix: "/api/trains",
+        description: "Catalogue de trains DB-backed (recherche + CRUD admin)",
+        methods: [
+            "GET /search — Recherche de trajets (from, to)",
+            "GET /cities — Villes desservies (autocomplétion)",
+            "GET/POST/PATCH/DELETE /admin/routes — CRUD des trajets (SUPER_ADMIN, PLATFORM_MANAGER)",
+        ],
+    },
+    {
+        prefix: "/api/car-rentals",
+        description: "Catalogue de location de véhicules DB-backed (recherche + CRUD admin)",
+        methods: [
+            "GET /search — Recherche de véhicules (city, category)",
+            "GET /cities — Villes disponibles (autocomplétion)",
+            "GET/POST/PATCH/DELETE /admin/vehicles — CRUD des véhicules (SUPER_ADMIN, PLATFORM_MANAGER)",
         ],
     },
     {
@@ -370,6 +403,9 @@ app.use("/api/events",         eventRoutes);
 app.use("/api/communication",  communicationRoutes);
 app.use("/api/catalog",        catalogRoutes);
 app.use("/api/flights",        flightRoutes);
+app.use("/api/hotels",         hotelRoutes);
+app.use("/api/trains",         trainRoutes);
+app.use("/api/car-rentals",    carRentalRoutes);
 app.use("/api/plan-configs",   planConfigRoutes);
 app.use("/api/audit-logs",     auditLogRoutes);
 app.use("/api/notifications",  notificationRoutes);

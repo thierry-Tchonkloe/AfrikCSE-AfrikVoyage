@@ -1,30 +1,32 @@
-import axios from "axios";
+import api from "@/lib/api";
 import { Ticket } from "@/types";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+function cfg() {
+    return { withCredentials: true };
+}
 
 export const ticketsService = {
     async generate(offerId: string, familyMemberId?: string): Promise<Ticket> {
-        const { data } = await axios.post(
-            `${BASE}/api/tickets/generate`,
+        const { data } = await api.post(
+            `/tickets/generate`,
             { offerId, familyMemberId },
-            { withCredentials: true }
+            cfg()
         );
         return data;
     },
 
     async getMyTickets(): Promise<Ticket[]> {
-        const { data } = await axios.get(`${BASE}/api/tickets`, { withCredentials: true });
+        const { data } = await api.get(`/tickets`, cfg());
         return data;
     },
 
     async getByCode(code: string): Promise<Ticket> {
-        const { data } = await axios.get(`${BASE}/api/tickets/${code}`, { withCredentials: true });
+        const { data } = await api.get(`/tickets/${code}`, cfg());
         return data;
     },
 
     async cancel(id: string): Promise<Ticket> {
-        const { data } = await axios.delete(`${BASE}/api/tickets/${id}`, { withCredentials: true });
+        const { data } = await api.delete(`/tickets/${id}`, cfg());
         return data;
     },
 };

@@ -1004,6 +1004,11 @@ model Partner {
   commissionRules CommissionRule[]
   commissionEntries CommissionEntry[]
   payouts         PartnerPayout[]
+  // ─── Catalogue Voyage ───────────────────────────────
+  flightRoutes      FlightRoute[]
+  hotelProperties   HotelProperty[]
+  trainRoutes       TrainRoute[]
+  carRentalVehicles CarRentalVehicle[]
 
   @@map("partners")
 }
@@ -1630,6 +1635,121 @@ model BookingRating {
   createdAt DateTime @default(now())
 
   @@map("booking_ratings")
+}
+
+// ─── Catalogue Voyage (recherche DB-backed — remplace Amadeus) ───────────────
+
+model Airport {
+  id        String   @id @default(cuid())
+  iataCode  String   @unique
+  name      String
+  city      String
+  country   String
+  createdAt DateTime @default(now())
+
+  @@map("airports")
+}
+
+model FlightRoute {
+  id              String   @id @default(cuid())
+  partnerId       String
+  partner         Partner  @relation(fields: [partnerId], references: [id])
+  airlineCode     String
+  originIata      String
+  originCity      String
+  destinationIata String
+  destinationCity String
+  departureTime   String   // "HH:MM"
+  durationMinutes Int
+  stops           Int      @default(0)
+  basePrice       Decimal  @db.Decimal(10,2)
+  currency        String   @default("XOF")
+  operatingDays   Int[]    @default([]) // 0=Dim..6=Sam, [] = tous les jours
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([originIata, destinationIata])
+  @@map("flight_routes")
+}
+
+model HotelProperty {
+  id         String   @id @default(cuid())
+  partnerId  String
+  partner    Partner  @relation(fields: [partnerId], references: [id])
+  name       String
+  city       String
+  country    String
+  address    String?
+  starRating Int?
+  imageUrl   String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  roomTypes HotelRoomType[]
+
+  @@index([city])
+  @@map("hotel_properties")
+}
+
+model HotelRoomType {
+  id            String        @id @default(cuid())
+  hotelId       String
+  hotel         HotelProperty @relation(fields: [hotelId], references: [id])
+  name          String
+  capacity      Int           @default(2)
+  pricePerNight Decimal       @db.Decimal(10,2)
+  currency      String        @default("XOF")
+  totalRooms    Int           @default(1)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+
+  @@map("hotel_room_types")
+}
+
+model TrainRoute {
+  id                 String   @id @default(cuid())
+  partnerId          String
+  partner            Partner  @relation(fields: [partnerId], references: [id])
+  originCity         String
+  originStation      String
+  destinationCity    String
+  destinationStation String
+  departureTime      String
+  durationMinutes    Int
+  basePrice          Decimal  @db.Decimal(10,2)
+  currency           String   @default("XOF")
+  travelClass        String   @default("Économique")
+  operatingDays      Int[]    @default([])
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([originCity, destinationCity])
+  @@map("train_routes")
+}
+
+model CarRentalVehicle {
+  id           String   @id @default(cuid())
+  partnerId    String
+  partner      Partner  @relation(fields: [partnerId], references: [id])
+  category     String   // Économique | Compacte | SUV | Luxe | Utilitaire
+  brand        String
+  model        String
+  city         String
+  country      String
+  pricePerDay  Decimal  @db.Decimal(10,2)
+  currency     String   @default("XOF")
+  seats        Int      @default(5)
+  transmission String   @default("MANUELLE") // MANUELLE | AUTOMATIQUE
+  imageUrl     String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([city])
+  @@map("car_rental_vehicles")
 }
 
 // ─── Commissions ─────────────────────────────────────────────────────────────
