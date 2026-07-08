@@ -1,30 +1,32 @@
-import axios from "axios";
+import api from "@/lib/api";
 import { EventPhoto } from "@/types";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+function cfg() {
+    return { withCredentials: true };
+}
 
 export const eventPhotosService = {
     async getByEvent(eventId: string): Promise<EventPhoto[]> {
-        const { data } = await axios.get(`${BASE}/api/event-photos/event/${eventId}`, { withCredentials: true });
+        const { data } = await api.get(`/event-photos/event/${eventId}`, cfg());
         return data;
     },
     async upload(payload: { eventId: string; url: string; caption?: string }): Promise<EventPhoto> {
-        const { data } = await axios.post(`${BASE}/api/event-photos`, payload, { withCredentials: true });
+        const { data } = await api.post(`/event-photos`, payload, cfg());
         return data;
     },
     async toggleLike(id: string): Promise<{ liked: boolean; count: number }> {
-        const { data } = await axios.post(`${BASE}/api/event-photos/${id}/like`, {}, { withCredentials: true });
+        const { data } = await api.post(`/event-photos/${id}/like`, {}, cfg());
         return data;
     },
     async moderate(id: string, status: "APPROVED" | "REJECTED"): Promise<EventPhoto> {
-        const { data } = await axios.patch(`${BASE}/api/event-photos/${id}/moderate`, { status }, { withCredentials: true });
+        const { data } = await api.patch(`/event-photos/${id}/moderate`, { status }, cfg());
         return data;
     },
     async remove(id: string): Promise<void> {
-        await axios.delete(`${BASE}/api/event-photos/${id}`, { withCredentials: true });
+        await api.delete(`/event-photos/${id}`, cfg());
     },
     async getPendingCount(): Promise<number> {
-        const { data } = await axios.get(`${BASE}/api/event-photos/pending/count`, { withCredentials: true });
+        const { data } = await api.get(`/event-photos/pending/count`, cfg());
         return data.count;
     },
 };
