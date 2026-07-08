@@ -83,15 +83,16 @@ export class ReportingRepository {
     }
 
     async getTopPartners(limit = 10) {
-        return prisma.partner.findMany({
+        const partners = await prisma.partner.findMany({
             where: { status: "ACTIVE" },
             select: {
-                id: true, name: true, category: true,
+                id: true, name: true, sector: true,
                 _count: { select: { bookings: true, commissionEntries: true } },
             },
             orderBy: { bookings: { _count: "desc" } },
             take:    limit,
         });
+        return partners.map(({ sector, ...p }) => ({ ...p, category: sector }));
     }
 
     async getCommissionSummary() {
