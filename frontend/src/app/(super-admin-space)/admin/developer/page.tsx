@@ -46,6 +46,7 @@ function ClientsTab() {
     const [showForm, setShowForm]   = useState(false);
     const [newKey, setNewKey]       = useState<ApiClientCreated | null>(null);
     const [form, setForm]           = useState({ name: "", scopes: [] as string[], expiresAt: "" });
+    const [error, setError]         = useState<string | null>(null);
 
     const load = useCallback(async () => {
         try { setClients(await developerService.listClients()); } finally { setLoading(false); }
@@ -55,17 +56,22 @@ function ClientsTab() {
 
     async function handleCreate(e: React.FormEvent) {
         e.preventDefault();
+        setError(null);
+        if (form.scopes.length === 0) { setError("Sélectionnez au moins un scope."); return; }
         try {
             const result = await developerService.createClient({
                 name:   form.name,
                 scopes: form.scopes,
-                expiresAt: form.expiresAt || undefined,
+                expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : undefined,
             });
             setNewKey(result);
             setShowForm(false);
             setForm({ name: "", scopes: [], expiresAt: "" });
             await load();
-        } catch { /* ignore */ }
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+            setError(typeof msg === "string" ? msg : "Échec de la création du client.");
+        }
     }
 
     function toggleScope(s: string) {
@@ -92,6 +98,7 @@ function ClientsTab() {
 
             {showForm && (
                 <form onSubmit={handleCreate} className="mb-6 p-4 bg-gray-50 border rounded-lg space-y-3">
+                    {error && <p className="text-sm text-red-600">{error}</p>}
                     <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">Nom</label>
                         <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}

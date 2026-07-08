@@ -53,40 +53,40 @@ export interface WebhookDelivery {
 export const developerService = {
     // Clients
     async listClients(): Promise<ApiClientItem[]> {
-        const r = await api.get(`/clients`, cfg());
+        const r = await api.get(`/developer/clients`, cfg());
         return r.data;
     },
     async createClient(body: { name: string; scopes: string[]; expiresAt?: string }): Promise<ApiClientCreated> {
-        const r = await api.post(`/clients`, body, cfg());
+        const r = await api.post(`/developer/clients`, body, cfg());
         return r.data;
     },
     async revokeClient(id: string): Promise<void> {
-        await api.patch(`/clients/${id}/revoke`, {}, cfg());
+        await api.patch(`/developer/clients/${id}/revoke`, {}, cfg());
     },
     async deleteClient(id: string): Promise<void> {
-        await api.delete(`/clients/${id}`, cfg());
+        await api.delete(`/developer/clients/${id}`, cfg());
     },
 
     // Webhooks
     async listWebhooks(): Promise<WebhookEndpoint[]> {
-        const r = await api.get(`/webhooks`, cfg());
+        const r = await api.get(`/developer/webhooks`, cfg());
         return r.data;
     },
     async createWebhook(body: { url: string; events: string[]; apiClientId?: string }): Promise<WebhookEndpoint> {
-        const r = await api.post(`/webhooks`, body, cfg());
+        const r = await api.post(`/developer/webhooks`, body, cfg());
         return r.data;
     },
     async updateWebhook(id: string, body: Partial<{ url: string; events: string[]; isActive: boolean }>): Promise<WebhookEndpoint> {
-        const r = await api.patch(`/webhooks/${id}`, body, cfg());
+        const r = await api.patch(`/developer/webhooks/${id}`, body, cfg());
         return r.data;
     },
     async deleteWebhook(id: string): Promise<void> {
-        await api.delete(`/webhooks/${id}`, cfg());
+        await api.delete(`/developer/webhooks/${id}`, cfg());
     },
 
     // Deliveries
     async listDeliveries(endpointId: string, page = 1): Promise<{ deliveries: WebhookDelivery[]; total: number; page: number; limit: number }> {
-        const r = await api.get(`/webhooks/${endpointId}/deliveries`, { ...cfg(), params: { page } });
+        const r = await api.get(`/developer/webhooks/${endpointId}/deliveries`, { ...cfg(), params: { page } });
         return r.data;
     },
 };

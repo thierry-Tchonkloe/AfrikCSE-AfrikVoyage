@@ -11,7 +11,7 @@ router.get("/",        ctrl.list);
 router.get("/:code",   ctrl.findByCode);
 
 // Admin SA uniquement
-router.put(   "/",         authorize("SUPER_ADMIN"), ctrl.upsert);
+router.put(   "/:code",    authorize("SUPER_ADMIN"), ctrl.upsert);
 router.delete("/:code",    authorize("SUPER_ADMIN"), ctrl.remove);
 
 export default router;
