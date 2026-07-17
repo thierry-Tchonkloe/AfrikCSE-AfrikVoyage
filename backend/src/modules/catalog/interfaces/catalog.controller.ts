@@ -5,6 +5,7 @@ import {
     updateCatalogItemSchema,
     filterCatalogSchema,
 } from "./catalog.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const repo = new CatalogRepository();
 
@@ -36,8 +37,8 @@ export class CatalogController {
         res.json(items);
     }
 
-    async getById(req: Request, res: Response): Promise<void> {
-        const item = await repo.getById(req.params.id as string);
+    async getById(req: Request<IdParamString>, res: Response): Promise<void> {
+        const item = await repo.getById(req.params.id, req.user!.organizationId!);
         if (!item) { res.status(404).json({ message: "Introuvable" }); return; }
         res.json(item);
     }
@@ -72,31 +73,33 @@ export class CatalogController {
         }
     }
 
-    async update(req: Request, res: Response): Promise<void> {
+    async update(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = updateCatalogItemSchema.safeParse(req.body);
         if (!parsed.success) {
             res.status(400).json({ errors: parsed.error.flatten() });
             return;
         }
         try {
-            const item = await repo.update(req.params.id as string, req.user!.userId, parsed.data as any);
+            const item = await repo.update(req.params.id, req.user!.userId, req.user!.organizationId!, parsed.data as any);
+            if (!item) { res.status(404).json({ message: "Introuvable" }); return; }
             res.json(item);
         } catch (err: any) {
             res.status(err.statusCode ?? 500).json({ message: err.message });
         }
     }
 
-    async delete(req: Request, res: Response): Promise<void> {
+    async delete(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            await repo.delete(req.params.id as string, req.user!.userId);
+            const deleted = await repo.delete(req.params.id, req.user!.userId, req.user!.organizationId!);
+            if (!deleted) { res.status(404).json({ message: "Introuvable" }); return; }
             res.json({ message: "Offre supprimée" });
         } catch (err: any) {
             res.status(err.statusCode ?? 500).json({ message: err.message });
         }
     }
 
-    async getAuditHistory(req: Request, res: Response): Promise<void> {
-        const history = await repo.getAuditHistory(req.params.id as string);
+    async getAuditHistory(req: Request<IdParamString>, res: Response): Promise<void> {
+        const history = await repo.getAuditHistory(req.params.id, req.user!.organizationId!);
         res.json(history);
     }
 }

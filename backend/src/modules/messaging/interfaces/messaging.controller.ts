@@ -52,6 +52,7 @@ import { Request, Response } from "express";
 import { ConversationStatus } from "@prisma/client";
 import { MessagingRepository } from "../infrastructure/messaging.repository";
 import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const repo = new MessagingRepository();
 const notificationRepo = new NotificationRepository();
@@ -105,22 +106,30 @@ export class MessagingController {
         }
     }
 
-    async getMessages(req: Request, res: Response): Promise<void> {
+    async getMessages(req: Request<IdParamString>, res: Response): Promise<void> {
         const page = parseInt(req.query.page as string) || 1;
-        const msgs = await repo.getMessages(req.params.id as string, page);
+        const msgs = await repo.getMessages(req.params.id, req.user!.userId, page);
+        if (msgs === null) {
+        res.status(403).json({ message: "Accès refusé à cette conversation" });
+        return;
+        }
         res.json(msgs);
     }
 
-    async sendMessage(req: Request, res: Response): Promise<void> {
+    async sendMessage(req: Request<IdParamString>, res: Response): Promise<void> {
         const { content } = req.body;
         if (!content?.trim()) {
         res.status(400).json({ message: "Message vide" });
         return;
         }
         try {
-        const msg = await repo.sendMessage(req.params.id as string, req.user!.userId, content);
+        const msg = await repo.sendMessage(req.params.id, req.user!.userId, content);
+        if (msg === null) {
+            res.status(403).json({ message: "Accès refusé à cette conversation" });
+            return;
+        }
 
-        const recipients = await repo.getOtherParticipants(req.params.id as string, req.user!.userId);
+        const recipients = await repo.getOtherParticipants(req.params.id, req.user!.userId);
         const preview = content.length > 100 ? `${content.slice(0, 100)}…` : content;
         for (const recipient of recipients) {
             await notificationRepo.createForUsers(
@@ -138,8 +147,8 @@ export class MessagingController {
         }
     }
 
-    async markAsRead(req: Request, res: Response): Promise<void> {
-        await repo.markAsRead(req.params.id as string, req.user!.userId);
+    async markAsRead(req: Request<IdParamString>, res: Response): Promise<void> {
+        await repo.markAsRead(req.params.id, req.user!.userId);
         res.json({ success: true });
     }
 
@@ -151,14 +160,14 @@ export class MessagingController {
     /**
      * Marque une conversation comme résolue ou ouverte (Super Admin)
      */
-    async updateStatus(req: Request, res: Response): Promise<void> {
+    async updateStatus(req: Request<IdParamString>, res: Response): Promise<void> {
         const { status } = req.body;
         if (status !== "OPEN" && status !== "RESOLVED") {
         res.status(400).json({ message: "Statut invalide" });
         return;
         }
         try {
-        const conv = await repo.updateStatus(req.params.id as string, status);
+        const conv = await repo.updateStatus(req.params.id, status);
         res.json(conv);
         } catch (err: any) {
         res.status(400).json({ message: err.message });

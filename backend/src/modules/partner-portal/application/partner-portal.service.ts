@@ -88,8 +88,8 @@ export class PartnerPortalService {
         return repo.deleteLocation(id, partnerId);
     }
 
-    async setAvailabilities(locationId: string, _partnerId: string, slots: Parameters<typeof repo.setAvailabilities>[1]) {
-        return repo.setAvailabilities(locationId, slots);
+    async setAvailabilities(locationId: string, partnerId: string, slots: Parameters<typeof repo.setAvailabilities>[2]) {
+        return repo.setAvailabilities(locationId, partnerId, slots);
     }
 
     // ── Offers ────────────────────────────────────────────────────────────────

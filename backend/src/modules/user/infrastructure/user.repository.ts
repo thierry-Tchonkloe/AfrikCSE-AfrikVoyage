@@ -59,6 +59,12 @@ export class UserRepository {
     async findById(id: string) {
         return prisma.user.findUnique({
         where: { id },
+        omit: {
+            password: true,
+            refreshToken: true,
+            resetPasswordToken: true,
+            resetPasswordExpiresAt: true,
+        },
         include: {
             organization: { select: { id: true, name: true, status: true } },
             manager: { select: { id: true, firstName: true, lastName: true } },

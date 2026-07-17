@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as svc from "../application/train.service";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 export async function search(req: Request, res: Response, next: NextFunction): Promise<void> {
     const { from, to } = req.query;
@@ -19,10 +20,10 @@ export async function adminCreateRoute(req: Request, res: Response, next: NextFu
     try { res.json(await svc.adminCreateRoute(req.body)); } catch (err) { next(err); }
 }
 
-export async function adminUpdateRoute(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try { res.json(await svc.adminUpdateRoute(req.params.id as string, req.body)); } catch (err) { next(err); }
+export async function adminUpdateRoute(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+    try { res.json(await svc.adminUpdateRoute(req.params.id, req.body)); } catch (err) { next(err); }
 }
 
-export async function adminDeleteRoute(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try { await svc.adminDeleteRoute(req.params.id as string); res.status(204).send(); } catch (err) { next(err); }
+export async function adminDeleteRoute(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+    try { await svc.adminDeleteRoute(req.params.id); res.status(204).send(); } catch (err) { next(err); }
 }

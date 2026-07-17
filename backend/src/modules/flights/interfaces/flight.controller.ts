@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as svc from "../application/flight.service";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 export async function search(req: Request, res: Response, next: NextFunction): Promise<void> {
     const { from, to, departureDate, returnDate, adults, nonStop, currency } = req.query;
@@ -38,12 +39,12 @@ export async function adminCreateRoute(req: Request, res: Response, next: NextFu
     try { res.json(await svc.adminCreateRoute(req.body)); } catch (err) { next(err); }
 }
 
-export async function adminUpdateRoute(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try { res.json(await svc.adminUpdateRoute(req.params.id as string, req.body)); } catch (err) { next(err); }
+export async function adminUpdateRoute(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+    try { res.json(await svc.adminUpdateRoute(req.params.id, req.body)); } catch (err) { next(err); }
 }
 
-export async function adminDeleteRoute(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try { await svc.adminDeleteRoute(req.params.id as string); res.status(204).send(); } catch (err) { next(err); }
+export async function adminDeleteRoute(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+    try { await svc.adminDeleteRoute(req.params.id); res.status(204).send(); } catch (err) { next(err); }
 }
 
 export async function adminListAirports(_req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -54,10 +55,10 @@ export async function adminCreateAirport(req: Request, res: Response, next: Next
     try { res.json(await svc.adminCreateAirport(req.body)); } catch (err) { next(err); }
 }
 
-export async function adminUpdateAirport(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try { res.json(await svc.adminUpdateAirport(req.params.id as string, req.body)); } catch (err) { next(err); }
+export async function adminUpdateAirport(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+    try { res.json(await svc.adminUpdateAirport(req.params.id, req.body)); } catch (err) { next(err); }
 }
 
-export async function adminDeleteAirport(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try { await svc.adminDeleteAirport(req.params.id as string); res.status(204).send(); } catch (err) { next(err); }
+export async function adminDeleteAirport(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+    try { await svc.adminDeleteAirport(req.params.id); res.status(204).send(); } catch (err) { next(err); }
 }

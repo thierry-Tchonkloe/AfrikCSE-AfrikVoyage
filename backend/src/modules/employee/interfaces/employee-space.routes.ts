@@ -2,6 +2,8 @@ import { Router } from "express";
 import { EmployeeSpaceController } from "./employee-space.controller";
 import { authenticate } from "../../../core/middlewares/auth.middleware";
 import { receiptUpload, logoUpload } from "../../../core/middlewares/upload.middleware";
+import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idParamString } from "../../../core/validators/param.validators";
 
 const router = Router();
 const ctrl = new EmployeeSpaceController();
@@ -25,7 +27,7 @@ router.get("/benefits/categories",           ctrl.getBenefitCategories.bind(ctrl
 router.get("/benefits/balance",              ctrl.getBenefitBalance.bind(ctrl));
 router.get("/benefits/requests",             ctrl.getMyBenefitRequests.bind(ctrl));
 router.post("/benefits/requests",            ctrl.submitBenefitRequest.bind(ctrl));
-router.patch("/benefits/requests/:id/cancel", ctrl.cancelBenefitRequest.bind(ctrl));
+router.patch("/benefits/requests/:id/cancel", validateParams(idParamString), ctrl.cancelBenefitRequest.bind(ctrl));
 
 // ── Profil ────────────────────────────────────────────────────────────────────
 router.get("/profile",     ctrl.getProfile.bind(ctrl));
@@ -36,6 +38,6 @@ router.get("/activity-log", ctrl.getActivityLog.bind(ctrl));
 // ── Documents ─────────────────────────────────────────────────────────────────
 router.get("/documents",         ctrl.getDocuments.bind(ctrl));
 router.post("/documents",        ctrl.addDocument.bind(ctrl));
-router.delete("/documents/:id",  ctrl.deleteDocument.bind(ctrl));
+router.delete("/documents/:id",  validateParams(idParamString), ctrl.deleteDocument.bind(ctrl));
 
 export default router;

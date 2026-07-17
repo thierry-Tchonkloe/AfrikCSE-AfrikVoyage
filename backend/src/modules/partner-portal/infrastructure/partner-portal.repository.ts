@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../../core/config/prisma";
+import { AppError } from "../../../core/errors/app.error";
 
 export class PartnerPortalRepository {
     // ── Auth / PartnerUser ────────────────────────────────────────────────────
@@ -103,7 +104,7 @@ export class PartnerPortalRepository {
 
     // ── Availabilities ────────────────────────────────────────────────────────
 
-    async setAvailabilities(locationId: string, slots: Array<{
+    async setAvailabilities(locationId: string, partnerId: string, slots: Array<{
         dayOfWeek?: number;
         openTime:   string;
         closeTime:  string;
@@ -111,6 +112,11 @@ export class PartnerPortalRepository {
         exceptionDate?: Date;
         note?:      string;
     }>) {
+        // PartnerAvailability n'a pas de partnerId direct (seulement locationId) : on vérifie
+        // que l'établissement appartient bien au partenaire connecté avant toute écriture.
+        const location = await prisma.partnerLocation.findFirst({ where: { id: locationId, partnerId } });
+        if (!location) throw new AppError("Établissement introuvable", 404);
+
         await prisma.partnerAvailability.deleteMany({ where: { locationId } });
         if (slots.length === 0) return [];
         return prisma.partnerAvailability.createMany({

@@ -11,9 +11,10 @@ export class EmployeeService {
         return this.repo.getStats(orgId);
     }
 
-    async getById(id: string) {
+    /** Cantonné à l'organisation de l'appelant — même message d'erreur si id inconnu ou org différente (anti-IDOR) */
+    async getById(orgId: string, id: string) {
         const emp = await this.repo.findById(id);
-        if (!emp) throw new Error("Employé introuvable");
+        if (!emp || emp.organizationId !== orgId) throw new Error("Employé introuvable");
         return emp;
     }
 }

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { OrderService } from "../application/order.service";
 import { createOrderSchema } from "./order.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const service = new OrderService();
 
@@ -26,18 +27,18 @@ export class OrderController {
         } catch (err) { next(err); }
     }
 
-    async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async getById(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const { userId } = req.user!;
-            res.json(await service.getOrderById(req.params.id as string, userId));
+            res.json(await service.getOrderById(req.params.id, userId));
         } catch (err) { next(err); }
     }
 
-    async cancel(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async cancel(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const { userId, organizationId } = req.user!;
             if (!organizationId) { res.status(400).json({ message: "Organisation requise" }); return; }
-            res.json(await service.cancelOrder(req.params.id as string, userId, organizationId));
+            res.json(await service.cancelOrder(req.params.id, userId, organizationId));
         } catch (err) { next(err); }
     }
 }

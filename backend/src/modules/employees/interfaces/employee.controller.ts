@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { EmployeeService } from "../application/employee.service";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const service = new EmployeeService();
 
@@ -24,9 +25,9 @@ export class EmployeeController {
         res.json(stats);
     }
 
-    async getById(req: Request, res: Response): Promise<void> {
+    async getById(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const emp = await service.getById(req.params.id as string);
+        const emp = await service.getById(req.user!.organizationId!, req.params.id);
         res.json(emp);
         } catch (err: any) {
         res.status(404).json({ message: err.message });

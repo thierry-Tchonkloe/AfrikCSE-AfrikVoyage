@@ -124,28 +124,53 @@ export class CommissionRepository {
         });
     }
 
-    async listPayouts(partnerId?: string, page = 1, limit = 20) {
+    async listPayouts(partnerId?: string, organizationId?: string, page = 1, limit = 20) {
         const skip = (page - 1) * limit;
-        const where = partnerId ? { partnerId } : {};
+        // Un partenaire global peut avoir des entrées de plusieurs organisations regroupées
+        // dans le même payout (période + partenaire) : on filtre donc aussi les entrées
+        // incluses, pas seulement le payout lui-même (sinon les lignes d'une autre org fuitent).
+        const entryOrgFilter: Prisma.CommissionEntryWhereInput | undefined = organizationId
+            ? { booking: { organizationId } }
+            : undefined;
+        const where: Prisma.PartnerPayoutWhereInput = {
+            ...(partnerId ? { partnerId } : {}),
+            ...(entryOrgFilter ? { entries: { some: entryOrgFilter } } : {}),
+        };
         const [payouts, total] = await Promise.all([
             prisma.partnerPayout.findMany({
                 where,
                 include: {
                     partner: { select: { id: true, name: true } },
-                    entries: { select: { id: true, grossAmount: true, commissionAmount: true, netAmount: true } },
+                    entries: {
+                        where:  entryOrgFilter,
+                        select: { id: true, grossAmount: true, commissionAmount: true, netAmount: true },
+                    },
                 },
                 orderBy: { createdAt: "desc" },
                 skip, take: limit,
             }),
             prisma.partnerPayout.count({ where }),
         ]);
-        return { payouts, total, page, limit };
+
+        // Les totaux stockés sur le payout portent sur TOUTES ses entrées (potentiellement
+        // cross-org) ; pour un appel cantonné à une org, on les recalcule à partir des
+        // seules entrées visibles pour ne jamais exposer un montant incluant une autre org.
+        const scopedPayouts = organizationId
+            ? payouts.map((p) => {
+                const totalGross      = p.entries.reduce((s, e) => s.add(e.grossAmount), new Prisma.Decimal(0));
+                const totalCommission = p.entries.reduce((s, e) => s.add(e.commissionAmount), new Prisma.Decimal(0));
+                return { ...p, totalGross, totalCommission, netAmount: totalGross.sub(totalCommission) };
+            })
+            : payouts;
+
+        return { payouts: scopedPayouts, total, page, limit };
     }
 
-    async listEntries(partnerId?: string, _organizationId?: string, page = 1, limit = 50) {
+    async listEntries(partnerId?: string, organizationId?: string, page = 1, limit = 50) {
         const skip = (page - 1) * limit;
-        const where = {
+        const where: Prisma.CommissionEntryWhereInput = {
             ...(partnerId ? { partnerId } : {}),
+            ...(organizationId ? { booking: { organizationId } } : {}),
         };
         const [entries, total] = await Promise.all([
             prisma.commissionEntry.findMany({

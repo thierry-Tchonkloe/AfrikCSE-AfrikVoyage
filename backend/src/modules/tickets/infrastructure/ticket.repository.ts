@@ -105,9 +105,15 @@ export class TicketRepository {
         });
     }
 
-    async getByCode(code: string) {
-        return prisma.ticket.findUnique({
-            where: { code },
+    /**
+     * userId non fourni → recherche non cantonnée (réservée au flux interne de
+     * scan/validation HMAC, POST /validate). Quand userId est fourni (accès
+     * authentifié GET /tickets/:code), le ticket doit appartenir à l'appelant —
+     * anti-IDOR.
+     */
+    async getByCode(code: string, userId?: string) {
+        return prisma.ticket.findFirst({
+            where: { code, ...(userId ? { userId } : {}) },
             include: {
                 offer:        { select: { id: true, title: true, partner: { select: { name: true } } } },
                 user:         { select: { id: true, firstName: true, lastName: true, email: true } },

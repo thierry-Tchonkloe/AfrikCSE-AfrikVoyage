@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../../../core/config/prisma";
 import { AppError } from "../../../core/errors/app.error";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const uploadSchema = z.object({
     fileUrl:        z.string().url("URL de fichier invalide"),
@@ -62,9 +63,9 @@ export class OcrController {
         res.json(scans);
     }
 
-    async getById(req: Request, res: Response): Promise<void> {
+    async getById(req: Request<IdParamString>, res: Response): Promise<void> {
         const scan = await prisma.ocrScan.findFirst({
-            where: { id: req.params.id as string, userId: req.user!.userId },
+            where: { id: req.params.id, userId: req.user!.userId },
         });
         if (!scan) throw new AppError("Scan introuvable", 404);
         res.json(scan);

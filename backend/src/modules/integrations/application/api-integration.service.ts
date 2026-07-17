@@ -7,8 +7,8 @@ export class ApiIntegrationService {
         return this.repo.getByOrganization(organizationId);
     }
 
-    async getById(id: string) {
-        const integration = await this.repo.getById(id);
+    async getById(organizationId: string, id: string) {
+        const integration = await this.repo.getById(id, organizationId);
         if (!integration) throw new Error("Intégration introuvable");
         return integration;
     }
@@ -17,20 +17,24 @@ export class ApiIntegrationService {
         return this.repo.create(organizationId, data);
     }
 
-    async update(id: string, data: Partial<ApiIntegrationInput>) {
-        return this.repo.update(id, data);
+    async update(organizationId: string, id: string, data: Partial<ApiIntegrationInput>) {
+        const updated = await this.repo.update(id, organizationId, data);
+        if (!updated) throw new Error("Intégration introuvable");
+        return updated;
     }
 
-    async delete(id: string) {
-        return this.repo.delete(id);
+    async delete(organizationId: string, id: string) {
+        const deleted = await this.repo.delete(id, organizationId);
+        if (!deleted) throw new Error("Intégration introuvable");
+        return deleted;
     }
 
-    async getSyncLogs(id: string) {
-        return this.repo.getSyncLogs(id);
+    async getSyncLogs(organizationId: string, id: string) {
+        return this.repo.getSyncLogs(id, organizationId);
     }
 
-    async testConnection(id: string) {
-        const integration = await this.repo.getById(id);
+    async testConnection(organizationId: string, id: string) {
+        const integration = await this.repo.getById(id, organizationId);
         if (!integration) throw new Error("Intégration introuvable");
         if (!integration.apiKey && !integration.webhookUrl) {
             throw new Error("Aucune clé API ou URL de webhook configurée pour cette intégration");
@@ -38,8 +42,8 @@ export class ApiIntegrationService {
         return { connected: true, name: integration.name, type: integration.type };
     }
 
-    async sync(id: string, type: "AUTOMATIC" | "MANUAL" = "MANUAL") {
-        const integration = await this.repo.getById(id);
+    async sync(organizationId: string, id: string, type: "AUTOMATIC" | "MANUAL" = "MANUAL") {
+        const integration = await this.repo.getById(id, organizationId);
         if (!integration) throw new Error("Intégration introuvable");
 
         if (!integration.isActive || (!integration.apiKey && !integration.webhookUrl)) {

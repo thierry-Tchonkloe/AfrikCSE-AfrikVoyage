@@ -5,6 +5,7 @@ import {
     updateApiIntegrationSchema,
     syncIntegrationSchema,
 } from "./api-integration.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const service = new ApiIntegrationService();
 
@@ -14,9 +15,9 @@ export class ApiIntegrationController {
         res.json(data);
     }
 
-    async getById(req: Request, res: Response): Promise<void> {
+    async getById(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            const data = await service.getById(req.params.id as string);
+            const data = await service.getById(req.user!.organizationId!, req.params.id);
             res.json(data);
         } catch (err: any) {
             res.status(404).json({ message: err.message });
@@ -37,51 +38,51 @@ export class ApiIntegrationController {
         }
     }
 
-    async update(req: Request, res: Response): Promise<void> {
+    async update(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = updateApiIntegrationSchema.safeParse(req.body);
         if (!parsed.success) {
             res.status(400).json({ errors: parsed.error.flatten() });
             return;
         }
         try {
-            const integration = await service.update(req.params.id as string, parsed.data);
+            const integration = await service.update(req.user!.organizationId!, req.params.id, parsed.data);
             res.json(integration);
         } catch (err: any) {
             res.status(400).json({ message: err.message });
         }
     }
 
-    async delete(req: Request, res: Response): Promise<void> {
+    async delete(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            await service.delete(req.params.id as string);
+            await service.delete(req.user!.organizationId!, req.params.id);
             res.json({ message: "Intégration supprimée" });
         } catch (err: any) {
             res.status(400).json({ message: err.message });
         }
     }
 
-    async getSyncLogs(req: Request, res: Response): Promise<void> {
-        const data = await service.getSyncLogs(req.params.id as string);
+    async getSyncLogs(req: Request<IdParamString>, res: Response): Promise<void> {
+        const data = await service.getSyncLogs(req.user!.organizationId!, req.params.id);
         res.json(data);
     }
 
-    async testConnection(req: Request, res: Response): Promise<void> {
+    async testConnection(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            const result = await service.testConnection(req.params.id as string);
+            const result = await service.testConnection(req.user!.organizationId!, req.params.id);
             res.json(result);
         } catch (err: any) {
             res.status(400).json({ message: err.message });
         }
     }
 
-    async sync(req: Request, res: Response): Promise<void> {
+    async sync(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = syncIntegrationSchema.safeParse(req.body ?? {});
         if (!parsed.success) {
             res.status(400).json({ errors: parsed.error.flatten() });
             return;
         }
         try {
-            const log = await service.sync(req.params.id as string, parsed.data.type);
+            const log = await service.sync(req.user!.organizationId!, req.params.id, parsed.data.type);
             res.json(log);
         } catch (err: any) {
             res.status(400).json({ message: err.message });

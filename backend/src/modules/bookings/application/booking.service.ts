@@ -61,9 +61,26 @@ export class BookingService {
         return repo.findByUser(userId, page, limit);
     }
 
-    async getById(id: string) {
+    /**
+     * SUPER_ADMIN/PLATFORM_MANAGER voient tout ; ADMIN/MANAGER/FINANCE voient les
+     * réservations de leur propre organisation (mêmes rôles que travel.service pour
+     * une visibilité "staff" cohérente) ; un simple EMPLOYE ne voit que SA PROPRE
+     * réservation, pas celles de ses collègues. Message d'erreur identique dans tous
+     * les cas de refus (id inexistant vs appartenant à un autre user/org) — anti-IDOR.
+     */
+    async getById(requester: { userId: string; role: string; organizationId: string | null }, id: string) {
         const booking = await repo.findById(id);
         if (!booking) throw new AppError("Réservation introuvable", 404);
+
+        const isPlatformRole = requester.role === "SUPER_ADMIN" || requester.role === "PLATFORM_MANAGER";
+        const isOwner = booking.userId === requester.userId;
+        const isSameOrgStaff =
+            ["ADMIN", "MANAGER", "FINANCE"].includes(requester.role) &&
+            booking.organizationId === requester.organizationId;
+
+        if (!isPlatformRole && !isOwner && !isSameOrgStaff) {
+            throw new AppError("Réservation introuvable", 404);
+        }
         return booking;
     }
 
@@ -110,9 +127,10 @@ export class BookingService {
         }).catch(() => {});
     }
 
-    async complete(id: string) {
+    async complete(id: string, partnerId: string) {
         const booking = await repo.findById(id);
         if (!booking) throw new AppError("Réservation introuvable", 404);
+        if (booking.partnerId !== partnerId) throw new AppError("Accès interdit", 403);
         if (booking.status !== "CONFIRMED") throw new AppError("Seule une réservation CONFIRMED peut être complétée", 400);
         const updated = await repo.updateStatus(id, BookingStatus.COMPLETED, { completedAt: new Date() });
         // Notify user

@@ -12,6 +12,7 @@ import {
     updateProfileSchema,
     addDocumentSchema,
 } from "./employee-space.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const repo = new EmployeeDashboardRepository();
 const notificationRepo = new NotificationRepository();
@@ -184,9 +185,9 @@ export class EmployeeSpaceController {
         }
     }
 
-    async cancelBenefitRequest(req: Request, res: Response): Promise<void> {
+    async cancelBenefitRequest(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            await repo.cancelBenefitRequest(req.params.id as string, req.user!.userId);
+            await repo.cancelBenefitRequest(req.params.id, req.user!.userId);
             res.json({ success: true });
         } catch (err: any) {
             res.status(400).json({ message: err.message });
@@ -302,9 +303,9 @@ export class EmployeeSpaceController {
         }
     }
 
-    async deleteDocument(req: Request, res: Response): Promise<void> {
+    async deleteDocument(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            await repo.deleteDocument(req.params.id as string, req.user!.userId);
+            await repo.deleteDocument(req.params.id, req.user!.userId);
             res.json({ success: true });
         } catch (err: any) {
             res.status(400).json({ message: err.message });

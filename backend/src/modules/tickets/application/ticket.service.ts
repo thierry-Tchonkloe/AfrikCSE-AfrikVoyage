@@ -45,8 +45,8 @@ export class TicketService {
         return repo.getMyTickets(userId);
     }
 
-    async getByCode(code: string) {
-        const ticket = await repo.getByCode(code);
+    async getByCode(code: string, userId: string) {
+        const ticket = await repo.getByCode(code, userId);
         if (!ticket) throw new AppError("Ticket introuvable", 404);
         return ticket;
     }

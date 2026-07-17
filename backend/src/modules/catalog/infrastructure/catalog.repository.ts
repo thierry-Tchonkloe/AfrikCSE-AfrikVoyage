@@ -144,9 +144,10 @@ export class CatalogRepository {
         });
     }
 
-    async getById(id: string) {
-        return prisma.benefitCatalogItem.findUnique({
-            where: { id },
+    /** Cantonné à l'organisation appelante — retourne null si id inconnu OU appartenant à une autre org (anti-IDOR) */
+    async getById(id: string, organizationId: string) {
+        return prisma.benefitCatalogItem.findFirst({
+            where: { id, organizationId },
             include: { partner: { select: { id: true, name: true, logoUrl: true, contactEmail: true } } },
         });
     }
@@ -208,8 +209,10 @@ export class CatalogRepository {
         return item;
     }
 
-    async update(id: string, userId: string, data: Partial<CatalogItemInput>) {
-        const before = await prisma.benefitCatalogItem.findUniqueOrThrow({ where: { id } });
+    async update(id: string, userId: string, organizationId: string, data: Partial<CatalogItemInput>) {
+        // Cantonné à l'organisation appelante — retourne null si id inconnu OU appartenant à une autre org (anti-IDOR)
+        const before = await prisma.benefitCatalogItem.findFirst({ where: { id, organizationId } });
+        if (!before) return null;
 
         const lastAudit = await prisma.offerAuditEntry.findFirst({
             where: { offerId: id },
@@ -219,7 +222,7 @@ export class CatalogRepository {
         const nextVersion = (lastAudit?.version ?? 0) + 1;
 
         const item = await prisma.benefitCatalogItem.update({
-            where: { id },
+            where: { id, organizationId },
             data: {
                 title:           data.title,
                 description:     data.description,
@@ -262,8 +265,10 @@ export class CatalogRepository {
         return item;
     }
 
-    async delete(id: string, userId: string) {
-        const before = await prisma.benefitCatalogItem.findUniqueOrThrow({ where: { id } });
+    async delete(id: string, userId: string, organizationId: string) {
+        // Cantonné à l'organisation appelante — retourne null si id inconnu OU appartenant à une autre org (anti-IDOR)
+        const before = await prisma.benefitCatalogItem.findFirst({ where: { id, organizationId } });
+        if (!before) return null;
         const lastAudit = await prisma.offerAuditEntry.findFirst({
             where: { offerId: id },
             orderBy: { version: "desc" },
@@ -271,13 +276,15 @@ export class CatalogRepository {
         });
         const nextVersion = (lastAudit?.version ?? 0) + 1;
 
-        await prisma.benefitCatalogItem.delete({ where: { id } });
+        await prisma.benefitCatalogItem.delete({ where: { id, organizationId } });
         await this.writeAudit(id, before.partnerId, userId, "DELETED", before, nextVersion);
+        return true;
     }
 
-    async getAuditHistory(offerId: string) {
+    /** Cantonné à l'organisation via la relation offer.organizationId (anti-IDOR) */
+    async getAuditHistory(offerId: string, organizationId: string) {
         return prisma.offerAuditEntry.findMany({
-            where: { offerId },
+            where: { offerId, offer: { organizationId } },
             orderBy: { version: "asc" },
         });
     }

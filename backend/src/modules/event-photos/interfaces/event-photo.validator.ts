@@ -9,3 +9,7 @@ export const uploadPhotoSchema = z.object({
 export const moderateSchema = z.object({
     status: z.enum(["APPROVED", "REJECTED"]),
 });
+
+// Route GET /event/:eventId — validation du seul param eventId (distinct de idParamString)
+export const eventIdParamSchema = z.object({ eventId: z.string().min(1) });
+export type EventIdParam = z.infer<typeof eventIdParamSchema>;

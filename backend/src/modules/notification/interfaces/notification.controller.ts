@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { NotificationRepository } from "../infrastructure/notification.repository";
 import { NotificationType, NotificationChannel } from "@prisma/client";
 import { z } from "zod";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const repo = new NotificationRepository();
 
@@ -30,8 +31,8 @@ export class NotificationController {
         res.json({ count });
     }
 
-    async markAsRead(req: Request, res: Response): Promise<void> {
-        await repo.markAsRead(req.params.id as string, req.user!.userId);
+    async markAsRead(req: Request<IdParamString>, res: Response): Promise<void> {
+        await repo.markAsRead(req.params.id, req.user!.userId);
         res.json({ success: true });
     }
 
