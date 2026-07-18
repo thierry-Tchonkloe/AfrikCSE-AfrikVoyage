@@ -8,7 +8,7 @@ export class PartnerPortalRepository {
     async findUserByEmail(email: string) {
         return prisma.partnerUser.findUnique({
             where: { email },
-            include: { partner: { select: { id: true, status: true } } },
+            include: { partner: { select: { id: true, name: true, status: true } } },
         });
     }
 
@@ -53,6 +53,22 @@ export class PartnerPortalRepository {
         return prisma.partnerUser.update({
             where: { id, partnerId },
             data:  { isActive: false },
+        });
+    }
+
+    /** Révoque immédiatement tous les tokens émis pour ce PartnerUser (logout) */
+    async revokeSessions(id: string) {
+        return prisma.partnerUser.update({
+            where: { id },
+            data:  { refreshToken: null, tokenVersion: { increment: 1 } },
+        });
+    }
+
+    /** Persiste le hash du refresh token courant (rotation à chaque /refresh) */
+    async updateRefreshToken(id: string, hashedToken: string | null) {
+        return prisma.partnerUser.update({
+            where: { id },
+            data:  { refreshToken: hashedToken },
         });
     }
 

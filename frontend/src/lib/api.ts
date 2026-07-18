@@ -89,6 +89,16 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 // ── Intercepteur réponse : refresh automatique ──────────────────────
+// Deux sessions cookie totalement indépendantes coexistent :
+//  - User standard   : accessToken/refreshToken       → POST /auth/refresh
+//  - Partenaire      : partnerAccessToken/partnerRefreshToken → POST /partner-portal/refresh
+// On choisit l'endpoint de refresh selon le chemin de la requête d'origine, jamais
+// les deux, pour ne pas mélanger les deux systèmes de session sur un même onglet.
+function isPartnerRequest(url?: string): boolean {
+    if (!url) return false;
+    return url.startsWith("/partner-portal") || url.startsWith("/bookings/partner");
+}
+
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
@@ -96,24 +106,32 @@ api.interceptors.response.use(
         _retry?: boolean;
         };
 
-        // 401 → tentative de refresh via cookie refreshToken HTTP-only
         if (error.response?.status === 401 && !original._retry) {
         original._retry = true;
+        const isPartner = isPartnerRequest(original.url);
+        const refreshPath = isPartner ? "/partner-portal/refresh" : "/auth/refresh";
+
         try {
-            // Le refreshToken est dans le cookie HTTP-only → withCredentials suffit
+            // Le refresh token est dans le cookie HTTP-only correspondant → withCredentials suffit
             await axios.post(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+            `${process.env.NEXT_PUBLIC_API_URL}${refreshPath}`,
             {},
             { withCredentials: true }
             );
-            // Le backend renvoie un nouveau cookie accessToken HTTP-only.
+            // Le backend renvoie un nouveau cookie access token HTTP-only.
             // On relance simplement la requête originale.
             return api(original);
         } catch {
-            // Refresh échoué → déconnexion
+            // Refresh échoué → déconnexion, chacune vers sa propre page de login
             if (typeof window !== "undefined") {
             const path = window.location.pathname;
-            const isPublicPage = [
+
+            if (path.startsWith("/partner-portal")) {
+                if (path !== "/partner-portal/login") {
+                window.location.href = "/partner-portal/login";
+                }
+            } else {
+                const isPublicPage = [
                 "/login",
                 "/register",
                 "/forgot-password",
@@ -121,12 +139,10 @@ api.interceptors.response.use(
                 "/activate",
                 "/infos",
                 "/unauthorized",
-            ].some((prefix) => path === prefix || path.startsWith(prefix + "/"));
-
-            // /partner-portal a sa propre vérification de session dans le layout
-            const isPartnerPortal = path.startsWith("/partner-portal");
-            if (!isPublicPage && !isPartnerPortal) {
+                ].some((prefix) => path === prefix || path.startsWith(prefix + "/"));
+                if (!isPublicPage) {
                 window.location.href = "/login";
+                }
             }
             }
         }

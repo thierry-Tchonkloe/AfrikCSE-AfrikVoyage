@@ -95,6 +95,7 @@ model User {
   lastName               String
   isActive               Boolean      @default(true)
   refreshToken           String?
+  tokenVersion           Int          @default(0) // incrémenté au logout / reset password → révoque tous les tokens émis avant
   lastLoginAt            DateTime?
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @default(now())
@@ -1567,6 +1568,8 @@ model PartnerUser {
   lastName     String
   role         Role      @default(PARTNER_ADMIN)
   isActive     Boolean   @default(true)
+  refreshToken String?   // hash du refresh token courant (rotation, cookie partnerRefreshToken dédié)
+  tokenVersion Int       @default(0) // incrémenté au logout → révoque tous les tokens émis avant
   lastLoginAt  DateTime?
   invitedById  String?
   createdAt    DateTime  @default(now())

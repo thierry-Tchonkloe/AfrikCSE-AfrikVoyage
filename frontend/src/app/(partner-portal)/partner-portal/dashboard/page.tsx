@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { CalendarCheck, Clock, CheckCircle2, Loader2 } from "lucide-react";
 import { partnerPortalService } from "@/services/partner/partner-portal.service";
 import { Booking } from "@/types";
-import { useAuth } from "@/hooks/useAuth";
+import { usePartnerAuth } from "@/hooks/usePartnerAuth";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
 export default function PartnerDashboardPage() {
-    const { user } = useAuth();
+    const { user } = usePartnerAuth();
     const [pending, setPending]     = useState<Booking[]>([]);
     const [confirmed, setConfirmed] = useState<Booking[]>([]);
     const [loading, setLoading]     = useState(true);
@@ -58,7 +58,7 @@ export default function PartnerDashboardPage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bonjour, {user?.firstName} 👋</h1>
-                <p className="text-sm text-gray-500 mt-0.5">{user?.partnerName ?? user?.organization?.name}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{user?.partnerName}</p>
             </div>
 
             {/* Stats */}

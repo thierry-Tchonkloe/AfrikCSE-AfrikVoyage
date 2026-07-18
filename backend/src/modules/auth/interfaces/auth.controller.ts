@@ -238,7 +238,8 @@ export class AuthController {
     }
 
     // ── Login ─────────────────────────────────────────────────────────────
-    // Gère les utilisateurs standard ET les utilisateurs partenaires.
+    // Utilisateurs standard uniquement — les partenaires ont leur propre flow
+    // (POST /api/partner-portal/login, cookies partnerAccessToken/partnerRefreshToken).
     async login(req: Request, res: Response) {
         const parsed = loginSchema.safeParse(req.body);
         if (!parsed.success) {
@@ -247,18 +248,6 @@ export class AuthController {
         try {
         const result = await service.login(parsed.data);
 
-        // ── Cas : utilisateur partenaire ──────────────────────────────────
-        // Même mécanisme cookie HTTP-only que les users standards.
-        // Plus de localStorage — le cookie accessToken fonctionne pour tous.
-        if (result.type === "partner") {
-            setAuthCookies(res, result.accessToken, result.refreshToken);
-            return res.status(200).json({
-                type: "partner",
-                partnerUser: result.partnerUser,
-            });
-        }
-
-        // ── Cas : utilisateur standard ────────────────────────────────────
         await logAudit({
             action: "USER_LOGIN",
             entity: "User",
@@ -289,7 +278,7 @@ export class AuthController {
     }
 
     // ── Logout ───────────────────────────────────────────────────────────
-    // Révoque le refreshToken en BDD + supprime les deux cookies.
+    // Révoque immédiatement access token ET refresh token (tokenVersion en BDD) + supprime les deux cookies.
     async logout(req: Request, res: Response) {
         try {
         await service.logout(req.user!.userId);
@@ -355,50 +344,11 @@ export class AuthController {
     }
 
     // ── Me ───────────────────────────────────────────────────────────────
-    // Gère les deux types d'utilisateurs (User et PartnerUser) via le cookie
-    // HTTP-only — le rôle dans le JWT détermine la table à interroger.
+    // Utilisateurs standard uniquement — voir GET /api/partner-portal/me pour les partenaires.
     async me(req: Request, res: Response): Promise<void> {
         try {
-        const { role, userId } = req.user!;
+        const { userId } = req.user!;
 
-        // ── Cas partenaire ───────────────────────────────────────────
-        if (role === "PARTNER_ADMIN" || role === "PARTNER_STAFF") {
-            const partnerUser = await prisma.partnerUser.findUnique({
-                where: { id: userId },
-                include: { partner: { select: { id: true, name: true, status: true } } },
-            });
-            if (!partnerUser || !partnerUser.isActive) {
-                res.status(404).json({ message: "Partenaire introuvable" });
-                return;
-            }
-            const partner = partnerUser.partner as { id: string; name: string; status: string };
-            res.status(200).json({
-                user: {
-                    id:               partnerUser.id,
-                    email:            partnerUser.email,
-                    firstName:        partnerUser.firstName,
-                    lastName:         partnerUser.lastName,
-                    avatar:           null,
-                    role:             partnerUser.role,
-                    profileCompleted: true,
-                    organizationId:   partnerUser.partnerId,
-                    isPartner:        true,
-                    partnerId:        partnerUser.partnerId,
-                    partnerName:      partner.name,
-                    organization: {
-                        id:       partner.id,
-                        name:     partner.name,
-                        hasVoyage:true,
-                        hasCSE:   false,
-                        isHost:   false,
-                        status:   partner.status,
-                    },
-                },
-            });
-            return;
-        }
-
-        // ── Cas utilisateur standard ─────────────────────────────────
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {

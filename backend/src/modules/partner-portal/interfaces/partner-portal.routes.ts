@@ -1,4 +1,5 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { PartnerPortalController } from "./partner-portal.controller";
 import { authenticatePartner, requirePartnerAdmin } from "./partner-auth.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
@@ -8,11 +9,24 @@ import { locationIdParamSchema } from "./partner-portal.validator";
 const router = Router();
 const ctrl   = new PartnerPortalController();
 
-// ── Public (login) ────────────────────────────────────────────────────────────
-router.post("/login", ctrl.login.bind(ctrl));
+// ── Limiteur anti-bruteforce (même politique que /api/auth/login) ──────────
+const strictAuthLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { message: "Trop de tentatives, réessayez dans 15 minutes" },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// ── Public ────────────────────────────────────────────────────────────────────
+router.post("/login",   strictAuthLimiter, ctrl.login.bind(ctrl));
+router.post("/refresh", ctrl.refresh.bind(ctrl));
 
 // ── Authenticated ─────────────────────────────────────────────────────────────
 router.use(authenticatePartner);
+
+router.post("/logout", ctrl.logout.bind(ctrl));
+router.get("/me",      ctrl.me.bind(ctrl));
 
 // Profile
 router.get("/profile",  ctrl.getProfile.bind(ctrl));

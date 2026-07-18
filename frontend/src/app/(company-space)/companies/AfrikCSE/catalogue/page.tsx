@@ -65,10 +65,10 @@ export default function CataloguePage() {
             companyPrice:  item.companyPrice ?? 0,
             isActive:      item.isActive ?? true,
             offerType:     item.offerType ?? "VOUCHER",
-            city:          (item as Record<string, unknown>).city as string ?? "",
-            region:        (item as Record<string, unknown>).region as string ?? "",
-            country:       (item as Record<string, unknown>).country as string ?? "",
-            partnerId:     (item as Record<string, unknown>).partnerId as string ?? "",
+            city:          item.city ?? "",
+            region:        item.region ?? "",
+            country:       item.country ?? "",
+            partnerId:     item.partner?.id ?? "",
         });
         setModal("edit");
     };

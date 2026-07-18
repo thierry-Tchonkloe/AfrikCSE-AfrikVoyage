@@ -9,13 +9,72 @@ import { IdParamString } from "../../../core/validators/param.validators";
 
 const service = new PartnerPortalService();
 
+// ── Cookies dédiés partenaire ────────────────────────────────────────────────
+// Noms distincts de ceux du système utilisateur standard (accessToken/refreshToken)
+// pour qu'une session partenaire ne puisse jamais interférer avec une session User
+// sur le même navigateur (ex: un même poste utilisé pour les deux portails).
+const IS_PROD = process.env.NODE_ENV === "production";
+
+const PARTNER_COOKIE_BASE = {
+    httpOnly: true,
+    secure:   IS_PROD,
+    sameSite: (IS_PROD ? "none" : "lax") as "none" | "lax",
+    partitioned: IS_PROD,
+    path:   "/",
+} as const;
+
+function setPartnerAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+    res.cookie("partnerAccessToken", accessToken, {
+        ...PARTNER_COOKIE_BASE,
+        maxAge: 24 * 60 * 60 * 1000, // 24h — aligné sur la durée du JWT
+    });
+    res.cookie("partnerRefreshToken", refreshToken, {
+        ...PARTNER_COOKIE_BASE,
+        maxAge: 90 * 24 * 60 * 60 * 1000, // 90j
+    });
+}
+
+function clearPartnerAuthCookies(res: Response) {
+    res.clearCookie("partnerAccessToken", { ...PARTNER_COOKIE_BASE });
+    res.clearCookie("partnerRefreshToken", { ...PARTNER_COOKIE_BASE });
+}
+
 export class PartnerPortalController {
     async login(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const parsed = loginSchema.safeParse(req.body);
             if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
             const result = await service.login(parsed.data.email, parsed.data.password);
-            res.json(result);
+            setPartnerAuthCookies(res, result.accessToken, result.refreshToken);
+            res.json({ user: result.user });
+        } catch (err) { next(err); }
+    }
+
+    async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+        const refreshToken = req.cookies?.partnerRefreshToken;
+        if (!refreshToken) { res.status(400).json({ message: "Refresh token requis" }); return; }
+        try {
+            const result = await service.refresh(refreshToken);
+            setPartnerAuthCookies(res, result.accessToken, result.refreshToken);
+            res.json({ ok: true });
+        } catch (err) {
+            clearPartnerAuthCookies(res); // refresh invalide → on nettoie tout
+            next(err);
+        }
+    }
+
+    async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            await service.logout(req.partnerUser!.partnerUserId);
+            clearPartnerAuthCookies(res);
+            res.json({ message: "Déconnecté avec succès" });
+        } catch (err) { next(err); }
+    }
+
+    async me(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const user = await service.me(req.partnerUser!.partnerUserId);
+            res.json({ user });
         } catch (err) { next(err); }
     }
 

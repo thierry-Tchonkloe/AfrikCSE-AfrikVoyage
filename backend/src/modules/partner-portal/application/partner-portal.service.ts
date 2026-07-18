@@ -3,14 +3,39 @@ import jwt from "jsonwebtoken";
 import { PartnerPortalRepository } from "../infrastructure/partner-portal.repository";
 import { prisma } from "../../../core/config/prisma";
 import { AppError } from "../../../core/errors/app.error";
+import { hashToken } from "../../../core/utils/hash";
 
 const repo = new PartnerPortalRepository();
 
-const JWT_SECRET  = process.env.JWT_SECRET  ?? "change-me";
-const JWT_EXPIRES = process.env.JWT_PARTNER_EXPIRES ?? "8h";
+const JWT_SECRET          = process.env.JWT_SECRET ?? "change-me";
+const ACCESS_TOKEN_EXPIRES  = process.env.JWT_PARTNER_ACCESS_EXPIRES  ?? "24h";
+const REFRESH_TOKEN_EXPIRES = process.env.JWT_PARTNER_REFRESH_EXPIRES ?? "90d";
 
-function signPartnerToken(payload: { partnerUserId: string; partnerId: string; role: string }) {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES } as never);
+export interface PartnerTokenPayload {
+    partnerUserId: string;
+    partnerId:     string;
+    role:          string;
+    tokenVersion:  number;
+}
+
+function signPartnerAccessToken(payload: PartnerTokenPayload): string {
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRES } as never);
+}
+
+function signPartnerRefreshToken(payload: PartnerTokenPayload): string {
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES } as never);
+}
+
+function toSessionUser(user: {
+    id: string; email: string; firstName: string; lastName: string;
+    role: string; partnerId: string; partner: { name: string } | null;
+}) {
+    return {
+        id: user.id, email: user.email,
+        firstName: user.firstName, lastName: user.lastName,
+        role: user.role, partnerId: user.partnerId,
+        partnerName: user.partner?.name ?? "",
+    };
 }
 
 export class PartnerPortalService {
@@ -25,16 +50,70 @@ export class PartnerPortalService {
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) throw new AppError("Identifiants invalides", 401);
 
-        await repo.updateUserLastLogin(user.id);
-        const token = signPartnerToken({ partnerUserId: user.id, partnerId: user.partnerId, role: user.role });
-        return {
-            token,
-            user: {
-                id: user.id, email: user.email,
-                firstName: user.firstName, lastName: user.lastName,
-                role: user.role, partnerId: user.partnerId,
-            },
+        const payload: PartnerTokenPayload = {
+            partnerUserId: user.id,
+            partnerId:     user.partnerId,
+            role:          user.role,
+            tokenVersion:  user.tokenVersion,
         };
+        const accessToken  = signPartnerAccessToken(payload);
+        const refreshToken = signPartnerRefreshToken(payload);
+
+        await repo.updateRefreshToken(user.id, hashToken(refreshToken));
+        await repo.updateUserLastLogin(user.id);
+
+        return {
+            accessToken,
+            refreshToken,
+            user: toSessionUser(user as never),
+        };
+    }
+
+    /** Renouvelle la paire de tokens via le refresh token (cookie partnerRefreshToken) */
+    async refresh(refreshToken: string) {
+        let payload: PartnerTokenPayload;
+        try {
+            payload = jwt.verify(refreshToken, JWT_SECRET) as PartnerTokenPayload;
+        } catch {
+            throw new AppError("Refresh token invalide", 401);
+        }
+
+        const user = await repo.findUserById(payload.partnerUserId);
+        if (!user || !user.isActive || !user.refreshToken) {
+            throw new AppError("Session partenaire expirée, veuillez vous reconnecter", 401);
+        }
+        if (user.refreshToken !== hashToken(refreshToken)) {
+            throw new AppError("Refresh token invalide", 401);
+        }
+        if (user.tokenVersion !== payload.tokenVersion) {
+            throw new AppError("Session partenaire expirée, veuillez vous reconnecter", 401);
+        }
+
+        const newPayload: PartnerTokenPayload = {
+            partnerUserId: user.id,
+            partnerId:     user.partnerId,
+            role:          user.role,
+            tokenVersion:  user.tokenVersion,
+        };
+        const newAccessToken  = signPartnerAccessToken(newPayload);
+        const newRefreshToken = signPartnerRefreshToken(newPayload);
+
+        // Rotation : le hash en base doit refléter le nouveau refresh token.
+        await repo.updateRefreshToken(user.id, hashToken(newRefreshToken));
+
+        return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+    }
+
+    /** Révoque immédiatement tous les tokens (access ET refresh) de la session */
+    async logout(partnerUserId: string) {
+        await repo.revokeSessions(partnerUserId);
+    }
+
+    /** Profil de session courant — utilisé par le frontend pour vérifier/afficher la session */
+    async me(partnerUserId: string) {
+        const user = await repo.findUserById(partnerUserId);
+        if (!user || !user.isActive) throw new AppError("Session expirée, veuillez vous reconnecter", 401);
+        return toSessionUser(user as never);
     }
 
     async createStaff(adminPartnerId: string, adminId: string, data: {

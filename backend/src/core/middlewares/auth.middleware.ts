@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/jwt";
 import { Role } from "@prisma/client";
+import { prisma } from "../config/prisma";
 
 declare global {
     namespace Express {
@@ -15,11 +16,11 @@ declare global {
     }
 }
 
-export function authenticate(
+export async function authenticate(
     req: Request,
     res: Response,
     next: NextFunction
-): void {
+): Promise<void> {
     // ✅ Lecture depuis le cookie HTTP-only (plus depuis Authorization header)
     const token = req.cookies?.accessToken;
 
@@ -30,6 +31,23 @@ export function authenticate(
 
     try {
         const payload = verifyAccessToken(token);
+
+        // Révocation immédiate : le tokenVersion embarqué dans le JWT doit correspondre
+        // à celui stocké en base. Un logout (ou un reset password) incrémente ce compteur,
+        // ce qui invalide instantanément TOUS les tokens émis avant — access ET refresh —
+        // sans attendre leur expiration naturelle.
+        // Note : ce middleware ne reconnaît que les comptes `User` — les partenaires ont
+        // leur propre système d'authentification dédié (voir partner-auth.middleware.ts).
+        const current = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { tokenVersion: true, isActive: true },
+        });
+
+        if (!current || !current.isActive || current.tokenVersion !== payload.tokenVersion) {
+        res.status(401).json({ message: "Session expirée, veuillez vous reconnecter" });
+        return;
+        }
+
         req.user = {
         userId:         payload.userId,
         role:           payload.role as Role,
