@@ -29,6 +29,12 @@ router.get("/benefits/requests",             ctrl.getMyBenefitRequests.bind(ctrl
 router.post("/benefits/requests",            ctrl.submitBenefitRequest.bind(ctrl));
 router.patch("/benefits/requests/:id/cancel", validateParams(idParamString), ctrl.cancelBenefitRequest.bind(ctrl));
 
+// ── Carte de membre ───────────────────────────────────────────────────────────
+router.get("/member-card", ctrl.getMemberCard.bind(ctrl));
+
+// ── Économies ─────────────────────────────────────────────────────────────────
+router.get("/savings",     ctrl.getMySavings.bind(ctrl));
+
 // ── Profil ────────────────────────────────────────────────────────────────────
 router.get("/profile",     ctrl.getProfile.bind(ctrl));
 router.patch("/profile",   ctrl.updateProfile.bind(ctrl));

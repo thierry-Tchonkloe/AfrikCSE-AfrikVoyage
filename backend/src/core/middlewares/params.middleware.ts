@@ -7,6 +7,7 @@ import { z, ZodSchema } from "zod";
  * Aucun cast n'est nécessaire côté contrôleur : le seul `as any` du projet reste ici,
  * borné à la conversion validée (ex: string -> number pour ContactRequest.id).
  */
+
 export function validateParams<T extends ZodSchema>(schema: T): RequestHandler<z.infer<T>> {
   return (req, res, next) => {
     const parsed = schema.safeParse(req.params);

@@ -11,6 +11,22 @@ export interface CatalogFilters {
     partnerId?:   string;
     offerType?:   OfferType;
     subsidized?:  boolean;
+    lat?:         number;
+    lng?:         number;
+    radius?:      number; // km
+}
+
+/** Haversine distance en km entre deux coordonnées */
+function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 export interface CatalogItemInput {
@@ -104,11 +120,29 @@ export class CatalogRepository {
             orderBy.createdAt = "desc";
         }
 
-        return prisma.benefitCatalogItem.findMany({
+        const items = await prisma.benefitCatalogItem.findMany({
             where,
             orderBy,
             include: { partner: { select: { id: true, name: true, logoUrl: true } } },
         });
+
+        // Filtre géographique post-requête (haversine)
+        if (filters.lat != null && filters.lng != null && filters.radius != null) {
+            const { lat, lng, radius } = filters;
+            return items
+                .filter((item) => {
+                    if (item.latitude == null || item.longitude == null) return false;
+                    const dist = haversine(lat, lng, Number(item.latitude), Number(item.longitude));
+                    return dist <= radius;
+                })
+                .map((item) => ({
+                    ...item,
+                    distance: Math.round(haversine(lat, lng, Number(item.latitude), Number(item.longitude)) * 10) / 10,
+                }))
+                .sort((a, b) => (a as any).distance - (b as any).distance);
+        }
+
+        return items;
     }
 
     async getFeatured(orgId: string) {

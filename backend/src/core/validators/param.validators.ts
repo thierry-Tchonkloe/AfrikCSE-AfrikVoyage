@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const idParamCuid = z.object({ id: z.string().cuid() });
-export const idParamUuid = z.object({ id: z.string().uuid() });
+export const idParamCuid = z.object({ id: z.cuid() });
+export const idParamUuid = z.object({ id: z.uuid() });
 export const idParamString = z.object({ id: z.string().min(1) });
 
 // Integer id (e.g. ContactRequest) : parse string -> number then validate

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, X, Loader2, History, Upload, MapPin, Tag, Star, Sparkles, Clock } from "lucide-react";
+import { Search, Plus, X, Loader2, History, Upload, MapPin, Tag, Star, Sparkles, Clock, LocateFixed } from "lucide-react";
 import { employeeService } from "@/services/employes/employee.service";
 import { catalogService } from "@/services/employes/catalog.service";
 import { CatalogItem } from "@/types";
@@ -54,7 +54,9 @@ const OFFER_TYPE_LABELS: Record<string, string> = {
 
 // ── Carte offre catalogue ─────────────────────────────────────────────────────
 
-function OfferCard({ item }: { item: CatalogItem }) {
+type CatalogItemWithDist = CatalogItem & { distance?: number };
+
+function OfferCard({ item }: { item: CatalogItemWithDist }) {
     const router = useRouter();
     return (
         <div
@@ -87,7 +89,11 @@ function OfferCard({ item }: { item: CatalogItem }) {
                     </span>
                 )}
             </div>
-            {(item.city || item.region) && (
+            {item.distance != null ? (
+                <p className="flex items-center gap-1 text-xs font-medium" style={{ color: "#0f766e" }}>
+                    <MapPin size={10} /> {item.distance} km
+                </p>
+            ) : (item.city || item.region) && (
                 <p className="flex items-center gap-1 text-xs text-gray-400">
                     <MapPin size={10} /> {item.city ?? item.region}
                 </p>
@@ -103,7 +109,7 @@ function CatalogPanel({
 }: {
     icon: React.ReactNode;
     title: string;
-    items: CatalogItem[];
+    items: CatalogItemWithDist[];
     loading: boolean;
 }) {
     if (!loading && items.length === 0) return null;
@@ -142,10 +148,17 @@ export default function AvantagesPage() {
     const [search, setSearch]         = useState("");
 
     // Catalogue offres partenaires
-    const [featured,   setFeatured]   = useState<CatalogItem[]>([]);
-    const [committee,  setCommittee]  = useState<CatalogItem[]>([]);
-    const [newOffers,  setNewOffers]  = useState<CatalogItem[]>([]);
+    const [featured,   setFeatured]   = useState<CatalogItemWithDist[]>([]);
+    const [committee,  setCommittee]  = useState<CatalogItemWithDist[]>([]);
+    const [newOffers,  setNewOffers]  = useState<CatalogItemWithDist[]>([]);
     const [catalogLoading, setCatalogLoading] = useState(true);
+
+    // Géolocalisation
+    const [geoEnabled,   setGeoEnabled]   = useState(false);
+    const [geoLoading,   setGeoLoading]   = useState(false);
+    const [geoItems,     setGeoItems]     = useState<CatalogItemWithDist[]>([]);
+    const [geoError,     setGeoError]     = useState<string | null>(null);
+    const [geoRadius,    setGeoRadius]    = useState(25);
 
     // Modal soumission
     const [submitModal, setSubmitModal]       = useState<BenefitCategory | null>(null);
@@ -199,6 +212,43 @@ export default function AvantagesPage() {
         loadAll();
         loadCatalog();
     }, [loadAll, loadCatalog]);
+
+    const toggleGeo = () => {
+        if (geoEnabled) {
+            setGeoEnabled(false);
+            setGeoItems([]);
+            setGeoError(null);
+            return;
+        }
+        if (!navigator.geolocation) {
+            setGeoError("Géolocalisation non supportée par ce navigateur");
+            return;
+        }
+        setGeoLoading(true);
+        setGeoError(null);
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                try {
+                    const items = await catalogService.getAll({
+                        lat:    pos.coords.latitude,
+                        lng:    pos.coords.longitude,
+                        radius: geoRadius,
+                    });
+                    setGeoItems(items as CatalogItemWithDist[]);
+                    setGeoEnabled(true);
+                } catch {
+                    setGeoError("Erreur lors de la recherche des offres proches");
+                } finally {
+                    setGeoLoading(false);
+                }
+            },
+            () => {
+                setGeoError("Localisation refusée — vérifiez vos permissions");
+                setGeoLoading(false);
+            },
+            { timeout: 8000 }
+        );
+    };
 
     const handleSubmit = async () => {
         if (!submitModal) return;
@@ -299,11 +349,52 @@ export default function AvantagesPage() {
             {/* ── Catalogue des offres partenaires ─────────────────────────────────── */}
             {hasCatalog && (
                 <div className="space-y-6">
-                    <div className="border-b border-gray-100 pb-2">
-                        <h2 className="font-bold text-gray-900 text-base">Catalogue des offres</h2>
-                        <p className="text-xs text-gray-500">Offres négociées par votre CSE auprès de nos partenaires</p>
+                    <div className="border-b border-gray-100 pb-2 flex items-end justify-between flex-wrap gap-3">
+                        <div>
+                            <h2 className="font-bold text-gray-900 text-base">Catalogue des offres</h2>
+                            <p className="text-xs text-gray-500">Offres négociées par votre CSE auprès de nos partenaires</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {geoEnabled && (
+                                <select
+                                    value={geoRadius}
+                                    onChange={(e) => setGeoRadius(Number(e.target.value))}
+                                    className="text-xs px-2 py-1.5 border border-gray-200 rounded-lg outline-none"
+                                >
+                                    {[5, 10, 25, 50, 100].map((r) => (
+                                        <option key={r} value={r}>{r} km</option>
+                                    ))}
+                                </select>
+                            )}
+                            <button
+                                onClick={toggleGeo}
+                                disabled={geoLoading}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+                                style={geoEnabled
+                                    ? { background: "#0f766e", color: "white", borderColor: "#0f766e" }
+                                    : { background: "white", color: "#374151", borderColor: "#e5e7eb" }}
+                            >
+                                {geoLoading
+                                    ? <Loader2 size={13} className="animate-spin" />
+                                    : <LocateFixed size={13} />}
+                                Près de moi
+                            </button>
+                        </div>
                     </div>
+                    {geoError && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                            <MapPin size={12} /> {geoError}
+                        </p>
+                    )}
 
+                    {geoEnabled && (
+                        <CatalogPanel
+                            icon={<LocateFixed size={18} className="text-teal-600" />}
+                            title={`Offres dans un rayon de ${geoRadius} km`}
+                            items={geoItems}
+                            loading={geoLoading}
+                        />
+                    )}
                     <CatalogPanel
                         icon={<Star size={18} className="text-amber-500" />}
                         title="Offres du moment"

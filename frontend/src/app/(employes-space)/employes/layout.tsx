@@ -8,7 +8,7 @@ import {
     Gift, MessageSquare, CalendarDays, User, Settings,
     ChevronLeft, ChevronRight, LogOut, Menu,
     Mail, Sun, Moon, LifeBuoy, Bell, FileClock, Users, Ticket, Trophy,
-    HelpCircle, Images, Wallet, CalendarCheck,
+    HelpCircle, Images, Wallet, CalendarCheck, PiggyBank, CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
@@ -38,6 +38,8 @@ const NAV_ITEMS = [
     { href: "/employes/support",            label: "Support",                  icon: LifeBuoy },
     { href: "/employes/notifications", label: "Notifications",       icon: Bell, badge: true },
     { href: "/employes/mes-demandes", label: "Mes demandes", icon: FileClock },
+    { href: "/employes/economies",    label: "Mes économies",  icon: PiggyBank },
+    { href: "/employes/carte-membre", label: "Carte membre",   icon: CreditCard },
 ];
 
 const NAV_BOTTOM = [

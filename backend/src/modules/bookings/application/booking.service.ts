@@ -68,6 +68,7 @@ export class BookingService {
      * réservation, pas celles de ses collègues. Message d'erreur identique dans tous
      * les cas de refus (id inexistant vs appartenant à un autre user/org) — anti-IDOR.
      */
+
     async getById(requester: { userId: string; role: string; organizationId: string | null }, id: string) {
         const booking = await repo.findById(id);
         if (!booking) throw new AppError("Réservation introuvable", 404);

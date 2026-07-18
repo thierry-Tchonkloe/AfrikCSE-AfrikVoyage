@@ -45,4 +45,7 @@ export const filterCatalogSchema = z.object({
     partnerId:  z.string().optional(),
     offerType:  z.enum(["VOUCHER", "BOOKING", "DISCOUNT_CODE"]).optional(),
     subsidized: z.coerce.boolean().optional(),
+    lat:        z.coerce.number().min(-90).max(90).optional(),
+    lng:        z.coerce.number().min(-180).max(180).optional(),
+    radius:     z.coerce.number().min(1).max(500).optional(),
 });

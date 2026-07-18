@@ -81,6 +81,7 @@ model Organization {
   bookings         Booking[]
   apiClients       ApiClient[]
   webhookEndpoints WebhookEndpoint[]
+  subsidyRules     SubsidyRule[]
 
   @@map("organizations")
 }
@@ -316,6 +317,29 @@ model CountryConfig {
   updatedAt    DateTime @updatedAt
 
   @@map("country_configs")
+}
+
+// ─── SUBSIDY RULES (F18) ───────────────────────────────
+
+model SubsidyRule {
+  id             String    @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  label          String    // ex : "CSE Transport", "Bien-être"
+  category       String?   // filtre par catégorie d'offre (null = toutes)
+  offerType      OfferType? // filtre par type d'offre (null = tous)
+  subsidyPct     Int?      // % de subvention (prioritaire sur subsidyAmount)
+  subsidyAmount  Decimal?  @db.Decimal(10,2) // montant fixe XOF
+  currencyCode   String    @default("XOF")
+  maxPerEmployee Decimal?  @db.Decimal(10,2) // plafond par employé
+  startsAt       DateTime?
+  endsAt         DateTime?
+  isActive       Boolean   @default(true)
+  priority       Int       @default(0) // plus élevé = priorité plus haute
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("subsidy_rules")
 }
 
 // ─── INVITATION TOKEN ──────────────────────────────────// Token d'activation envoyé à l'admin après validation
