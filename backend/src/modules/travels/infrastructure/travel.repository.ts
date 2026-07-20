@@ -89,27 +89,27 @@ export class TravelRepository {
         };
     }
 
-    async approve(id: string, approverId: string) {
+    async approve(id: string, organizationId: string, approverId: string) {
         return prisma.travelRequest.update({
-        where: { id },
+        where: { id, organizationId },
         data: { status: "APPROVED", approvedById: approverId, approvedAt: new Date() },
         });
     }
 
-    async reject(id: string, note: string) {
+    async reject(id: string, organizationId: string, note: string) {
         return prisma.travelRequest.update({
-        where: { id },
+        where: { id, organizationId },
         data: { status: "REJECTED", rejectionNote: note },
         });
     }
 
-    async updateStatus(id: string, status: TravelStatus, approverId?: string) {
+    async updateStatus(id: string, organizationId: string, status: TravelStatus, approverId?: string) {
         const data: any = { status };
         if (status === "APPROVED" && approverId) {
         data.approvedById = approverId;
         data.approvedAt   = new Date();
         }
-        return prisma.travelRequest.update({ where: { id }, data });
+        return prisma.travelRequest.update({ where: { id, organizationId }, data });
     }
 
     async bulkApprove(orgId: string, ids: string[], approverId: string) {
@@ -159,16 +159,16 @@ export class TravelRepository {
         };
     }
 
-    async assignPartner(id: string, partnerName: string) {
+    async assignPartner(id: string, organizationId: string, partnerName: string) {
         return prisma.travelRequest.update({
-        where: { id },
+        where: { id, organizationId },
         data: { partnerName },
         });
     }
 
-    async updatePayment(id: string, data: { paymentStatus?: PaymentStatus; paymentLink?: string }) {
+    async updatePayment(id: string, organizationId: string, data: { paymentStatus?: PaymentStatus; paymentLink?: string }) {
         return prisma.travelRequest.update({
-        where: { id },
+        where: { id, organizationId },
         data,
         });
     }
@@ -231,17 +231,17 @@ export class TravelRepository {
         };
     }
 
-    async approveExpense(id: string, approverId: string) {
+    async approveExpense(id: string, organizationId: string, approverId: string) {
         return prisma.expenseReport.update({
-        where: { id },
+        where: { id, organizationId },
         data: { status: "APPROVED", approvedById: approverId, approvedAt: new Date() },
         include: { employee: { select: { userId: true } } },
         });
     }
 
-    async rejectExpense(id: string, note: string) {
+    async rejectExpense(id: string, organizationId: string, note: string) {
         return prisma.expenseReport.update({
-        where: { id },
+        where: { id, organizationId },
         data: { status: "REJECTED", rejectionNote: note },
         include: { employee: { select: { userId: true } } },
         });

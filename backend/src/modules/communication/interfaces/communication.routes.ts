@@ -1,8 +1,12 @@
 import { Router } from "express";
 import { CommunicationController } from "./communication.controller";
 import { authenticate } from "../../../core/middlewares/auth.middleware";
+import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idParamString } from "../../../core/validators/param.validators";
 
 const router = Router();
+router.use("/posts/:id", validateParams(idParamString));
+router.use("/poll-options/:id", validateParams(idParamString));
 const ctrl = new CommunicationController();
 
 router.use(authenticate);

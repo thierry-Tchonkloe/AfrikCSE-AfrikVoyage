@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { TicketService } from "../application/ticket.service";
-import { generateTicketSchema, validateTicketSchema } from "./ticket.validator";
+import { generateTicketSchema, validateTicketSchema, CodeParam } from "./ticket.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const service = new TicketService();
 
@@ -28,9 +29,9 @@ export class TicketController {
         res.json(tickets);
     }
 
-    async getByCode(req: Request, res: Response): Promise<void> {
+    async getByCode(req: Request<CodeParam>, res: Response): Promise<void> {
         try {
-            const ticket = await service.getByCode(req.params.code as string);
+            const ticket = await service.getByCode(req.params.code, req.user!.userId);
             res.json(ticket);
         } catch (err: any) {
             res.status(err.statusCode ?? 500).json({ message: err.message });
@@ -53,9 +54,9 @@ export class TicketController {
         }
     }
 
-    async cancel(req: Request, res: Response): Promise<void> {
+    async cancel(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            const ticket = await service.cancel(req.params.id as string, req.user!.userId);
+            const ticket = await service.cancel(req.params.id, req.user!.userId);
             res.json(ticket);
         } catch (err: any) {
             res.status(err.statusCode ?? 500).json({ message: err.message });

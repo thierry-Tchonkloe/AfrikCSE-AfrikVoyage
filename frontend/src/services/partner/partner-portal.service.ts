@@ -1,12 +1,5 @@
-import { PartnerUser, PartnerLocation, Booking } from "@/types";
+import { PartnerUser, PartnerLocation, Booking, PartnerSessionUser } from "@/types";
 import api from "@/lib/api";
-
-// PartnerSession conservé pour la compatibilité du hook usePartnerAuth (obsolète)
-export interface PartnerSession {
-    token:       string;
-    user:        Pick<PartnerUser, "id" | "email" | "firstName" | "lastName" | "role" | "partnerId">;
-    partnerName: string;
-}
 
 export interface OfferInput {
     title:        string;
@@ -19,16 +12,26 @@ export interface OfferInput {
     isActive?:    boolean;
 }
 
-// Conservé pour rétrocompatibilité — plus utilisé depuis la migration cookie
-export const partnerSessionStore = {
-    get(): PartnerSession | null { return null; },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    set(_: PartnerSession) { /* no-op */ },
-    clear() { /* no-op */ },
+// Tous les appels utilisent les cookies HTTP-only dédiés partnerAccessToken/
+// partnerRefreshToken (withCredentials:true) — distincts des cookies User, pour
+// qu'une session partenaire n'interfère jamais avec une session standard sur le
+// même navigateur.
+export const partnerAuthService = {
+    async login(email: string, password: string): Promise<{ user: PartnerSessionUser }> {
+        const { data } = await api.post("/partner-portal/login", { email, password });
+        return data;
+    },
+
+    async logout(): Promise<void> {
+        await api.post("/partner-portal/logout");
+    },
+
+    async getMe(): Promise<{ user: PartnerSessionUser }> {
+        const { data } = await api.get("/partner-portal/me");
+        return data;
+    },
 };
 
-// Tous les appels utilisent désormais les cookies HTTP-only via withCredentials:true.
-// Plus besoin d'injecter manuellement le Bearer token.
 export const partnerPortalService = {
     async listStaff(): Promise<PartnerUser[]> {
         const { data } = await api.get<PartnerUser[]>(`/partner-portal/staff`);

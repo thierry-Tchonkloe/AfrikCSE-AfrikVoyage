@@ -6,6 +6,7 @@ import {
     createContactSchema,
     updateStatusSchema,
 } from "./contact.validator";
+import { IdParamInt } from "../../../core/validators/param.validators";
 
 const contactService = new ContactService();
 
@@ -46,16 +47,13 @@ export class ContactController {
 
     // PATCH /api/contact/:id/status
     async updateStatus(
-        req: Request,
+        req: Request<IdParamInt>,
         res: Response,
         next: NextFunction
     ): Promise<void> {
         try {
-        const id = Number(req.params.id);
-        if (isNaN(id)) {
-            res.status(400).json({ success: false, message: "ID invalide" });
-            return;
-        }
+        // `validateParams(idParamInt)` middleware already parsed and validated `req.params.id` as number
+        const id = req.params.id;
 
         const parsed = updateStatusSchema.safeParse(req.body);
         if (!parsed.success) {

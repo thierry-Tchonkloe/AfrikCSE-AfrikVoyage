@@ -7,7 +7,7 @@ import {
     MapPin, ChevronLeft, ChevronRight, LogOut, Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
+import { usePartnerAuth } from "@/hooks/usePartnerAuth";
 
 const NAV_ITEMS = [
     { href: "/partner-portal/dashboard",  label: "Tableau de bord",  icon: LayoutDashboard },
@@ -21,7 +21,7 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
     const pathname        = usePathname();
     const router          = useRouter();
     const [open, setOpen] = useState(true);
-    const { user, loading, logout } = useAuth();
+    const { user, loading, logout } = usePartnerAuth();
 
     useLayoutEffect(() => {
         const apply = () => setOpen(window.innerWidth >= 1024);
@@ -36,9 +36,9 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
         </div>
     );
 
-    // Redirige si pas de session ou si le rôle n'est pas partenaire
-    if (!user || (user.role !== "PARTNER_ADMIN" && user.role !== "PARTNER_STAFF")) {
-        router.replace("/login");
+    // Redirige si pas de session partenaire valide
+    if (!user) {
+        router.replace("/partner-portal/login");
         return null;
     }
 
@@ -60,7 +60,7 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
                             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0">P</div>
                             <div className="min-w-0">
                                 <p className="text-xs font-bold text-white truncate">Portail</p>
-                                <p className="text-xs text-white/60 truncate">{user.partnerName ?? user.organization?.name}</p>
+                                <p className="text-xs text-white/60 truncate">{user.partnerName}</p>
                             </div>
                         </div>
                     ) : (

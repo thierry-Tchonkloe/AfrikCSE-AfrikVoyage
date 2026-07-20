@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as svc from "../application/car-rental.service";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 export async function search(req: Request, res: Response, next: NextFunction): Promise<void> {
     const { city, category } = req.query;
@@ -19,10 +20,10 @@ export async function adminCreateVehicle(req: Request, res: Response, next: Next
     try { res.json(await svc.adminCreateVehicle(req.body)); } catch (err) { next(err); }
 }
 
-export async function adminUpdateVehicle(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try { res.json(await svc.adminUpdateVehicle(req.params.id as string, req.body)); } catch (err) { next(err); }
+export async function adminUpdateVehicle(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+    try { res.json(await svc.adminUpdateVehicle(req.params.id, req.body)); } catch (err) { next(err); }
 }
 
-export async function adminDeleteVehicle(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try { await svc.adminDeleteVehicle(req.params.id as string); res.status(204).send(); } catch (err) { next(err); }
+export async function adminDeleteVehicle(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+    try { await svc.adminDeleteVehicle(req.params.id); res.status(204).send(); } catch (err) { next(err); }
 }

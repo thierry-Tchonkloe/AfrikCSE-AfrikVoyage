@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { BookingService } from "../application/booking.service";
 import { createBookingSchema, rateSchema, rejectSchema } from "./booking.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const service = new BookingService();
 
@@ -24,27 +25,27 @@ export class BookingController {
         } catch (err) { next(err); }
     }
 
-    async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async getById(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
-            res.json(await service.getById(req.params.id as string));
+            res.json(await service.getById(req.user!, req.params.id));
         } catch (err) { next(err); }
     }
 
-    async cancelByUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async cancelByUser(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const { userId } = req.user!;
             const reason = (req.body as { reason?: string }).reason;
-            await service.cancelByUser(req.params.id as string, userId, reason);
+            await service.cancelByUser(req.params.id, userId, reason);
             res.status(204).send();
         } catch (err) { next(err); }
     }
 
-    async rate(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async rate(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const { userId } = req.user!;
             const parsed = rateSchema.safeParse(req.body);
             if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
-            res.json(await service.rate(req.params.id as string, userId, parsed.data.score, parsed.data.comment));
+            res.json(await service.rate(req.params.id, userId, parsed.data.score, parsed.data.comment));
         } catch (err) { next(err); }
     }
 
@@ -59,27 +60,28 @@ export class BookingController {
         } catch (err) { next(err); }
     }
 
-    async confirmBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async confirmBooking(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const partnerId  = req.partnerUser!.partnerId;
             const partnerNotes = (req.body as { notes?: string }).notes;
-            res.json(await service.confirm(req.params.id as string, partnerId, partnerNotes));
+            res.json(await service.confirm(req.params.id, partnerId, partnerNotes));
         } catch (err) { next(err); }
     }
 
-    async rejectBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async rejectBooking(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const partnerId = req.partnerUser!.partnerId;
             const parsed = rejectSchema.safeParse(req.body);
             if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
-            await service.reject(req.params.id as string, partnerId, parsed.data.reason);
+            await service.reject(req.params.id, partnerId, parsed.data.reason);
             res.status(204).send();
         } catch (err) { next(err); }
     }
 
-    async completeBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async completeBooking(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
-            res.json(await service.complete(req.params.id as string));
+            const partnerId = req.partnerUser!.partnerId;
+            res.json(await service.complete(req.params.id, partnerId));
         } catch (err) { next(err); }
     }
 

@@ -24,8 +24,8 @@ export class EventPhotoService {
         return repo.delete(id, organizationId, requesterId, isAdmin);
     }
 
-    async toggleLike(photoId: string, userId: string) {
-        return repo.toggleLike(photoId, userId);
+    async toggleLike(photoId: string, organizationId: string, userId: string) {
+        return repo.toggleLike(photoId, organizationId, userId);
     }
 
     async getPendingCount(organizationId: string) {

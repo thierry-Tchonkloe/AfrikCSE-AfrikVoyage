@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { PlanConfigService } from "../application/plan-config.service";
 import { createPlanConfigSchema, updatePlanConfigSchema } from "./plan-config.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const service = new PlanConfigService();
 
@@ -15,9 +16,9 @@ export class PlanConfigController {
         res.json(plans);
     }
 
-    async getById(req: Request, res: Response): Promise<void> {
+    async getById(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            const plan = await service.getById(req.params.id as string);
+            const plan = await service.getById(req.params.id);
             res.json(plan);
         } catch (err: any) {
             res.status(404).json({ message: err.message });
@@ -38,23 +39,23 @@ export class PlanConfigController {
         }
     }
 
-    async update(req: Request, res: Response): Promise<void> {
+    async update(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = updatePlanConfigSchema.safeParse(req.body);
         if (!parsed.success) {
             res.status(400).json({ errors: parsed.error.flatten() });
             return;
         }
         try {
-            const plan = await service.update(req.params.id as string, parsed.data);
+            const plan = await service.update(req.params.id, parsed.data);
             res.json(plan);
         } catch (err: any) {
             res.status(400).json({ message: err.message });
         }
     }
 
-    async delete(req: Request, res: Response): Promise<void> {
+    async delete(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            await service.delete(req.params.id as string);
+            await service.delete(req.params.id);
             res.json({ message: "Plan supprimé" });
         } catch (err: any) {
             res.status(400).json({ message: err.message });

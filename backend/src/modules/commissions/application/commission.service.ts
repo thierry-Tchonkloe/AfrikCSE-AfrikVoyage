@@ -78,12 +78,40 @@ export class CommissionService {
 
     // ── Payouts ───────────────────────────────────────────────────────────────
 
-    async listEntries(partnerId?: string, _organizationId?: string, page = 1, limit = 50) {
-        return repo.listEntries(partnerId, undefined, page, limit);
+    /**
+     * SUPER_ADMIN/PLATFORM_MANAGER voient toutes les orgs et peuvent filtrer
+     * librement ; les autres rôles (ADMIN/FINANCE) sont strictement cantonnés
+     * à leur propre organisation (IDOR) — tout organizationId/partnerId fourni
+     * en query par un rôle non-plateforme est ignoré au profit de l'org réelle
+     * de l'appelant.
+     */
+    async listEntries(
+        requester: { role: string; organizationId: string | null },
+        partnerId?: string,
+        organizationId?: string,
+        page = 1,
+        limit = 50
+    ) {
+        if (requester.role === "SUPER_ADMIN" || requester.role === "PLATFORM_MANAGER") {
+            return repo.listEntries(partnerId, organizationId, page, limit);
+        }
+
+        if (!requester.organizationId) throw new AppError("Organisation introuvable", 403);
+        return repo.listEntries(partnerId, requester.organizationId, page, limit);
     }
 
-    async listPayouts(partnerId?: string, page = 1, limit = 20) {
-        return repo.listPayouts(partnerId, page, limit);
+    async listPayouts(
+        requester: { role: string; organizationId: string | null },
+        partnerId?: string,
+        page = 1,
+        limit = 20
+    ) {
+        if (requester.role === "SUPER_ADMIN" || requester.role === "PLATFORM_MANAGER") {
+            return repo.listPayouts(partnerId, undefined, page, limit);
+        }
+
+        if (!requester.organizationId) throw new AppError("Organisation introuvable", 403);
+        return repo.listPayouts(partnerId, requester.organizationId, page, limit);
     }
 
     async triggerPayout(partnerId: string, period: string, triggeredById: string) {

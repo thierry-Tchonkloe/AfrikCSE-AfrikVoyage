@@ -31,7 +31,7 @@ export class BenefitRepository {
         });
     }
 
-    async updateCategory(id: string, data: Partial<{
+    async updateCategory(id: string, organizationId: string, data: Partial<{
         name: string;
         description: string;
         annualBudget: number;
@@ -39,11 +39,11 @@ export class BenefitRepository {
         eligibleServices: string[];
         isActive: boolean;
     }>) {
-        return prisma.benefitCategory.update({ where: { id }, data });
+        return prisma.benefitCategory.update({ where: { id, organizationId }, data });
     }
 
-    async deleteCategory(id: string) {
-        return prisma.benefitCategory.delete({ where: { id } });
+    async deleteCategory(id: string, organizationId: string) {
+        return prisma.benefitCategory.delete({ where: { id, organizationId } });
     }
 
     // ── Demandes ────────────────────────────────────────
@@ -90,25 +90,25 @@ export class BenefitRepository {
         });
     }
 
-    async approveRequest(id: string, approverId: string) {
+    async approveRequest(id: string, organizationId: string, approverId: string) {
         return prisma.benefitRequest.update({
-        where: { id },
+        where: { id, organizationId },
         data: { status: "APPROVED", approvedById: approverId, approvedAt: new Date() },
         include: { employee: { select: { userId: true } }, category: { select: { name: true } } },
         });
     }
 
-    async rejectRequest(id: string, note: string) {
+    async rejectRequest(id: string, organizationId: string, note: string) {
         return prisma.benefitRequest.update({
-        where: { id },
+        where: { id, organizationId },
         data: { status: "REJECTED", rejectionNote: note },
         include: { employee: { select: { userId: true } }, category: { select: { name: true } } },
         });
     }
 
-    async bulkApprove(ids: string[], approverId: string) {
+    async bulkApprove(ids: string[], organizationId: string, approverId: string) {
         const targets = await prisma.benefitRequest.findMany({
-        where: { id: { in: ids }, status: "PENDING" },
+        where: { id: { in: ids }, organizationId, status: "PENDING" },
         select: { id: true, employee: { select: { userId: true } }, category: { select: { name: true } } },
         });
 

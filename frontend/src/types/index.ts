@@ -40,10 +40,6 @@ export interface User {
     profileCompleted: boolean;
     organizationId: string | null;
     organization: Organization | null;
-    // Champs supplémentaires pour les utilisateurs partenaires
-    isPartner?: boolean;
-    partnerId?: string;
-    partnerName?: string;
 }
 
 export type NotificationType =
@@ -343,19 +339,20 @@ export interface FaqEntry {
 }
 
 export interface AuthResponse {
-    type?: "user" | "partner";
     sessionToken?: string;
-    user?: User;
-    // Renvoyé par le backend pour info immédiate avant useAuth.loadUser()
-    partnerUser?: {
-        id: string;
-        email: string;
-        firstName: string;
-        lastName: string;
-        role: "PARTNER_ADMIN" | "PARTNER_STAFF";
-        partnerId: string;
-        partnerName: string;
-    };
+    user: User;
+}
+
+// ── Auth partenaire (portail dédié — cookies partnerAccessToken/partnerRefreshToken) ──
+
+export interface PartnerSessionUser {
+    id:          string;
+    email:       string;
+    firstName:   string;
+    lastName:    string;
+    role:        "PARTNER_ADMIN" | "PARTNER_STAFF";
+    partnerId:   string;
+    partnerName: string;
 }
 
 // ── Wallet ────────────────────────────────────────────────────────────────────

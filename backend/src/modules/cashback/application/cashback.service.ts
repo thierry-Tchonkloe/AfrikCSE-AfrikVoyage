@@ -56,6 +56,10 @@ export class CashbackService {
 
     // ── Transactions ──────────────────────────────────────────────────────────
 
+    async listMyTransactions(userId: string, page = 1, limit = 20) {
+        return repo.listMyTransactions(userId, page, limit);
+    }
+
     async listTransactions(organizationId: string, page = 1, limit = 20) {
         return repo.listTransactions(organizationId, page, limit);
     }
@@ -133,6 +137,28 @@ export class CashbackService {
         }
 
         return txn;
+    }
+
+    /**
+     * Trouve la meilleure règle active pour l'org et applique le cashback.
+     * Retourne le montant crédité ou null si aucune règle n'est configurée.
+     */
+    async applyForOrder(opts: {
+        userId:         string;
+        organizationId: string;
+        orderAmount:    Prisma.Decimal;
+        orderId:        string;
+    }): Promise<Prisma.Decimal | null> {
+        const rule = await repo.findBestActiveRule(opts.organizationId);
+        if (!rule) return null;
+        const txn = await this.calculateAndCredit({
+            userId:         opts.userId,
+            organizationId: opts.organizationId,
+            ruleId:         rule.id,
+            orderAmount:    opts.orderAmount,
+            orderId:        opts.orderId,
+        });
+        return txn.creditedAmount;
     }
 
     // ── Fraud Signals ─────────────────────────────────────────────────────────

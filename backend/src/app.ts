@@ -36,6 +36,7 @@ import eventPhotoRoutes      from "./modules/event-photos/interfaces/event-photo
 import faqRoutes             from "./modules/faq/interfaces/faq.routes";
 import walletRoutes          from "./modules/wallet/interfaces/wallet.routes";
 import cashbackRoutes        from "./modules/cashback/interfaces/cashback.routes";
+import subsidyRulesRoutes   from "./modules/subsidy-rules/interfaces/subsidy-rules.routes";
 import orderRoutes           from "./modules/orders/interfaces/order.routes";
 import partnerPortalRoutes   from "./modules/partner-portal/interfaces/partner-portal.routes";
 import bookingRoutes         from "./modules/bookings/interfaces/booking.routes";
@@ -429,6 +430,7 @@ app.use("/api/commissions",     commissionRoutes);
 app.use("/api/reporting",       reportingRoutes);
 app.use("/api/developer",       apiDeveloperRoutes);
 app.use("/api/countries",       countryConfigRoutes);
+app.use("/api/subsidy-rules",   subsidyRulesRoutes);
 
 // ── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

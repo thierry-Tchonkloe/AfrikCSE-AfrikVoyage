@@ -42,10 +42,10 @@ export class EventRepository {
         });
     }
 
-    async register(eventId: string, userId: string) {
-        // Vérifie la capacité
-        const event = await prisma.event.findUnique({
-        where: { id: eventId },
+    async register(eventId: string, userId: string, organizationId: string) {
+        // Vérifie la capacité (et que l'événement appartient à l'org de l'appelant)
+        const event = await prisma.event.findFirst({
+        where: { id: eventId, organizationId },
         include: { _count: { select: { registrations: true } } },
         });
 

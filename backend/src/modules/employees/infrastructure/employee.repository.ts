@@ -78,11 +78,18 @@ export class EmployeeRepository {
     }
 
     async findById(id: string) {
+        const userOmit = {
+        password: true,
+        refreshToken: true,
+        resetPasswordToken: true,
+        resetPasswordExpiresAt: true,
+        } as const;
+
         return prisma.employee.findUnique({
         where: { id },
         include: {
-            user: true,
-            manager: { include: { user: true } },
+            user: { omit: userOmit },
+            manager: { include: { user: { omit: userOmit } } },
         },
         });
     }

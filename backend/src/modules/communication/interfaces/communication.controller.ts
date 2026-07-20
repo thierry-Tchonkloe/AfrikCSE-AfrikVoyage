@@ -3,6 +3,7 @@ import { CommunicationRepository } from "../infrastructure/communication.reposit
 import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
 import { PostType } from "@prisma/client";
 import { createPostSchema, addCommentSchema } from "./communication.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const repo = new CommunicationRepository();
 const notificationRepo = new NotificationRepository();
@@ -45,12 +46,16 @@ export class CommunicationController {
         }
     }
 
-    async toggleLike(req: Request, res: Response): Promise<void> {
-        const result = await repo.toggleLike(req.params.id as string, req.user!.userId);
+    async toggleLike(req: Request<IdParamString>, res: Response): Promise<void> {
+        try {
+        const result = await repo.toggleLike(req.params.id, req.user!.userId, req.user!.organizationId!);
         res.json(result);
+        } catch (err: any) {
+        res.status(400).json({ message: err.message });
+        }
     }
 
-    async addComment(req: Request, res: Response): Promise<void> {
+    async addComment(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = addCommentSchema.safeParse(req.body);
         if (!parsed.success) {
         res.status(400).json({ errors: parsed.error.flatten() });
@@ -58,7 +63,7 @@ export class CommunicationController {
         }
         try {
         const comment = await repo.addComment(
-            req.params.id as string, req.user!.userId, parsed.data.content
+            req.params.id, req.user!.userId, parsed.data.content, req.user!.organizationId!
         );
         res.status(201).json(comment);
         } catch (err: any) {
@@ -66,17 +71,21 @@ export class CommunicationController {
         }
     }
 
-    async vote(req: Request, res: Response): Promise<void> {
+    async vote(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        await repo.vote(req.params.id as string, req.user!.userId);
+        await repo.vote(req.params.id, req.user!.userId, req.user!.organizationId!);
         res.json({ success: true });
         } catch (err: any) {
         res.status(400).json({ message: err.message });
         }
     }
 
-    async getComments(req: Request, res: Response): Promise<void> {
-        const comments = await repo.getComments(req.params.id as string);
+    async getComments(req: Request<IdParamString>, res: Response): Promise<void> {
+        try {
+        const comments = await repo.getComments(req.params.id, req.user!.organizationId!);
         res.json(comments);
+        } catch (err: any) {
+        res.status(400).json({ message: err.message });
+        }
     }
 }

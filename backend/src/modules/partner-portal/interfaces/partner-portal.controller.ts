@@ -3,7 +3,10 @@ import { PartnerPortalService } from "../application/partner-portal.service";
 import {
     loginSchema, createStaffSchema, updateProfileSchema,
     locationSchema, setAvailabilitiesSchema, createOfferSchema,
+    LocationIdParam,
 } from "./partner-portal.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
+import { setPartnerAuthCookies, clearPartnerAuthCookies } from "../../../core/utils/auth-cookies";
 
 const service = new PartnerPortalService();
 
@@ -13,7 +16,36 @@ export class PartnerPortalController {
             const parsed = loginSchema.safeParse(req.body);
             if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
             const result = await service.login(parsed.data.email, parsed.data.password);
-            res.json(result);
+            setPartnerAuthCookies(res, result.accessToken, result.refreshToken);
+            res.json({ user: result.user });
+        } catch (err) { next(err); }
+    }
+
+    async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
+        const refreshToken = req.cookies?.partnerRefreshToken;
+        if (!refreshToken) { res.status(400).json({ message: "Refresh token requis" }); return; }
+        try {
+            const result = await service.refresh(refreshToken);
+            setPartnerAuthCookies(res, result.accessToken, result.refreshToken);
+            res.json({ ok: true });
+        } catch (err) {
+            clearPartnerAuthCookies(res); // refresh invalide → on nettoie tout
+            next(err);
+        }
+    }
+
+    async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            await service.logout(req.partnerUser!.partnerUserId);
+            clearPartnerAuthCookies(res);
+            res.json({ message: "Déconnecté avec succès" });
+        } catch (err) { next(err); }
+    }
+
+    async me(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const user = await service.me(req.partnerUser!.partnerUserId);
+            res.json({ user });
         } catch (err) { next(err); }
     }
 
@@ -48,10 +80,10 @@ export class PartnerPortalController {
         } catch (err) { next(err); }
     }
 
-    async deactivateStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async deactivateStaff(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const { partnerId } = req.partnerUser!;
-            res.json(await service.deactivateStaff(req.params.id as string, partnerId));
+            res.json(await service.deactivateStaff(req.params.id, partnerId));
         } catch (err) { next(err); }
     }
 
@@ -64,24 +96,24 @@ export class PartnerPortalController {
         } catch (err) { next(err); }
     }
 
-    async updateLocation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async updateLocation(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const { partnerId } = req.partnerUser!;
             const parsed = locationSchema.partial().safeParse(req.body);
             if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
-            res.json(await service.updateLocation(req.params.id as string, partnerId, parsed.data));
+            res.json(await service.updateLocation(req.params.id, partnerId, parsed.data));
         } catch (err) { next(err); }
     }
 
-    async deleteLocation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async deleteLocation(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const { partnerId } = req.partnerUser!;
-            await service.deleteLocation(req.params.id as string, partnerId);
+            await service.deleteLocation(req.params.id, partnerId);
             res.status(204).send();
         } catch (err) { next(err); }
     }
 
-    async setAvailabilities(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async setAvailabilities(req: Request<LocationIdParam>, res: Response, next: NextFunction): Promise<void> {
         try {
             const { partnerId } = req.partnerUser!;
             const parsed = setAvailabilitiesSchema.safeParse(req.body);
@@ -90,7 +122,7 @@ export class PartnerPortalController {
                 ...s,
                 exceptionDate: s.exceptionDate ? new Date(s.exceptionDate) : undefined,
             }));
-            res.json(await service.setAvailabilities(req.params.locationId as string, partnerId, slots));
+            res.json(await service.setAvailabilities(req.params.locationId, partnerId, slots));
         } catch (err) { next(err); }
     }
 
@@ -113,7 +145,7 @@ export class PartnerPortalController {
         } catch (err) { next(err); }
     }
 
-    async updateOffer(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async updateOffer(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const { partnerId } = req.partnerUser!;
             const parsed = createOfferSchema.partial().safeParse(req.body);
@@ -122,7 +154,7 @@ export class PartnerPortalController {
                 ...parsed.data,
                 validUntil: parsed.data.validUntil ? new Date(parsed.data.validUntil) : undefined,
             };
-            res.json(await service.updateOffer(req.params.id as string, partnerId, data));
+            res.json(await service.updateOffer(req.params.id, partnerId, data));
         } catch (err) { next(err); }
     }
 }
