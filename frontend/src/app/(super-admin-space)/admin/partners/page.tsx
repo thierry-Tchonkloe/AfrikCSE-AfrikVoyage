@@ -46,8 +46,10 @@ export default function PartnersPage() {
                 status: status as PartnerStatus || undefined,
                 scopeType: scopeType as PartnerScope || undefined,
             });
+            console.log("res", res);
             setPartners(Array.isArray(res.partners) ? res.partners : []);
             setTotal((res as any).total ?? 0);
+            console.log("partners", partners, "total", total, "res.total", (res as any).total);
         } catch (err) {
             toast.error(getErrorMessage(err, "Erreur de chargement des partenaires"));
         } finally {

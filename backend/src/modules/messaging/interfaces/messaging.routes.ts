@@ -19,8 +19,11 @@
 import { Router } from "express";
 import { MessagingController } from "./messaging.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
+import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idParamString } from "../../../core/validators/param.validators";
 
 const router = Router();
+router.use("/conversations/:id", validateParams(idParamString));
 const ctrl = new MessagingController();
 
 router.use(authenticate);

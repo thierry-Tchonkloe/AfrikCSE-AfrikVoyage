@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+// Param unique du segment `/locations/:locationId/...` (nom différent de "id" -> schéma local dédié)
+export const locationIdParamSchema = z.object({ locationId: z.string().min(1) });
+export type LocationIdParam = z.infer<typeof locationIdParamSchema>;
+
 export const loginSchema = z.object({
     email:    z.string().email(),
     password: z.string().min(8),

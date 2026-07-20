@@ -3,7 +3,10 @@ import jwt from "jsonwebtoken";
 // ✅ Une seule secret pour les deux tokens (évite les mismatches)
 const JWT_SECRET = process.env.JWT_SECRET!;
 
-export interface JwtPayload { userId: string; role: string; organizationId: string | null; isHost: boolean; }
+// tokenVersion : doit correspondre à celui stocké en base (User.tokenVersion /
+// PartnerUser.tokenVersion) — incrémenté au logout, il invalide immédiatement
+// tous les tokens (access ET refresh) émis avant, sans attendre leur expiration.
+export interface JwtPayload { userId: string; role: string; organizationId: string | null; isHost: boolean; tokenVersion: number; }
 
 export function signAccessToken(payload: JwtPayload): string {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });

@@ -6,6 +6,7 @@ import {
     rejectRequestSchema,
     bulkApproveSchema,
 } from "./benefit.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const service = new BenefitService();
 
@@ -30,23 +31,23 @@ export class BenefitController {
         }
     }
 
-    async updateCategory(req: Request, res: Response): Promise<void> {
+    async updateCategory(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = updateBenefitCategorySchema.safeParse(req.body);
         if (!parsed.success) {
         res.status(400).json({ errors: parsed.error.flatten() });
         return;
         }
         try {
-        const cat = await service.updateCategory(req.params.id as string, parsed.data);
+        const cat = await service.updateCategory(req.params.id, req.user!.organizationId!, parsed.data);
         res.json(cat);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
         }
     }
 
-    async deleteCategory(req: Request, res: Response): Promise<void> {
+    async deleteCategory(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        await service.deleteCategory(req.params.id as string);
+        await service.deleteCategory(req.params.id, req.user!.organizationId!);
         res.json({ message: "Catégorie supprimée" });
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -71,23 +72,23 @@ export class BenefitController {
         res.json(stats);
     }
 
-    async approveRequest(req: Request, res: Response): Promise<void> {
+    async approveRequest(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const result = await service.approveRequest(req.params.id as string, req.user!.userId);
+        const result = await service.approveRequest(req.params.id, req.user!.organizationId!, req.user!.userId);
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
         }
     }
 
-    async rejectRequest(req: Request, res: Response): Promise<void> {
+    async rejectRequest(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = rejectRequestSchema.safeParse(req.body);
         if (!parsed.success) {
         res.status(400).json({ errors: parsed.error.flatten() });
         return;
         }
         try {
-        const result = await service.rejectRequest(req.params.id as string, parsed.data.note);
+        const result = await service.rejectRequest(req.params.id, req.user!.organizationId!, parsed.data.note);
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -101,7 +102,7 @@ export class BenefitController {
         return;
         }
         try {
-        const result = await service.bulkApprove(parsed.data.ids, req.user!.userId);
+        const result = await service.bulkApprove(parsed.data.ids, req.user!.organizationId!, req.user!.userId);
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });

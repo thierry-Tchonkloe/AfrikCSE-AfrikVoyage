@@ -178,47 +178,12 @@ import {
     changePasswordSchema,
 } from "./auth.validator";
 import { logAudit } from "../../../core/utils/audit";
+import {
+    setUserAuthCookies, clearUserAuthCookies,
+    setPartnerAuthCookies,
+} from "../../../core/utils/auth-cookies";
 
 const service = new AuthService();
-
-// ── Helpers cookies ────────────────────────────────────────────────────────────
-// On centralise la config pour ne pas la dupliquer dans chaque méthode.
-const IS_PROD = process.env.NODE_ENV === "production";
-
-const COOKIE_BASE = {
-    httpOnly: true,                                   // inaccessible depuis JS côté client
-    secure:   IS_PROD,                                 // HTTPS uniquement en prod
-    sameSite: (IS_PROD ? "none" : "lax") as "none" | "lax",
-    partitioned: IS_PROD,
-    path:   "/",
-} as const;
-
-function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-    // accessToken — durée alignée sur le JWT (24h), disponible sur toutes les routes.
-    // Un maxAge trop court (ex: 15min) faisait expirer le cookie côté navigateur
-    // avant le JWT lui-même, et le middleware Edge Runtime (qui lit ce cookie
-    // directement, sans passer par l'intercepteur axios) redirigeait alors
-    // silencieusement vers /login malgré un refreshToken encore valide.
-    res.cookie("accessToken", accessToken, {
-        ...COOKIE_BASE,
-        maxAge: 24 * 60 * 60 * 1000,  // 1 jour
-    });
-
-    // refreshToken — durée longue (7j), accessible partout pour le refresh workflow
-    res.cookie("refreshToken", refreshToken, {
-        ...COOKIE_BASE,
-        maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 jours
-    });
-}
-
-function clearAuthCookies(res: Response) {
-    res.clearCookie("accessToken", {
-        ...COOKIE_BASE,
-    });
-    res.clearCookie("refreshToken", {
-        ...COOKIE_BASE,
-    });
-}
 
 // ──────────────────────────── Controller ─────────────────────────────────────────────────────────────────
 export class AuthController {
@@ -238,7 +203,10 @@ export class AuthController {
     }
 
     // ── Login ─────────────────────────────────────────────────────────────
-    // Gère les utilisateurs standard ET les utilisateurs partenaires.
+    // Point d'entrée unique pour tous les rôles : `service.login` essaie `User`
+    // puis délègue à `PartnerPortalService` si besoin. On pose ici la paire de
+    // cookies correspondant au type retrouvé — jamais les deux à la fois, pour
+    // que les deux systèmes de session restent totalement indépendants.
     async login(req: Request, res: Response) {
         const parsed = loginSchema.safeParse(req.body);
         if (!parsed.success) {
@@ -247,18 +215,11 @@ export class AuthController {
         try {
         const result = await service.login(parsed.data);
 
-        // ── Cas : utilisateur partenaire ──────────────────────────────────
-        // Même mécanisme cookie HTTP-only que les users standards.
-        // Plus de localStorage — le cookie accessToken fonctionne pour tous.
         if (result.type === "partner") {
-            setAuthCookies(res, result.accessToken, result.refreshToken);
-            return res.status(200).json({
-                type: "partner",
-                partnerUser: result.partnerUser,
-            });
+            setPartnerAuthCookies(res, result.accessToken, result.refreshToken);
+            return res.status(200).json({ type: "partner", partnerUser: result.user });
         }
 
-        // ── Cas : utilisateur standard ────────────────────────────────────
         await logAudit({
             action: "USER_LOGIN",
             entity: "User",
@@ -268,7 +229,7 @@ export class AuthController {
             req,
         });
 
-        setAuthCookies(res, result.accessToken, result.refreshToken);
+        setUserAuthCookies(res, result.accessToken, result.refreshToken);
 
         const sessionSecret = process.env.SESSION_COOKIE_SECRET || process.env.JWT_SECRET;
         const sessionToken = jwt.sign(
@@ -289,7 +250,7 @@ export class AuthController {
     }
 
     // ── Logout ───────────────────────────────────────────────────────────
-    // Révoque le refreshToken en BDD + supprime les deux cookies.
+    // Révoque immédiatement access token ET refresh token (tokenVersion en BDD) + supprime les deux cookies.
     async logout(req: Request, res: Response) {
         try {
         await service.logout(req.user!.userId);
@@ -301,7 +262,7 @@ export class AuthController {
             organizationId: req.user!.organizationId,
             req,
         });
-        clearAuthCookies(res);
+        clearUserAuthCookies(res);
         return res.status(200).json({ message: "Déconnecté avec succès" });
         } catch (err: any) {
         return res.status(500).json({ message: err.message });
@@ -320,10 +281,10 @@ export class AuthController {
         try {
         const result = await service.refresh(refreshToken);
         // Repose un nouveau accessToken (et refreshToken si rotation activée)
-        setAuthCookies(res, result.accessToken, result.refreshToken ?? refreshToken);
+        setUserAuthCookies(res, result.accessToken, result.refreshToken ?? refreshToken);
         return res.status(200).json({ ok: true });
         } catch (err: any) {
-        clearAuthCookies(res);   // refresh invalide → on nettoie tout
+        clearUserAuthCookies(res);   // refresh invalide → on nettoie tout
         return res.status(401).json({ message: err.message });
         }
     }
@@ -355,50 +316,11 @@ export class AuthController {
     }
 
     // ── Me ───────────────────────────────────────────────────────────────
-    // Gère les deux types d'utilisateurs (User et PartnerUser) via le cookie
-    // HTTP-only — le rôle dans le JWT détermine la table à interroger.
+    // Utilisateurs standard uniquement — voir GET /api/partner-portal/me pour les partenaires.
     async me(req: Request, res: Response): Promise<void> {
         try {
-        const { role, userId } = req.user!;
+        const { userId } = req.user!;
 
-        // ── Cas partenaire ───────────────────────────────────────────
-        if (role === "PARTNER_ADMIN" || role === "PARTNER_STAFF") {
-            const partnerUser = await prisma.partnerUser.findUnique({
-                where: { id: userId },
-                include: { partner: { select: { id: true, name: true, status: true } } },
-            });
-            if (!partnerUser || !partnerUser.isActive) {
-                res.status(404).json({ message: "Partenaire introuvable" });
-                return;
-            }
-            const partner = partnerUser.partner as { id: string; name: string; status: string };
-            res.status(200).json({
-                user: {
-                    id:               partnerUser.id,
-                    email:            partnerUser.email,
-                    firstName:        partnerUser.firstName,
-                    lastName:         partnerUser.lastName,
-                    avatar:           null,
-                    role:             partnerUser.role,
-                    profileCompleted: true,
-                    organizationId:   partnerUser.partnerId,
-                    isPartner:        true,
-                    partnerId:        partnerUser.partnerId,
-                    partnerName:      partner.name,
-                    organization: {
-                        id:       partner.id,
-                        name:     partner.name,
-                        hasVoyage:true,
-                        hasCSE:   false,
-                        isHost:   false,
-                        status:   partner.status,
-                    },
-                },
-            });
-            return;
-        }
-
-        // ── Cas utilisateur standard ─────────────────────────────────
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {

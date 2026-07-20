@@ -20,12 +20,12 @@ export class BenefitService {
         return this.repo.createCategory(orgId, data);
     }
 
-    async updateCategory(id: string, data: Parameters<BenefitRepository["updateCategory"]>[1]) {
-        return this.repo.updateCategory(id, data);
+    async updateCategory(id: string, organizationId: string, data: Parameters<BenefitRepository["updateCategory"]>[2]) {
+        return this.repo.updateCategory(id, organizationId, data);
     }
 
-    async deleteCategory(id: string) {
-        return this.repo.deleteCategory(id);
+    async deleteCategory(id: string, organizationId: string) {
+        return this.repo.deleteCategory(id, organizationId);
     }
 
     async getRequests(orgId: string, filters?: {
@@ -48,8 +48,8 @@ export class BenefitService {
         return this.repo.getApprovalStats(orgId);
     }
 
-    async approveRequest(id: string, approverId: string) {
-        const result = await this.repo.approveRequest(id, approverId);
+    async approveRequest(id: string, organizationId: string, approverId: string) {
+        const result = await this.repo.approveRequest(id, organizationId, approverId);
         await this.notificationRepo.createForUsers(
             [result.employee.userId],
             "Demande d'avantage approuvée",
@@ -60,9 +60,9 @@ export class BenefitService {
         return result;
     }
 
-    async rejectRequest(id: string, note: string) {
+    async rejectRequest(id: string, organizationId: string, note: string) {
         if (!note?.trim()) throw new Error("Note de rejet requise");
-        const result = await this.repo.rejectRequest(id, note);
+        const result = await this.repo.rejectRequest(id, organizationId, note);
         await this.notificationRepo.createForUsers(
             [result.employee.userId],
             "Demande d'avantage rejetée",
@@ -73,9 +73,9 @@ export class BenefitService {
         return result;
     }
 
-    async bulkApprove(ids: string[], approverId: string) {
+    async bulkApprove(ids: string[], organizationId: string, approverId: string) {
         if (!ids.length) throw new Error("Aucune demande sélectionnée");
-        const result = await this.repo.bulkApprove(ids, approverId);
+        const result = await this.repo.bulkApprove(ids, organizationId, approverId);
         for (const request of result.requests) {
             await this.notificationRepo.createForUsers(
                 [request.employee.userId],

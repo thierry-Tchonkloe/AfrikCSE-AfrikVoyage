@@ -213,4 +213,16 @@ export const employeeService = {
         return data;
     },
 
+    // ── Économies ─────────────────────────────────────────────────────────────
+    async getMySavings() {
+        const { data } = await api.get("/employee/savings");
+        return data;
+    },
+
+    // ── Carte de membre ────────────────────────────────────────────────────────
+    async getMemberCard() {
+        const { data } = await api.get("/employee/member-card");
+        return data;
+    },
+
 };

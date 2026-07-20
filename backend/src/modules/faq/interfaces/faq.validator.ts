@@ -15,7 +15,7 @@ export const createFaqSchema = z.object({
 export const updateFaqSchema = z.object({
     question: z.string().min(1).optional(),
     ...faqFields,
-});
+}).partial();
 
 export const voteSchema = z.object({
     helpful: z.boolean(),

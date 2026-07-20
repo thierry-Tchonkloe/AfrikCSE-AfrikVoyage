@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { EmployeeDashboardRepository } from "../infrastructure/employee-dashboard.repository";
+import { SavingsRepository } from "../../savings/infrastructure/savings.repository";
 import { prisma } from "../../../core/config/prisma";
+import { createHmac } from "crypto";
 import { cloudinary } from "../../../core/config/cloudinary";
 import { UploadApiResponse } from "cloudinary";
 import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
@@ -12,6 +14,7 @@ import {
     updateProfileSchema,
     addDocumentSchema,
 } from "./employee-space.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const repo = new EmployeeDashboardRepository();
 const notificationRepo = new NotificationRepository();
@@ -184,9 +187,9 @@ export class EmployeeSpaceController {
         }
     }
 
-    async cancelBenefitRequest(req: Request, res: Response): Promise<void> {
+    async cancelBenefitRequest(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            await repo.cancelBenefitRequest(req.params.id as string, req.user!.userId);
+            await repo.cancelBenefitRequest(req.params.id, req.user!.userId);
             res.json({ success: true });
         } catch (err: any) {
             res.status(400).json({ message: err.message });
@@ -302,12 +305,68 @@ export class EmployeeSpaceController {
         }
     }
 
-    async deleteDocument(req: Request, res: Response): Promise<void> {
+    async deleteDocument(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            await repo.deleteDocument(req.params.id as string, req.user!.userId);
+            await repo.deleteDocument(req.params.id, req.user!.userId);
             res.json({ success: true });
         } catch (err: any) {
             res.status(400).json({ message: err.message });
+        }
+    }
+
+    // ── Carte de membre numérique ─────────────────────────────────────────────
+
+    async getMemberCard(req: Request, res: Response): Promise<void> {
+        try {
+            const userId = req.user!.userId;
+            const orgId  = req.user!.organizationId!;
+
+            const user = await prisma.user.findUnique({
+                where: { id: userId },
+                select: {
+                    id: true, email: true, firstName: true, lastName: true,
+                    createdAt: true, avatar: true,
+                    organization: { select: { id: true, name: true, logoUrl: true } },
+                    employee: { select: { matricule: true } },
+                },
+            });
+            if (!user) { res.status(404).json({ message: "Utilisateur introuvable" }); return; }
+
+            const secret = process.env.JWT_SECRET ?? "change-me";
+            const payload = `${userId}:${orgId}:${user.createdAt.getTime()}`;
+            const qrData  = createHmac("sha256", secret).update(payload).digest("hex");
+
+            const memberId = user.employee?.matricule
+                ?? `MBR-${userId.slice(-6).toUpperCase()}`;
+
+            res.json({
+                memberId,
+                firstName:   user.firstName,
+                lastName:    user.lastName,
+                email:       user.email,
+                avatar:      user.avatar,
+                orgName:     user.organization?.name ?? "",
+                orgLogoUrl:  user.organization?.logoUrl ?? null,
+                memberSince: user.createdAt.toISOString().slice(0, 10),
+                qrData,
+            });
+        } catch (err: any) {
+            res.status(500).json({ message: err.message });
+        }
+    }
+
+    // ── Dashboard économies ───────────────────────────────────────────────────
+
+    async getMySavings(req: Request, res: Response): Promise<void> {
+        try {
+            const savingsRepo = new SavingsRepository();
+            const data = await savingsRepo.getMySavings(
+                req.user!.userId,
+                req.user!.organizationId!
+            );
+            res.json(data);
+        } catch (err: any) {
+            res.status(500).json({ message: err.message });
         }
     }
 }

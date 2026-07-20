@@ -202,7 +202,18 @@ export class MessagingRepository {
         });
     }
 
-    async getMessages(conversationId: string, page = 1, limit = 50) {
+    /** Un utilisateur ne peut lire/écrire que les conversations dont il est participant (anti-IDOR) */
+    async isParticipant(conversationId: string, userId: string): Promise<boolean> {
+        const p = await prisma.conversationParticipant.findUnique({
+        where: { conversationId_userId: { conversationId, userId } },
+        });
+        return !!p;
+    }
+
+    /** Retourne `null` si `userId` n'est pas participant de la conversation */
+    async getMessages(conversationId: string, userId: string, page = 1, limit = 50) {
+        if (!(await this.isParticipant(conversationId, userId))) return null;
+
         const skip = (page - 1) * limit;
         return prisma.message.findMany({
         where: { conversationId },
@@ -219,7 +230,10 @@ export class MessagingRepository {
         });
     }
 
+    /** Retourne `null` si `senderId` n'est pas participant de la conversation */
     async sendMessage(conversationId: string, senderId: string, content: string) {
+        if (!(await this.isParticipant(conversationId, senderId))) return null;
+
         const [msg] = await prisma.$transaction([
         prisma.message.create({
             data: { conversationId, senderId, content },

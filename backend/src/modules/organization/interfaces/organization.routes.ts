@@ -2,8 +2,11 @@ import { Router } from "express";
 import { OrganizationController } from "./organization.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 import { logoUpload } from "../../../core/middlewares/upload.middleware";
+import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idParamString } from "../../../core/validators/param.validators";
 
 const router = Router();
+router.use("/:id", validateParams(idParamString));
 const ctrl = new OrganizationController();
 
 // Toutes les routes organisations nécessitent d'être authentifié.

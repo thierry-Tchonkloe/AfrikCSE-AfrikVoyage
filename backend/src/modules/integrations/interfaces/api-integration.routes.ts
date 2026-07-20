@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { ApiIntegrationController } from "./api-integration.controller";
+import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idParamString } from "../../../core/validators/param.validators";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 
 const router = Router();
+router.use("/:id", validateParams(idParamString));
 const ctrl = new ApiIntegrationController();
 
 router.use(authenticate);

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { FamilyMemberService } from "../application/family-member.service";
 import { createFamilyMemberSchema, updateFamilyMemberSchema } from "./family-member.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const service = new FamilyMemberService();
 
@@ -10,9 +11,9 @@ export class FamilyMemberController {
         res.json(members);
     }
 
-    async getById(req: Request, res: Response): Promise<void> {
+    async getById(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            const member = await service.getById(req.params.id as string, req.user!.userId);
+            const member = await service.getById(req.params.id, req.user!.userId);
             res.json(member);
         } catch (err: any) {
             res.status(err.statusCode ?? 500).json({ message: err.message });
@@ -37,23 +38,23 @@ export class FamilyMemberController {
         }
     }
 
-    async update(req: Request, res: Response): Promise<void> {
+    async update(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = updateFamilyMemberSchema.safeParse(req.body);
         if (!parsed.success) {
             res.status(400).json({ errors: parsed.error.flatten() });
             return;
         }
         try {
-            const member = await service.update(req.params.id as string, req.user!.userId, parsed.data as any);
+            const member = await service.update(req.params.id, req.user!.userId, parsed.data as any);
             res.json(member);
         } catch (err: any) {
             res.status(err.statusCode ?? 500).json({ message: err.message });
         }
     }
 
-    async delete(req: Request, res: Response): Promise<void> {
+    async delete(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            await service.delete(req.params.id as string, req.user!.userId);
+            await service.delete(req.params.id, req.user!.userId);
             res.json({ message: "Membre de famille supprimé" });
         } catch (err: any) {
             res.status(err.statusCode ?? 500).json({ message: err.message });

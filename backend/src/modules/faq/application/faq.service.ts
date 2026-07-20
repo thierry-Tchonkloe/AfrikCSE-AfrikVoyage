@@ -9,6 +9,6 @@ export class FaqService {
     async create(organizationId: string, createdById: string, data: FaqInput) { return repo.create(organizationId, createdById, data); }
     async update(id: string, organizationId: string, data: Partial<FaqInput>) { return repo.update(id, organizationId, data); }
     async delete(id: string, organizationId: string)               { return repo.delete(id, organizationId); }
-    async vote(faqEntryId: string, userId: string, helpful: boolean) { return repo.vote(faqEntryId, userId, helpful); }
+    async vote(faqEntryId: string, organizationId: string, userId: string, helpful: boolean) { return repo.vote(faqEntryId, organizationId, userId, helpful); }
     async getCategories(organizationId: string)                    { return repo.getCategories(organizationId); }
 }

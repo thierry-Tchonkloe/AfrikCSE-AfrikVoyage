@@ -119,20 +119,6 @@ export class AuthRepository {
         });
     }
 
-    async findPartnerUserByEmail(email: string) {
-        return prisma.partnerUser.findUnique({
-            where: { email },
-            include: { partner: { select: { id: true, name: true, status: true } } },
-        });
-    }
-
-    async findPartnerUserById(id: string) {
-        return prisma.partnerUser.findUnique({
-            where: { id },
-            include: { partner: { select: { id: true, name: true, status: true } } },
-        });
-    }
-
     async findUserById(id: string) {
         return prisma.user.findUnique({
         where: { id },
@@ -222,6 +208,18 @@ export class AuthRepository {
         return prisma.user.update({
         where: { id: userId },
         data: { refreshToken: hashedToken },
+        });
+    }
+
+    /**
+     * Révoque toutes les sessions actives d'un user : supprime le refresh token
+     * en base ET incrémente tokenVersion, ce qui invalide immédiatement tout
+     * access token déjà émis (vérifié à chaque requête par `authenticate`).
+     */
+    async revokeUserSessions(userId: string) {
+        return prisma.user.update({
+        where: { id: userId },
+        data: { refreshToken: null, tokenVersion: { increment: 1 } },
         });
     }
 

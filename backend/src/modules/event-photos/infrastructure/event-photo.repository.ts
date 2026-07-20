@@ -52,7 +52,9 @@ export class EventPhotoRepository {
         return prisma.eventPhoto.delete({ where: { id } });
     }
 
-    async toggleLike(photoId: string, userId: string): Promise<{ liked: boolean; count: number }> {
+    async toggleLike(photoId: string, organizationId: string, userId: string): Promise<{ liked: boolean; count: number }> {
+        await this.findById(photoId, organizationId);
+
         const existing = await prisma.eventPhotoLike.findUnique({
             where: { photoId_userId: { photoId, userId } },
         });

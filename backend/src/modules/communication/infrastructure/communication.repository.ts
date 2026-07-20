@@ -51,7 +51,10 @@ export class CommunicationRepository {
         });
     }
 
-    async toggleLike(postId: string, userId: string) {
+    async toggleLike(postId: string, userId: string, organizationId: string) {
+        const post = await prisma.csePost.findFirst({ where: { id: postId, organizationId } });
+        if (!post) throw new Error("Publication introuvable");
+
         const existing = await prisma.postLike.findUnique({
         where: { postId_userId: { postId, userId } },
         });
@@ -65,9 +68,11 @@ export class CommunicationRepository {
         return { liked: true };
     }
 
-    async vote(pollOptionId: string, userId: string) {
-        // Un seul vote par sondage
-        const option = await prisma.pollOption.findUnique({ where: { id: pollOptionId } });
+    async vote(pollOptionId: string, userId: string, organizationId: string) {
+        // Un seul vote par sondage — vérifie aussi que l'option appartient à l'org
+        const option = await prisma.pollOption.findFirst({
+        where: { id: pollOptionId, post: { organizationId } },
+        });
         if (!option) throw new Error("Option introuvable");
 
         // Vérifie si déjà voté sur ce sondage
@@ -83,7 +88,10 @@ export class CommunicationRepository {
         return prisma.pollVote.create({ data: { pollOptionId, userId } });
     }
 
-    async addComment(postId: string, authorId: string, content: string) {
+    async addComment(postId: string, authorId: string, content: string, organizationId: string) {
+        const post = await prisma.csePost.findFirst({ where: { id: postId, organizationId } });
+        if (!post) throw new Error("Publication introuvable");
+
         return prisma.postComment.create({
         data: { postId, authorId, content },
         include: {
@@ -92,7 +100,10 @@ export class CommunicationRepository {
         });
     }
 
-    async getComments(postId: string) {
+    async getComments(postId: string, organizationId: string) {
+        const post = await prisma.csePost.findFirst({ where: { id: postId, organizationId } });
+        if (!post) throw new Error("Publication introuvable");
+
         return prisma.postComment.findMany({
         where: { postId },
         include: {

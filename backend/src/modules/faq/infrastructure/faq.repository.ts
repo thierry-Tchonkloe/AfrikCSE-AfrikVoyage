@@ -59,8 +59,8 @@ export class FaqRepository {
         return prisma.faqEntry.delete({ where: { id } });
     }
 
-    async vote(faqEntryId: string, userId: string, helpful: boolean) {
-        const entry = await prisma.faqEntry.findUnique({ where: { id: faqEntryId } });
+    async vote(faqEntryId: string, organizationId: string, userId: string, helpful: boolean) {
+        const entry = await prisma.faqEntry.findFirst({ where: { id: faqEntryId, organizationId } });
         if (!entry || entry.status !== "PUBLISHED") throw new AppError("Entrée FAQ introuvable", 404);
 
         await prisma.faqVote.upsert({

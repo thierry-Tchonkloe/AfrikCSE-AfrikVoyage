@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { FamilyMemberController } from "./family-member.controller";
 import { authenticate } from "../../../core/middlewares/auth.middleware";
+import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idParamString } from "../../../core/validators/param.validators";
 
 const router = Router();
+router.use("/:id", validateParams(idParamString));
 const ctrl   = new FamilyMemberController();
 
 router.use(authenticate);

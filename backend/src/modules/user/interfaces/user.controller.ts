@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { UserService } from "../application/user.service";
 import { createUserSchema, updateUserSchema, changeRoleSchema } from "./user.validator";
 import { logAudit } from "../../../core/utils/audit";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const service = new UserService();
 
@@ -16,9 +17,10 @@ export class UserController {
         res.status(200).json(users);
     }
 
-    async getById(req: Request, res: Response): Promise<void> {
+    async getById(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const user = await service.getById(req.params.id as string);
+        // `validateParams(idParamString)` (voir user.routes.ts) a déjà validé req.params.id : string, sans cast
+        const user = await service.getById(req.user!, req.params.id);
         res.status(200).json(user);
         } catch (err: any) {
         res.status(404).json({ message: err.message });
@@ -49,7 +51,7 @@ export class UserController {
         }
     }
 
-    async update(req: Request, res: Response): Promise<void> {
+    async update(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = updateUserSchema.safeParse(req.body);
         if (!parsed.success) {
         res.status(400).json({ errors: parsed.error.flatten() });
@@ -57,14 +59,14 @@ export class UserController {
         }
 
         try {
-        const user = await service.update(req.params.id as string, parsed.data);
+        const user = await service.update(req.user!, req.params.id, parsed.data);
         res.status(200).json(user);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
         }
     }
 
-    async changeRole(req: Request, res: Response): Promise<void> {
+    async changeRole(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = changeRoleSchema.safeParse(req.body);
         if (!parsed.success) {
         res.status(400).json({ errors: parsed.error.flatten() });
@@ -72,7 +74,7 @@ export class UserController {
         }
 
         try {
-        const user = await service.changeRole(req.user!, req.params.id as string, parsed.data);
+        const user = await service.changeRole(req.user!, req.params.id, parsed.data);
         await logAudit({
             action: "USER_ROLE_CHANGED",
             entity: "User",
@@ -88,9 +90,9 @@ export class UserController {
         }
     }
 
-    async deactivate(req: Request, res: Response): Promise<void> {
+    async deactivate(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const user = await service.deactivate(req.params.id as string);
+        const user = await service.deactivate(req.user!, req.params.id);
         await logAudit({
             action: "USER_DEACTIVATED",
             entity: "User",
@@ -105,9 +107,9 @@ export class UserController {
         }
     }
 
-    async activate(req: Request, res: Response): Promise<void> {
+    async activate(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const user = await service.activate(req.params.id as string);
+        const user = await service.activate(req.user!, req.params.id);
         await logAudit({
             action: "USER_ACTIVATED",
             entity: "User",

@@ -10,6 +10,9 @@ export interface CatalogFilters {
     region?:     string;
     offerType?:  string;
     subsidized?: boolean;
+    lat?:        number;
+    lng?:        number;
+    radius?:     number;
 }
 
 export const catalogService = {

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { TravelRepository } from "../infrastructure/travel.repository";
 import { RequestStatus, TravelStatus, Urgency } from "@prisma/client";
 import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const repo = new TravelRepository();
 const notificationRepo = new NotificationRepository();
@@ -28,8 +29,8 @@ export class TravelController {
         res.json(data);
     }
 
-    async getById(req: Request, res: Response): Promise<void> {
-        const item = await repo.getById(req.user!.organizationId!, req.params.id as string);
+    async getById(req: Request<IdParamString>, res: Response): Promise<void> {
+        const item = await repo.getById(req.user!.organizationId!, req.params.id);
         if (!item) {
         res.status(404).json({ message: "Réservation introuvable" });
         return;
@@ -42,9 +43,9 @@ export class TravelController {
         res.json(stats);
     }
 
-    async approve(req: Request, res: Response): Promise<void> {
+    async approve(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const result = await repo.approve(req.params.id as string, req.user!.userId);
+        const result = await repo.approve(req.params.id, req.user!.organizationId!, req.user!.userId);
         await notificationRepo.createForUsers(
             [result.requestedById],
             "Voyage approuvé",
@@ -58,9 +59,9 @@ export class TravelController {
         }
     }
 
-    async reject(req: Request, res: Response): Promise<void> {
+    async reject(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const result = await repo.reject(req.params.id as string, req.body.note);
+        const result = await repo.reject(req.params.id, req.user!.organizationId!, req.body.note);
         await notificationRepo.createForUsers(
             [result.requestedById],
             "Voyage rejeté",
@@ -74,14 +75,14 @@ export class TravelController {
         }
     }
 
-    async updateStatus(req: Request, res: Response): Promise<void> {
+    async updateStatus(req: Request<IdParamString>, res: Response): Promise<void> {
         const { status } = req.body;
         if (!TRAVEL_STATUSES.includes(status)) {
         res.status(400).json({ message: "Statut invalide" });
         return;
         }
         try {
-        const result = await repo.updateStatus(req.params.id as string, status, req.user!.userId);
+        const result = await repo.updateStatus(req.params.id, req.user!.organizationId!, status, req.user!.userId);
         if (status === "APPROVED") {
             await notificationRepo.createForUsers(
             [result.requestedById],
@@ -133,19 +134,19 @@ export class TravelController {
         }
     }
 
-    async assignPartner(req: Request, res: Response): Promise<void> {
+    async assignPartner(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const result = await repo.assignPartner(req.params.id as string, req.body.partnerName);
+        const result = await repo.assignPartner(req.params.id, req.user!.organizationId!, req.body.partnerName);
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
         }
     }
 
-    async updatePayment(req: Request, res: Response): Promise<void> {
+    async updatePayment(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
         const { paymentStatus, paymentLink } = req.body;
-        const result = await repo.updatePayment(req.params.id as string, { paymentStatus, paymentLink });
+        const result = await repo.updatePayment(req.params.id, req.user!.organizationId!, { paymentStatus, paymentLink });
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -168,9 +169,9 @@ export class TravelController {
         res.json(stats);
     }
 
-    async approveExpense(req: Request, res: Response): Promise<void> {
+    async approveExpense(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const result = await repo.approveExpense(req.params.id as string, req.user!.userId);
+        const result = await repo.approveExpense(req.params.id, req.user!.organizationId!, req.user!.userId);
         await notificationRepo.createForUsers(
             [result.employee.userId],
             "Note de frais approuvée",
@@ -184,9 +185,9 @@ export class TravelController {
         }
     }
 
-    async rejectExpense(req: Request, res: Response): Promise<void> {
+    async rejectExpense(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const result = await repo.rejectExpense(req.params.id as string, req.body.note);
+        const result = await repo.rejectExpense(req.params.id, req.user!.organizationId!, req.body.note);
         await notificationRepo.createForUsers(
             [result.employee.userId],
             "Note de frais rejetée",

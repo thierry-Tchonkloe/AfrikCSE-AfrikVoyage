@@ -22,9 +22,17 @@ export class UserService {
         return this.repo.findByOrganization(requester.organizationId, params);
     }
 
-    async getById(id: string) {
+    /**
+     * SUPER_ADMIN voit tout ; les autres rôles sont strictement cantonnés à leur
+     * propre organisation (IDOR) — message d'erreur identique dans les deux cas
+     * (org différente vs id inexistant) pour ne pas révéler l'existence du compte.
+     */
+    async getById(requester: { role: string; organizationId: string | null }, id: string) {
         const user = await this.repo.findById(id);
         if (!user) throw new Error("Utilisateur introuvable");
+        if (requester.role !== "SUPER_ADMIN" && user.organizationId !== requester.organizationId) {
+        throw new Error("Utilisateur introuvable");
+        }
         return user;
     }
 
@@ -77,17 +85,17 @@ export class UserService {
         return user;
     }
 
-    async update(id: string, dto: UpdateUserDto) {
-        await this.getById(id); // vérifie existence
+    async update(requester: { role: string; organizationId: string | null }, id: string, dto: UpdateUserDto) {
+        await this.getById(requester, id); // vérifie existence + appartenance à l'org
         return this.repo.update(id, dto);
     }
 
     async changeRole(
-        requester: { role: string },
+        requester: { role: string; organizationId: string | null },
         targetId: string,
         dto: ChangeRoleDto
     ) {
-        const target = await this.getById(targetId);
+        const target = await this.getById(requester, targetId);
 
         const requesterEntity = new UserEntity("", "", "", "", requester.role, null, true);
         if (!requesterEntity.canManageRole(dto.role)) {
@@ -100,13 +108,13 @@ export class UserService {
         return this.repo.changeRole(targetId, dto.role as Role);
     }
 
-    async deactivate(id: string) {
-        await this.getById(id);
+    async deactivate(requester: { role: string; organizationId: string | null }, id: string) {
+        await this.getById(requester, id);
         return this.repo.deactivate(id);
     }
 
-    async activate(id: string) {
-        await this.getById(id);
+    async activate(requester: { role: string; organizationId: string | null }, id: string) {
+        await this.getById(requester, id);
         return this.repo.activate(id);
     }
 

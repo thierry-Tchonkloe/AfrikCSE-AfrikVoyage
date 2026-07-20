@@ -4,6 +4,7 @@ import { NotificationRepository } from "../../notification/infrastructure/notifi
 import { sendMail } from "../../../core/services/email.service";
 import { eventRegistrationConfirmationEmail } from "../../../core/mailer/email.templates";
 import { createEventSchema } from "./event.validator";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const repo = new EventRepository();
 const notificationRepo = new NotificationRepository();
@@ -56,9 +57,9 @@ export class EventController {
         }
     }
 
-    async register(req: Request, res: Response): Promise<void> {
+    async register(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const registration = await repo.register(req.params.id as string, req.user!.userId);
+        const registration = await repo.register(req.params.id, req.user!.userId, req.user!.organizationId!);
 
         const { subject, html } = eventRegistrationConfirmationEmail({
             firstName: registration.user.firstName,
@@ -75,9 +76,9 @@ export class EventController {
         }
     }
 
-    async unregister(req: Request, res: Response): Promise<void> {
+    async unregister(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        await repo.unregister(req.params.id as string, req.user!.userId);
+        await repo.unregister(req.params.id, req.user!.userId);
         res.json({ success: true });
         } catch (err: any) {
         res.status(400).json({ message: err.message });

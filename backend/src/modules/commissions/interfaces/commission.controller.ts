@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { CommissionService } from "../application/commission.service";
 import { createRuleSchema, triggerPayoutSchema } from "./commission.validator";
 import { CommissionType } from "@prisma/client";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const service = new CommissionService();
 
@@ -24,20 +25,20 @@ export class CommissionController {
         } catch (err) { next(err); }
     }
 
-    async updateRule(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async updateRule(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const parsed = createRuleSchema.partial().safeParse(req.body);
             if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
-            res.json(await service.updateRule(req.params.id as string, {
+            res.json(await service.updateRule(req.params.id, {
                 ...parsed.data,
                 type: parsed.data.type as CommissionType | undefined,
             }));
         } catch (err) { next(err); }
     }
 
-    async deleteRule(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async deleteRule(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
-            await service.deleteRule(req.params.id as string);
+            await service.deleteRule(req.params.id);
             res.status(204).send();
         } catch (err) { next(err); }
     }
@@ -47,7 +48,7 @@ export class CommissionController {
             const { partnerId, organizationId } = req.query as Record<string, string | undefined>;
             const page  = parseInt(req.query.page  as string) || 1;
             const limit = parseInt(req.query.limit as string) || 50;
-            res.json(await service.listEntries(partnerId, organizationId, page, limit));
+            res.json(await service.listEntries(req.user!, partnerId, organizationId, page, limit));
         } catch (err) { next(err); }
     }
 
@@ -56,7 +57,7 @@ export class CommissionController {
             const partnerId = req.query.partnerId as string | undefined;
             const page  = parseInt(req.query.page  as string) || 1;
             const limit = parseInt(req.query.limit as string) || 20;
-            res.json(await service.listPayouts(partnerId, page, limit));
+            res.json(await service.listPayouts(req.user!, partnerId, page, limit));
         } catch (err) { next(err); }
     }
 
@@ -69,9 +70,9 @@ export class CommissionController {
         } catch (err) { next(err); }
     }
 
-    async markPayoutPaid(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async markPayoutPaid(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
-            res.json(await service.markPayoutPaid(req.params.id as string));
+            res.json(await service.markPayoutPaid(req.params.id));
         } catch (err) { next(err); }
     }
 }

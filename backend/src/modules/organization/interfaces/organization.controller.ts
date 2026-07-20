@@ -7,6 +7,7 @@ import { toCsv } from "../../../core/utils/csv";
 import { logAudit } from "../../../core/utils/audit";
 import { cloudinary } from "../../../core/config/cloudinary";
 import { UploadApiResponse } from "cloudinary";
+import { IdParamString } from "../../../core/validators/param.validators";
 
 const STATUS_LABELS: Record<string, string> = {
     PENDING: "En attente",
@@ -24,16 +25,16 @@ export class OrganizationController {
         res.status(200).json(orgs);
     }
 
-    async getById(req: Request, res: Response): Promise<void> {
+    async getById(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const org = await service.getById(req.params.id as string);
+        const org = await service.getById(req.params.id);
         res.status(200).json(org);
         } catch (err: any) {
         res.status(404).json({ message: err.message });
         }
     }
 
-    async validate(req: Request, res: Response): Promise<void> {
+    async validate(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = validateOrgSchema.safeParse(req.body);
         if (!parsed.success) {
         res.status(400).json({ errors: parsed.error.flatten() });
@@ -42,7 +43,7 @@ export class OrganizationController {
 
         try {
         const org = await service.validate(
-            req.params.id as string,
+            req.params.id,
             req.user!.userId,
             parsed.data
         );
@@ -61,7 +62,7 @@ export class OrganizationController {
         }
     }
 
-    async reject(req: Request, res: Response): Promise<void> {
+    async reject(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = rejectOrgSchema.safeParse(req.body);
         if (!parsed.success) {
         res.status(400).json({ errors: parsed.error.flatten() });
@@ -69,7 +70,7 @@ export class OrganizationController {
         }
 
         try {
-        const org = await service.reject(req.params.id as string, parsed.data);
+        const org = await service.reject(req.params.id, parsed.data);
         await logAudit({
             action: "ORG_REJECTED",
             entity: "Organization",
@@ -85,7 +86,7 @@ export class OrganizationController {
         }
     }
 
-    async updateModules(req: Request, res: Response): Promise<void> {
+    async updateModules(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = updateModulesSchema.safeParse(req.body);
         if (!parsed.success) {
         res.status(400).json({ errors: parsed.error.flatten() });
@@ -93,7 +94,7 @@ export class OrganizationController {
         }
 
         try {
-        const org = await service.updateModules(req.params.id as string, parsed.data);
+        const org = await service.updateModules(req.params.id, parsed.data);
         await logAudit({
             action: "ORG_MODULES_UPDATED",
             entity: "Organization",
@@ -109,9 +110,9 @@ export class OrganizationController {
         }
     }
 
-    async suspend(req: Request, res: Response): Promise<void> {
+    async suspend(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-        const org = await service.suspend(req.params.id as string);
+        const org = await service.suspend(req.params.id);
         await logAudit({
             action: "ORG_SUSPENDED",
             entity: "Organization",
@@ -136,10 +137,10 @@ export class OrganizationController {
         }
     }
 
-    async validateWithInvitation(req: Request, res: Response): Promise<void> {
+    async validateWithInvitation(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
             const result = await service.validateWithInvitation(
-            req.params.id as string,
+            req.params.id,
             req.user!.userId,
             req.body
             );
@@ -205,15 +206,15 @@ export class OrganizationController {
         res.send(csv);
     }
 
-    async softDelete(req: Request, res: Response): Promise<void> {
+    async softDelete(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
-            await service.softDelete(req.params.id as string);
+            await service.softDelete(req.params.id);
             await logAudit({
                 action: "ORG_DELETED",
                 entity: "Organization",
-                entityId: req.params.id as string,
+                entityId: req.params.id,
                 userId: req.user!.userId,
-                organizationId: req.params.id as string,
+                organizationId: req.params.id,
                 req,
             });
             res.json({ message: "Organisation désactivée" });
@@ -261,10 +262,10 @@ export class OrganizationController {
 
 
     // Réactivation d'une organisation suspendue
-    async reactivate(req: Request, res: Response): Promise<void> {
+    async reactivate(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
             const org = await prisma.organization.update({
-            where: { id: req.params.id as string },
+            where: { id: req.params.id },
             data: { status: "ACTIVE" },
             });
             await logAudit({
@@ -283,7 +284,7 @@ export class OrganizationController {
 
     // Mise à jour des infos de base — champs whitelistés uniquement
     // (status/plan/modules ont leurs propres routes dédiées et contrôlées)
-    async update(req: Request, res: Response): Promise<void> {
+    async update(req: Request<IdParamString>, res: Response): Promise<void> {
         const parsed = updateOrgSchema.safeParse(req.body);
         if (!parsed.success) {
             res.status(400).json({ errors: parsed.error.flatten() });
@@ -292,7 +293,7 @@ export class OrganizationController {
 
         try {
             const org = await prisma.organization.update({
-            where: { id: req.params.id as string },
+            where: { id: req.params.id },
             data: parsed.data,
             });
             await logAudit({
@@ -382,10 +383,10 @@ export class OrganizationController {
     }
 
     // Générer un nouveau lien d'invitation
-    async regenerateInvitation(req: Request, res: Response): Promise<void> {
+    async regenerateInvitation(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
             const org = await prisma.organization.findUnique({
-            where: { id: req.params.id as string },
+            where: { id: req.params.id },
             include: { users: { where: { role: "ADMIN" }, take: 1 } },
             });
             if (!org) { res.status(404).json({ message: "Introuvable" }); return; }

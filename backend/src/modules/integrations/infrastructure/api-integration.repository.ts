@@ -46,8 +46,9 @@ export class ApiIntegrationRepository {
         }));
     }
 
-    async getById(id: string) {
-        const it = await prisma.apiIntegration.findUnique({ where: { id } });
+    /** Cantonné à l'organisation appelante — retourne null si id inconnu OU appartenant à une autre org (anti-IDOR) */
+    async getById(id: string, organizationId: string) {
+        const it = await prisma.apiIntegration.findFirst({ where: { id, organizationId } });
         if (!it) return null;
         return {
             ...it,
@@ -77,12 +78,13 @@ export class ApiIntegrationRepository {
         };
     }
 
-    async update(id: string, data: Partial<ApiIntegrationInput>) {
-        // Récupère le syncConfig existant pour le merge si pas fourni
-        const existing = await prisma.apiIntegration.findUniqueOrThrow({
-            where: { id },
+    async update(id: string, organizationId: string, data: Partial<ApiIntegrationInput>) {
+        // Récupère le syncConfig existant pour le merge si pas fourni — cantonné à l'org appelante
+        const existing = await prisma.apiIntegration.findFirst({
+            where: { id, organizationId },
             select: { syncConfig: true },
         });
+        if (!existing) return null;
 
         let newSyncConfig: Record<string, unknown> | undefined;
         if (data.syncConfig !== undefined) {
@@ -99,7 +101,7 @@ export class ApiIntegrationRepository {
         }
 
         const it = await prisma.apiIntegration.update({
-            where: { id },
+            where: { id, organizationId },
             data: {
                 name:            data.name,
                 type:            data.type,
@@ -118,8 +120,12 @@ export class ApiIntegrationRepository {
         };
     }
 
-    async delete(id: string) {
-        return prisma.apiIntegration.delete({ where: { id } });
+    async delete(id: string, organizationId: string) {
+        // Vérifie l'appartenance avant suppression pour éviter de laisser fuiter
+        // l'erreur Prisma brute (P2025) en cas d'id inconnu ou d'une autre org.
+        const existing = await prisma.apiIntegration.findFirst({ where: { id, organizationId }, select: { id: true } });
+        if (!existing) return null;
+        return prisma.apiIntegration.delete({ where: { id, organizationId } });
     }
 
     async touchLastSync(id: string) {
@@ -129,9 +135,10 @@ export class ApiIntegrationRepository {
         });
     }
 
-    async getSyncLogs(integrationId: string) {
+    /** Cantonné à l'organisation via la relation integration.organizationId (SyncLog n'a pas d'organizationId direct) */
+    async getSyncLogs(integrationId: string, organizationId: string) {
         return prisma.syncLog.findMany({
-            where: { integrationId },
+            where: { integrationId, integration: { organizationId } },
             orderBy: { createdAt: "desc" },
         });
     }
