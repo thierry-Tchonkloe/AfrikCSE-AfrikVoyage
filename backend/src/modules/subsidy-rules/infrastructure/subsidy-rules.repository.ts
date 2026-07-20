@@ -23,6 +23,23 @@ export class SubsidyRulesRepository {
         });
     }
 
+    async findActiveForOrg(organizationId: string, category?: string | null, offerType?: OfferType | null) {
+        const now = new Date();
+        return prisma.subsidyRule.findMany({
+            where: {
+                organizationId,
+                isActive: true,
+                OR: [{ startsAt: null }, { startsAt: { lte: now } }],
+                AND: [
+                    { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+                    { OR: [{ category: null }, ...(category ? [{ category }] : [])] },
+                    { OR: [{ offerType: null }, ...(offerType ? [{ offerType }] : [])] },
+                ],
+            },
+            orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+        });
+    }
+
     async findById(id: string, organizationId: string) {
         return prisma.subsidyRule.findFirst({ where: { id, organizationId } });
     }

@@ -4,6 +4,19 @@ import { prisma } from "../../../core/config/prisma";
 export class CashbackRepository {
     // ── Rules ─────────────────────────────────────────────────────────────────
 
+    async findBestActiveRule(organizationId: string) {
+        // Règle spécifique à l'org en priorité, puis règle globale (SA)
+        const orgRule = await prisma.cashbackRule.findFirst({
+            where: { isActive: true, organizationId },
+            orderBy: { createdAt: "desc" },
+        });
+        if (orgRule) return orgRule;
+        return prisma.cashbackRule.findFirst({
+            where: { isActive: true, organizationId: null },
+            orderBy: { createdAt: "desc" },
+        });
+    }
+
     async listRules(organizationId: string) {
         return prisma.cashbackRule.findMany({
             where: {
@@ -60,6 +73,21 @@ export class CashbackRepository {
     }
 
     // ── Transactions ─────────────────────────────────────────────────────────
+
+    async listMyTransactions(userId: string, page = 1, limit = 20) {
+        const skip = (page - 1) * limit;
+        const [transactions, total] = await Promise.all([
+            prisma.cashbackTransaction.findMany({
+                where: { userId },
+                include: { rule: { select: { id: true, type: true, rate: true, currencyCode: true } } },
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: limit,
+            }),
+            prisma.cashbackTransaction.count({ where: { userId } }),
+        ]);
+        return { transactions, total, page, limit };
+    }
 
     async listTransactions(organizationId: string, page = 1, limit = 20) {
         const skip = (page - 1) * limit;

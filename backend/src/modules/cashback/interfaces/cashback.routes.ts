@@ -13,6 +13,10 @@ router.use(authenticate);
 // NB: `id` n'est pas le 1er segment de ces routes ("/rules/:id", "/fraud-signals/:id/review") ;
 // un `router.use("/:id", ...)` global ne validerait que le segment "rules"/"fraud-signals" et
 // laisserait passer le vrai id sans contrôle. validateParams est donc appliqué route par route.
+// ── Employé — mes cashbacks ───────────────────────────────
+router.get("/my", ctrl.listMyTransactions.bind(ctrl));
+
+// ── Admin CSE / SA ────────────────────────────────────────
 router.get("/rules",                    authorize("ADMIN", "FINANCE", "MANAGER", "SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.listRules.bind(ctrl));
 router.post("/rules",                   authorize("ADMIN", "SUPER_ADMIN"), ctrl.createRule.bind(ctrl));
 router.patch("/rules/:id",              authorize("ADMIN", "SUPER_ADMIN"), validateParams(idParamString), ctrl.updateRule.bind(ctrl));

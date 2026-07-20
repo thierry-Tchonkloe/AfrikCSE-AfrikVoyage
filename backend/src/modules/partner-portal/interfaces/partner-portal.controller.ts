@@ -6,38 +6,9 @@ import {
     LocationIdParam,
 } from "./partner-portal.validator";
 import { IdParamString } from "../../../core/validators/param.validators";
+import { setPartnerAuthCookies, clearPartnerAuthCookies } from "../../../core/utils/auth-cookies";
 
 const service = new PartnerPortalService();
-
-// ── Cookies dédiés partenaire ────────────────────────────────────────────────
-// Noms distincts de ceux du système utilisateur standard (accessToken/refreshToken)
-// pour qu'une session partenaire ne puisse jamais interférer avec une session User
-// sur le même navigateur (ex: un même poste utilisé pour les deux portails).
-const IS_PROD = process.env.NODE_ENV === "production";
-
-const PARTNER_COOKIE_BASE = {
-    httpOnly: true,
-    secure:   IS_PROD,
-    sameSite: (IS_PROD ? "none" : "lax") as "none" | "lax",
-    partitioned: IS_PROD,
-    path:   "/",
-} as const;
-
-function setPartnerAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-    res.cookie("partnerAccessToken", accessToken, {
-        ...PARTNER_COOKIE_BASE,
-        maxAge: 24 * 60 * 60 * 1000, // 24h — aligné sur la durée du JWT
-    });
-    res.cookie("partnerRefreshToken", refreshToken, {
-        ...PARTNER_COOKIE_BASE,
-        maxAge: 90 * 24 * 60 * 60 * 1000, // 90j
-    });
-}
-
-function clearPartnerAuthCookies(res: Response) {
-    res.clearCookie("partnerAccessToken", { ...PARTNER_COOKIE_BASE });
-    res.clearCookie("partnerRefreshToken", { ...PARTNER_COOKIE_BASE });
-}
 
 export class PartnerPortalController {
     async login(req: Request, res: Response, next: NextFunction): Promise<void> {

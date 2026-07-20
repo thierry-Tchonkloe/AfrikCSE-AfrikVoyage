@@ -27,6 +27,7 @@ export class BookingRepository {
                 partner:  { select: { id: true, name: true, contactEmail: true } },
                 offer:    { select: { id: true, title: true, category: true, imageUrl: true } },
                 location: { select: { id: true, name: true, address: true, city: true } },
+                order:    { select: { id: true, finalAmount: true } },
                 rating:   true,
                 commissionEntry: { select: { id: true, commissionAmount: true, netAmount: true, status: true } },
             },

@@ -56,9 +56,11 @@ import { RegisterCompanyDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, Comp
 import { sendMail } from "../../../core/services/email.service";
 import { companyRegistrationReceivedEmail, newCompanyPendingValidationEmail, passwordResetEmail, } from "../../../core/mailer/email.templates";
 import { logger } from "../../../core/utils/logger";
+import { PartnerPortalService } from "../../partner-portal/application/partner-portal.service";
 
 export class AuthService {
     private repo = new AuthRepository();
+    private partnerPortalService = new PartnerPortalService();
 
     /**
      * Onboarding entreprise
@@ -140,10 +142,25 @@ export class AuthService {
         };
     }
 
-    /** Connexion utilisateur standard (les partenaires ont leur propre flow — voir module partner-portal) */
+    /**
+     * Connexion unifiée : essaie d'abord `User`, puis délègue à `PartnerPortalService`
+     * si l'email n'existe pas côté User (réutilise sa logique de vérification/
+     * signature — pas de duplication). Chaque branche retourne un `type` que le
+     * contrôleur utilise pour poser la bonne paire de cookies (les deux systèmes
+     * de session restent totalement séparés, seul le point d'entrée est commun).
+     */
     async login(dto: LoginDto) {
         const user = await this.repo.findUserByEmail(dto.email);
-        if (!user) throw new Error("Email ou mot de passe incorrect");
+
+        if (!user) {
+        try {
+            const partnerResult = await this.partnerPortalService.login(dto.email, dto.password);
+            return { type: "partner" as const, ...partnerResult };
+        } catch {
+            // Même message générique qu'un email User inconnu — pas d'énumération de compte
+            throw new Error("Email ou mot de passe incorrect");
+        }
+        }
 
         const passwordOk = await comparePassword(dto.password, user.password);
         if (!passwordOk) throw new Error("Email ou mot de passe incorrect");
@@ -173,6 +190,7 @@ export class AuthService {
         await this.repo.updateLastLogin(user.id);
 
         return {
+            type: "user" as const,
             accessToken,
             refreshToken,
             user: {

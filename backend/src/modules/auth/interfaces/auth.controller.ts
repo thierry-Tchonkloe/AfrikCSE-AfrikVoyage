@@ -178,47 +178,12 @@ import {
     changePasswordSchema,
 } from "./auth.validator";
 import { logAudit } from "../../../core/utils/audit";
+import {
+    setUserAuthCookies, clearUserAuthCookies,
+    setPartnerAuthCookies,
+} from "../../../core/utils/auth-cookies";
 
 const service = new AuthService();
-
-// ── Helpers cookies ────────────────────────────────────────────────────────────
-// On centralise la config pour ne pas la dupliquer dans chaque méthode.
-const IS_PROD = process.env.NODE_ENV === "production";
-
-const COOKIE_BASE = {
-    httpOnly: true,                                   // inaccessible depuis JS côté client
-    secure:   IS_PROD,                                 // HTTPS uniquement en prod
-    sameSite: (IS_PROD ? "none" : "lax") as "none" | "lax",
-    partitioned: IS_PROD,
-    path:   "/",
-} as const;
-
-function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-    // accessToken — durée alignée sur le JWT (24h), disponible sur toutes les routes.
-    // Un maxAge trop court (ex: 15min) faisait expirer le cookie côté navigateur
-    // avant le JWT lui-même, et le middleware Edge Runtime (qui lit ce cookie
-    // directement, sans passer par l'intercepteur axios) redirigeait alors
-    // silencieusement vers /login malgré un refreshToken encore valide.
-    res.cookie("accessToken", accessToken, {
-        ...COOKIE_BASE,
-        maxAge: 24 * 60 * 60 * 1000,  // 1 jour
-    });
-
-    // refreshToken — durée longue (7j), accessible partout pour le refresh workflow
-    res.cookie("refreshToken", refreshToken, {
-        ...COOKIE_BASE,
-        maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 jours
-    });
-}
-
-function clearAuthCookies(res: Response) {
-    res.clearCookie("accessToken", {
-        ...COOKIE_BASE,
-    });
-    res.clearCookie("refreshToken", {
-        ...COOKIE_BASE,
-    });
-}
 
 // ──────────────────────────── Controller ─────────────────────────────────────────────────────────────────
 export class AuthController {
@@ -238,8 +203,10 @@ export class AuthController {
     }
 
     // ── Login ─────────────────────────────────────────────────────────────
-    // Utilisateurs standard uniquement — les partenaires ont leur propre flow
-    // (POST /api/partner-portal/login, cookies partnerAccessToken/partnerRefreshToken).
+    // Point d'entrée unique pour tous les rôles : `service.login` essaie `User`
+    // puis délègue à `PartnerPortalService` si besoin. On pose ici la paire de
+    // cookies correspondant au type retrouvé — jamais les deux à la fois, pour
+    // que les deux systèmes de session restent totalement indépendants.
     async login(req: Request, res: Response) {
         const parsed = loginSchema.safeParse(req.body);
         if (!parsed.success) {
@@ -247,6 +214,11 @@ export class AuthController {
         }
         try {
         const result = await service.login(parsed.data);
+
+        if (result.type === "partner") {
+            setPartnerAuthCookies(res, result.accessToken, result.refreshToken);
+            return res.status(200).json({ type: "partner", partnerUser: result.user });
+        }
 
         await logAudit({
             action: "USER_LOGIN",
@@ -257,7 +229,7 @@ export class AuthController {
             req,
         });
 
-        setAuthCookies(res, result.accessToken, result.refreshToken);
+        setUserAuthCookies(res, result.accessToken, result.refreshToken);
 
         const sessionSecret = process.env.SESSION_COOKIE_SECRET || process.env.JWT_SECRET;
         const sessionToken = jwt.sign(
@@ -290,7 +262,7 @@ export class AuthController {
             organizationId: req.user!.organizationId,
             req,
         });
-        clearAuthCookies(res);
+        clearUserAuthCookies(res);
         return res.status(200).json({ message: "Déconnecté avec succès" });
         } catch (err: any) {
         return res.status(500).json({ message: err.message });
@@ -309,10 +281,10 @@ export class AuthController {
         try {
         const result = await service.refresh(refreshToken);
         // Repose un nouveau accessToken (et refreshToken si rotation activée)
-        setAuthCookies(res, result.accessToken, result.refreshToken ?? refreshToken);
+        setUserAuthCookies(res, result.accessToken, result.refreshToken ?? refreshToken);
         return res.status(200).json({ ok: true });
         } catch (err: any) {
-        clearAuthCookies(res);   // refresh invalide → on nettoie tout
+        clearUserAuthCookies(res);   // refresh invalide → on nettoie tout
         return res.status(401).json({ message: err.message });
         }
     }

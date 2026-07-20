@@ -2,14 +2,16 @@ import { BookingStatus, Prisma, WalletEntryType } from "@prisma/client";
 import { BookingRepository } from "../infrastructure/booking.repository";
 import { WalletService } from "../../wallet/application/wallet.service";
 import { WalletRepository } from "../../wallet/infrastructure/wallet.repository";
+import { CommissionService } from "../../commissions/application/commission.service";
 import { prisma } from "../../../core/config/prisma";
 import { AppError } from "../../../core/errors/app.error";
 import { createHash } from "crypto";
 import { dispatchNotification } from "../../notification/application/notification.service";
 
-const repo          = new BookingRepository();
-const walletService = new WalletService();
-const walletRepo    = new WalletRepository();
+const repo               = new BookingRepository();
+const walletService      = new WalletService();
+const walletRepo         = new WalletRepository();
+const commissionService  = new CommissionService();
 
 export class BookingService {
     async create(
@@ -134,6 +136,17 @@ export class BookingService {
         if (booking.partnerId !== partnerId) throw new AppError("Accès interdit", 403);
         if (booking.status !== "CONFIRMED") throw new AppError("Seule une réservation CONFIRMED peut être complétée", 400);
         const updated = await repo.updateStatus(id, BookingStatus.COMPLETED, { completedAt: new Date() });
+
+        // Déclenche le calcul de commission si la réservation est liée à une commande payée
+        if (booking.order?.finalAmount) {
+            await commissionService.applyCommissionOnBooking(
+                booking.id,
+                booking.partnerId,
+                booking.order.finalAmount,
+                booking.offer?.category ?? undefined,
+            ).catch(() => {}); // best-effort : ne bloque pas la complétion
+        }
+
         // Notify user
         const user = await prisma.user.findUnique({ where: { id: booking.userId }, select: { email: true } });
         dispatchNotification("BOOKING_COMPLETED", {
