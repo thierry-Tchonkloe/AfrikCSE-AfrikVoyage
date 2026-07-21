@@ -1,277 +1,314 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { motion, useAnimation, useInView } from "framer-motion";
-import { DollarSign, Plane, CheckCircle2, TrendingDown, BarChart2, Target, Zap } from "lucide-react";
+import Image from "next/image";
+import { motion, useAnimation, useInView, AnimatePresence } from "framer-motion";
+import { 
+  Ticket, 
+  Plane, 
+  Gift, 
+  ShieldCheck, 
+  Receipt, 
+  Megaphone, 
+  ArrowRight,
+  TrendingUp,
+  DollarSign,
+  Users,
+  Compass,
+  Clock,
+  Sparkles,
+  BarChart3,
+  Building2,
+  Luggage,
+  Sparkle
+} from "lucide-react";
 
-// ─── DONNÉES DU DASHBOARD ──────────────────────────────────────────────────────
-const DASHBOARD_STATS = [
-  { label: "Dépenses totales", value: "2.4M €", change: "+12.5%", trend: "up", Icon: DollarSign },
-  { label: "Voyages actifs", value: "1,847", change: "+8.3%", trend: "up", Icon: Plane },
-  { label: "Taux de conformité", value: "94.2%", change: "+3.1%", trend: "up", Icon: CheckCircle2 },
-  { label: "Économies réalisées", value: "342K €", change: "-18.6%", trend: "down", Icon: TrendingDown },
+// ─── 1. DONNÉES DES FONCTIONNALITÉS ──────────────────────────────────────────
+type FeatureCategory = "cse" | "travel";
+
+interface FeatureItem {
+  id: string;
+  category: FeatureCategory;
+  categoryLabel: string;
+  title: string;
+  description: string;
+  btnText: string;
+  href: string;
+  badge: string;
+  image: string;
+  icon: React.ElementType;
+}
+
+const FEATURES_DATA: FeatureItem[] = [
+  // --- FONCTIONNALITÉS CSE ---
+  {
+    id: "billetterie-subventions",
+    category: "cse",
+    categoryLabel: "Espace CSE",
+    title: "Billetterie & Subventions Salariés",
+    description: "Accès à des milliers d'offres négociées (cinéma, parcs, spectacles) et attribution automatisée des budgets vacances & culture.",
+    btnText: "Explorer le module CSE",
+    href: "/cse/billetterie",
+    badge: "Réductions & Avantages",
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80",
+    icon: Ticket,
+  },
+  {
+    id: "cartes-cadeaux",
+    category: "cse",
+    categoryLabel: "Espace CSE",
+    title: "Cartes Cadeaux & Événements URSSAF",
+    description: "Émission instantanée de chèques cadeaux dématérialisés conformes aux plafonds et événements de la réglementation URSSAF.",
+    btnText: "Cartes Cadeaux CSE",
+    href: "/cse/cartes-cadeaux",
+    badge: "Conformité 100% URSSAF",
+    image: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80",
+    icon: Gift,
+  },
+  {
+    id: "communication-espace",
+    category: "cse",
+    categoryLabel: "Espace CSE",
+    title: "Portail Salarié & Info CSE",
+    description: "Espace unifié pour diffuser les procès-verbaux, sondages et actualités du comité auprès de l'ensemble des collaborateurs.",
+    btnText: "Portail Communication",
+    href: "/cse/communication",
+    badge: "Lien & Engagement",
+    image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80",
+    icon: Megaphone,
+  },
+
+  // --- FONCTIONNALITÉS VOYAGES D'ENTREPRISE ---
+  {
+    id: "deplacements-pro",
+    category: "travel",
+    categoryLabel: "Voyages d'Affaires",
+    title: "Réservation Vols, Trains & Hôtels",
+    description: "Outil complet de réservation pour les déplacements pro avec tarifs négociés d'entreprise et gestion des ordres de mission.",
+    btnText: "Réserver un déplacement",
+    href: "/voyages/reservation",
+    badge: "Corporate Travel",
+    image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80",
+    icon: Plane,
+  },
+  {
+    id: "politiques-voyage",
+    category: "travel",
+    categoryLabel: "Voyages d'Affaires",
+    title: "Politiques de Voyage & Plafonds",
+    description: "Paramétrage des règles d'approbation automatique (Travel Policy), plafonds nuitées et contrôle préalable des dépenses.",
+    btnText: "Gérer la Travel Policy",
+    href: "/voyages/politique",
+    badge: "Gouvernance & Contrôle",
+    image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80",
+    icon: ShieldCheck,
+  },
+  {
+    id: "notes-frais",
+    category: "travel",
+    categoryLabel: "Voyages d'Affaires",
+    title: "Notes de Frais & Remboursements",
+    description: "Digitalisation des reçus de déplacement, validation RH/Comptabilité accélérée et intégration avec votre logiciel de paie.",
+    btnText: "Gestion des remboursements",
+    href: "/voyages/frais",
+    badge: "Gestion Dématérialisée",
+    image: "https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=800&q=80",
+    icon: Receipt,
+  },
 ];
 
-const WEEKLY_DATA = [
-  { day: "Lun", value: 42 },
-  { day: "Mar", value: 68 },
-  { day: "Mer", value: 55 },
-  { day: "Jeu", value: 89 },
-  { day: "Ven", value: 74 },
-  { day: "Sam", value: 23 },
-  { day: "Dim", value: 12 },
+// ─── 2. DASHBOARD CLAIR COMPACT ──────────────────────────────────────────────
+const METRICS_LIGHT = [
+  { label: "Budget CSE Distribué", value: "248 500 €", change: "+14.2%", icon: DollarSign, color: "text-blue-600", bg: "bg-blue-50" },
+  { label: "Économies sur Voyages Pro", value: "34 200 €", change: "-18% coût", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
+  { label: "Taux d'Adoption Salariés", value: "95.8%", change: "+6.1%", icon: Users, color: "text-indigo-600", bg: "bg-indigo-50" },
+  { label: "Réservations Conformes", value: "99.4%", change: "100% OK", icon: ShieldCheck, color: "text-amber-600", bg: "bg-amber-50" },
 ];
 
-const DEPARTMENT_DATA = [
-  { name: "Commercial", value: 38, color: "#6366F1" },
-  { name: "RH", value: 24, color: "#10B981" },
-  { name: "IT", value: 18, color: "#F59E0B" },
-  { name: "Finance", value: 12, color: "#8B5CF6" },
-  { name: "Marketing", value: 8, color: "#EF4444" },
+const RECENT_ACTIVITIES = [
+  { id: "ACT-01", name: "Marc Vance", detail: "Billet Avion Paris ➔ Cotonou", type: "Voyage", date: "Il y a 10 min", amount: "840 €", status: "Validé (Policy OK)", isTravel: true },
+  { id: "ACT-02", name: "Claire Dupont", detail: "Subvention Chèque Cadeau Noël", type: "CSE", date: "Il y a 32 min", amount: "170 €", status: "Accordé", isTravel: false },
+  { id: "ACT-03", name: "Ablam Mensah", detail: "Hôtel Novotel Dakar (2 Nuits)", type: "Voyage", date: "Il y a 1h", amount: "310 €", status: "En attente RH", isTravel: true },
+  { id: "ACT-04", name: "Sophie Martin", detail: "Remboursement Facture Rentrée", type: "CSE", date: "Il y a 2h", amount: "150 €", status: "Remboursé", isTravel: false },
 ];
 
-const RECENT_TRIPS = [
-  { 
-    id: 1, 
-    employee: "Marie Dubois", 
-    destination: "Paris → Dakar", 
-    date: "12 Juin 2026",
-    amount: "1,245 €",
-    status: "Validé",
-    statusColor: "emerald"
-  },
-  { 
-    id: 2, 
-    employee: "Thomas Martin", 
-    destination: "Abidjan → Nairobi", 
-    date: "14 Juin 2026",
-    amount: "2,890 €",
-    status: "En attente",
-    statusColor: "amber"
-  },
-  { 
-    id: 3, 
-    employee: "Sophie Koffi", 
-    destination: "Lomé → Paris", 
-    date: "15 Juin 2026",
-    amount: "3,450 €",
-    status: "Validé",
-    statusColor: "emerald"
-  },
-  { 
-    id: 4, 
-    employee: "Jean Aké", 
-    destination: "Douala → Lagos", 
-    date: "16 Juin 2026",
-    amount: "890 €",
-    status: "En attente",
-    statusColor: "amber"
-  },
-];
-
-// ─── COMPOSANT DU DASHBOARD MODERNE ──────────────────────────────────────────
-const ModernDashboard = () => {
-  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+const LightCockpitDashboard = () => {
+  const [tab, setTab] = useState<"analytics" | "operations">("analytics");
 
   return (
-    <div className="w-full bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
-      {/* Barre de navigation du dashboard */}
-      <div className="bg-slate-950 px-5 py-3 border-b border-slate-800 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="w-full bg-white/70 backdrop-blur-xl rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden">
+      <div className="bg-slate-50/90 px-6 py-4 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
           <div className="flex gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-rose-500" />
-            <span className="w-3 h-3 rounded-full bg-amber-500" />
-            <span className="w-3 h-3 rounded-full bg-emerald-500" />
+            <span className="w-3 h-3 rounded-full bg-rose-400" />
+            <span className="w-3 h-3 rounded-full bg-amber-400" />
+            <span className="w-3 h-3 rounded-full bg-emerald-400" />
           </div>
-          <span className="text-xs font-mono text-slate-400 tracking-wider uppercase">
-            AfrikWorkspace // Executive Dashboard
+          <span className="text-xs font-mono font-bold text-slate-700 uppercase tracking-wider pl-2 border-l border-slate-200">
+            Console de Pilotage // AfrikCSE & AfrikVoyage
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
-            ● Live
-          </span>
-          <span className="text-[10px] font-mono text-slate-500">v3.2.1</span>
+
+        <div className="flex bg-slate-200/70 p-1 rounded-xl text-xs font-semibold">
+          <button
+            onClick={() => setTab("analytics")}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg transition-all ${
+              tab === "analytics"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <BarChart3 size={14} className="text-blue-600" />
+            Vue d'ensemble Budgets
+          </button>
+          <button
+            onClick={() => setTab("operations")}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg transition-all ${
+              tab === "operations"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Clock size={14} className="text-emerald-600" />
+            Flux d'Activité
+          </button>
         </div>
       </div>
 
-      <div className="p-5 bg-slate-900">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {DASHBOARD_STATS.map((stat, idx) => (
-            <div key={idx} className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-              <div className="flex items-center justify-between mb-2">
-                <div className="w-8 h-8 rounded-lg bg-slate-700/60 flex items-center justify-center">
-                  <stat.Icon className="w-4 h-4 text-slate-300" />
-                </div>
-                <span className={`text-xs font-bold flex items-center gap-1 ${
-                  stat.trend === "up" ? "text-emerald-400" : "text-rose-400"
-                }`}>
-                  {stat.change}
-                  {stat.trend === "up" ? "↑" : "↓"}
-                </span>
-              </div>
-              <p className="text-2xl font-black text-white tracking-tight">{stat.value}</p>
-              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Graphiques et visualisations */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Graphique hebdomadaire */}
-          <div className="md:col-span-2 bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Activité voyage</p>
-                <p className="text-sm font-bold text-white mt-0.5">Réservations de la semaine</p>
-              </div>
-              <div className="flex gap-1">
-                <span className="text-[9px] font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded">7j</span>
-                <span className="text-[9px] font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded border border-indigo-500/30 text-indigo-400">30j</span>
-                <span className="text-[9px] font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded">90j</span>
-              </div>
-            </div>
-            <div className="flex items-end h-32 gap-2">
-              {WEEKLY_DATA.map((item, idx) => {
-                const height = (item.value / Math.max(...WEEKLY_DATA.map(d => d.value))) * 100;
-                const isHovered = hoveredBar === idx;
-                return (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-1 group">
-                    <div 
-                      className="w-full rounded-t-sm transition-all duration-300 cursor-pointer relative"
-                      style={{ 
-                        height: `${height}%`,
-                        minHeight: "8px",
-                        background: isHovered 
-                          ? "linear-gradient(180deg, #6366F1, #818CF8)" 
-                          : "linear-gradient(180deg, #4F46E5, #6366F1)",
-                        opacity: isHovered ? 1 : 0.8,
-                        transform: isHovered ? "scaleY(1.05)" : "scaleY(1)",
-                        transformOrigin: "bottom",
-                        boxShadow: isHovered ? "0 0 20px rgba(99, 102, 241, 0.4)" : "none"
-                      }}
-                      onMouseEnter={() => setHoveredBar(idx)}
-                      onMouseLeave={() => setHoveredBar(null)}
-                    >
-                      {isHovered && (
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] font-bold px-2 py-0.5 rounded whitespace-nowrap border border-slate-700">
-                          {item.value}
-                        </div>
-                      )}
+      <div className="p-6 sm:p-8 space-y-6 bg-slate-50/20">
+        {tab === "analytics" ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {METRICS_LIGHT.map((m, idx) => (
+                <div key={idx} className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`p-2.5 rounded-xl ${m.bg} ${m.color}`}>
+                      <m.icon size={18} />
                     </div>
-                    <span className="text-[8px] font-mono text-slate-500">{item.day}</span>
+                    <span className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                      {m.change}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Répartition par département */}
-          <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Analytique</p>
-                <p className="text-sm font-bold text-white mt-0.5">Dépenses par département</p>
-              </div>
-            </div>
-            <div className="space-y-2.5">
-              {DEPARTMENT_DATA.map((dept) => (
-                <div key={dept.name}>
-                  <div className="flex justify-between text-xs mb-0.5">
-                    <span className="text-slate-300 font-medium">{dept.name}</span>
-                    <span className="text-slate-400 font-mono">{dept.value}%</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ 
-                        width: `${dept.value}%`,
-                        background: dept.color
-                      }}
-                    />
-                  </div>
+                  <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{m.value}</p>
+                  <p className="text-xs font-bold text-slate-500 mt-1">{m.label}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-700/30">
-              <div className="flex items-center justify-between text-[10px] text-slate-400">
-                <span>Total dépenses</span>
-                <span className="font-bold text-white">2.4M €</span>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+              <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Compass size={16} className="text-blue-600" />
+                      Consommation des Budgets CSE vs Voyages Pro
+                    </h4>
+                    <p className="text-xs text-slate-500">Mois en cours - Rapprochement automatique</p>
+                  </div>
+                  <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+                    Temps réel
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  {[
+                    { title: "Billetterie & Avantages Salariés (CSE)", pct: 45, color: "bg-blue-600" },
+                    { title: "Billets d'Avion & Hôtels (Voyages Pro)", pct: 30, color: "bg-emerald-600" },
+                    { title: "Cartes Cadeaux URSSAF (CSE)", pct: 15, color: "bg-indigo-600" },
+                    { title: "Frais de déplacement & Reçus", pct: 10, color: "bg-amber-500" },
+                  ].map((row, i) => (
+                    <div key={i} className="space-y-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-semibold text-slate-700 flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${row.color}`} />
+                          {row.title}
+                        </span>
+                        <span className="font-mono font-bold text-slate-900">{row.pct}%</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div className={`h-full ${row.color} rounded-full transition-all duration-700`} style={{ width: `${row.pct}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl p-6 shadow-md flex flex-col justify-between space-y-4">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white font-mono text-[10px] font-bold uppercase tracking-wider mb-3">
+                    <Sparkles size={12} />
+                    Contrôle Automatisé
+                  </span>
+                  <h4 className="text-lg font-bold">Plafonds & Travel Policy Intégrés</h4>
+                  <p className="text-xs text-blue-100 mt-2 leading-relaxed">
+                    Les règles CSE et les politiques de voyages pro sont vérifiées automatiquement avant validation.
+                  </p>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3.5 border border-white/20 space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-blue-100">Validations automatiques</span>
+                    <span className="font-mono font-bold text-white">92%</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-blue-100">Gain de temps RH / Élus</span>
+                    <span className="font-mono font-bold text-emerald-300">-12h / semaine</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Tableau des voyages récents */}
-        <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Flux</p>
-              <p className="text-sm font-bold text-white mt-0.5">Voyages récents</p>
-            </div>
-            <Link href="/trips" className="text-[10px] font-mono text-indigo-400 hover:text-indigo-300 transition">
-              Voir tout →
-            </Link>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-[10px] font-mono text-slate-500 uppercase tracking-wider border-b border-slate-700/50">
-                  <th className="pb-2 pr-4 font-medium">Employé</th>
-                  <th className="pb-2 pr-4 font-medium">Destination</th>
-                  <th className="pb-2 pr-4 font-medium">Date</th>
-                  <th className="pb-2 pr-4 font-medium">Montant</th>
-                  <th className="pb-2 font-medium">Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {RECENT_TRIPS.map((trip) => (
-                  <tr key={trip.id} className="border-b border-slate-700/30 last:border-0">
-                    <td className="py-2.5 pr-4 text-sm text-white font-medium">{trip.employee}</td>
-                    <td className="py-2.5 pr-4 text-sm text-slate-300">{trip.destination}</td>
-                    <td className="py-2.5 pr-4 text-sm text-slate-400">{trip.date}</td>
-                    <td className="py-2.5 pr-4 text-sm text-white font-mono">{trip.amount}</td>
-                    <td className="py-2.5">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        trip.statusColor === "emerald" 
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
-                          : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                      }`}>
-                        {trip.status}
-                      </span>
-                    </td>
+          </>
+        ) : (
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+            <h4 className="text-sm font-bold text-slate-900">Dernières transactions enregistrées</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] font-mono text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                    <th className="pb-3 pr-4 font-bold">Secteur</th>
+                    <th className="pb-3 pr-4 font-bold">Collaborateur</th>
+                    <th className="pb-3 pr-4 font-bold">Description</th>
+                    <th className="pb-3 pr-4 font-bold">Délai</th>
+                    <th className="pb-3 pr-4 font-bold">Montant</th>
+                    <th className="pb-3 font-bold">Statut</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {RECENT_ACTIVITIES.map((act) => (
+                    <tr key={act.id} className="hover:bg-slate-50 transition">
+                      <td className="py-3 pr-4">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          act.isTravel ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"
+                        }`}>
+                          {act.isTravel ? <Plane size={10} /> : <Ticket size={10} />}
+                          {act.type}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4 text-xs font-semibold text-slate-900">{act.name}</td>
+                      <td className="py-3 pr-4 text-xs text-slate-600">{act.detail}</td>
+                      <td className="py-3 pr-4 text-xs font-mono text-slate-400">{act.date}</td>
+                      <td className="py-3 pr-4 text-xs font-mono font-bold text-slate-900">{act.amount}</td>
+                      <td className="py-3">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {act.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-
-        {/* Footer du dashboard */}
-        <div className="mt-4 pt-3 border-t border-slate-800/50 flex items-center justify-between text-[9px] text-slate-500">
-          <span>Dernière mise à jour : {new Date().toLocaleString()}</span>
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Système opérationnel
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              IA active
-            </span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
 };
 
-// ─── COMPOSANT PRINCIPAL ──────────────────────────────────────────────────────
-export default function AuditInterface() {
+// ─── COMPOSANT PRINCIPAL ─────────────────────────────────────────────────────
+export default function FeaturesCSEAndTravelLight() {
+  const [filter, setFilter] = useState<"all" | "cse" | "travel">("all");
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.1 });
   const controls = useAnimation();
@@ -282,14 +319,17 @@ export default function AuditInterface() {
     }
   }, [isInView, controls]);
 
+  const filteredFeatures = FEATURES_DATA.filter((item) => {
+    if (filter === "cse") return item.category === "cse";
+    if (filter === "travel") return item.category === "travel";
+    return true;
+  });
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.15,
-        duration: 0.5
-      }
+      transition: { staggerChildren: 0.08, duration: 0.5 }
     }
   };
 
@@ -299,14 +339,14 @@ export default function AuditInterface() {
   };
 
   return (
-    <div ref={sectionRef} className="relative w-full bg-slate-50 overflow-hidden border-t border-slate-200 py-20">
-      {/* Arrière-plan */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+    <section ref={sectionRef} className="relative w-full bg-[#F8FAFC] text-slate-900 py-20 sm:py-28 overflow-hidden">
       
-      {/* Halos de lumière */}
-      <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-12 right-1/4 w-125 h-125 rounded-full bg-indigo-50/40 blur-[130px]" />
-        <div className="absolute bottom-12 left-1/4 w-125 h-125 rounded-full bg-teal-50/30 blur-[130px]" />
+      {/* ─── FOND DYNAMIQUE SUR-MESURE (SOFT MESH GRADIENTS) ─── */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/3 w-[650px] h-[650px] bg-gradient-to-br from-blue-200/35 via-indigo-100/20 to-transparent blur-[140px] rounded-full" />
+        <div className="absolute bottom-10 right-10 w-[550px] h-[550px] bg-gradient-to-tl from-emerald-200/35 via-teal-100/20 to-transparent blur-[150px] rounded-full" />
+        <div className="absolute top-1/2 left-[-100px] w-[450px] h-[450px] bg-purple-200/25 blur-[130px] rounded-full" />
+        <div className="absolute inset-0 opacity-[0.02] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:24px_24px]" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -314,91 +354,200 @@ export default function AuditInterface() {
           initial="hidden"
           animate={controls}
           variants={containerVariants}
+          className="space-y-16"
         >
-          {/* En-tête */}
-          <motion.div variants={itemVariants} className="text-center mb-12">
-            <span className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-600 rounded-full mb-4">
-              🔍 Audit d'interface analytique
+          
+          {/* ─── EN-TÊTE ET FILTRES D'ONGLETS ─── */}
+          <motion.div variants={itemVariants} className="text-center max-w-3xl mx-auto space-y-4">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900 text-white font-bold text-xs tracking-wider uppercase shadow-md">
+              <Sparkle size={14} className="text-amber-400" />
+              Plateforme Unifiée AfrikCSE & AfrikVoyage
             </span>
-            <h2 
-              style={{
-                fontFamily: "Sanomat, ui-serif",
-                fontWeight: 600,
-                fontStyle: "normal",
-                fontSize: "clamp(32px, 5vw, 42px)",
-                lineHeight: "1.2",
-                color: "rgb(21, 0, 44)"
-              }}
-              className="tracking-tight mb-4"
-            >
-              Pilotez votre activité en <br className="hidden sm:block" />
-              <span className="relative">
-                temps réel
-                <svg className="absolute left-0 bottom-0.5 w-full h-[30%] -z-10 overflow-visible" viewBox="0 0 100 10" preserveAspectRatio="none">
-                  <path d="M0,5 Q20,2 40,6 T80,3 T100,5 L100,9 Q80,7 50,9 T15,7 Z" fill="rgba(99, 102, 241, 0.15)" />
-                </svg>
-              </span>
+
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.15]">
+              Toutes les fonctionnalités pour vos <span className="text-blue-600 underline decoration-blue-200 underline-offset-8">Avantages CSE</span> et vos <span className="text-emerald-600 underline decoration-emerald-200 underline-offset-8">Voyages Pro</span>
             </h2>
-            <p className="text-slate-500 text-base max-w-2xl mx-auto font-medium leading-relaxed">
-              Visualisez l'intégralité de vos données de voyage, dépenses et conformité dans un dashboard unique et interactif.
+
+            <p className="text-slate-600 text-base sm:text-lg font-normal leading-relaxed">
+              Une solution claire et intuitive conçue pour maximiser le pouvoir d'achat de vos collaborateurs tout en optimisant le budget de vos déplacements d'affaires.
             </p>
-          </motion.div>
 
-          {/* Dashboard */}
-          <motion.div variants={itemVariants}>
-            <ModernDashboard />
-          </motion.div>
+            {/* BARRE DE FILTRAGE PAR CATEGORIE (CSE vs VOYAGES) */}
+            <div className="pt-4 flex items-center justify-center gap-2 flex-wrap">
+              <button
+                onClick={() => setFilter("all")}
+                className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                  filter === "all"
+                    ? "bg-slate-900 text-white shadow-md scale-105"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                Toutes les fonctionnalités
+              </button>
+              
+              <button
+                onClick={() => setFilter("cse")}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                  filter === "cse"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-105"
+                    : "bg-white text-blue-700 border border-blue-200 hover:bg-blue-50"
+                }`}
+              >
+                <Building2 size={14} />
+                Services CSE ({FEATURES_DATA.filter(f => f.category === "cse").length})
+              </button>
 
-          {/* Indicateurs supplémentaires */}
-          <motion.div variants={itemVariants} className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                <BarChart2 className="w-6 h-6 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">ROI Moyen</p>
-                <p className="text-lg font-black text-slate-900">+32%</p>
-                <span className="text-[10px] text-emerald-600 font-medium">↑ 4.2% vs trimestre précédent</span>
-              </div>
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                <Target className="w-6 h-6 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Conformité</p>
-                <p className="text-lg font-black text-slate-900">94.2%</p>
-                <span className="text-[10px] text-indigo-600 font-medium">+3.1% d'amélioration</span>
-              </div>
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-                <Zap className="w-6 h-6 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Délai moyen</p>
-                <p className="text-lg font-black text-slate-900">2.4 jours</p>
-                <span className="text-[10px] text-amber-600 font-medium">↓ 18% de réduction</span>
-              </div>
+              <button
+                onClick={() => setFilter("travel")}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                  filter === "travel"
+                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-105"
+                    : "bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50"
+                }`}
+              >
+                <Luggage size={14} />
+                Voyages d'Affaires ({FEATURES_DATA.filter(f => f.category === "travel").length})
+              </button>
             </div>
           </motion.div>
 
-          {/* CTA */}
-          <motion.div variants={itemVariants} className="mt-8 text-center">
+          {/* ─── GRILLE DE CARTES A CONCEPTION DESIMBRIQUEE (DESTRUCTURÉE) ─── */}
+          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
+            <AnimatePresence mode="popLayout">
+              {filteredFeatures.map((feature) => {
+                const isCSE = feature.category === "cse";
+
+                return (
+                  <motion.div
+                    key={feature.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                    className={`group relative p-6 rounded-3xl transition-all duration-500 flex flex-col justify-between
+                      /* Au repos : Pas de cadre, pas de fond visible -> Éléments désimbriqués */
+                      bg-transparent border border-transparent
+                      /* Au HOVER : Apparition fluide du conteneur unifié */
+                      hover:bg-white hover:shadow-2xl hover:translate-y-[-8px]
+                      ${
+                        isCSE
+                          ? "hover:border-blue-300 hover:shadow-blue-500/10"
+                          : "hover:border-emerald-300 hover:shadow-emerald-500/10"
+                      }
+                    `}
+                  >
+                    
+                    {/* 1. BLOC IMAGE INDÉPENDANT (Agrémente un cadre arrondi propre) */}
+                    <div className="relative w-full h-52 sm:h-56 rounded-2xl overflow-hidden mb-6 shadow-sm group-hover:shadow-md transition-all duration-500 bg-slate-100">
+                      <Image
+                        src={feature.image}
+                        alt={feature.title}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-900/10 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
+
+                      {/* Badge du secteur (Flottant sur l'image) */}
+                      <span className={`absolute top-3 left-3 text-[10px] font-bold px-3 py-1 rounded-full backdrop-blur-md border shadow-sm ${
+                        isCSE 
+                          ? "bg-blue-600/90 text-white border-blue-400/30" 
+                          : "bg-emerald-600/90 text-white border-emerald-400/30"
+                      }`}>
+                        {feature.badge}
+                      </span>
+
+                      {/* Tag d'Espace (CSE vs Travel) en haut à droite */}
+                      <span className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-lg shadow-sm">
+                        {feature.categoryLabel}
+                      </span>
+
+                      {/* Icône du secteur */}
+                      <div className={`absolute bottom-3 right-3 w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg ${
+                        isCSE ? "bg-blue-600" : "bg-emerald-600"
+                      }`}>
+                        <feature.icon size={20} />
+                      </div>
+                    </div>
+
+                    {/* 2. BLOC TEXTE DESIMBRIQUÉ (Separé visuellement au repos par une ligne d'accentuation) */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        {/* Petite ligne indicatrice de secteur au repos */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`w-8 h-1 rounded-full transition-all duration-300 group-hover:w-12 ${
+                            isCSE ? "bg-blue-500" : "bg-emerald-500"
+                          }`} />
+                          <span className={`text-[11px] font-bold uppercase tracking-wider ${
+                            isCSE ? "text-blue-600" : "text-emerald-600"
+                          }`}>
+                            {isCSE ? "Avantage Comité" : "Déplacement Pro"}
+                          </span>
+                        </div>
+
+                        {/* Titre */}
+                        <h3 className={`text-xl font-bold text-slate-900 mb-2 transition-colors duration-300 ${
+                          isCSE ? "group-hover:text-blue-600" : "group-hover:text-emerald-600"
+                        }`}>
+                          {feature.title}
+                        </h3>
+
+                        {/* Description claire */}
+                        <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                          {feature.description}
+                        </p>
+                      </div>
+
+                      {/* 3. BOUTON ACTION LÉGER (S'intensifie au HOVER) */}
+                      <Link
+                        href={feature.href}
+                        className={`w-full inline-flex items-center justify-between font-bold text-xs sm:text-sm py-3 px-4 rounded-xl transition-all duration-300 ${
+                          isCSE
+                            ? "bg-blue-50/70 text-blue-700 group-hover:bg-blue-600 group-hover:text-white border border-blue-200/60 group-hover:border-blue-600 shadow-sm"
+                            : "bg-emerald-50/70 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white border border-emerald-200/60 group-hover:border-emerald-600 shadow-sm"
+                        }`}
+                      >
+                        <span>{feature.btnText}</span>
+                        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </div>
+
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* ─── BLOC DASHBOARD COCKPIT ─── */}
+          <motion.div variants={itemVariants} className="pt-8">
+            <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
+              <span className="text-xs font-mono font-bold text-blue-600 uppercase tracking-widest">
+                Cockpit de Gestion
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                Une vue 360° pour vos élus et vos gestionnaires travel
+              </h3>
+              <p className="text-slate-500 text-sm">
+                Pilotez vos enveloppes budgétaires, validez les réservations et analysez le taux de satisfaction des collaborateurs.
+              </p>
+            </div>
+
+            <LightCockpitDashboard />
+          </motion.div>
+
+          {/* ─── CALL TO ACTION FINAL ─── */}
+          <motion.div variants={itemVariants} className="text-center pt-4">
             <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg shadow-indigo-200/50 hover:scale-[1.02] transform"
+              href="/demo"
+              className="inline-flex items-center gap-3 bg-slate-900 hover:bg-blue-600 text-white font-bold text-base px-9 py-4 rounded-full transition-all duration-300 shadow-xl shadow-slate-900/10 hover:shadow-blue-500/25 hover:scale-[1.02]"
             >
-              Accéder au dashboard complet
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
+              Demander une démonstration interactive
+              <ArrowRight size={18} />
             </Link>
           </motion.div>
+
         </motion.div>
       </div>
-    </div>
+    </section>
   );
 }
