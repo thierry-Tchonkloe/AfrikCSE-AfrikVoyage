@@ -6,7 +6,7 @@ import { partnerPortalService, PartnerOffer, OfferInput } from "@/services/partn
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
-const EMPTY_FORM: OfferInput = { title: "", price: 0, currencyCode: "XOF", isActive: true };
+const EMPTY_FORM: OfferInput = { title: "", category: "", employeePrice: 0, companyPrice: 0, subsidyPct: 0, isActive: true };
 
 const CATEGORIES = ["Restauration", "Loisirs", "Sport", "Culture", "Bien-être", "Transport", "Éducation", "Autre"];
 
@@ -35,29 +35,29 @@ export default function PartnerOffersPage() {
     const openEdit   = (o: PartnerOffer) => {
         setEditing(o);
         setForm({
-            title:        o.title,
-            description:  o.description ?? "",
-            price:        parseFloat(o.price),
-            currencyCode: o.currencyCode,
-            category:     o.category ?? "",
-            capacity:     o.capacity ?? undefined,
-            validUntil:   o.validUntil ? o.validUntil.slice(0, 10) : "",
-            isActive:     o.isActive,
+            title:         o.title,
+            description:   o.description ?? "",
+            employeePrice: o.employeePrice,
+            companyPrice:  o.companyPrice,
+            subsidyPct:    o.subsidyPct,
+            category:      o.category,
+            stock:         o.stock ?? undefined,
+            validUntil:    o.validUntil ? o.validUntil.slice(0, 10) : "",
+            isActive:      o.isActive,
         });
         setShowModal(true);
     };
 
     const handleSave = async () => {
-        if (!form.title.trim() || form.price <= 0) {
-            toast.error("Titre et prix requis");
+        if (!form.title.trim() || !form.category.trim() || form.employeePrice <= 0 || form.companyPrice <= 0) {
+            toast.error("Titre, catégorie et prix requis");
             return;
         }
         setSaving(true);
         try {
             const payload = {
                 ...form,
-                category:  form.category || undefined,
-                validUntil: form.validUntil || undefined,
+                validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : undefined,
             };
             if (editing) {
                 const updated = await partnerPortalService.updateOffer(editing.id, payload);
@@ -85,7 +85,7 @@ export default function PartnerOffersPage() {
         }
     };
 
-    const fmt = (v: string) => new Intl.NumberFormat("fr-FR").format(parseFloat(v));
+    const fmt = (v: number) => new Intl.NumberFormat("fr-FR").format(v);
 
     return (
         <div className="space-y-5">
@@ -139,7 +139,8 @@ export default function PartnerOffersPage() {
 
                             <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
                                 <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                    {fmt(o.price)} <span className="text-xs font-normal text-gray-400">{o.currencyCode}</span>
+                                    {fmt(o.employeePrice)} <span className="text-xs font-normal text-gray-400">XOF employé</span>
+                                    <span className="text-xs font-normal text-gray-400"> · {fmt(o.companyPrice)} entreprise</span>
                                 </p>
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                                     o.isActive ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
@@ -176,31 +177,28 @@ export default function PartnerOffersPage() {
                                     rows={2} className="input-field resize-none" placeholder="Décrivez l'offre…" />
                             </Field>
                             <div className="grid grid-cols-2 gap-3">
-                                <Field label="Prix *">
-                                    <input type="number" min={0} value={form.price}
-                                        onChange={(e) => setForm((f) => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
+                                <Field label="Prix employé *">
+                                    <input type="number" min={0} value={form.employeePrice}
+                                        onChange={(e) => setForm((f) => ({ ...f, employeePrice: parseFloat(e.target.value) || 0 }))}
                                         className="input-field" />
                                 </Field>
-                                <Field label="Devise">
-                                    <select value={form.currencyCode} onChange={(e) => setForm((f) => ({ ...f, currencyCode: e.target.value }))}
-                                        className="input-field">
-                                        <option value="XOF">XOF</option>
-                                        <option value="EUR">EUR</option>
-                                        <option value="USD">USD</option>
-                                    </select>
+                                <Field label="Prix entreprise *">
+                                    <input type="number" min={0} value={form.companyPrice}
+                                        onChange={(e) => setForm((f) => ({ ...f, companyPrice: parseFloat(e.target.value) || 0 }))}
+                                        className="input-field" />
                                 </Field>
                             </div>
-                            <Field label="Catégorie">
-                                <select value={form.category ?? ""} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                            <Field label="Catégorie *">
+                                <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                                     className="input-field">
                                     <option value="">— Choisir —</option>
                                     {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </Field>
                             <div className="grid grid-cols-2 gap-3">
-                                <Field label="Capacité">
-                                    <input type="number" min={1} value={form.capacity ?? ""}
-                                        onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value ? parseInt(e.target.value) : undefined }))}
+                                <Field label="Stock">
+                                    <input type="number" min={1} value={form.stock ?? ""}
+                                        onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value ? parseInt(e.target.value) : undefined }))}
                                         className="input-field" placeholder="—" />
                                 </Field>
                                 <Field label="Valide jusqu'au">
@@ -209,6 +207,11 @@ export default function PartnerOffersPage() {
                                         className="input-field" />
                                 </Field>
                             </div>
+                            <Field label="Subvention (%)">
+                                <input type="number" min={0} max={100} value={form.subsidyPct ?? 0}
+                                    onChange={(e) => setForm((f) => ({ ...f, subsidyPct: parseInt(e.target.value) || 0 }))}
+                                    className="input-field" />
+                            </Field>
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" checked={form.isActive ?? true}
                                     onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}

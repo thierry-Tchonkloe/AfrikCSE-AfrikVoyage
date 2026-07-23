@@ -22,11 +22,12 @@ export class SavingsRepository {
                 },
             }),
 
+            // Booking n'a pas de champs monétaires propres : le prix vit sur l'Order
+            // lié (order.finalAmount / order.discountAmount), déjà agrégé via la
+            // requête `orders` ci-dessus. On ne récupère ici que le nécessaire au comptage.
             prisma.booking.findMany({
                 where: { userId, organizationId },
                 select: {
-                    discountAmount: true,
-                    finalAmount: true,
                     createdAt: true,
                     status: true,
                 },
@@ -46,9 +47,6 @@ export class SavingsRepository {
 
         const totalOrderSubsidy  = sumDecimal(orders.map((o) => o.subsidyAmount));
         const totalOrderDiscount = sumDecimal(orders.map((o) => o.discountAmount));
-        const totalBookingDiscount = sumDecimal(
-            bookings.map((b) => b.discountAmount ?? new Prisma.Decimal(0))
-        );
         const totalCashback = sumDecimal(
             walletEntries
                 .filter((e) => e.type === "CASHBACK_CREDIT")
@@ -58,7 +56,6 @@ export class SavingsRepository {
 
         const totalSaved = totalOrderSubsidy
             .add(totalOrderDiscount)
-            .add(totalBookingDiscount)
             .add(totalCashback);
 
         // Résumé mensuel (6 derniers mois)
@@ -76,11 +73,6 @@ export class SavingsRepository {
                 addToMonth(o.createdAt, Number(o.subsidyAmount) + Number(o.discountAmount), Number(o.cashbackAmount));
             }
         });
-        bookings.forEach((b) => {
-            if (b.createdAt >= sixMonthsAgo) {
-                addToMonth(b.createdAt, Number(b.discountAmount ?? 0), 0);
-            }
-        });
         walletEntries.forEach((e) => {
             if (e.type === "CASHBACK_CREDIT" && e.createdAt >= sixMonthsAgo) {
                 addToMonth(e.createdAt, 0, Number(e.amount));
@@ -94,7 +86,7 @@ export class SavingsRepository {
         return {
             totalSaved:      Number(totalSaved),
             totalSubsidy:    Number(totalOrderSubsidy),
-            totalDiscount:   Number(totalOrderDiscount.add(totalBookingDiscount)),
+            totalDiscount:   Number(totalOrderDiscount),
             cashbackEarned:  Number(totalCashback),
             walletBalance:   Number(walletBalance),
             totalOrders:     orders.length,

@@ -156,7 +156,7 @@ export default function PolitiquesPage() {
     const f = (n: number | null | undefined) => n != null ? n.toLocaleString("fr-FR") : "—";
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
