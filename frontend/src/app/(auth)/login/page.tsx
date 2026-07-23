@@ -41,6 +41,16 @@ export default function LoginPage() {
         try {
             const result = await authService.login(data.email, data.password);
 
+            // ── Cas partenaire ────────────────────────────────────────────────
+            // Cookies dédiés (partnerAccessToken/partnerRefreshToken) déjà posés par
+            // le backend — session totalement indépendante de celle des Users.
+            if (result.type === "partner" && result.partnerUser) {
+                toast.success(`Bienvenue, ${result.partnerUser.firstName} !`);
+                window.location.href = "/partner-portal/dashboard";
+                return;
+            }
+
+            // ── Cas utilisateur standard ──────────────────────────────────────
             if (!result.user) throw new Error("Réponse invalide du serveur");
 
             setAuthData(result.user);
@@ -215,12 +225,6 @@ export default function LoginPage() {
                             Nouveau sur la plateforme ?{" "}
                             <Link href="/register" className="font-semibold text-cyan-600 hover:text-cyan-700 hover:underline transition-colors">
                                 Créer un compte
-                            </Link>
-                        </p>
-                        <p className="text-sm text-slate-500 mt-1">
-                            Vous êtes un partenaire ?{" "}
-                            <Link href="/partner-portal/login" className="font-semibold text-cyan-600 hover:text-cyan-700 hover:underline transition-colors">
-                                Accéder au portail partenaire
                             </Link>
                         </p>
                     </div>

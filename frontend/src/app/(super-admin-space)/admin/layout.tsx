@@ -3,7 +3,7 @@
 import { useState, useEffect, useLayoutEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck, Handshake, Plug, DollarSign, Headphones, BarChart3, Code2, Globe, Plane } from "lucide-react";
+import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck, Handshake, Plug, DollarSign, Headphones, BarChart3, Code2, Globe, Plane, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
 import { useTheme } from "@/hooks/useTheme";
@@ -26,6 +26,7 @@ const NAV_ITEMS = [
     { href: "/admin/partners",       label: "Partenaires",       icon: Handshake },
     { href: "/admin/travel-catalog", label: "Catalogue Voyage",  icon: Plane },
     { href: "/admin/commissions",    label: "Commissions",       icon: DollarSign },
+    { href: "/admin/orders",         label: "Commandes",          icon: ShoppingBag },
     { href: "/admin/service-client", label: "Service client",    icon: Headphones },
     { href: "/admin/developer",       label: "API Développeur",   icon: Code2 },
     { href: "/admin/countries",       label: "Pays & Devises",    icon: Globe },
