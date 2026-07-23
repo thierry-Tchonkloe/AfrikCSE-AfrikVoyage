@@ -339,8 +339,10 @@ export interface FaqEntry {
 }
 
 export interface AuthResponse {
+    type: "user" | "partner";
     sessionToken?: string;
-    user: User;
+    user?: User;
+    partnerUser?: PartnerSessionUser;
 }
 
 // ── Auth partenaire (portail dédié — cookies partnerAccessToken/partnerRefreshToken) ──

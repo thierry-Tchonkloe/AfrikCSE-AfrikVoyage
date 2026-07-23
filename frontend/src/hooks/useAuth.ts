@@ -294,6 +294,16 @@ export function useAuth() {
 
 
   const loadUser = useCallback(async () => {
+    // Le portail partenaire a son propre système de session (usePartnerAuth,
+    // cookies partnerAccessToken/partnerRefreshToken) — /auth/me n'a aucun sens
+    // sur ces pages. `useAuth()` est appelé sans condition par `ThemeProvider`
+    // (monté au niveau du layout racine, donc sur tout le site) : sans ce garde,
+    // chaque page /partner-portal/* déclenchait un /auth/me 401 puis un
+    // /auth/refresh raté, et l'intercepteur renvoyait l'utilisateur vers /login.
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/partner-portal")) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data } = await api.get("/auth/me");
       setUser(data.user);
