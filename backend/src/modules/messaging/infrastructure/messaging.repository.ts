@@ -264,14 +264,31 @@ export class MessagingRepository {
      * Crée ou récupère la conversation support d'une organisation
      * Une org n'a qu'une seule conversation support
      */
-    async getOrCreateSupportConversation(orgId: string, adminUserId: string) {
+    async getOrCreateSupportConversation(orgId: string, userId: string) {
         // Cherche une conversation existante pour cette org
         const existing = await prisma.conversation.findFirst({
         where: { organizationId: orgId },
         include: { participants: true },
         });
 
-        if (existing) return existing;
+        if (existing) {
+        // La conversation support est unique par org : tout nouvel appelant
+        // (admin ou employé) doit y être ajouté s'il n'y est pas déjà, sinon
+        // il se voit refuser l'accès aux messages (anti-IDOR sur isParticipant).
+        const alreadyParticipant = existing.participants.some((p) => p.userId === userId);
+        if (!alreadyParticipant) {
+            await prisma.conversationParticipant.create({ data: { conversationId: existing.id, userId } });
+        }
+        return prisma.conversation.findUniqueOrThrow({
+            where: { id: existing.id },
+            include: {
+            participants: {
+                include: { user: { select: { id: true, firstName: true, lastName: true, role: true } } },
+            },
+            organization: { select: { id: true, name: true } },
+            },
+        });
+        }
 
         // Récupère tous les Super Admins pour les ajouter à la conversation
         const superAdmins = await prisma.user.findMany({
@@ -280,7 +297,7 @@ export class MessagingRepository {
         });
 
         const participantIds = [
-        adminUserId,
+        userId,
         ...superAdmins.map((sa) => sa.id),
         ];
 

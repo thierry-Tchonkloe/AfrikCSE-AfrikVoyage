@@ -64,7 +64,7 @@ export default function AdminWalletPage() {
         try {
             const result = await walletAdminService.allocate({
                 ...form,
-                expiresAt: form.expiresAt || undefined,
+                expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : undefined,
             });
             toast.success(`Allocation réussie : ${result.succeeded}/${result.total} wallets crédités`);
             setShowModal(false);

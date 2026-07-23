@@ -257,7 +257,7 @@ export default function BudgetPage() {
             >
                 <span
                 className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                style={{ transform: autoApprove ? "translateX(20px)" : "translateX(2px)" }}
+                style={{ transform: autoApprove ? "translateX(0px)" : "translateX(-20px)" }}
                 />
             </button>
             </div>
