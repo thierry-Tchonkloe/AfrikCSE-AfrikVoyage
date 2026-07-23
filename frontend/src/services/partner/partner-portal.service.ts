@@ -2,27 +2,35 @@ import { PartnerUser, PartnerLocation, Partner, Booking, PartnerSessionUser } fr
 import api from "@/lib/api";
 
 export interface OfferInput {
-    title:        string;
-    description?: string;
-    price:        number;
-    currencyCode?: string;
-    category?:    string;
-    capacity?:    number;
-    validUntil?:  string;
-    isActive?:    boolean;
+    title:          string;
+    description?:   string;
+    imageUrl?:      string;
+    category:       string;
+    employeePrice:  number;
+    companyPrice:   number;
+    subsidyPct?:    number;
+    stock?:         number;
+    validUntil?:    string;
+    requiresTicket?: boolean;
+    city?:          string;
+    region?:        string;
+    country?:       string;
+    isActive?:      boolean;
 }
 
 export interface PartnerOffer {
-    id:          string;
-    title:       string;
-    description?: string | null;
-    price:       string;
-    currencyCode: string;
-    category?:   string | null;
-    capacity?:   number | null;
-    validUntil?: string | null;
-    isActive:    boolean;
-    createdAt:   string;
+    id:            string;
+    title:         string;
+    description?:  string | null;
+    imageUrl?:     string | null;
+    category:      string;
+    employeePrice: number;
+    companyPrice:  number;
+    subsidyPct:    number;
+    stock?:        number | null;
+    validUntil?:   string | null;
+    isActive:      boolean;
+    createdAt:     string;
 }
 
 export interface ProfileInput {
