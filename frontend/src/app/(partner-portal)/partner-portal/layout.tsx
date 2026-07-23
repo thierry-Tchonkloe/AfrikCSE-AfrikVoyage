@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import {
     LayoutDashboard, CalendarCheck, Layers, Users,
-    MapPin, ChevronLeft, ChevronRight, LogOut, Menu,
+    MapPin, Building2, ChevronLeft, ChevronRight, LogOut, Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePartnerAuth } from "@/hooks/usePartnerAuth";
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
     { href: "/partner-portal/offers",     label: "Offres",           icon: Layers },
     { href: "/partner-portal/locations",  label: "Établissements",   icon: MapPin },
     { href: "/partner-portal/staff",      label: "Équipe",           icon: Users },
+    { href: "/partner-portal/profile",    label: "Profil",           icon: Building2 },
 ];
 
 export default function PartnerPortalLayout({ children }: { children: React.ReactNode }) {
@@ -30,17 +31,20 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
         return () => window.removeEventListener("resize", apply);
     }, []);
 
-    if (loading) return (
+    // Redirige si pas de session partenaire valide — dans un effect, jamais pendant
+    // le rendu (un router.replace() synchrone en plein render déclenche l'avertissement
+    // React "Cannot update a component while rendering a different component").
+    useEffect(() => {
+        if (!loading && !user) {
+        router.replace("/partner-portal/login");
+        }
+    }, [loading, user, router]);
+
+    if (loading || !user) return (
         <div className="flex h-screen items-center justify-center bg-gray-50 text-sm text-gray-500">
             Vérification…
         </div>
     );
-
-    // Redirige si pas de session partenaire valide
-    if (!user) {
-        router.replace("/partner-portal/login");
-        return null;
-    }
 
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
