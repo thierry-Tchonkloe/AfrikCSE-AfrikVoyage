@@ -10,10 +10,10 @@ export interface PartnerFilters {
 }
 
 export interface PartnerListResponse {
-    partners: Partner[];
-    total:    number;
-    page:     number;
-    limit:    number;
+    data:  Partner[];
+    total: number;
+    page:  number;
+    limit: number;
 }
 
 export const partnersService = {

@@ -39,13 +39,13 @@ export async function authenticate(
         // Note : ce middleware ne reconnaît que les comptes `User` — les partenaires ont
         // leur propre système d'authentification dédié (voir partner-auth.middleware.ts).
         const current = await prisma.user.findUnique({
-        where: { id: payload.userId },
-        select: { tokenVersion: true, isActive: true },
+            where: { id: payload.userId },
+            select: { tokenVersion: true, isActive: true },
         });
 
         if (!current || !current.isActive || current.tokenVersion !== payload.tokenVersion) {
-        res.status(401).json({ message: "Session expirée, veuillez vous reconnecter" });
-        return;
+            res.status(401).json({ message: "Session expirée, veuillez vous reconnecter" });
+            return;
         }
 
         req.user = {
