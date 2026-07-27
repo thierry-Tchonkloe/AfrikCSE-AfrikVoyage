@@ -14,7 +14,7 @@ type TabId = "flights" | "hotels" | "trains" | "cars" | "airports";
 function usePartners() {
     const [partners, setPartners] = useState<Partner[]>([]);
     useEffect(() => {
-        partnersService.getAll({ status: "ACTIVE", limit: 100 }).then((r) => setPartners(r.partners)).catch(() => {});
+        partnersService.getAll({ status: "ACTIVE", limit: 100 }).then((r) => setPartners(r.data)).catch(() => {});
     }, []);
     return partners;
 }
