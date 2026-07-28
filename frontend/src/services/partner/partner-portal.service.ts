@@ -15,8 +15,9 @@ export interface OfferInput {
     city?:          string;
     region?:        string;
     country?:       string;
-    isActive?:      boolean;
 }
+
+export type OfferReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 export interface PartnerOffer {
     id:            string;
@@ -30,6 +31,8 @@ export interface PartnerOffer {
     stock?:        number | null;
     validUntil?:   string | null;
     isActive:      boolean;
+    reviewStatus:  OfferReviewStatus;
+    reviewNote?:   string | null;
     createdAt:     string;
 }
 

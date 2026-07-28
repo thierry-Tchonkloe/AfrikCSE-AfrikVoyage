@@ -64,4 +64,16 @@ export class PartnerService {
         await this.getById(id);
         return repo.getSyncLogs(id);
     }
+
+    async listPendingOffers() {
+        return repo.listPendingOffers();
+    }
+
+    async approveOffer(offerId: string, adminUserId: string) {
+        return repo.approveOffer(offerId, adminUserId);
+    }
+
+    async rejectOffer(offerId: string, adminUserId: string, note: string) {
+        return repo.rejectOffer(offerId, adminUserId, note);
+    }
 }

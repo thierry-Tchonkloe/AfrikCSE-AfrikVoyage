@@ -69,7 +69,7 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: ACCENT }}>P</div>
                             <div className="min-w-0">
-                                <p className="text-xs font-bold truncate" style={{ color: ACCENT }}>Portail</p>
+                                <p className="text-base font-bold truncate" style={{ color: ACCENT }}>Portail</p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.partnerName}</p>
                             </div>
                         </div>
@@ -101,7 +101,7 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
                                 title={!open ? label : undefined}
                             >
                                 <Icon size={17} className="shrink-0" />
-                                {open && <span className="truncate text-xs">{label}</span>}
+                                {open && <span className="truncate text-sm">{label}</span>}
                             </button>
                         );
                     })}

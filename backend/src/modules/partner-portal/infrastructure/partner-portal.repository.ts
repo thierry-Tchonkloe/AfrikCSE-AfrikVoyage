@@ -173,7 +173,8 @@ export class PartnerPortalRepository {
                 ...data,
                 partnerId,
                 organizationId,
-                isActive: false, // starts inactive, SA approves
+                isActive:     false, // starts inactive, SA approves
+                reviewStatus: "PENDING",
             },
         });
     }
@@ -184,7 +185,9 @@ export class PartnerPortalRepository {
     }>) {
         return prisma.benefitCatalogItem.update({
             where: { id, partnerId },
-            data:  { ...data, isActive: false }, // re-submit for review
+            // Toute modification par le partenaire remet l'offre en revue —
+            // aucune offre ne peut redevenir active sans re-validation SA.
+            data:  { ...data, isActive: false, reviewStatus: "PENDING", reviewNote: null, reviewedAt: null, reviewedById: null }, // re-submit for review
         });
     }
 }

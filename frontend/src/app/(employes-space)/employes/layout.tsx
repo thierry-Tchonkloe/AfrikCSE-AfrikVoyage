@@ -113,8 +113,8 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                     A
                 </div>
                 <div className="min-w-0">
-                    <p className="text-xs font-bold truncate" style={{ color: ACCENT }}>AfrikCSE &</p>
-                    <p className="text-xs font-bold truncate" style={{ color: ACCENT }}>AfrikVoyage</p>
+                    <p className="text-sm font-bold truncate" style={{ color: ACCENT }}>AfrikCSE &</p>
+                    <p className="text-sm font-bold truncate" style={{ color: ACCENT }}>AfrikVoyage</p>
                 </div>
                 </div>
             ) : (
@@ -158,7 +158,7 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                     title={!sidebarOpen ? label : undefined}
                 >
                     <Icon size={17} className="shrink-0" />
-                    {sidebarOpen && <span className="truncate text-xs">{label}</span>}
+                    {sidebarOpen && <span className="truncate text-sm">{label}</span>}
                 </button>
                 );
             })}
@@ -190,7 +190,7 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                     title={!sidebarOpen ? label : undefined}
                 >
                     <Icon size={17} className="shrink-0" />
-                    {sidebarOpen && <span className="truncate text-xs">{label}</span>}
+                    {sidebarOpen && <span className="truncate text-sm">{label}</span>}
                 </button>
                 );
             })}

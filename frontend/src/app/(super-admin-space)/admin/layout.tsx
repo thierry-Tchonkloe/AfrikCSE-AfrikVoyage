@@ -3,11 +3,12 @@
 import { useState, useEffect, useLayoutEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck, Handshake, Plug, DollarSign, Headphones, BarChart3, Code2, Globe, Plane, ShoppingBag } from "lucide-react";
+import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck, Handshake, Plug, DollarSign, Headphones, BarChart3, Code2, Globe, Plane, ShoppingBag, PackageCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
 import { useTheme } from "@/hooks/useTheme";
 import { adminService } from "@/services/admin/admin.service";
+import { partnersService } from "@/services/admin/partners.service";
 import { GlobalSearch } from "@/components/shared/GlobalSearch";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
@@ -15,7 +16,7 @@ import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 const NAV_ITEMS = [
     { href: "/admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { href: "/admin/companies", label: "Entreprises", icon: Building2 },
-    { href: "/admin/validations", label: "Validations", icon: ClipboardCheck, badge: true },
+    { href: "/admin/validations", label: "Validations", icon: ClipboardCheck, badge: "orgs" as const },
     { href: "/admin/messages", label: "Messagerie", icon: MessageSquare },
     { href: "/admin/notifications/templates", label: "Templates notif.", icon: Bell },
     { href: "/admin/notifications/logs",      label: "Logs notif.",      icon: Logs },
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
     { href: "/admin/plans", label: "Gérer les Plans", icon: LayoutTemplate },
     { href: "/admin/access",       label: "Gérer les Accès",  icon: ShieldCheck },
     { href: "/admin/partners",       label: "Partenaires",       icon: Handshake },
+    { href: "/admin/partners/offers", label: "Offres partenaires", icon: PackageCheck, badge: "offers" as const },
     { href: "/admin/travel-catalog", label: "Catalogue Voyage",  icon: Plane },
     { href: "/admin/commissions",    label: "Commissions",       icon: DollarSign },
     { href: "/admin/orders",         label: "Commandes",          icon: ShoppingBag },
@@ -70,6 +72,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         const interval = setInterval(loadPendingCount, 60000);
         return () => clearInterval(interval);
     }, []);
+
+    // Nombre d'offres partenaires en attente de revue — même logique de badge.
+    const [pendingOffersCount, setPendingOffersCount] = useState(0);
+    useEffect(() => {
+        const loadPendingOffers = () => {
+            partnersService
+                .getPendingOffers()
+                .then((offers) => setPendingOffersCount(offers.length))
+                .catch(() => {});
+        };
+        loadPendingOffers();
+        const interval = setInterval(loadPendingOffers, 60000);
+        return () => clearInterval(interval);
+    }, []);
+    const badgeCounts = { orgs: pendingCount, offers: pendingOffersCount };
 
     const { user, loading } = useRouteGuard("super-admin");
 
@@ -140,7 +157,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Navigation */}
             <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
             {NAV_ITEMS.map(({ href, label, icon: Icon, badge }) => {
-                const active = pathname.startsWith(href);
+                // La route la plus spécifique gagne (ex: /admin/partners/offers
+                // ne doit pas aussi surligner /admin/partners).
+                const bestMatch = NAV_ITEMS
+                    .map((n) => n.href)
+                    .filter((h) => pathname.startsWith(h))
+                    .sort((a, b) => b.length - a.length)[0];
+                const active = href === bestMatch;
                 return (
                 <button
                     key={href}
@@ -162,7 +185,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Icon size={18} className="shrink-0" />
                     {sidebarOpen && <span className="truncate">{label}</span>}
                     {/* Badge demandes en attente */}
-                    {badge && pendingCount > 0 && (
+                    {badge && badgeCounts[badge] > 0 && (
                     <span
                         className={cn(
                         "text-white text-xs rounded-full px-1.5 py-0.5 font-bold",
@@ -170,7 +193,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         )}
                         style={{ background: "#ef4444" }}
                     >
-                        {pendingCount}
+                        {badgeCounts[badge]}
                     </span>
                     )}
                 </button>
@@ -233,7 +256,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Titre de la page courant */}
             <div className="hidden lg:block shrink-0">
                 <p className="text-sm font-semibold">
-                {NAV_ITEMS.find((n) => pathname.startsWith(n.href))?.label || "Admin"}
+                {[...NAV_ITEMS].sort((a, b) => b.href.length - a.href.length).find((n) => pathname.startsWith(n.href))?.label || "Admin"}
                 </p>
             </div>
 
