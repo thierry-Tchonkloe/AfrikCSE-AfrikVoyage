@@ -76,10 +76,9 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
 
     if (loading || !user) return null;
 
-    // Couleurs pilotées par le système de thémisation dynamique (cf. useTheme/theme.ts) :
-    // sidebar sur la teinte "brand-dark", accent et états actifs sur la couleur primaire.
-    const SIDEBAR_BG  = "var(--color-brand-dark)";
-    const SIDEBAR_ACTIVE = "var(--color-primary)";
+    // Même design que l'espace Super Admin (cf. admin/layout.tsx) : sidebar
+    // claire/sombre selon le mode, la couleur primaire ne sert que d'accent
+    // (logo, état actif, avatar) — pas de bloc de fond coloré à part.
     const ACCENT = "var(--color-primary)";
 
     return (
@@ -97,16 +96,14 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
             le bouton "menu" du header ; toujours visible et repliable sur desktop */}
         <aside
             className={cn(
-            "fixed lg:static inset-y-0 left-0 z-30 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:transition-[width]",
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            "fixed lg:static inset-y-0 left-0 z-30 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:transition-[width] border-r",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full",
+            darkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
             )}
-            style={{
-            width: sidebarOpen ? "220px" : "64px",
-            background: SIDEBAR_BG,
-            }}
+            style={{ width: sidebarOpen ? "220px" : "64px" }}
         >
             {/* Logo */}
-            <div className="flex items-center h-16 px-3 gap-2 border-b border-white/10">
+            <div className="flex items-center h-16 px-3 gap-2 border-b border-gray-200 dark:border-gray-700">
             {sidebarOpen ? (
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                 <div
@@ -116,8 +113,8 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                     A
                 </div>
                 <div className="min-w-0">
-                    <p className="text-xs font-bold text-white truncate">AfrikCSE &</p>
-                    <p className="text-xs font-bold text-white truncate">AfrikVoyage</p>
+                    <p className="text-xs font-bold truncate" style={{ color: ACCENT }}>AfrikCSE &</p>
+                    <p className="text-xs font-bold truncate" style={{ color: ACCENT }}>AfrikVoyage</p>
                 </div>
                 </div>
             ) : (
@@ -132,7 +129,7 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
             )}
             <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-1 rounded hover:bg-white/10 text-white/60 shrink-0"
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 shrink-0"
             >
                 {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
             </button>
@@ -149,27 +146,26 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                         router.push(href);
                         if (window.innerWidth < 1024) setSidebarOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all"
-                    style={active
-                    ? { background: SIDEBAR_ACTIVE, color: "white", fontWeight: 600 }
-                    : { color: "rgba(255,255,255,0.6)" }
-                    }
+                    className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                        active
+                        ? "text-white"
+                        : darkMode
+                        ? "text-gray-400 hover:bg-gray-800 hover:text-gray-100"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                    style={active ? { background: ACCENT } : {}}
                     title={!sidebarOpen ? label : undefined}
                 >
                     <Icon size={17} className="shrink-0" />
                     {sidebarOpen && <span className="truncate text-xs">{label}</span>}
-                    {/* Indicateur actif */}
-                    {active && sidebarOpen && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full"
-                        style={{ background: ACCENT }} />
-                    )}
                 </button>
                 );
             })}
             </nav>
 
             {/* Séparateur */}
-            <div className="border-t border-white/10 mx-3" />
+            <div className="border-t border-gray-200 dark:border-gray-700 mx-3" />
 
             {/* Nav bas (profile, paramètres) */}
             <nav className="py-3 space-y-0.5 px-2">
@@ -182,11 +178,15 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                         router.push(href);
                         if (window.innerWidth < 1024) setSidebarOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all"
-                    style={active
-                    ? { background: SIDEBAR_ACTIVE, color: "white" }
-                    : { color: "rgba(255,255,255,0.5)" }
-                    }
+                    className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                        active
+                        ? "text-white"
+                        : darkMode
+                        ? "text-gray-400 hover:bg-gray-800 hover:text-gray-100"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                    style={active ? { background: ACCENT } : {}}
                     title={!sidebarOpen ? label : undefined}
                 >
                     <Icon size={17} className="shrink-0" />
@@ -197,7 +197,7 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
             </nav>
 
             {/* User bas de sidebar */}
-            <div className="p-3 border-t border-white/10">
+            <div className="p-3 border-t border-gray-200 dark:border-gray-700">
             {sidebarOpen ? (
                 <div className="flex items-center gap-2">
                 <UserAvatar
@@ -208,23 +208,21 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                     className="w-8 h-8 text-xs"
                 />
                 <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-white truncate">
+                    <p className="text-xs font-semibold truncate">
                     {user.firstName} {user.lastName}
                     </p>
-                    <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.5)" }}>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                     {user.role.replace("_", " ")}
                     </p>
                 </div>
                 <button onClick={logout} title="Déconnexion"
-                    className="p-1 rounded hover:bg-white/10"
-                    style={{ color: "rgba(255,255,255,0.5)" }}>
+                    className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400">
                     <LogOut size={14} />
                 </button>
                 </div>
             ) : (
-                <button onClick={logout}
-                className="w-full flex justify-center p-1.5 rounded hover:bg-white/10"
-                style={{ color: "rgba(255,255,255,0.4)" }}>
+                <button onClick={logout} title="Déconnexion"
+                className="w-full flex justify-center p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400">
                 <LogOut size={16} />
                 </button>
             )}
