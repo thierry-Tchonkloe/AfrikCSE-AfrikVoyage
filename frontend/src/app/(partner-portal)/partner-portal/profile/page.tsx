@@ -28,10 +28,10 @@ export default function PartnerProfilePage() {
                 setForm({
                     name:         p.name,
                     sector:       p.sector,
-                    description:  "",
+                    description:  p.description ?? "",
                     contactEmail: p.contactEmail ?? "",
                     websiteUrl:   p.websiteUrl ?? "",
-                    phone:        "",
+                    phone:        p.phone ?? "",
                 });
             } catch (err) {
                 toast.error(getErrorMessage(err, "Erreur de chargement"));

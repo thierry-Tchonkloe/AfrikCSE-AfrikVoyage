@@ -113,7 +113,9 @@ export interface Partner {
     name:             string;
     sector:           string;
     logoUrl?:         string | null;
+    description?:     string | null;
     contactEmail?:    string | null;
+    phone?:           string | null;
     websiteUrl?:      string | null;
     notes?:           string | null;
     status:           PartnerStatus;
