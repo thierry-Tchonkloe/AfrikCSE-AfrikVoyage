@@ -17,7 +17,11 @@ export const createStaffSchema = z.object({
 });
 
 export const updateProfileSchema = z.object({
+    name:         z.string().min(1).optional(),
+    sector:       z.string().min(1).optional(),
+    description:  z.string().optional(),
     contactEmail: z.string().email().optional(),
+    phone:        z.string().optional(),
     websiteUrl:   z.string().url().optional(),
     notes:        z.string().optional(),
     logoUrl:      z.string().url().optional(),

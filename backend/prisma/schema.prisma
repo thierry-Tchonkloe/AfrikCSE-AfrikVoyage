@@ -994,7 +994,9 @@ model Partner {
   name            String
   sector          String
   logoUrl         String?
+  description     String?
   contactEmail    String?
+  phone           String?
   websiteUrl      String?
   notes           String?
   status          PartnerStatus @default(DRAFT)

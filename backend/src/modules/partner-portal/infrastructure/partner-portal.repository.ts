@@ -84,7 +84,11 @@ export class PartnerPortalRepository {
     async updatePartnerProfile(
         partnerId: string,
         data: Partial<{
+            name:         string;
+            sector:       string;
+            description:  string;
             contactEmail: string;
+            phone:        string;
             websiteUrl:   string;
             notes:        string;
             logoUrl:      string;
