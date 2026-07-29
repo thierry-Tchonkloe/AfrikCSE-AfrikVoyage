@@ -863,12 +863,27 @@ model BenefitCatalogItem {
   // ─── V3 Sprint 1 ────────────────────────────────────
   cashbackRuleId     String?
   cashbackRule       CashbackRule? @relation(fields: [cashbackRuleId], references: [id])
+  // ─── Validation SA des offres partenaires ───────────
+  // Distinct de `isActive` (gate d'affichage catalogue) : trace où en est
+  // l'offre dans le circuit de revue Super Admin. Les offres créées via le
+  // catalogue interne (sans partnerId) restent APPROVED par défaut — seules
+  // les offres soumises par un partenaire démarrent en PENDING.
+  reviewStatus       OfferReviewStatus @default(APPROVED)
+  reviewNote         String?
+  reviewedAt         DateTime?
+  reviewedById       String?
 
   auditEntries     OfferAuditEntry[]
   tickets          Ticket[]
   bookings         Booking[]
 
   @@map("benefit_catalog_items")
+}
+
+enum OfferReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 // ─── USER DOCUMENT ─────────────────────────────────────

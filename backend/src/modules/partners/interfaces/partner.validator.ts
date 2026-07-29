@@ -20,6 +20,14 @@ export const createPartnerSchema = z.object({
 
 export const updatePartnerSchema = createPartnerSchema.partial();
 
+export const rejectOfferSchema = z.object({
+    note: z.string().min(10, "Précisez la raison du refus (min 10 caractères)"),
+});
+
+// Param du segment `/offers/:offerId/...` (nom différent de "id" -> schéma local dédié)
+export const offerIdParamSchema = z.object({ offerId: z.string().min(1) });
+export type OfferIdParam = z.infer<typeof offerIdParamSchema>;
+
 export const filterPartnerSchema = z.object({
     status:    z.enum(["DRAFT", "ACTIVE", "INACTIVE", "SUSPENDED"]).optional(),
     scopeType: z.enum(["CSE", "VOYAGE", "BOTH"]).optional(),

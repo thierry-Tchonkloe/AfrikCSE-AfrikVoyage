@@ -173,6 +173,9 @@ export interface CatalogItem {
     stock?:               number | null;
     publishedAt?:         string | null;
     createdAt:            string;
+    reviewStatus?:        "PENDING" | "APPROVED" | "REJECTED";
+    reviewNote?:          string | null;
+    reviewedAt?:          string | null;
     partner?: {
         id:      string;
         name:    string;

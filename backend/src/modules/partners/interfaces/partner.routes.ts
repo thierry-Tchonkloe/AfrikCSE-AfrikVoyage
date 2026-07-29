@@ -11,6 +11,12 @@ const ctrl = new PartnerController();
 router.use(authenticate);
 router.use(authorize("SUPER_ADMIN"));
 
+// Offres partenaires en attente de revue — routes fixes déclarées avant `/:id`
+// pour ne jamais être capturées par le paramètre générique.
+router.get("/offers/pending",           ctrl.listPendingOffers.bind(ctrl));
+router.patch("/offers/:offerId/approve", ctrl.approveOffer.bind(ctrl));
+router.patch("/offers/:offerId/reject",  ctrl.rejectOffer.bind(ctrl));
+
 router.get("/",             ctrl.list.bind(ctrl));
 router.post("/",            ctrl.create.bind(ctrl));
 router.get("/:id",          ctrl.getById.bind(ctrl));

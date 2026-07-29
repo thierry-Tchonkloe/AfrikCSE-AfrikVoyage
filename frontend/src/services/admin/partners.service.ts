@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import { Partner, PartnerSyncLog } from "@/types";
+import { Partner, PartnerSyncLog, CatalogItem } from "@/types";
 
 export interface PartnerFilters {
     status?:    string;
@@ -48,6 +48,21 @@ export const partnersService = {
 
     async getSyncLogs(id: string): Promise<PartnerSyncLog[]> {
         const { data } = await api.get(`/partners/${id}/logs`);
+        return data;
+    },
+
+    async getPendingOffers(): Promise<CatalogItem[]> {
+        const { data } = await api.get("/partners/offers/pending");
+        return data;
+    },
+
+    async approveOffer(offerId: string): Promise<{ message: string; offer: CatalogItem }> {
+        const { data } = await api.patch(`/partners/offers/${offerId}/approve`);
+        return data;
+    },
+
+    async rejectOffer(offerId: string, note: string): Promise<{ message: string; offer: CatalogItem }> {
+        const { data } = await api.patch(`/partners/offers/${offerId}/reject`, { note });
         return data;
     },
 };

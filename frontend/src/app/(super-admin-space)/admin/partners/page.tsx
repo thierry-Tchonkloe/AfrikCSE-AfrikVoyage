@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
-    Plus, Search, RefreshCw, Trash2, Edit, Loader2, Wifi, WifiOff, Globe,
+    Plus, Search, RefreshCw, Trash2, Edit, Loader2, Wifi, WifiOff, Globe, PackageCheck,
 } from "lucide-react";
 import { partnersService } from "@/services/admin/partners.service";
 import { Partner, PartnerStatus, PartnerScope } from "@/types";
@@ -94,13 +94,21 @@ export default function PartnersPage() {
                     <h1 className="text-xl font-bold text-gray-900">Partenaires</h1>
                     <p className="text-sm text-gray-500">Gérez les partenaires CSE et Voyage de la plateforme</p>
                 </div>
-                <button
-                    onClick={() => router.push("/admin/partners/new")}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-medium"
-                    style={{ background: "var(--color-primary)" }}
-                >
-                    <Plus size={15} /> Nouveau partenaire
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => router.push("/admin/partners/offers")}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50"
+                    >
+                        <PackageCheck size={15} /> Offres à valider
+                    </button>
+                    <button
+                        onClick={() => router.push("/admin/partners/new")}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-medium"
+                        style={{ background: "var(--color-primary)" }}
+                    >
+                        <Plus size={15} /> Nouveau partenaire
+                    </button>
+                </div>
             </div>
 
             {/* Filtres */}
