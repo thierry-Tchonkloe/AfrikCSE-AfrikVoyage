@@ -4,8 +4,11 @@ import {
     createPartnerSchema,
     updatePartnerSchema,
     filterPartnerSchema,
+    rejectOfferSchema,
+    OfferIdParam,
 } from "./partner.validator";
 import { IdParamString } from "../../../core/validators/param.validators";
+import { logAudit } from "../../../core/utils/audit";
 
 const service = new PartnerService();
 
@@ -79,6 +82,50 @@ export class PartnerController {
         try {
             const data = await service.getSyncLogs(req.params.id);
             res.json(data);
+        } catch (err: any) {
+            res.status(err.statusCode ?? 500).json({ message: err.message });
+        }
+    }
+
+    async listPendingOffers(_req: Request, res: Response): Promise<void> {
+        const data = await service.listPendingOffers();
+        res.json(data);
+    }
+
+    async approveOffer(req: Request<OfferIdParam>, res: Response): Promise<void> {
+        try {
+            const offer = await service.approveOffer(req.params.offerId, req.user!.userId);
+            await logAudit({
+                action:   "PARTNER_OFFER_APPROVED",
+                entity:   "BenefitCatalogItem",
+                entityId: offer.id,
+                userId:   req.user!.userId,
+                newValue: { isActive: true },
+                req,
+            });
+            res.status(200).json({ message: "Offre validée", offer });
+        } catch (err: any) {
+            res.status(err.statusCode ?? 500).json({ message: err.message });
+        }
+    }
+
+    async rejectOffer(req: Request<OfferIdParam>, res: Response): Promise<void> {
+        const parsed = rejectOfferSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({ errors: parsed.error.flatten() });
+            return;
+        }
+        try {
+            const offer = await service.rejectOffer(req.params.offerId, req.user!.userId, parsed.data.note);
+            await logAudit({
+                action:   "PARTNER_OFFER_REJECTED",
+                entity:   "BenefitCatalogItem",
+                entityId: offer.id,
+                userId:   req.user!.userId,
+                newValue: parsed.data,
+                req,
+            });
+            res.status(200).json({ message: "Offre refusée", offer });
         } catch (err: any) {
             res.status(err.statusCode ?? 500).json({ message: err.message });
         }

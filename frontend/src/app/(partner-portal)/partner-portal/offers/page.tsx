@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Pencil, ToggleLeft, ToggleRight, X, Loader2, Layers } from "lucide-react";
+import { Plus, Pencil, Clock, CheckCircle2, XCircle, X, Loader2, Layers } from "lucide-react";
 import { partnerPortalService, PartnerOffer, OfferInput } from "@/services/partner/partner-portal.service";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
-const EMPTY_FORM: OfferInput = { title: "", category: "", employeePrice: 0, companyPrice: 0, subsidyPct: 0, isActive: true };
+const EMPTY_FORM: OfferInput = { title: "", category: "", employeePrice: 0, companyPrice: 0, subsidyPct: 0 };
+
+const REVIEW_BADGE: Record<PartnerOffer["reviewStatus"], { label: string; className: string; icon: typeof Clock }> = {
+    PENDING:  { label: "En attente de validation", className: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: Clock },
+    APPROVED: { label: "Active",                   className: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle2 },
+    REJECTED: { label: "Refusée",                   className: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",         icon: XCircle },
+};
 
 const CATEGORIES = ["Restauration", "Loisirs", "Sport", "Culture", "Bien-être", "Transport", "Éducation", "Autre"];
 
@@ -43,7 +49,6 @@ export default function PartnerOffersPage() {
             category:      o.category,
             stock:         o.stock ?? undefined,
             validUntil:    o.validUntil ? o.validUntil.slice(0, 10) : "",
-            isActive:      o.isActive,
         });
         setShowModal(true);
     };
@@ -76,15 +81,6 @@ export default function PartnerOffersPage() {
         }
     };
 
-    const toggleActive = async (o: PartnerOffer) => {
-        try {
-            const updated = await partnerPortalService.updateOffer(o.id, { isActive: !o.isActive });
-            setOffers((prev) => prev.map((x) => x.id === o.id ? updated : x));
-        } catch (err) {
-            toast.error(getErrorMessage(err, "Erreur"));
-        }
-    };
-
     const fmt = (v: number) => new Intl.NumberFormat("fr-FR").format(v);
 
     return (
@@ -114,27 +110,29 @@ export default function PartnerOffersPage() {
                 </div>
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {offers.map((o) => (
+                    {offers.map((o) => {
+                        const review = REVIEW_BADGE[o.reviewStatus];
+                        const ReviewIcon = review.icon;
+                        return (
                         <div key={o.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 flex flex-col gap-3">
                             <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
                                     <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{o.title}</p>
                                     {o.category && <span className="text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded px-1.5 py-0.5">{o.category}</span>}
                                 </div>
-                                <div className="flex gap-1.5 shrink-0">
-                                    <button onClick={() => openEdit(o)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500">
-                                        <Pencil size={14} />
-                                    </button>
-                                    <button onClick={() => toggleActive(o)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        {o.isActive
-                                            ? <ToggleRight size={18} className="text-green-500" />
-                                            : <ToggleLeft  size={18} className="text-gray-400" />}
-                                    </button>
-                                </div>
+                                <button onClick={() => openEdit(o)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 shrink-0">
+                                    <Pencil size={14} />
+                                </button>
                             </div>
 
                             {o.description && (
                                 <p className="text-xs text-gray-500 line-clamp-2">{o.description}</p>
+                            )}
+
+                            {o.reviewStatus === "REJECTED" && o.reviewNote && (
+                                <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-2.5 py-1.5">
+                                    Motif du refus : {o.reviewNote}
+                                </p>
                             )}
 
                             <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
@@ -142,15 +140,13 @@ export default function PartnerOffersPage() {
                                     {fmt(o.employeePrice)} <span className="text-xs font-normal text-gray-400">XOF employé</span>
                                     <span className="text-xs font-normal text-gray-400"> · {fmt(o.companyPrice)} entreprise</span>
                                 </p>
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                    o.isActive ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                               : "bg-gray-100 text-gray-500"
-                                }`}>
-                                    {o.isActive ? "Active" : "Inactive"}
+                                <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${review.className}`}>
+                                    <ReviewIcon size={12} /> {review.label}
                                 </span>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
@@ -212,12 +208,9 @@ export default function PartnerOffersPage() {
                                     onChange={(e) => setForm((f) => ({ ...f, subsidyPct: parseInt(e.target.value) || 0 }))}
                                     className="input-field" />
                             </Field>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={form.isActive ?? true}
-                                    onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-                                    className="h-4 w-4 rounded border-gray-300 text-blue-600" />
-                                <span className="text-sm text-gray-700 dark:text-gray-300">Offre active (visible par les employés)</span>
-                            </label>
+                            <p className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-2.5 py-2">
+                                {editing ? "Toute modification renvoie l'offre en validation auprès du Super Admin." : "Cette offre sera soumise au Super Admin avant d'être visible par les employés."}
+                            </p>
                         </div>
 
                         <div className="flex justify-end gap-2 pt-2">

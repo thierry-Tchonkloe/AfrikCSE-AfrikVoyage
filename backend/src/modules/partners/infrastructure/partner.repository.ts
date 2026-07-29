@@ -1,6 +1,7 @@
 import { prisma } from "../../../core/config/prisma";
 import { Prisma, PartnerStatus, PartnerScope } from "@prisma/client";
 import { encrypt, decrypt } from "../../../core/utils/crypto";
+import { AppError } from "../../../core/errors/app.error";
 
 export interface PartnerFilters {
     status?: PartnerStatus;
@@ -195,6 +196,85 @@ export class PartnerRepository {
         return prisma.partner.update({
             where: { id },
             data: { warningCount: { increment: 1 }, flaggedAt: new Date() },
+        });
+    }
+
+    // ── Validation des offres soumises par les partenaires ─────────────────────
+
+    async listPendingOffers() {
+        return prisma.benefitCatalogItem.findMany({
+            where:   { partnerId: { not: null }, reviewStatus: "PENDING" },
+            orderBy: { createdAt: "asc" },
+            include: { partner: { select: { id: true, name: true, logoUrl: true } } },
+        });
+    }
+
+    async approveOffer(offerId: string, adminUserId: string) {
+        const offer = await this.getPendingOfferOrThrow(offerId);
+
+        const updated = await prisma.benefitCatalogItem.update({
+            where: { id: offerId },
+            data: {
+                isActive:     true,
+                reviewStatus: "APPROVED",
+                reviewNote:   null,
+                reviewedAt:   new Date(),
+                reviewedById: adminUserId,
+            },
+        });
+        await this.writeOfferAudit(offer, adminUserId, "APPROVED");
+        return updated;
+    }
+
+    async rejectOffer(offerId: string, adminUserId: string, note: string) {
+        const offer = await this.getPendingOfferOrThrow(offerId);
+
+        const updated = await prisma.benefitCatalogItem.update({
+            where: { id: offerId },
+            data: {
+                isActive:     false,
+                reviewStatus: "REJECTED",
+                reviewNote:   note,
+                reviewedAt:   new Date(),
+                reviewedById: adminUserId,
+            },
+        });
+        await this.writeOfferAudit(offer, adminUserId, "REJECTED", note);
+        return updated;
+    }
+
+    /** Cantonné aux offres soumises par un partenaire, en attente de revue (anti-IDOR / anti-double-traitement) */
+    private async getPendingOfferOrThrow(offerId: string) {
+        const offer = await prisma.benefitCatalogItem.findFirst({
+            where: { id: offerId, partnerId: { not: null } },
+        });
+        if (!offer) throw new AppError("Offre partenaire introuvable", 404);
+        if (offer.reviewStatus !== "PENDING") {
+            throw new AppError("Cette offre a déjà été traitée", 409);
+        }
+        return offer;
+    }
+
+    private async writeOfferAudit(
+        offer: { id: string; partnerId: string | null },
+        changedBy: string,
+        action: "APPROVED" | "REJECTED",
+        note?: string
+    ) {
+        const lastAudit = await prisma.offerAuditEntry.findFirst({
+            where:   { offerId: offer.id },
+            orderBy: { version: "desc" },
+            select:  { version: true },
+        });
+        await prisma.offerAuditEntry.create({
+            data: {
+                offerId:   offer.id,
+                partnerId: offer.partnerId ?? undefined,
+                action,
+                changedBy,
+                snapshot:  note ? { note } : {},
+                version:   (lastAudit?.version ?? 0) + 1,
+            },
         });
     }
 }
