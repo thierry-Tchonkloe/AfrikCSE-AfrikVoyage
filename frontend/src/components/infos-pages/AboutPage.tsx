@@ -1,673 +1,902 @@
+// /src/components/infos-pages/AboutPage.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { motion, useAnimation, useInView } from "framer-motion";
+import Link from "next/link";
+import { motion, useInView, useAnimation, AnimatePresence } from "framer-motion";
 import {
-    Rocket, Target, Globe, Building2, MapPin, Star,
-    ShieldCheck, Leaf, Award, Lightbulb, Trophy, Users, Zap,
-    Medal
+  Rocket,
+  Target,
+  Globe,
+  Building2,
+  MapPin,
+  Star,
+  ShieldCheck,
+  Leaf,
+  Award,
+  Lightbulb,
+  Trophy,
+  Users,
+  Zap,
+  Medal,
+  Gift,
+  Ticket,
+  Smartphone,
+  ShoppingBag,
+  Film,
+  Dumbbell,
+  Crown,
+  Coffee,
+  Heart,
+  BadgeCheck,
+  ArrowUpRight,
+  CircleCheck,
+  Plane,
+  Hotel,
+  Briefcase,
+  CreditCard,
+  Headphones,
+  Calendar,
+  Compass,
+  TrendingUp,
+  Sparkles,
+  GemIcon,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  MessageCircle,
+  Phone,
+  Mail,
+  Send,
+  ChevronDown,
+  Check,
+  Clock,
+  FileText,
+  User,
+  PhoneCall,
+  ArrowRight,
+  HelpCircle,
+  Quote,
+  ChevronLeft,
+  ChevronRight,
+  Star as StarIcon,
+  Settings, // Ajout de l'import Settings
+  Bell,     // Ajout de l'import Bell
+  Apple,    // Ajout de l'import Apple
+  Monitor,
+  LayoutDashboard,
+  Megaphone,
+  Wallet,
+  Building,
+  GraduationCap,
+  Handshake,
+  Lightbulb as LightbulbIcon,
+  ThumbsUp,
+  BarChart3,
+  FileCheck,
+  Grid3x3,
+  Layers,
+  PanelRight,
+  Sparkle,
+  Crown as CrownIcon,
+  Gem,
+  Flame,
+  Sun,
+  Moon,
+  Cloud,
+  Database,
+  Server,
+  Code,
+  Cpu,
+  Globe2,
+  Ship,
+  Train,
+  Bus,
+  Car,
+  Bike,
+  Coffee as CoffeeIcon,
+  Utensils,
+  Wine,
+  Cake,
+  Gift as GiftIcon,
+  Award as AwardIcon,
+  Medal as MedalIcon,
+  Trophy as TrophyIcon,
+  ShieldCheck as ShieldCheckIcon,
+  Leaf as LeafIcon,
+  Users as UsersIcon,
+  Heart as HeartIcon,
+  Star as StarIcon2,
+  Sparkles as SparklesIcon,
+  Zap as ZapIcon,
+  Rocket as RocketIcon,
+  Target as TargetIcon,
+  Globe as GlobeIcon,
+  Building2 as BuildingIcon,
+  MapPin as MapPinIcon,
+  Calendar as CalendarIcon,
+  Clock as ClockIcon,
+  FileText as FileTextIcon,
+  User as UserIcon,
+  PhoneCall as PhoneCallIcon,
+  ArrowRight as ArrowRightIcon,
+  HelpCircle as HelpCircleIcon,
+  Quote as QuoteIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  Settings as SettingsIcon,
+  Bell as BellIcon,
+  Apple as AppleIcon,
+  Monitor as MonitorIcon,
+  LayoutDashboard as LayoutDashboardIcon,
+  Megaphone as MegaphoneIcon,
+  Wallet as WalletIcon,
+  Building as BuildingIcon2,
+  GraduationCap as GraduationCapIcon,
+  Handshake as HandshakeIcon,
+  Lightbulb as LightbulbIcon2,
+  ThumbsUp as ThumbsUpIcon,
+  BarChart3 as BarChartIcon,
+  FileCheck as FileCheckIcon,
+  Grid3x3 as GridIcon,
+  Layers as LayersIcon,
+  PanelRight as PanelRightIcon,
+  Sparkle as SparkleIcon,
+  Crown as CrownIcon2,
+  Gem as GemIcon2,
+  Flame as FlameIcon,
+  Sun as SunIcon,
+  Moon as MoonIcon,
+  Cloud as CloudIcon,
+  Database as DatabaseIcon,
+  Server as ServerIcon,
+  Code as CodeIcon,
+  Cpu as CpuIcon,
+  Globe2 as GlobeIcon2,
+  Ship as ShipIcon,
+  Train as TrainIcon,
+  Bus as BusIcon,
+  Car as CarIcon,
+  Bike as BikeIcon,
+  Coffee as CoffeeIcon2,
+  Utensils as UtensilsIcon,
+  Wine as WineIcon,
+  Cake as CakeIcon
 } from "lucide-react";
 
-// ─── TYPES ────────────────────────────────────────────────────────────────────
-interface TeamMember { 
-    name: string; 
-    role: string; 
-    title: string; 
-    description: string; 
-    imageUrl?: string;
-    linkedin?: string;
-    country?: string;
-}
-interface Partner {
-    name: string;
-    logo: string;
-    industry: string;
-}
-interface Office {
-    city: string;
-    country: string;
-    region: string;
-    coordinates: { x: number; y: number };
-    since: string;
-    color: string;
-}
+// ─── DONNÉES ──────────────────────────────────────────────────────────────
 
-// ─── DONNÉES ──────────────────────────────────────────────────────────────────
-
-// Membres de l'équipe
-const teamMembers: TeamMember[] = [
-    { name: "Amadou Diallo", role: "PDG & Fondateur", title: "PDG", description: "Ancien cadre chez Orange, il a piloté la transformation digitale de plusieurs entreprises africaines.", imageUrl: undefined, linkedin: "#", country: "Sénégal" },
-    { name: "Fatima Benali", role: "Directrice Technique", title: "CTO", description: "Architecte logicielle experte en cloud et intelligence artificielle.", imageUrl: undefined, linkedin: "#", country: "Maroc" },
-    { name: "Kwame Asante", role: "Directeur des Opérations", title: "COO", description: "Spécialiste en opérations internationales sur 15 pays africains.", imageUrl: undefined, linkedin: "#", country: "Ghana" },
-    { name: "Aisha Kone", role: "Directrice Produit", title: "CPO", description: "Designer produit primée, experte en expérience utilisateur.", imageUrl: undefined, linkedin: "#", country: "Côte d'Ivoire" },
-    { name: "Oumar Sylla", role: "Directeur Commercial", title: "Sales", description: "Expert en développement commercial en Afrique de l'Ouest.", imageUrl: undefined, linkedin: "#", country: "Guinée" },
-    { name: "Nadia Bencheikh", role: "Directrice Produit", title: "Product", description: "Passionnée par l'innovation produit et les nouvelles technologies.", imageUrl: undefined, linkedin: "#", country: "Tunisie" },
-    { name: "Jean Kambaji", role: "Directeur Technique", title: "Engineering", description: "Expert en infrastructure cloud et architecture scalable.", imageUrl: undefined, linkedin: "#", country: "République Démocratique du Congo" },
-    { name: "Sophie Amoah", role: "Directrice Clientèle", title: "Success", description: "Dédiée à la satisfaction client et à l'accompagnement personnalisé.", imageUrl: undefined, linkedin: "#", country: "Ghana" },
+// Statistiques clés - inspirées de HappyPal
+const stats = [
+  { value: "500K+", label: "Bénéficiaires", icon: <Users className="w-5 h-5" />, color: "indigo" },
+  { value: "10K+", label: "Entreprises clientes", icon: <Building2 className="w-5 h-5" />, color: "emerald" },
+  { value: "500K+", label: "Offres disponibles", icon: <ShoppingBag className="w-5 h-5" />, color: "purple" },
+  { value: "98%", label: "Satisfaction utilisateurs", icon: <Heart className="w-5 h-5" />, color: "rose" },
 ];
 
-// Partenaires stratégiques
-const partners: Partner[] = [
-    { name: "Air France-KLM", logo: "AF", industry: "Transport aérien" },
-    { name: "Booking.com", logo: "BK", industry: "Hébergement" },
-    { name: "SNCF", logo: "SN", industry: "Transport ferroviaire" },
-    { name: "Orange", logo: "OR", industry: "Télécommunications" },
-    { name: "Ecobank", logo: "EC", industry: "Banque" },
-    { name: "TotalEnergies", logo: "TT", industry: "Énergie" },
-    { name: "Microsoft", logo: "MS", industry: "Cloud" },
-    { name: "Salesforce", logo: "SF", industry: "CRM" },
-    { name: "SAP", logo: "SP", industry: "ERP" },
-    { name: "Accor", logo: "AC", industry: "Hôtellerie" },
+// Avantages - style HappyPal (cartes simples avec icônes)
+const advantages = [
+  {
+    icon: <Gift className="w-6 h-6" />,
+    title: "Billetterie CSE et réductions",
+    description: "Des milliers d'offres irrésistibles, adaptées à tous les moments de vie.",
+    color: "indigo"
+  },
+  {
+    icon: <Smartphone className="w-6 h-6" />,
+    title: "Expérience mobile intuitive",
+    description: "Une application ludique et facile à prendre en main pour tous vos salariés.",
+    color: "emerald"
+  },
+  {
+    icon: <Users className="w-6 h-6" />,
+    title: "Animations qui rapprochent",
+    description: "Des événements qui font vivre le CSE toute l'année et créent du lien.",
+    color: "purple"
+  },
+  {
+    icon: <Headphones className="w-6 h-6" />,
+    title: "Support utilisateur 7j/7",
+    description: "Une équipe réactive à votre écoute pour vous accompagner au quotidien.",
+    color: "amber"
+  }
 ];
 
-// Bureaux en Afrique avec coordonnées précises pour la carte
-const offices: Office[] = [
-    { city: "Dakar", country: "Sénégal", region: "Afrique de l'Ouest", coordinates: { x: 17, y: 38 }, since: "2024", color: "indigo" },
-    { city: "Abidjan", country: "Côte d'Ivoire", region: "Afrique de l'Ouest", coordinates: { x: 22, y: 46 }, since: "2024", color: "emerald" },
-    { city: "Lagos", country: "Nigéria", region: "Afrique de l'Ouest", coordinates: { x: 30, y: 50 }, since: "2025", color: "purple" },
-    { city: "Douala", country: "Cameroun", region: "Afrique Centrale", coordinates: { x: 34, y: 54 }, since: "2025", color: "amber" },
-    { city: "Nairobi", country: "Kenya", region: "Afrique de l'Est", coordinates: { x: 55, y: 60 }, since: "2025", color: "emerald" },
-    { city: "Johannesburg", country: "Afrique du Sud", region: "Afrique Australe", coordinates: { x: 47, y: 80 }, since: "2026", color: "indigo" },
-    { city: "Casablanca", country: "Maroc", region: "Afrique du Nord", coordinates: { x: 13, y: 24 }, since: "2025", color: "teal" },
+// Témoignages - comme sur HappyPal
+const testimonials = [
+  {
+    id: 1,
+    name: "Aurélia & Marie",
+    role: "Élues CSE",
+    text: "Notre CSE travaillait déjà avec un prestataire, le problème, c'est qu'il y avait une offre qui était assez réduite. On a fait appel à notre solution puisqu'on cherchait une nouvelle approche pour nos collaborateurs, pour pouvoir leur proposer davantage d'activités, de bons plans, et côté CSE pour nous faciliter la vie en termes de gestion.",
+    avatar: "AM",
+    color: "indigo"
+  },
+  {
+    id: 2,
+    name: "Nathalie",
+    role: "Élue CSE",
+    text: "Nous avons choisi Club Employés pour sa grande modernité, sa facilité d'utilisation, son ergonomie et son approche 100% digitale que nous ne trouvions nulle part ailleurs. Modernité, liberté et simplicité.",
+    avatar: "N",
+    color: "emerald"
+  },
+  {
+    id: 3,
+    name: "Sonia",
+    role: "Élue CSE",
+    text: "Le CSE de WWF peut enfin tout centraliser au même endroit, que ce soit du côté administrateur ou du côté salarié, qui retrouve tous leurs avantages dans une même application mobile.",
+    avatar: "S",
+    color: "purple"
+  }
 ];
 
-// Timeline d'expansion
-const expansionMilestones = [
-    { year: "2024", title: "Lancement officiel", description: "Création de la plateforme à Dakar", color: "indigo", Icon: Rocket },
-    { year: "Janvier 2025", title: "Premiers clients", description: "Signature des 10 premières entreprises", color: "emerald", Icon: Target },
-    { year: "Mars 2025", title: "Expansion Afrique Ouest", description: "Ouverture à Abidjan et Lomé", color: "purple", Icon: Globe },
-    { year: "Juillet 2025", title: "Afrique Centrale", description: "Bureaux à Douala et Libreville", color: "amber", Icon: Building2 },
-    { year: "Octobre 2025", title: "Afrique de l'Est", description: "Lancement à Nairobi", color: "emerald", Icon: MapPin },
-    { year: "2026", title: "Objectif Afrique Australe", description: "Johannesburg et Luanda en vue", color: "indigo", Icon: Star },
+// Avis utilisateurs
+const userReviews = [
+  { text: "Je suis super contente de l'échange que j'ai eu avec l'assistance. La réponse a été rapide et très claire.", author: "Marie D.", rating: 5 },
+  { text: "Très bonne plateforme facile à utiliser et avec beaucoup de réduction.", author: "Jean P.", rating: 5 },
+  { text: "Très bonne application .ras", author: "Sophie L.", rating: 5 },
+  { text: "La plateforme est très bien faite, permet de profiter de bons plans et de réductions avantageuses.", author: "Thomas M.", rating: 5 },
+  { text: "Globalement le choix est si grand que je m'y retrouve. Le support via chat est très réactif.", author: "Amandine R.", rating: 5 },
 ];
 
-// Valeurs
-const values = [
-    { Icon: Lightbulb, title: "Innovation", description: "Nous repoussons constamment les limites technologiques pour offrir des solutions toujours plus performantes.", color: "indigo" },
-    { Icon: ShieldCheck, title: "Confiance", description: "La sécurité des données et la conformité réglementaire sont au cœur de chacune de nos décisions.", color: "emerald" },
-    { Icon: Trophy, title: "Performance", description: "Nous mesurons notre succès par le retour sur investissement concret de nos clients.", color: "amber" },
-    { Icon: Users, title: "Proximité", description: "Une équipe locale à votre écoute, comprenant vos enjeux et votre culture.", color: "purple" },
-    { Icon: Leaf, title: "Durabilité", description: "Les enjeux RSE sont intégrés dans notre ADN pour un impact positif durable.", color: "emerald" },
-    { Icon: Zap, title: "Agilité", description: "Des solutions qui s'adaptent rapidement à vos besoins et à l'évolution du marché.", color: "indigo" },
-];
+// ─── COMPOSANTS ────────────────────────────────────────────────────────────
 
-// Certifications
-const certifications = [
-    { name: "ISO 27001", description: "Sécurité des données", Icon: ShieldCheck, color: "indigo" },
-    { name: "RGPD", description: "Conformité européenne", Icon: Globe, color: "blue" },
-    { name: "EcoVadis", description: "Performance RSE", Icon: Leaf, color: "emerald" },
-    { name: "FinTech Africa", description: "Label Innovation", Icon: Award, color: "amber" },
-];
-
-// ─── COMPOSANTS ────────────────────────────────────────────────────────────────
-
-// Hero Section - MODIFIÉE : Suppression des statistiques et centrage du contenu
+// Hero Section - style HappyPal (deux parties + carrousel)
 function HeroSection() {
-    return (
-        <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-white">
-            <div className="absolute inset-0 z-0">
-                <video 
-                    autoPlay 
-                    loop 
-                    muted 
-                    playsInline 
-                    className="w-full h-full object-cover"
-                    poster="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format"
-                >
-                    <source src="/videos/bg-video1.mp4" type="video/mp4" />
-                </video>
-                <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/80" />
-            </div>
+  const [activeSlide, setActiveSlide] = useState(0);
+  const slides = [
+    {
+      title: "Simplifiez la gestion du CSE",
+      description: "Une plateforme qui centralise tous vos avantages salariés en un seul endroit, accessible partout, tout le temps.",
+      image: "/images/hero-cse.jpg",
+      cta: "Découvrir"
+    },
+    {
+      title: "Des milliers d'offres à portée de main",
+      description: "Billetterie, cartes cadeaux, réductions locales et nationales : vos salariés profitent de 500K+ offres exclusives.",
+      image: "/images/hero-offers.jpg",
+      cta: "Voir les offres"
+    },
+    {
+      title: "Une expérience mobile ludique",
+      description: "Application intuitive et simple à prendre en main pour que chaque salarié profite de ses avantages en toute autonomie.",
+      image: "/images/hero-mobile.jpg",
+      cta: "Télécharger"
+    }
+  ];
 
-            <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-200 mb-6"
-                >
-                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                    <span className="text-xs font-semibold text-indigo-700">Basé en Afrique · Rayonnement mondial</span>
-                </motion.div>
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
 
-                <motion.h1 
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 }}
-                    className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-slate-900 mb-6"
-                    style={{ fontFamily: "Sanomat, ui-serif" }}
-                >
-                    L'architecte d'une gestion{" "}
-                    <span className="bg-gradient-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
-                        moderne
-                    </span>
-                    <br />
-                    pour l'entreprise africaine
-                </motion.h1>
+  const nextSlide = () => setActiveSlide((prev) => (prev + 1) % slides.length);
+  const prevSlide = () => setActiveSlide((prev) => (prev - 1 + slides.length) % slides.length);
 
-                <motion.p 
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-10"
-                >
-                    Nous transformons la complexité administrative en avantage compétitif — en unifiant la gestion des voyages d'affaires et des services aux salariés sur une seule plateforme.
-                </motion.p>
+  return (
+    <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-white">
+      {/* Partie gauche - Texte */}
+      <div className="relative z-10 w-full lg:w-1/2 px-4 sm:px-6 lg:px-8 py-16 lg:py-0">
+        <div className="max-w-xl mx-auto lg:mx-0">
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-200 mb-6"
+          >
+            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+            <span className="text-xs font-semibold text-indigo-700">Plateforme CSE • 9 ans d'expertise</span>
+          </motion.div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
-                    className="flex flex-wrap gap-4 justify-center"
-                >
-                    <Link href="#" className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all duration-300 hover:scale-105 active:scale-[0.98] shadow-lg shadow-indigo-200/50">
-                        Découvrir notre histoire
-                    </Link>
-                    <Link href="#" className="px-8 py-3.5 border-2 border-slate-200 text-slate-700 rounded-xl font-semibold hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-300 hover:scale-105 active:scale-[0.98]">
-                        Rencontrer l'équipe
-                    </Link>
-                </motion.div>
-            </div>
-        </section>
-    );
+          {/* Titre avec carrousel */}
+          <div className="relative h-30 md:h-35 overflow-hidden mb-4">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeSlide}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.5 }}
+                className="absolute inset-0"
+              >
+                <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-900 leading-[1.1]">
+                  {slides[activeSlide].title}
+                </h1>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Description */}
+          <motion.p
+            key={`desc-${activeSlide}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-lg text-slate-600 mb-8 max-w-lg"
+          >
+            {slides[activeSlide].description}
+          </motion.p>
+
+          {/* CTA */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <Link
+              href="#"
+              className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all hover:scale-105 shadow-lg shadow-indigo-200/50 flex items-center gap-2"
+            >
+              {slides[activeSlide].cta}
+              <ArrowUpRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="#"
+              className="px-8 py-3.5 border-2 border-slate-200 text-slate-700 rounded-xl font-semibold hover:border-indigo-300 hover:bg-indigo-50 transition-all"
+            >
+              Voir la démo
+            </Link>
+          </div>
+
+          {/* Indicateurs de slide */}
+          <div className="flex items-center gap-2 mt-8">
+            {slides.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveSlide(idx)}
+                className={`transition-all duration-300 rounded-full ${
+                  idx === activeSlide
+                    ? 'w-8 h-2 bg-indigo-600'
+                    : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
+                }`}
+              />
+            ))}
+            <span className="text-xs text-slate-400 ml-2">
+              {activeSlide + 1}/{slides.length}
+            </span>
+          </div>
+
+          {/* Statistiques */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t border-slate-100">
+            {stats.map((stat, idx) => (
+              <div key={idx} className="text-center">
+                <div className={`text-2xl font-black text-${stat.color}-600`}>{stat.value}</div>
+                <div className="text-xs text-slate-500 mt-0.5">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Partie droite - Image avec carrousel */}
+      <div className="hidden lg:block w-1/2 relative h-[85vh] bg-slate-100">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeSlide}
+            initial={{ opacity: 0, scale: 1.05 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.6 }}
+            className="absolute inset-0"
+          >
+            <Image
+              src={slides[activeSlide].image}
+              alt={slides[activeSlide].title}
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-linear-to-l from-transparent via-transparent to-white/20" />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Contrôles du carrousel */}
+        <button
+          onClick={prevSlide}
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white transition-all shadow-lg flex items-center justify-center z-10"
+        >
+          <ChevronLeft className="w-5 h-5 text-slate-700" />
+        </button>
+        <button
+          onClick={nextSlide}
+          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white transition-all shadow-lg flex items-center justify-center z-10"
+        >
+          <ChevronRight className="w-5 h-5 text-slate-700" />
+        </button>
+
+        {/* Indicateurs */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {slides.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveSlide(idx)}
+              className={`transition-all duration-300 rounded-full ${
+                idx === activeSlide
+                  ? 'w-8 h-2 bg-white'
+                  : 'w-2 h-2 bg-white/50 hover:bg-white/80'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
-// Stats Section avec animation dynamique
-function StatsSection() {
-    const [animatedValues, setAnimatedValues] = useState([0, 0, 0, 0]);
-    const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.1 });
+// Section "Augmentez l'impact" - style HappyPal
+function ImpactSection() {
+  return (
+    <section className="py-20 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold mb-4">
+            <Sparkles className="w-4 h-4" />
+            Notre mission
+          </span>
+          <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4" style={{ fontFamily: "'Sanomat', ui-serif" }}>
+            Augmentez l'impact du CSE sur le{" "}
+            <span className="bg-linear-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
+              bien-être des salariés
+            </span>
+          </h2>
+          <p className="text-lg text-slate-500">
+            Une plateforme vivante qui enrichit la vie de vos collaborateurs tout au long de l'année
+          </p>
+        </div>
 
-    useEffect(() => {
-        if (!isInView) return;
-        const targets = [528, 54, 96, 31];
-        const duration = 2000;
-        const startTime = Date.now();
-        const animate = () => {
-            const now = Date.now();
-            const progress = Math.min(1, (now - startTime) / duration);
-            setAnimatedValues([
-                Math.floor(progress * targets[0]),
-                Math.floor(progress * targets[1]),
-                Math.floor(progress * targets[2]),
-                Math.floor(progress * targets[3]),
-            ]);
-            if (progress < 1) requestAnimationFrame(animate);
-        };
-        requestAnimationFrame(animate);
-    }, [isInView]);
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {advantages.map((adv, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              whileHover={{ y: -4 }}
+              className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-indigo-200 hover:shadow-lg transition-all text-center"
+            >
+              <div className={`w-14 h-14 rounded-xl bg-${adv.color}-100 flex items-center justify-center mx-auto mb-4`}>
+                <div className={`text-${adv.color}-600`}>{adv.icon}</div>
+              </div>
+              <h3 className="font-bold text-slate-800 mb-2">{adv.title}</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">{adv.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
-    return (
-        <section ref={ref} className="py-20 bg-gradient-to-r from-indigo-600 to-emerald-600">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                    <div className="text-center text-white">
-                        <div className="text-4xl font-black mb-2">{animatedValues[0]}</div>
-                        <div className="text-sm opacity-90">Entreprises clientes</div>
-                        <div className="text-xs text-indigo-200 mt-1">+28% en 2025</div>
-                    </div>
-                    <div className="text-center text-white">
-                        <div className="text-4xl font-black mb-2">{animatedValues[1]}</div>
-                        <div className="text-sm opacity-90">Pays couverts</div>
-                        <div className="text-xs text-indigo-200 mt-1">3 continents</div>
-                    </div>
-                    <div className="text-center text-white">
-                        <div className="text-4xl font-black mb-2">{animatedValues[2]}%</div>
-                        <div className="text-sm opacity-90">Taux d'adoption</div>
-                        <div className="text-xs text-indigo-200 mt-1">+12% vs objectif</div>
-                    </div>
-                    <div className="text-center text-white">
-                        <div className="text-4xl font-black mb-2">-{animatedValues[3]}%</div>
-                        <div className="text-sm opacity-90">Réduction des coûts</div>
-                        <div className="text-xs text-indigo-200 mt-1">moyenne par client</div>
-                    </div>
+// Section "Simplifiez la gestion" - style HappyPal
+function ManagementSection() {
+  const features = [
+    {
+      icon: <SettingsIcon className="w-5 h-5" />,
+      title: "Paramétrage en quelques clics",
+      description: "Dotations-cadeaux et subventions ASC configurées facilement"
+    },
+    {
+      icon: <Users className="w-5 h-5" />,
+      title: "Gestion avancée des utilisateurs",
+      description: "Ouvrants droits et ayants droits gérés simplement"
+    },
+    {
+      icon: <CreditCard className="w-5 h-5" />,
+      title: "Comptabilité ultra-facilitée",
+      description: "Subventions et remboursements automatisés"
+    },
+    {
+      icon: <Headphones className="w-5 h-5" />,
+      title: "Accompagnement expert",
+      description: "De A à Z par nos spécialistes CSE"
+    }
+  ];
+
+  return (
+    <section className="py-20 bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold mb-4">
+              <Zap className="w-4 h-4" />
+              Gestion simplifiée
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4" style={{ fontFamily: "'Sanomat', ui-serif" }}>
+              Simplifiez au maximum votre gestion des budgets
+            </h2>
+            <p className="text-lg text-slate-500 mb-8">
+              Une plateforme qui centralise tout : dotations, subventions, remboursements et distribution aux salariés.
+            </p>
+            <div className="space-y-4">
+              {features.map((feature, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="flex items-start gap-4 p-4 bg-white rounded-xl border border-slate-200"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                    <span className="text-indigo-600">{feature.icon}</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-800">{feature.title}</h4>
+                    <p className="text-sm text-slate-500">{feature.description}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="relative"
+          >
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
+              <Image
+                src="/images/dashboard-cse.jpg"
+                alt="Dashboard CSE"
+                width={600}
+                height={400}
+                className="rounded-2xl"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+              <div className="absolute -bottom-4 -right-4 bg-white rounded-xl shadow-lg p-4 border border-slate-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-sm font-semibold text-slate-700">En direct</span>
+                  <span className="text-xs text-slate-400">1 234 utilisateurs</span>
                 </div>
+              </div>
             </div>
-        </section>
-    );
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
-// Section Mission
-function MissionSection() {
-    const controls = useAnimation();
-    const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.1 });
+// Section "Créez du lien" - style HappyPal
+function ConnectionSection() {
+  const tools = [
+    {
+      icon: <Mail className="w-5 h-5" />,
+      title: "Newsletters",
+      description: "Communication ciblée vers vos salariés"
+    },
+    {
+      icon: <Calendar className="w-5 h-5" />,
+      title: "Événements",
+      description: "Gestion d'inscriptions et voyages"
+    },
+    {
+      icon: <BellIcon className="w-5 h-5" />,
+      title: "Notifications mobiles",
+      description: "Alertes en temps réel"
+    },
+    {
+      icon: <Users className="w-5 h-5" />,
+      title: "Ciblage avancé",
+      description: "Destinataires personnalisés"
+    }
+  ];
 
-    useEffect(() => {
-        if (isInView) controls.start("visible");
-    }, [isInView, controls]);
+  return (
+    <section className="py-20 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="order-2 lg:order-1"
+          >
+            <div className="bg-indigo-50 rounded-3xl p-8 border border-indigo-200">
+              <Image
+                src="/images/mobile-app.jpg"
+                alt="Application mobile"
+                width={500}
+                height={400}
+                className="rounded-2xl mx-auto"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+            </div>
+          </motion.div>
 
-    return (
-        <section ref={ref} className="py-24 bg-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="order-1 lg:order-2"
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold mb-4">
+              <Users className="w-4 h-4" />
+              Créez du lien
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4" style={{ fontFamily: "'Sanomat', ui-serif" }}>
+              Créez du lien entre vos salariés et valorisez les actions du CSE
+            </h2>
+            <p className="text-lg text-slate-500 mb-8">
+              Une suite d'outils simples à prendre en main qui met votre CSE dans la poche des salariés.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              {tools.map((tool, idx) => (
                 <motion.div
-                    initial="hidden"
-                    animate={controls}
-                    variants={{
-                        hidden: { opacity: 0 },
-                        visible: { opacity: 1, transition: { staggerChildren: 0.15, duration: 0.5 } }
-                    }}
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="bg-white p-4 rounded-xl border border-slate-200 text-center"
                 >
-                    <motion.div variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } }} className="text-center max-w-3xl mx-auto mb-16">
-                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold mb-4">
-                            <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                            Notre mission
-                        </span>
-                        <h2 className="text-3xl md:text-5xl font-bold text-slate-800 mb-4" style={{ fontFamily: "Sanomat, ui-serif" }}>
-                            Transformer le chaos en{" "}
-                            <span className="bg-gradient-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
-                                performance mesurable
-                            </span>
-                        </h2>
-                        <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-                            Nous libérons les équipes des ressources humaines et financières des tâches administratives pour qu'elles se concentrent sur l'essentiel.
-                        </p>
-                    </motion.div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-200">
-                            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Target className="w-7 h-7 text-indigo-600" />
-                            </div>
-                            <h3 className="font-bold text-slate-800 mb-2">Notre vision</h3>
-                            <p className="text-sm text-slate-500">Devenir la plateforme de référence pour la gestion d'entreprise en Afrique.</p>
-                        </div>
-                        <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-200">
-                            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Zap className="w-7 h-7 text-emerald-600" />
-                            </div>
-                            <h3 className="font-bold text-slate-800 mb-2">Notre promesse</h3>
-                            <p className="text-sm text-slate-500">Unifier déplacements professionnels et avantages sociaux en une seule interface.</p>
-                        </div>
-                        <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-200">
-                            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Users className="w-7 h-7 text-purple-600" />
-                            </div>
-                            <h3 className="font-bold text-slate-800 mb-2">Notre engagement</h3>
-                            <p className="text-sm text-slate-500">Accompagner nos clients dans leur transformation digitale.</p>
-                        </div>
-                    </div>
+                  <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-purple-600">{tool.icon}</span>
+                  </div>
+                  <h4 className="font-semibold text-slate-800 text-sm">{tool.title}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">{tool.description}</p>
                 </motion.div>
+              ))}
             </div>
-        </section>
-    );
+            <Link
+              href="#"
+              className="inline-flex items-center gap-2 mt-6 text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
+            >
+              Voir les avis clients
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
-// Carte d'Afrique avec vraie image
-function AfricaMapSection() {
-    const controls = useAnimation();
-    const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.1 });
-    const [hoveredOffice, setHoveredOffice] = useState<Office | null>(null);
+// Section Témoignages - style HappyPal
+function TestimonialsSection() {
+  const [activeIndex, setActiveIndex] = useState(0);
 
-    useEffect(() => {
-        if (isInView) controls.start("visible");
-    }, [isInView, controls]);
+  const nextTestimonial = () => {
+    setActiveIndex((prev) => (prev + 1) % testimonials.length);
+  };
 
-    return (
-        <section ref={ref} className="py-24 bg-slate-50 relative overflow-hidden">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <motion.div
-                    initial="hidden"
-                    animate={controls}
-                    variants={{
-                        hidden: { opacity: 0 },
-                        visible: { opacity: 1, transition: { staggerChildren: 0.15, duration: 0.5 } }
-                    }}
-                >
-                    <motion.div variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } }} className="text-center max-w-3xl mx-auto mb-12">
-                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold mb-4">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            Notre présence
-                        </span>
-                        <h2 className="text-3xl md:text-5xl font-bold text-slate-800 mb-4" style={{ fontFamily: "Sanomat, ui-serif" }}>
-                            Ancrage africain,{" "}
-                            <span className="bg-gradient-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
-                                rayonnement mondial
-                            </span>
-                        </h2>
-                        <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-                            7 bureaux stratégiques à travers l'Afrique, avec une équipe dédiée dans chaque région
-                        </p>
-                    </motion.div>
+  const prevTestimonial = () => {
+    setActiveIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
 
-                    <div className="grid lg:grid-cols-2 gap-12 items-start">
-                        {/* Carte d'Afrique avec vraie image */}
-                        <motion.div variants={{ hidden: { opacity: 0, x: -30 }, visible: { opacity: 1, x: 0, transition: { duration: 0.5 } } }} className="relative">
-                            <div className="rounded-2xl overflow-hidden shadow-2xl relative">
-                                <img 
-                                    src="/images/carte-afrique.png" 
-                                    alt="Carte de l'Afrique"
-                                    className="w-full h-auto object-cover"
-                                />
-                                <div className="absolute inset-0 bg-black/20" />
-                                
-                                {/* Points de présence sur la carte */}
-                                {offices.map((office, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="absolute transform -translate-x-1/2 -translate-y-1/2 group cursor-pointer z-10"
-                                        style={{ left: `${office.coordinates.x}%`, top: `${office.coordinates.y}%` }}
-                                        onMouseEnter={() => setHoveredOffice(office)}
-                                        onMouseLeave={() => setHoveredOffice(null)}
-                                    >
-                                        <div className={`w-4 h-4 rounded-full bg-${office.color === 'indigo' ? 'indigo-500' : office.color === 'emerald' ? 'emerald-500' : office.color === 'purple' ? 'purple-500' : 'amber-500'} shadow-lg animate-pulse`}>
-                                            <div className={`absolute -inset-1 rounded-full bg-${office.color === 'indigo' ? 'indigo-500' : office.color === 'emerald' ? 'emerald-500' : office.color === 'purple' ? 'purple-500' : 'amber-500'}/30 animate-ping`} />
-                                        </div>
-                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-white rounded-lg shadow-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-20 border border-indigo-200">
-                                            <div className="font-bold text-slate-800">{office.city}</div>
-                                            <div className="text-slate-500 text-[10px]">{office.country}</div>
-                                            <div className="text-indigo-600 text-[10px]">Depuis {office.since}</div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            {/* Légende */}
-                            <div className="mt-4 flex flex-wrap justify-center gap-4">
-                                {offices.slice(0, 4).map((office, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 text-xs">
-                                        <div className={`w-3 h-3 rounded-full bg-${office.color === 'indigo' ? 'indigo' : office.color === 'emerald' ? 'emerald' : office.color === 'purple' ? 'purple' : 'amber'}-500`} />
-                                        <span className="text-slate-600">{office.region}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </motion.div>
+  return (
+    <section className="py-20 bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold mb-4">
+            <Quote className="w-4 h-4" />
+            Ils témoignent
+          </span>
+          <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4" style={{ fontFamily: "'Sanomat', ui-serif" }}>
+            Reconnue par les entreprises,{" "}
+            <span className="bg-linear-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+              adorée par les employés
+            </span>
+          </h2>
+        </div>
 
-                        {/* Timeline */}
-                        <div>
-                            <div className="space-y-4 mb-8">
-                                {expansionMilestones.map((milestone, idx) => (
-                                    <motion.div
-                                        key={idx}
-                                        variants={{ hidden: { opacity: 0, x: 30 }, visible: { opacity: 1, x: 0, transition: { duration: 0.5, delay: idx * 0.1 } } }}
-                                        className="flex items-start gap-4 p-4 rounded-xl hover:bg-white transition-all group cursor-pointer"
-                                    >
-                                        <div className={`w-12 h-12 rounded-full bg-${milestone.color}-100 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
-                                            <milestone.Icon className={`w-5 h-5 text-${milestone.color}-600`} />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className={`text-sm font-bold text-${milestone.color}-600`}>{milestone.year}</span>
-                                                <span className="text-sm font-semibold text-slate-800">{milestone.title}</span>
-                                            </div>
-                                            <p className="text-sm text-slate-500">{milestone.description}</p>
-                                            <div className="mt-2 w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                                                <div className={`w-0 h-full bg-${milestone.color}-500 rounded-full group-hover:w-full transition-all duration-700`} />
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
+        <div className="relative">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeIndex}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.5 }}
+              className="bg-white rounded-3xl border border-slate-200 shadow-xl p-8 md:p-12 max-w-4xl mx-auto"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className={`w-14 h-14 rounded-full bg-${testimonials[activeIndex].color}-100 flex items-center justify-center text-${testimonials[activeIndex].color}-600 font-bold text-xl`}>
+                  {testimonials[activeIndex].avatar}
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-800">{testimonials[activeIndex].name}</h4>
+                  <p className="text-sm text-slate-500">{testimonials[activeIndex].role}</p>
+                </div>
+              </div>
+              <p className="text-lg text-slate-600 leading-relaxed">
+                "{testimonials[activeIndex].text}"
+              </p>
+              <div className="flex items-center gap-1 mt-4">
+                {[...Array(5)].map((_, i) => (
+                  <StarIcon key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
+                ))}
+              </div>
+            </motion.div>
+          </AnimatePresence>
 
-                            {/* Certifications */}
-                            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Medal className="w-5 h-5 text-amber-500" />
-                                    <h3 className="font-bold text-slate-800">Certifications & Labels</h3>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {certifications.map((cert, idx) => (
-                                        <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                            <div className={`w-8 h-8 rounded-lg bg-${cert.color}-100 flex items-center justify-center shrink-0`}>
-                                                <cert.Icon className={`w-4 h-4 text-${cert.color}-600`} />
-                                            </div>
-                                            <div>
-                                                <div className="font-semibold text-slate-800 text-sm">{cert.name}</div>
-                                                <div className="text-xs text-slate-500">{cert.description}</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
-            </div>
-        </section>
-    );
+          <button
+            onClick={prevTestimonial}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-10 h-10 rounded-full bg-white shadow-lg border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center"
+          >
+            <ChevronLeft className="w-5 h-5 text-slate-600" />
+          </button>
+          <button
+            onClick={nextTestimonial}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-10 h-10 rounded-full bg-white shadow-lg border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center"
+          >
+            <ChevronRight className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+
+        <div className="flex justify-center gap-2 mt-8">
+          {testimonials.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveIndex(idx)}
+              className={`transition-all duration-300 rounded-full ${
+                idx === activeIndex
+                  ? 'w-8 h-2 bg-indigo-600'
+                  : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
-// Section Valeurs
-function ValuesSection() {
-    const controls = useAnimation();
-    const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.1 });
+// Section Avis utilisateurs - style HappyPal (carrousel de citations)
+function UserReviewsSection() {
+  const [activeReview, setActiveReview] = useState(0);
 
-    useEffect(() => {
-        if (isInView) controls.start("visible");
-    }, [isInView, controls]);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveReview((prev) => (prev + 1) % userReviews.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
 
-    return (
-        <section ref={ref} className="py-20 bg-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <motion.div
-                    initial="hidden"
-                    animate={controls}
-                    variants={{
-                        hidden: { opacity: 0 },
-                        visible: { opacity: 1, transition: { staggerChildren: 0.1, duration: 0.5 } }
-                    }}
-                >
-                    <motion.div variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } }} className="text-center max-w-3xl mx-auto mb-12">
-                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold mb-4">
-                            <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                            Nos valeurs
-                        </span>
-                        <h2 className="text-3xl md:text-5xl font-bold text-slate-800 mb-4" style={{ fontFamily: "Sanomat, ui-serif" }}>
-                            Des principes qui nous{" "}
-                            <span className="bg-linear-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
-                                guident
-                            </span>
-                        </h2>
-                        <p className="text-slate-500 text-lg">
-                            L&#39;humain, la confiance et l&#39;innovation au cœur de notre action
-                        </p>
-                    </motion.div>
+  return (
+    <section className="py-16 bg-white border-y border-slate-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-800" style={{ fontFamily: "'Sanomat', ui-serif" }}>
+            On chouchoute nos users, et ils nous le rendent bien
+          </h2>
+        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {values.map((value, idx) => (
-                            <motion.div
-                                key={idx}
-                                variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay: idx * 0.05 } } }}
-                                whileHover={{ y: -3 }}
-                                className="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:border-indigo-200 hover:shadow-lg transition-all group will-change-transform"
-                            >
-                                <div className={`w-14 h-14 rounded-xl bg-${value.color}-50 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-${value.color}-100 transition-all`}>
-                                    <value.Icon className={`w-7 h-7 text-${value.color}-600`} />
-                                </div>
-                                <h3 className={`text-lg font-bold text-slate-800 mb-2 group-hover:text-${value.color}-600 transition-colors`}>
-                                    {value.title}
-                                </h3>
-                                <p className="text-slate-500 text-sm leading-relaxed">{value.description}</p>
-                            </motion.div>
-                        ))}
-                    </div>
-                </motion.div>
-            </div>
-        </section>
-    );
+        <div className="relative max-w-4xl mx-auto">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeReview}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+              className="bg-slate-50 rounded-2xl p-8 text-center border border-slate-200"
+            >
+              <div className="flex justify-center gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <StarIcon key={i} className="w-5 h-5 text-amber-400 fill-amber-400" />
+                ))}
+              </div>
+              <p className="text-lg text-slate-600 leading-relaxed">
+                "{userReviews[activeReview].text}"
+              </p>
+              <p className="text-sm font-semibold text-slate-700 mt-4">
+                — {userReviews[activeReview].author}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="flex justify-center gap-2 mt-6">
+            {userReviews.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveReview(idx)}
+                className={`transition-all duration-300 rounded-full ${
+                  idx === activeReview
+                    ? 'w-6 h-1.5 bg-indigo-600'
+                    : 'w-1.5 h-1.5 bg-slate-300 hover:bg-slate-400'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
-// Section Équipe - avec textes en français
-function TeamSection() {
-    const controls = useAnimation();
-    const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.1 });
-
-    useEffect(() => {
-        if (isInView) controls.start("visible");
-    }, [isInView, controls]);
-
-    const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    const getAvatarColor = (name: string) => {
-        const colors = ["bg-indigo-500", "bg-emerald-500", "bg-purple-500", "bg-amber-500", "bg-rose-500", "bg-cyan-500", "bg-teal-500"];
-        return colors[name.length % colors.length];
-    };
-
-    return (
-        <section ref={ref} className="py-20 bg-slate-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <motion.div
-                    initial="hidden"
-                    animate={controls}
-                    variants={{
-                        hidden: { opacity: 0 },
-                        visible: { opacity: 1, transition: { staggerChildren: 0.15, duration: 0.5 } }
-                    }}
-                >
-                    <motion.div variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } }} className="text-center max-w-3xl mx-auto mb-12">
-                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold mb-4">
-                            <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                            Rencontrez l'équipe
-                        </span>
-                        <h2 className="text-3xl md:text-5xl font-bold text-slate-800 mb-4" style={{ fontFamily: "Sanomat, ui-serif" }}>
-                            Des talents <span className="bg-gradient-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">passionnés</span>
-                        </h2>
-                        <p className="text-slate-500 text-lg">
-                            Plus de 15 talents répartis sur 3 continents, unis par une vision commune
-                        </p>
-                    </motion.div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {teamMembers.map((member, idx) => (
-                            <motion.div
-                                key={idx}
-                                variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay: idx * 0.05 } } }}
-                                whileHover={{ y: -4 }}
-                                className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group border border-slate-100 will-change-transform"
-                            >
-                                <div className="relative h-64 overflow-hidden bg-gradient-to-br from-indigo-100 to-emerald-100">
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <div className={`w-32 h-32 rounded-full ${getAvatarColor(member.name)} flex items-center justify-center text-white text-4xl font-bold shadow-lg`}>
-                                            {getInitials(member.name)}
-                                        </div>
-                                    </div>
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                                    <div className="absolute bottom-4 left-4 right-4">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-xs font-semibold text-white/80">{member.country}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-                                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                                                </svg>
-                                            </div>
-                                            <span className="text-white text-sm font-semibold">{member.name}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="p-5">
-                                    <div className="mb-2">
-                                        <span className="text-xs font-bold text-indigo-600">{member.role}</span>
-                                    </div>
-                                    <p className="text-sm text-slate-500 leading-relaxed">{member.description}</p>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-                        <div className="bg-white rounded-xl p-6 text-center shadow-sm border border-slate-200">
-                            <div className="text-3xl font-black text-indigo-600 mb-2">12+</div>
-                            <p className="text-sm text-slate-600">Nationalités représentées</p>
-                        </div>
-                        <div className="bg-white rounded-xl p-6 text-center shadow-sm border border-slate-200">
-                            <div className="text-3xl font-black text-emerald-600 mb-2">45+</div>
-                            <p className="text-sm text-slate-600">Années d'expérience cumulées</p>
-                        </div>
-                        <div className="bg-white rounded-xl p-6 text-center shadow-sm border border-slate-200">
-                            <div className="text-3xl font-black text-amber-600 mb-2">95%</div>
-                            <p className="text-sm text-slate-600">Diplômés de grandes écoles</p>
-                        </div>
-                    </div>
-                </motion.div>
+// Section "Tous vos avantages dans une application mobile"
+function MobileAppSection() {
+  return (
+    <section className="py-20 bg-indigo-600 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-xs font-semibold mb-4">
+              <Smartphone className="w-4 h-4" />
+              Application mobile
+            </span>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Sanomat', ui-serif" }}>
+              Tous vos avantages dans une application mobile
+            </h2>
+            <p className="text-lg text-indigo-200 mb-8">
+              Accédez à toutes les réductions, subventions et actualités de votre CSE depuis votre application mobile.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link
+                href="#"
+                className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-semibold hover:bg-indigo-50 transition-all flex items-center gap-2"
+              >
+                <AppleIcon className="w-5 h-5" />
+                App Store
+              </Link>
+              <Link
+                href="#"
+                className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-xl font-semibold hover:bg-white/20 transition-all flex items-center gap-2"
+              >
+                <Play className="w-5 h-5" />
+                Google Play
+              </Link>
             </div>
-        </section>
-    );
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex justify-center"
+          >
+            <div className="relative">
+              <Image
+                src="/images/mobile-app-mockup.png"
+                alt="Application mobile Club Employés"
+                width={300}
+                height={500}
+                className="rounded-3xl shadow-2xl"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+              <div className="absolute -bottom-4 -right-4 bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-sm text-white font-semibold">500K+ utilisateurs</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
-// Section Partenaires - Carrousel défilant horizontalement
-function PartnersSection() {
-    const controls = useAnimation();
-    const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.1 });
+// ─── PAGE PRINCIPALE ──────────────────────────────────────────────────────
 
-    useEffect(() => {
-        if (isInView) controls.start("visible");
-    }, [isInView, controls]);
-
-    // Dupliquer les partenaires pour un défilement infini
-    const duplicatedPartners = [...partners, ...partners, ...partners];
-
-    return (
-        <section ref={ref} className="py-16 bg-white border-y border-slate-200 overflow-hidden">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <motion.div
-                    initial="hidden"
-                    animate={controls}
-                    variants={{
-                        hidden: { opacity: 0 },
-                        visible: { opacity: 1, transition: { staggerChildren: 0.1, duration: 0.5 } }
-                    }}
-                >
-                    <motion.div variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } }} className="text-center max-w-3xl mx-auto mb-12">
-                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold mb-4">
-                            <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                            Ils nous font confiance
-                        </span>
-                        <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4" style={{ fontFamily: "Sanomat, ui-serif" }}>
-                            Nos partenaires stratégiques
-                        </h2>
-                        <p className="text-slate-500 text-base">
-                            Des leaders mondiaux qui nous accompagnent dans notre croissance
-                        </p>
-                    </motion.div>
-                </motion.div>
-            </div>
-
-            {/* Carrousel défilant */}
-            <div className="relative w-full overflow-hidden">
-                <div className="absolute left-0 top-0 w-32 h-full bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-                <div className="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
-                
-                <motion.div 
-                    className="flex gap-8 py-4"
-                    animate={{ x: [0, -1800] }}
-                    transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                >
-                    {duplicatedPartners.map((partner, idx) => (
-                        <div
-                            key={idx}
-                            className="flex-shrink-0 w-40 bg-slate-50 rounded-xl p-4 text-center border border-slate-200 hover:border-indigo-300 hover:shadow-lg transition-all group cursor-pointer"
-                        >
-                            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-white flex items-center justify-center text-indigo-600 font-bold text-xl group-hover:bg-indigo-50 group-hover:scale-110 transition-all shadow-sm">
-                                {partner.logo}
-                            </div>
-                            <div className="font-semibold text-slate-800 text-sm">{partner.name}</div>
-                            <div className="text-xs text-slate-400 mt-1">{partner.industry}</div>
-                        </div>
-                    ))}
-                </motion.div>
-            </div>
-        </section>
-    );
-}
-
-// PAGE PRINCIPALE
 export default function AboutPage() {
-    return (
-        <main className="min-h-screen bg-white">
-            <HeroSection />
-            <StatsSection />
-            <MissionSection />
-            <AfricaMapSection />
-            <ValuesSection />
-            <TeamSection />
-            <PartnersSection />
-        </main>
-    );
+  return (
+    <main className="min-h-screen bg-white">
+      <HeroSection />
+      <ImpactSection />
+      <ManagementSection />
+      <ConnectionSection />
+      <TestimonialsSection />
+      <UserReviewsSection />
+      <MobileAppSection />
+    </main>
+  );
 }
