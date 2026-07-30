@@ -102,7 +102,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div
         className={cn(
             "flex h-screen overflow-hidden",
-            darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-900"
+            darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"
         )}
         >
         {/* ── Overlay mobile ── */}
@@ -119,7 +119,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Desktop (>= lg) : toujours visible, largeur repliable icône/texte. */}
         <aside
             className={cn(
-            "fixed lg:static inset-y-0 left-0 z-30 flex flex-col w-64 transition-transform duration-300 ease-in-out border-r",
+            "fixed lg:static inset-y-0 left-0 z-30 flex flex-col w-64 transition-transform duration-300 ease-in-out",
             "lg:translate-x-0 lg:transition-[width] lg:duration-300",
             sidebarOpen ? "translate-x-0" : "-translate-x-full",
             sidebarOpen ? "lg:w-56" : "lg:w-16",
@@ -129,7 +129,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             )}
         >
             {/* Logo + toggle */}
-            <div className="flex items-center h-16 px-3 border-b gap-2"
+            <div className="flex items-center h-16 px-3 gap-2"
             style={{ borderColor: darkMode ? "#374151" : "#e5e7eb" }}>
             {sidebarOpen && (
                 <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -242,7 +242,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {/* Navbar */}
             <header className={cn(
-            "h-16 flex items-center justify-between px-6 border-b shrink-0",
+            "h-16 flex items-center justify-between px-6 shrink-0",
             darkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
             )}>
             {/* Bouton menu mobile */}
@@ -296,7 +296,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Contenu scrollable */}
             <main className={cn(
             "flex-1 overflow-y-auto p-4 md:p-6",
-            darkMode ? "bg-gray-900" : "bg-gray-50"
+            darkMode ? "bg-gray-900" : "bg-[#ff660005]"
             )}>
             {children}
             </main>

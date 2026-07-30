@@ -2,16 +2,23 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, Loader2, Layers } from "lucide-react";
+import { Check, X, Loader2, Layers, Eye, MapPin, Ticket, Users, Star, CalendarClock, Package } from "lucide-react";
 import { partnersService } from "@/services/admin/partners.service";
 import { CatalogItem } from "@/types";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
+const OFFER_TYPE_LABELS: Record<string, string> = {
+    VOUCHER: "Bon d'achat",
+    BOOKING: "Réservation",
+    DISCOUNT_CODE: "Code de réduction",
+};
+
 export default function PendingPartnerOffersPage() {
     const router = useRouter();
     const [offers, setOffers]   = useState<CatalogItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [detailTarget, setDetailTarget] = useState<CatalogItem | null>(null);
     const [rejectTarget, setRejectTarget] = useState<CatalogItem | null>(null);
     const [rejectNote, setRejectNote]     = useState("");
     const [processing, setProcessing]     = useState<string | null>(null);
@@ -35,6 +42,7 @@ export default function PendingPartnerOffersPage() {
             await partnersService.approveOffer(offer.id);
             toast.success("Offre validée — visible par les employés");
             setOffers((prev) => prev.filter((o) => o.id !== offer.id));
+            setDetailTarget((prev) => (prev?.id === offer.id ? null : prev));
         } catch (err) {
             toast.error(getErrorMessage(err, "Erreur lors de la validation"));
         } finally {
@@ -49,6 +57,7 @@ export default function PendingPartnerOffersPage() {
             await partnersService.rejectOffer(rejectTarget.id, rejectNote);
             toast.success("Offre refusée");
             setOffers((prev) => prev.filter((o) => o.id !== rejectTarget.id));
+            setDetailTarget((prev) => (prev?.id === rejectTarget.id ? null : prev));
             setRejectTarget(null);
             setRejectNote("");
         } catch (err) {
@@ -92,7 +101,9 @@ export default function PendingPartnerOffersPage() {
                                     </div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-gray-900 truncate">{o.title}</p>
+                                    <button onClick={() => setDetailTarget(o)} className="font-semibold text-gray-900 truncate hover:underline text-left block w-full">
+                                        {o.title}
+                                    </button>
                                     <button
                                         onClick={() => o.partner && router.push(`/admin/partners/${o.partner.id}`)}
                                         className="text-xs text-gray-500 hover:underline truncate"
@@ -104,6 +115,10 @@ export default function PendingPartnerOffersPage() {
                                     En attente
                                 </span>
                             </div>
+
+                            {o.imageUrl && (
+                                <img src={o.imageUrl} alt="" className="w-full h-32 object-cover rounded-lg" />
+                            )}
 
                             {o.description && (
                                 <p className="text-xs text-gray-500 line-clamp-2">{o.description}</p>
@@ -117,6 +132,13 @@ export default function PendingPartnerOffersPage() {
                             </div>
 
                             <div className="flex gap-2 pt-1">
+                                <button
+                                    onClick={() => setDetailTarget(o)}
+                                    title="Voir les détails"
+                                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-gray-600 text-sm font-medium border border-gray-200 hover:bg-gray-50"
+                                >
+                                    <Eye size={14} />
+                                </button>
                                 <button
                                     onClick={() => handleApprove(o)}
                                     disabled={processing === o.id}
@@ -135,6 +157,83 @@ export default function PendingPartnerOffersPage() {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Modal détails */}
+            {detailTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3 min-w-0">
+                                {detailTarget.partner?.logoUrl ? (
+                                    <img src={detailTarget.partner.logoUrl} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 shrink-0">
+                                        {(detailTarget.partner?.name ?? "?")[0].toUpperCase()}
+                                    </div>
+                                )}
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-gray-900 truncate">{detailTarget.title}</h3>
+                                    <button
+                                        onClick={() => detailTarget.partner && router.push(`/admin/partners/${detailTarget.partner.id}`)}
+                                        className="text-xs text-gray-500 hover:underline truncate"
+                                    >
+                                        {detailTarget.partner?.name ?? "Partenaire inconnu"}
+                                    </button>
+                                </div>
+                            </div>
+                            <button onClick={() => setDetailTarget(null)} className="text-gray-400 hover:text-gray-600 shrink-0">
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {detailTarget.imageUrl && (
+                            <img src={detailTarget.imageUrl} alt="" className="w-full h-40 object-cover rounded-lg mb-4" />
+                        )}
+
+                        {detailTarget.description && (
+                            <p className="text-sm text-gray-600 mb-4">{detailTarget.description}</p>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                            <DetailRow label="Prix employé" value={`${fmt(detailTarget.employeePrice)} XOF`} />
+                            <DetailRow label="Prix entreprise" value={`${fmt(detailTarget.companyPrice)} XOF`} />
+                            <DetailRow label="Catégorie" value={detailTarget.category} />
+                            <DetailRow label="Type d'offre" value={OFFER_TYPE_LABELS[detailTarget.offerType] ?? detailTarget.offerType} />
+                            <DetailRow label="Subvention" value={detailTarget.subsidyAmount ? `${fmt(detailTarget.subsidyAmount)} XOF` : `${detailTarget.subsidyPct} %`} />
+                            {detailTarget.stock != null && <DetailRow label="Stock" value={String(detailTarget.stock)} icon={<Package size={12} />} />}
+                            {detailTarget.validUntil && <DetailRow label="Valide jusqu'au" value={new Date(detailTarget.validUntil).toLocaleDateString("fr-FR")} icon={<CalendarClock size={12} />} />}
+                            {(detailTarget.city || detailTarget.region || detailTarget.country) && (
+                                <DetailRow label="Localisation" value={[detailTarget.city, detailTarget.region, detailTarget.country].filter(Boolean).join(", ")} icon={<MapPin size={12} />} />
+                            )}
+                            {detailTarget.requiresTicket && <DetailRow label="Ticket requis" value="Oui" icon={<Ticket size={12} />} />}
+                            {detailTarget.requiresFamilyMember && <DetailRow label="Membre famille requis" value="Oui" icon={<Users size={12} />} />}
+                            {detailTarget.isFeatured && <DetailRow label="Mise en avant" value="Oui" icon={<Star size={12} />} />}
+                        </div>
+
+                        <p className="text-xs text-gray-400 mb-4">
+                            Soumise le {new Date(detailTarget.createdAt).toLocaleDateString("fr-FR")}
+                        </p>
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => handleApprove(detailTarget)}
+                                disabled={processing === detailTarget.id}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-white text-sm font-medium disabled:opacity-60"
+                                style={{ background: "#10b981" }}
+                            >
+                                {processing === detailTarget.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Valider
+                            </button>
+                            <button
+                                onClick={() => setRejectTarget(detailTarget)}
+                                disabled={processing === detailTarget.id}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-white text-sm font-medium bg-red-500 disabled:opacity-60"
+                            >
+                                <X size={14} /> Refuser
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -175,6 +274,15 @@ export default function PendingPartnerOffersPage() {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function DetailRow({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+    return (
+        <div>
+            <p className="flex items-center gap-1 text-xs text-gray-400">{icon}{label}</p>
+            <p className="font-medium text-gray-900">{value}</p>
         </div>
     );
 }
