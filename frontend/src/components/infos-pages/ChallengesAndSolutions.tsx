@@ -73,6 +73,12 @@ const RECENT_TRIPS = [
 // ─── COMPOSANT DU DASHBOARD MODERNE ──────────────────────────────────────────
 const ModernDashboard = () => {
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  // Rendu uniquement côté client pour éviter un mismatch d'hydratation
+  // (Date.now() diffère forcément entre le rendu serveur et le premier rendu client).
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  useEffect(() => {
+    setLastUpdated(new Date().toLocaleString());
+  }, []);
 
   return (
     <div className="w-full bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
@@ -253,7 +259,7 @@ const ModernDashboard = () => {
 
         {/* Footer du dashboard */}
         <div className="mt-4 pt-3 border-t border-slate-800/50 flex items-center justify-between text-[9px] text-slate-500">
-          <span>Dernière mise à jour : {new Date().toLocaleString()}</span>
+          <span>Dernière mise à jour : {lastUpdated ?? "—"}</span>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
