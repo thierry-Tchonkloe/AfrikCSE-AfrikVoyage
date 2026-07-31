@@ -6,9 +6,10 @@ import { useAuth } from "@/hooks/useAuth";
 import {
     LayoutDashboard, Plane, FileText, Calendar,
     Gift, MessageSquare, CalendarDays, User, Settings,
-    ChevronLeft, ChevronRight, LogOut, Menu,
+    ChevronLeft, ChevronRight, ChevronDown, LogOut, Menu,
     Mail, Sun, Moon, LifeBuoy, Bell, FileClock, Users, Ticket, Trophy,
     HelpCircle, Images, Wallet, CalendarCheck, PiggyBank, CreditCard,
+    type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
@@ -18,29 +19,67 @@ import { UserAvatar } from "@/components/employes/UserAvatar";
 import { GlobalSearch } from "@/components/shared/GlobalSearch";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
-// Navigation principale employé
-const NAV_ITEMS = [
-    { href: "/employes/dashboard",      label: "Dashboard",            icon: LayoutDashboard },
-    { href: "/employes/voyages",        label: "Mes voyages",          icon: Plane },
-    { href: "/employes/notes-de-frais", label: "Notes de frais",       icon: FileText },
-    { href: "/employes/reserver",       label: "Réservez votre voyage", icon: Calendar },
-    { href: "/employes/avantages",      label: "Mes avantages",        icon: Gift },
-    { href: "/employes/famille",        label: "Ma famille",           icon: Users },
-    { href: "/employes/tickets",        label: "Mes tickets",          icon: Ticket },
-    { href: "/employes/voyages/groupe", label: "Voyages de groupe",    icon: Users },
-    { href: "/employes/recompenses",    label: "Récompenses",          icon: Trophy },
-    { href: "/employes/communication",  label: "Communication CSE",    icon: MessageSquare },
-    { href: "/employes/evenements",          label: "Calendrier des Évènements", icon: CalendarDays },
-    { href: "/employes/evenements/galerie", label: "Galerie photos",           icon: Images },
-    { href: "/employes/wallet",             label: "Mon wallet",               icon: Wallet },
-    { href: "/employes/reservations",       label: "Mes réservations",         icon: CalendarCheck },
-    { href: "/employes/faq",                label: "FAQ",                      icon: HelpCircle },
-    { href: "/employes/support",            label: "Support",                  icon: LifeBuoy },
-    { href: "/employes/notifications", label: "Notifications",       icon: Bell, badge: true },
-    { href: "/employes/mes-demandes", label: "Mes demandes", icon: FileClock },
-    { href: "/employes/economies",    label: "Mes économies",  icon: PiggyBank },
-    { href: "/employes/carte-membre", label: "Carte membre",   icon: CreditCard },
-];
+type NavItem = { href: string; label: string; icon: LucideIcon };
+type NavGroup = { id: string; label: string; icon: LucideIcon; items: NavItem[] };
+
+// Lien racine toujours visible, en dehors des accordéons de module.
+const HOME_ITEM: NavItem = { href: "/employes/dashboard", label: "Dashboard", icon: LayoutDashboard };
+
+// Navigation groupée par module — mêmes groupes que l'espace entreprise
+// (AfrikCSE / AfrikVoyage), plus un groupe transverse Général & Support.
+// Un module n'apparaît que si l'organisation y a souscrit.
+function buildNavGroups(hasCSE: boolean, hasVoyage: boolean): NavGroup[] {
+    const groups: NavGroup[] = [];
+
+    if (hasVoyage) {
+        groups.push({
+            id: "voyage",
+            label: "AfrikVoyage",
+            icon: Plane,
+            items: [
+                { href: "/employes/voyages", label: "Mes voyages", icon: Plane },
+                { href: "/employes/reserver", label: "Réservez votre voyage", icon: Calendar },
+                { href: "/employes/voyages/groupe", label: "Voyages de groupe", icon: Users },
+                { href: "/employes/reservations", label: "Mes réservations", icon: CalendarCheck },
+                { href: "/employes/notes-de-frais", label: "Notes de frais", icon: FileText },
+            ],
+        });
+    }
+
+    if (hasCSE) {
+        groups.push({
+            id: "cse",
+            label: "AfrikCSE",
+            icon: Users,
+            items: [
+                { href: "/employes/avantages", label: "Mes avantages", icon: Gift },
+                { href: "/employes/famille", label: "Ma famille", icon: Users },
+                { href: "/employes/tickets", label: "Mes tickets", icon: Ticket },
+                { href: "/employes/recompenses", label: "Récompenses", icon: Trophy },
+                { href: "/employes/communication", label: "Communication CSE", icon: MessageSquare },
+                { href: "/employes/evenements", label: "Calendrier des Évènements", icon: CalendarDays },
+                { href: "/employes/evenements/galerie", label: "Galerie photos", icon: Images },
+                { href: "/employes/wallet", label: "Mon wallet", icon: Wallet },
+                { href: "/employes/economies", label: "Mes économies", icon: PiggyBank },
+                { href: "/employes/carte-membre", label: "Carte membre", icon: CreditCard },
+            ],
+        });
+    }
+
+    groups.push({
+        id: "support",
+        label: "Général & Support",
+        icon: LifeBuoy,
+        items: [
+            { href: "/employes/mes-demandes", label: "Mes demandes", icon: FileClock },
+            { href: "/employes/notifications", label: "Notifications", icon: Bell },
+            { href: "/employes/faq", label: "FAQ", icon: HelpCircle },
+            { href: "/employes/support", label: "Support", icon: LifeBuoy },
+        ],
+    });
+
+    return groups;
+}
 
 const NAV_BOTTOM = [
     { href: "/employes/profile",    label: "Profile",     icon: User },
@@ -73,6 +112,31 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
     // }, [user, loading, router]);
 
     const { user, loading } = useRouteGuard("employee");
+
+    const navGroups = buildNavGroups(
+        user?.organization?.hasCSE ?? false,
+        user?.organization?.hasVoyage ?? false
+    );
+    const allNavItems = [HOME_ITEM, ...navGroups.flatMap((g) => g.items)];
+
+    // Route la plus spécifique qui correspond au pathname courant.
+    const bestMatch = allNavItems
+        .map((n) => n.href)
+        .filter((h) => pathname.startsWith(h))
+        .sort((a, b) => b.length - a.length)[0];
+
+    // Groupe accordéon actuellement déplié — un seul à la fois, resynchronisé
+    // sur le module de la route active à chaque navigation, mais laissé
+    // libre ensuite pour que l'utilisateur puisse replier/déplier manuellement.
+    const [openGroup, setOpenGroup] = useState<string | null>(
+        () => navGroups.find((g) => g.items.some((it) => pathname.startsWith(it.href)))?.id ?? null
+    );
+    const [syncedMatch, setSyncedMatch] = useState(bestMatch);
+    if (bestMatch !== syncedMatch) {
+        setSyncedMatch(bestMatch);
+        const activeGroup = navGroups.find((g) => g.items.some((it) => it.href === bestMatch));
+        if (activeGroup) setOpenGroup(activeGroup.id);
+    }
 
     if (loading || !user) return null;
 
@@ -135,31 +199,101 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
             </button>
             </div>
 
-            {/* Nav principale */}
+            {/* Nav principale — accueil fixe + groupes accordéon par module */}
             <nav className="flex-1 py-3 space-y-0.5 px-2 overflow-y-auto">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-                const active = pathname.startsWith(href);
+            {(() => {
+                const homeActive = HOME_ITEM.href === bestMatch;
+                const HomeIcon = HOME_ITEM.icon;
                 return (
-                <button
-                    key={href}
-                    onClick={() => {
-                        router.push(href);
-                        if (window.innerWidth < 1024) setSidebarOpen(false);
-                    }}
+                <button onClick={() => {
+                    router.push(HOME_ITEM.href);
+                    if (window.innerWidth < 1024) setSidebarOpen(false);
+                }}
                     className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                        active
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                    homeActive
                         ? "text-white"
                         : darkMode
                         ? "text-gray-400 hover:bg-gray-800 hover:text-gray-100"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                     )}
-                    style={active ? { background: ACCENT } : {}}
-                    title={!sidebarOpen ? label : undefined}
-                >
-                    <Icon size={17} className="shrink-0" />
-                    {sidebarOpen && <span className="truncate text-sm">{label}</span>}
+                    style={homeActive ? { background: ACCENT } : {}}
+                    title={!sidebarOpen ? HOME_ITEM.label : undefined}>
+                    <HomeIcon size={17} className="shrink-0" />
+                    {sidebarOpen && <span className="truncate text-sm">{HOME_ITEM.label}</span>}
                 </button>
+                );
+            })()}
+
+            {navGroups.map((group) => {
+                const GroupIcon = group.icon;
+                const groupActive = group.items.some((it) => it.href === bestMatch);
+                const isOpen = sidebarOpen && openGroup === group.id;
+                return (
+                <div key={group.id}>
+                    <button
+                    onClick={() => {
+                        if (!sidebarOpen) {
+                            setSidebarOpen(true);
+                            setOpenGroup(group.id);
+                            return;
+                        }
+                        setOpenGroup(openGroup === group.id ? null : group.id);
+                    }}
+                    className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                        groupActive
+                        ? darkMode
+                            ? "bg-gray-800 text-white"
+                            : "bg-gray-100 text-gray-900"
+                        : darkMode
+                        ? "text-gray-400 hover:bg-gray-800 hover:text-gray-100"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                    title={!sidebarOpen ? group.label : undefined}
+                    >
+                    <GroupIcon size={17} className="shrink-0" />
+                    {sidebarOpen && <span className="flex-1 text-left truncate text-sm">{group.label}</span>}
+                    {sidebarOpen && (
+                        <ChevronDown
+                        size={16}
+                        className={cn("shrink-0 transition-transform duration-200", isOpen && "rotate-180")}
+                        />
+                    )}
+                    </button>
+
+                    {isOpen && (
+                    <div
+                        className="mt-0.5 ml-4 pl-3 border-l space-y-0.5"
+                        style={{ borderColor: darkMode ? "#374151" : "#e5e7eb" }}
+                    >
+                        {group.items.map(({ href, label, icon: Icon }) => {
+                        const active = href === bestMatch;
+                        return (
+                            <button
+                            key={href}
+                            onClick={() => {
+                                router.push(href);
+                                if (window.innerWidth < 1024) setSidebarOpen(false);
+                            }}
+                            className={cn(
+                                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all",
+                                active
+                                ? "text-white"
+                                : darkMode
+                                ? "text-gray-400 hover:bg-gray-800 hover:text-gray-100"
+                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            )}
+                            style={active ? { background: ACCENT } : {}}
+                            >
+                            <Icon size={16} className="shrink-0" />
+                            <span className="truncate">{label}</span>
+                            </button>
+                        );
+                        })}
+                    </div>
+                    )}
+                </div>
                 );
             })}
             </nav>
