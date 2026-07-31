@@ -2,10 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useLayoutEffect } from "react";
-import {
-    LayoutDashboard, CalendarCheck, Layers, Users,
-    MapPin, Building2, ChevronLeft, ChevronRight, LogOut, Menu,
-} from "lucide-react";
+import { LayoutDashboard, CalendarCheck, Layers, Users, MapPin, Building2, ChevronLeft, ChevronRight, LogOut, Menu,} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePartnerAuth } from "@/hooks/usePartnerAuth";
 
@@ -31,9 +28,7 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
         return () => window.removeEventListener("resize", apply);
     }, []);
 
-    // Redirige si pas de session partenaire valide — dans un effect, jamais pendant
-    // le rendu (un router.replace() synchrone en plein render déclenche l'avertissement
-    // React "Cannot update a component while rendering a different component").
+    // Redirige si pas de session partenaire valide — dans un effect, jamais pendant le rendu (un router.replace() synchrone en plein render déclenche l'avertissement React "Cannot update a component while rendering a different component").
     useEffect(() => {
         if (!loading && !user) {
         router.replace("/partner-portal/login");
@@ -46,9 +41,8 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
         </div>
     );
 
-    // Même design que l'espace Super Admin (cf. admin/layout.tsx) : sidebar
-    // claire/sombre selon le mode, la couleur primaire ne sert que d'accent
-    // (logo, état actif, avatar) — pas de bloc de fond coloré à part.
+    // Même design que l'espace Super Admin (cf. admin/layout.tsx) : sidebar claire/sombre selon le mode, la couleur primaire ne sert que d'accent (logo, état actif, avatar) — pas de bloc de fond coloré à part.
+
     const ACCENT = "var(--color-primary)";
 
     return (
@@ -98,7 +92,7 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
                                         : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
                                 )}
                                 style={active ? { background: ACCENT } : {}}
-                                title={!open ? label : undefined}
+                                title={!open ? '' : undefined}
                             >
                                 <Icon size={17} className="shrink-0" />
                                 {open && <span className="truncate text-sm">{label}</span>}
@@ -133,12 +127,13 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
             {/* Main */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <header className="h-16 flex items-center justify-between px-6 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 shrink-0">
-                    <button className="lg:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setOpen(true)}>
-                        <Menu size={20} />
-                    </button>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {NAV_ITEMS.find((n) => pathname.startsWith(n.href))?.label ?? "Portail partenaire"}
-                    </p>
+
+                        <button className="lg:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setOpen(true)}>
+                            <Menu size={20} />
+                        </button>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {NAV_ITEMS.find((n) => pathname.startsWith(n.href))?.label ?? "Portail partenaire"}
+                        </p>
                     <div />
                 </header>
                 <main className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">

@@ -3,7 +3,7 @@
 import { useState, useEffect, useLayoutEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck, Handshake, Plug, DollarSign, Headphones, BarChart3, Code2, Globe, Plane, ShoppingBag, PackageCheck } from "lucide-react";
+import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, ChevronDown, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck, Handshake, Plug, DollarSign, Headphones, BarChart3, Code2, Globe, Plane, ShoppingBag, PackageCheck, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
 import { useTheme } from "@/hooks/useTheme";
@@ -13,28 +13,102 @@ import { GlobalSearch } from "@/components/shared/GlobalSearch";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
-const NAV_ITEMS = [
-    { href: "/admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-    { href: "/admin/companies", label: "Entreprises", icon: Building2 },
-    { href: "/admin/validations", label: "Validations", icon: ClipboardCheck, badge: "orgs" as const },
-    { href: "/admin/messages", label: "Messagerie", icon: MessageSquare },
-    { href: "/admin/notifications/templates", label: "Templates notif.", icon: Bell },
-    { href: "/admin/notifications/logs",      label: "Logs notif.",      icon: Logs },
-    { href: "/admin/reporting",               label: "Reporting",         icon: BarChart3 },
-    { href: "/admin/logs", label: "Historique des Logs", icon: Logs },
-    { href: "/admin/plans", label: "Gérer les Plans", icon: LayoutTemplate },
-    { href: "/admin/access",       label: "Gérer les Accès",  icon: ShieldCheck },
-    { href: "/admin/partners",       label: "Partenaires",       icon: Handshake },
-    { href: "/admin/partners/offers", label: "Offres partenaires", icon: PackageCheck, badge: "offers" as const },
-    { href: "/admin/travel-catalog", label: "Catalogue Voyage",  icon: Plane },
-    { href: "/admin/commissions",    label: "Commissions",       icon: DollarSign },
-    { href: "/admin/orders",         label: "Commandes",          icon: ShoppingBag },
-    { href: "/admin/service-client", label: "Service client",    icon: Headphones },
-    { href: "/admin/developer",       label: "API Développeur",   icon: Code2 },
-    { href: "/admin/countries",       label: "Pays & Devises",    icon: Globe },
-    { href: "/admin/integrations",   label: "Intégrations GDS",  icon: Plug },
-    { href: "/admin/settings",       label: "Paramètres",        icon: Settings },
+type NavItem = {
+    href: string;
+    label: string;
+    icon: LucideIcon;
+    badge?: "orgs" | "offers";
+};
+
+type NavGroup = {
+    id: string;
+    label: string;
+    icon: LucideIcon;
+    items: NavItem[];
+};
+
+const NAV_GROUPS: NavGroup[] = [
+    {
+        id: "overview",
+        label: "Vue d'ensemble",
+        icon: LayoutDashboard,
+        items: [
+            { href: "/admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+            { href: "/admin/reporting", label: "Reporting", icon: BarChart3 },
+        ],
+    },
+    {
+        id: "users",
+        label: "Utilisateurs & Organisations",
+        icon: Building2,
+        items: [
+            { href: "/admin/companies", label: "Entreprises", icon: Building2 },
+            { href: "/admin/validations", label: "Validations", icon: ClipboardCheck, badge: "orgs" },
+            { href: "/admin/access", label: "Gérer les Accès", icon: ShieldCheck },
+        ],
+    },
+    {
+        id: "partners",
+        label: "Partenariats & Marketplace",
+        icon: Handshake,
+        items: [
+            { href: "/admin/partners", label: "Partenaires", icon: Handshake },
+            { href: "/admin/partners/offers", label: "Offres partenaires", icon: PackageCheck, badge: "offers" },
+            { href: "/admin/commissions", label: "Commissions", icon: DollarSign },
+        ],
+    },
+    {
+        id: "catalog",
+        label: "Catalogue & Commandes",
+        icon: Plane,
+        items: [
+            { href: "/admin/travel-catalog", label: "Catalogue Voyage", icon: Plane },
+            { href: "/admin/orders", label: "Commandes", icon: ShoppingBag },
+        ],
+    },
+    {
+        id: "billing",
+        label: "Facturation & Souscriptions",
+        icon: LayoutTemplate,
+        items: [
+            { href: "/admin/plans", label: "Gérer les Plans", icon: LayoutTemplate },
+        ],
+    },
+    {
+        id: "activity",
+        label: "Activité & Alertes",
+        icon: Logs,
+        items: [
+            { href: "/admin/logs", label: "Historique des Logs", icon: Logs },
+            { href: "/admin/notifications/logs", label: "Logs notif.", icon: Logs },
+            { href: "/admin/notifications/templates", label: "Templates notif.", icon: Bell },
+        ],
+    },
+    {
+        id: "support",
+        label: "Support & Communication",
+        icon: Headphones,
+        items: [
+            { href: "/admin/messages", label: "Messagerie", icon: MessageSquare },
+            { href: "/admin/service-client", label: "Service client", icon: Headphones },
+        ],
+    },
+    {
+        id: "system",
+        label: "Configuration système",
+        icon: Settings,
+        items: [
+            { href: "/admin/settings", label: "Paramètres", icon: Settings },
+            { href: "/admin/countries", label: "Pays & Devises", icon: Globe },
+            { href: "/admin/integrations", label: "Intégrations GDS", icon: Plug },
+            { href: "/admin/developer", label: "API Développeur", icon: Code2 },
+        ],
+    },
 ];
+
+// Liste à plat, dérivée des groupes — sert au calcul de la route active
+// et au titre de la page dans le header.
+const ALL_NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { logout } = useAuth();
@@ -87,6 +161,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return () => clearInterval(interval);
     }, []);
     const badgeCounts = { orgs: pendingCount, offers: pendingOffersCount };
+
+    // Route la plus spécifique qui correspond au pathname courant (ex:
+    // /admin/partners/offers ne doit pas aussi surligner /admin/partners).
+    const bestMatch = ALL_NAV_ITEMS
+        .map((n) => n.href)
+        .filter((h) => pathname.startsWith(h))
+        .sort((a, b) => b.length - a.length)[0];
+
+    // Groupe accordéon actuellement déplié — un seul à la fois. Resynchronisé
+    // sur le groupe contenant la route active à chaque navigation (clic
+    // sidebar, recherche globale, URL directe...), mais laissé libre ensuite
+    // pour que l'utilisateur puisse replier/déplier manuellement.
+    const [openGroup, setOpenGroup] = useState<string | null>(
+        () => NAV_GROUPS.find((g) => g.items.some((it) => pathname.startsWith(it.href)))?.id ?? null
+    );
+    const [syncedMatch, setSyncedMatch] = useState(bestMatch);
+    if (bestMatch !== syncedMatch) {
+        setSyncedMatch(bestMatch);
+        const activeGroup = NAV_GROUPS.find((g) => g.items.some((it) => it.href === bestMatch));
+        if (activeGroup) setOpenGroup(activeGroup.id);
+    }
 
     const { user, loading } = useRouteGuard("super-admin");
 
@@ -154,49 +249,85 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
             </div>
 
-            {/* Navigation */}
+            {/* Navigation — groupes accordéon */}
             <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
-            {NAV_ITEMS.map(({ href, label, icon: Icon, badge }) => {
-                // La route la plus spécifique gagne (ex: /admin/partners/offers
-                // ne doit pas aussi surligner /admin/partners).
-                const bestMatch = NAV_ITEMS
-                    .map((n) => n.href)
-                    .filter((h) => pathname.startsWith(h))
-                    .sort((a, b) => b.length - a.length)[0];
-                const active = href === bestMatch;
+            {NAV_GROUPS.map((group) => {
+                const GroupIcon = group.icon;
+                const groupActive = group.items.some((it) => it.href === bestMatch);
+                const isOpen = sidebarOpen && openGroup === group.id;
                 return (
-                <button
-                    key={href}
+                <div key={group.id}>
+                    <button
                     onClick={() => {
-                        router.push(href);
-                        if (window.innerWidth < 1024) setSidebarOpen(false);
+                        if (!sidebarOpen) {
+                            setSidebarOpen(true);
+                            setOpenGroup(group.id);
+                            return;
+                        }
+                        setOpenGroup(openGroup === group.id ? null : group.id);
                     }}
                     className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative",
-                    active
-                        ? "text-white"
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                        groupActive
+                        ? darkMode
+                            ? "bg-gray-800 text-white"
+                            : "bg-gray-100 text-gray-900"
                         : darkMode
                         ? "text-gray-400 hover:bg-gray-800 hover:text-gray-100"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                     )}
-                    style={active ? { background: "var(--color-primary)" } : {}}
-                    title={!sidebarOpen ? label : undefined}
-                >
-                    <Icon size={18} className="shrink-0" />
-                    {sidebarOpen && <span className="truncate">{label}</span>}
-                    {/* Badge demandes en attente */}
-                    {badge && badgeCounts[badge] > 0 && (
-                    <span
-                        className={cn(
-                        "text-white text-xs rounded-full px-1.5 py-0.5 font-bold",
-                        sidebarOpen ? "ml-auto" : "absolute top-1 right-1 w-4 h-4 flex items-center justify-center p-0"
-                        )}
-                        style={{ background: "#ef4444" }}
+                    title={!sidebarOpen ? group.label : undefined}
                     >
-                        {badgeCounts[badge]}
-                    </span>
+                    <GroupIcon size={18} className="shrink-0" />
+                    {sidebarOpen && <span className="flex-1 text-left truncate">{group.label}</span>}
+                    {sidebarOpen && (
+                        <ChevronDown
+                        size={16}
+                        className={cn("shrink-0 transition-transform duration-200", isOpen && "rotate-180")}
+                        />
                     )}
-                </button>
+                    </button>
+
+                    {isOpen && (
+                    <div
+                        className="mt-1 ml-4 pl-3 border-l space-y-1"
+                        style={{ borderColor: darkMode ? "#374151" : "#e5e7eb" }}
+                    >
+                        {group.items.map(({ href, label, icon: Icon, badge }) => {
+                        const active = href === bestMatch;
+                        return (
+                            <button
+                            key={href}
+                            onClick={() => {
+                                router.push(href);
+                                if (window.innerWidth < 1024) setSidebarOpen(false);
+                            }}
+                            className={cn(
+                                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all relative",
+                                active
+                                ? "text-white"
+                                : darkMode
+                                ? "text-gray-400 hover:bg-gray-800 hover:text-gray-100"
+                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            )}
+                            style={active ? { background: "var(--color-primary)" } : {}}
+                            >
+                            <Icon size={16} className="shrink-0" />
+                            <span className="truncate">{label}</span>
+                            {badge && badgeCounts[badge] > 0 && (
+                                <span
+                                className="ml-auto text-white text-xs rounded-full px-1.5 py-0.5 font-bold"
+                                style={{ background: "#ef4444" }}
+                                >
+                                {badgeCounts[badge]}
+                                </span>
+                            )}
+                            </button>
+                        );
+                        })}
+                    </div>
+                    )}
+                </div>
                 );
             })}
             </nav>
@@ -256,7 +387,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Titre de la page courant */}
             <div className="hidden lg:block shrink-0">
                 <p className="text-sm font-semibold">
-                {[...NAV_ITEMS].sort((a, b) => b.href.length - a.href.length).find((n) => pathname.startsWith(n.href))?.label || "Admin"}
+                {[...ALL_NAV_ITEMS].sort((a, b) => b.href.length - a.href.length).find((n) => pathname.startsWith(n.href))?.label || "Admin"}
                 </p>
             </div>
 
