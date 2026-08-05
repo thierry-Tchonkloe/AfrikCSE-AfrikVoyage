@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import { PartnerPortalController } from "./partner-portal.controller";
 import { authenticatePartner, requirePartnerAdmin } from "./partner-auth.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import { locationIdParamSchema } from "./partner-portal.validator";
 
@@ -33,14 +34,14 @@ router.get("/profile",  ctrl.getProfile.bind(ctrl));
 router.patch("/profile", ctrl.updateProfile.bind(ctrl));
 
 // Locations
-router.post("/locations",                  ctrl.createLocation.bind(ctrl));
+router.post("/locations",                  idempotency(), ctrl.createLocation.bind(ctrl));
 router.patch("/locations/:id",             validateParams(idParamString), ctrl.updateLocation.bind(ctrl));
 router.delete("/locations/:id",            validateParams(idParamString), ctrl.deleteLocation.bind(ctrl));
 router.put("/locations/:locationId/availabilities", validateParams(locationIdParamSchema), ctrl.setAvailabilities.bind(ctrl));
 
 // Offers
 router.get("/offers",    ctrl.listOffers.bind(ctrl));
-router.post("/offers",   ctrl.createOffer.bind(ctrl));
+router.post("/offers",   idempotency(), ctrl.createOffer.bind(ctrl));
 router.patch("/offers/:id", validateParams(idParamString), ctrl.updateOffer.bind(ctrl));
 
 // Staff — PARTNER_ADMIN only

@@ -32,10 +32,23 @@ export class CommunicationRepository {
         content: string;
         imageUrl?: string;
         pollOptions?: string[];
+        idempotencyKey: string;
     }) {
         const { pollOptions, ...rest } = data;
+        const include = {
+            author: { select: { firstName: true, lastName: true, avatar: true, role: true } },
+            pollOptions: true,
+        } as const;
 
-        return prisma.csePost.create({
+        // Anti-retry : une publication déjà émise avec cette idempotencyKey est
+        // renvoyée telle quelle — évite de re-notifier toute l'organisation.
+        const existing = await prisma.csePost.findUnique({
+            where: { idempotencyKey: data.idempotencyKey },
+            include,
+        });
+        if (existing) return { post: existing, created: false };
+
+        const post = await prisma.csePost.create({
         data: {
             ...rest,
             organizationId: orgId,
@@ -44,20 +57,38 @@ export class CommunicationRepository {
             ? { create: pollOptions.map((label) => ({ label })) }
             : undefined,
         },
-        include: {
-            author: { select: { firstName: true, lastName: true, avatar: true, role: true } },
-            pollOptions: true,
-        },
+        include,
         });
+        return { post, created: true };
     }
 
-    async toggleLike(postId: string, userId: string, organizationId: string) {
+    /**
+     * `action` omis : bascule (comportement historique, non idempotent — un retry
+     * réseau après un like réussi peut l'annuler). `action` fourni ("like"/"unlike") :
+     * force l'état demandé, idempotent — un retry ne fait que confirmer le même état.
+     */
+    async toggleLike(postId: string, userId: string, organizationId: string, action?: "like" | "unlike") {
         const post = await prisma.csePost.findFirst({ where: { id: postId, organizationId } });
         if (!post) throw new Error("Publication introuvable");
 
         const existing = await prisma.postLike.findUnique({
         where: { postId_userId: { postId, userId } },
         });
+
+        if (action === "like") {
+        if (!existing) {
+            try {
+            await prisma.postLike.create({ data: { postId, userId } });
+            } catch (err: any) {
+            if (err?.code !== "P2002") throw err; // déjà liké par une requête concurrente — état final identique
+            }
+        }
+        return { liked: true };
+        }
+        if (action === "unlike") {
+        if (existing) await prisma.postLike.delete({ where: { id: existing.id } });
+        return { liked: false };
+        }
 
         if (existing) {
         await prisma.postLike.delete({ where: { id: existing.id } });
@@ -75,17 +106,19 @@ export class CommunicationRepository {
         });
         if (!option) throw new Error("Option introuvable");
 
-        // Vérifie si déjà voté sur ce sondage
-        const existingVote = await prisma.pollVote.findFirst({
-        where: {
-            userId,
-            pollOption: { postId: option.postId },
-        },
+        // L'unicité "1 vote par sondage" est appliquée par la contrainte DB
+        // @@unique([postId, userId]) sur PollVote, pas par ce check applicatif —
+        // deux votes concurrents sur des options différentes du même sondage ne
+        // peuvent donc jamais tous les deux réussir, contrairement à un simple
+        // findFirst-puis-create.
+        try {
+        return await prisma.pollVote.create({
+            data: { pollOptionId, postId: option.postId, userId },
         });
-
-        if (existingVote) throw new Error("Vous avez déjà voté");
-
-        return prisma.pollVote.create({ data: { pollOptionId, userId } });
+        } catch (err: any) {
+        if (err?.code === "P2002") throw new Error("Vous avez déjà voté pour ce sondage");
+        throw err;
+        }
     }
 
     async addComment(postId: string, authorId: string, content: string, organizationId: string) {

@@ -79,6 +79,15 @@ export class OrderService {
             const verified = await marketplacePaymentSvc.verifyKkiapayTransaction(data.kkiapayTransactionId);
             if (!verified.success) throw new AppError("Transaction KkiaPay invalide ou non complétée", 400);
 
+            // Anti-rejeu : un même paiement KkiaPay ne peut financer qu'une seule
+            // commande — sans ce check, un client peut réutiliser un transactionId
+            // déjà validé pour créer plusieurs commandes payées une seule fois réellement.
+            const alreadyUsed = await repo.findByTransactionIdAny(data.kkiapayTransactionId);
+            if (alreadyUsed) {
+                await repo.cancel(order.id, userId, "Paiement déjà rattaché à une autre commande");
+                throw new AppError("Ce paiement a déjà été utilisé pour une autre commande", 409);
+            }
+
             await repo.updateTransactionId(order.id, data.kkiapayTransactionId);
             await repo.updateStatus(order.id, OrderStatus.CONFIRMED, OrderPaymentStatus.PAID);
             this._applyCashbackAsync(order.id, userId, organizationId, finalAmount);

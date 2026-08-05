@@ -81,39 +81,60 @@ export class CommissionRepository {
 
     // ── Payouts ───────────────────────────────────────────────────────────────
 
-    async listEntriesForPayout(partnerId: string, period: string) {
+    /**
+     * Crée le payout et lui rattache atomiquement toutes les CommissionEntry
+     * CONFIRMED encore non payées de la période, en une seule transaction :
+     *   1. Le payout est créé d'abord (protégé par @@unique([partnerId, period]) —
+     *      un 2e appel concurrent échoue ici en P2002, avant tout claim).
+     *   2. Le "claim" des entrées se fait par un UPDATE ... WHERE payoutId IS NULL.
+     *      Postgres réévalue ce WHERE au moment d'acquérir le verrou de ligne :
+     *      si un autre payout a déjà capturé une entrée entre-temps, elle ne
+     *      matche plus et n'est jamais comptée deux fois — pas besoin de lock
+     *      applicatif ou de Redis, l'atomicité vient de l'UPDATE lui-même.
+     * Retourne null si aucune entrée CONFIRMED n'était disponible (payout annulé).
+     */
+    async createPayoutForPeriod(partnerId: string, period: string, triggeredById?: string) {
         const [year, month] = period.split("-").map(Number);
         const start = new Date(year, month - 1, 1);
         const end   = new Date(year, month, 0, 23, 59, 59);
-        return prisma.commissionEntry.findMany({
-            where: {
-                partnerId,
-                status:    CommissionStatus.CONFIRMED,
-                payoutId:  null,
-                createdAt: { gte: start, lte: end },
-            },
-        });
-    }
 
-    async createPayout(data: {
-        partnerId:       string;
-        period:          string;
-        totalGross:      Prisma.Decimal;
-        totalCommission: Prisma.Decimal;
-        netAmount:       Prisma.Decimal;
-        currencyCode?:   string;
-        paymentMethod?:  string;
-        triggeredById?:  string;
-        entryIds:        string[];
-    }) {
-        const { entryIds, ...payoutData } = data;
         return prisma.$transaction(async (tx) => {
-            const payout = await tx.partnerPayout.create({ data: payoutData as never });
-            await tx.commissionEntry.updateMany({
-                where: { id: { in: entryIds } },
-                data:  { payoutId: payout.id, status: CommissionStatus.CONFIRMED },
+            const payout = await tx.partnerPayout.create({
+                data: {
+                    partnerId,
+                    period,
+                    totalGross:      new Prisma.Decimal(0),
+                    totalCommission: new Prisma.Decimal(0),
+                    netAmount:       new Prisma.Decimal(0),
+                    triggeredById,
+                },
             });
-            return payout;
+
+            const { count } = await tx.commissionEntry.updateMany({
+                where: {
+                    partnerId,
+                    status:    CommissionStatus.CONFIRMED,
+                    payoutId:  null,
+                    createdAt: { gte: start, lte: end },
+                },
+                data: { payoutId: payout.id },
+            });
+
+            if (count === 0) {
+                await tx.partnerPayout.delete({ where: { id: payout.id } });
+                return null;
+            }
+
+            const claimed = await tx.commissionEntry.findMany({ where: { payoutId: payout.id } });
+            const totalGross      = claimed.reduce((s, e) => s.add(e.grossAmount),      new Prisma.Decimal(0));
+            const totalCommission = claimed.reduce((s, e) => s.add(e.commissionAmount), new Prisma.Decimal(0));
+            const netAmount       = totalGross.sub(totalCommission);
+
+            return tx.partnerPayout.update({
+                where: { id: payout.id },
+                data:  { totalGross, totalCommission, netAmount },
+                include: { entries: true },
+            });
         });
     }
 

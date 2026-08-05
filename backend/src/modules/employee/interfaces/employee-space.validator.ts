@@ -7,6 +7,7 @@ export const createTravelRequestSchema = z.object({
     returnDate: z.coerce.date(),
     estimatedCost: z.number().nonnegative().optional(),
     department: z.string().optional(),
+    idempotencyKey: z.string().min(8, "idempotencyKey requis (min 8 chars)"),
 }).refine((data) => data.returnDate >= data.departureDate, {
     message: "La date de retour doit être après la date de départ",
     path: ["returnDate"],
@@ -25,6 +26,7 @@ export const createExpenseSchema = z.object({
     returnDate: z.coerce.date().optional(),
     travelId: z.string().optional(),
     receipts: z.array(z.string()).optional(),
+    idempotencyKey: z.string().min(8, "idempotencyKey requis (min 8 chars)"),
 });
 
 export const submitBenefitRequestSchema = z.object({
@@ -33,6 +35,7 @@ export const submitBenefitRequestSchema = z.object({
     description: z.string().optional(),
     urgency: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
     receipts: z.array(z.string()).optional(),
+    idempotencyKey: z.string().min(8, "idempotencyKey requis (min 8 chars)"),
 });
 
 export const updateProfileSchema = z.object({

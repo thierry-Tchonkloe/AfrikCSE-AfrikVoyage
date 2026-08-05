@@ -49,20 +49,24 @@ export class EmployeeSpaceController {
             return;
         }
         try {
-            const travel = await repo.createTravelRequest(
+            const { request: travel, created } = await repo.createTravelRequest(
                 req.user!.userId,
                 req.user!.organizationId!,
                 parsed.data
             );
 
-            await notificationRepo.createForRoles(
-                req.user!.organizationId!,
-                ["ADMIN", "MANAGER"],
-                "Nouvelle demande de voyage",
-                `Une nouvelle demande de voyage pour ${travel.destination} est en attente d'approbation.`,
-                "APPROVAL_REQUEST",
-                "/companies/AfrikVoyage/approbations"
-            );
+            // Un retry (idempotencyKey déjà vue) renvoie la demande existante sans
+            // renotifier les approbateurs une 2e fois.
+            if (created) {
+                await notificationRepo.createForRoles(
+                    req.user!.organizationId!,
+                    ["ADMIN", "MANAGER"],
+                    "Nouvelle demande de voyage",
+                    `Une nouvelle demande de voyage pour ${travel.destination} est en attente d'approbation.`,
+                    "APPROVAL_REQUEST",
+                    "/companies/AfrikVoyage/approbations"
+                );
+            }
 
             res.status(201).json(travel);
         } catch (err: any) {
@@ -84,20 +88,22 @@ export class EmployeeSpaceController {
             return;
         }
         try {
-            const expense = await repo.createExpense(
+            const { expense, created } = await repo.createExpense(
                 req.user!.userId,
                 req.user!.organizationId!,
                 parsed.data
             );
 
-            await notificationRepo.createForRoles(
-                req.user!.organizationId!,
-                ["ADMIN", "MANAGER"],
-                "Nouvelle note de frais",
-                `Une nouvelle note de frais « ${expense.title} » est en attente d'approbation.`,
-                "APPROVAL_REQUEST",
-                "/companies/AfrikVoyage/frais"
-            );
+            if (created) {
+                await notificationRepo.createForRoles(
+                    req.user!.organizationId!,
+                    ["ADMIN", "MANAGER"],
+                    "Nouvelle note de frais",
+                    `Une nouvelle note de frais « ${expense.title} » est en attente d'approbation.`,
+                    "APPROVAL_REQUEST",
+                    "/companies/AfrikVoyage/frais"
+                );
+            }
 
             res.status(201).json(expense);
         } catch (err: any) {
@@ -166,20 +172,22 @@ export class EmployeeSpaceController {
             return;
         }
         try {
-            const request = await repo.createBenefitRequest(
+            const { request, created } = await repo.createBenefitRequest(
                 req.user!.userId,
                 req.user!.organizationId!,
                 parsed.data
             );
 
-            await notificationRepo.createForRoles(
-                req.user!.organizationId!,
-                ["ADMIN", "MANAGER", "RH"],
-                "Nouvelle demande d'avantage",
-                `Une nouvelle demande « ${request.category.name} » est en attente d'approbation.`,
-                "APPROVAL_REQUEST",
-                "/companies/AfrikCSE/avantages"
-            );
+            if (created) {
+                await notificationRepo.createForRoles(
+                    req.user!.organizationId!,
+                    ["ADMIN", "MANAGER", "RH"],
+                    "Nouvelle demande d'avantage",
+                    `Une nouvelle demande « ${request.category.name} » est en attente d'approbation.`,
+                    "APPROVAL_REQUEST",
+                    "/companies/AfrikCSE/avantages"
+                );
+            }
 
             res.status(201).json(request);
         } catch (err: any) {

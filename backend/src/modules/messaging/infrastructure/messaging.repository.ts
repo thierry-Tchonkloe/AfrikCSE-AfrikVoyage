@@ -231,24 +231,35 @@ export class MessagingRepository {
     }
 
     /** Retourne `null` si `senderId` n'est pas participant de la conversation */
-    async sendMessage(conversationId: string, senderId: string, content: string) {
+    async sendMessage(conversationId: string, senderId: string, content: string, idempotencyKey?: string) {
         if (!(await this.isParticipant(conversationId, senderId))) return null;
+
+        const senderSelect = {
+            select: { id: true, firstName: true, lastName: true, role: true },
+        } as const;
+
+        // Anti-retry : un même (conversation, expéditeur, idempotencyKey) ne peut
+        // produire qu'un seul message — un rejeu réseau renvoie l'original sans
+        // notifier une 2e fois les autres participants.
+        if (idempotencyKey) {
+            const existing = await prisma.message.findFirst({
+                where: { conversationId, senderId, idempotencyKey },
+                include: { sender: senderSelect },
+            });
+            if (existing) return { msg: existing, created: false };
+        }
 
         const [msg] = await prisma.$transaction([
         prisma.message.create({
-            data: { conversationId, senderId, content },
-            include: {
-            sender: {
-                select: { id: true, firstName: true, lastName: true, role: true },
-            },
-            },
+            data: { conversationId, senderId, content, idempotencyKey },
+            include: { sender: senderSelect },
         }),
         prisma.conversation.update({
             where: { id: conversationId },
             data: { updatedAt: new Date() },
         }),
         ]);
-        return msg;
+        return { msg, created: true };
     }
 
     /** Récupère les autres participants d'une conversation (pour notification) */

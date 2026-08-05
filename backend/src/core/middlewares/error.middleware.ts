@@ -34,6 +34,13 @@ export function errorMiddleware(
         return;
     }
 
+    // Prisma: violation de contrainte unique — typiquement un retry/double-clic
+    // sur une ressource déjà protégée par une clé d'idempotence ou un @@unique.
+    if ((err as any).code === "P2002") {
+        res.status(409).json({ success: false, message: "Cette ressource existe déjà." });
+        return;
+    }
+
     logger.error({ err }, "Unhandled error");
     res.status(500).json({
         success: false,

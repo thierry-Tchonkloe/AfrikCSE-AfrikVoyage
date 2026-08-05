@@ -2,6 +2,7 @@ import { Router } from "express";
 import { EventPhotoController } from "./event-photo.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import { eventIdParamSchema } from "./event-photo.validator";
 
@@ -14,7 +15,7 @@ router.use(authenticate);
 // Lecture par événement (tous les employés)
 router.get("/event/:eventId",          validateParams(eventIdParamSchema), ctrl.listByEvent.bind(ctrl));
 // Upload par tout employé authentifié
-router.post("/",                       ctrl.upload.bind(ctrl));
+router.post("/",                       idempotency(), ctrl.upload.bind(ctrl));
 // Like toggle
 router.post("/:id/like",               ctrl.like.bind(ctrl));
 // Modération (admin+)

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { BillingController } from "./billing.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
+import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 
 const router = Router();
 const ctrl = new BillingController();
@@ -24,6 +25,6 @@ router.get("/invoices",      ctrl.getInvoices.bind(ctrl));
 // Initiation de paiement
 router.post("/pay/kkiapay",  ctrl.payWithKkiapay.bind(ctrl));
 router.post("/pay/fedapay",  ctrl.payWithFedapay.bind(ctrl));
-router.post("/pay/card",     ctrl.payWithCard.bind(ctrl));
+router.post("/pay/card",     idempotency(), ctrl.payWithCard.bind(ctrl));
 
 export default router;

@@ -8,6 +8,7 @@ export const createPostSchema = z.object({
     content: z.string().min(1, "Contenu requis"),
     imageUrl: z.string().optional(),
     pollOptions: z.array(z.string().min(1)).optional(),
+    idempotencyKey: z.string().min(8, "idempotencyKey requis (min 8 chars)"),
 });
 
 export const addCommentSchema = z.object({

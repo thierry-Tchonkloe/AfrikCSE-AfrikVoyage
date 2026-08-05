@@ -64,7 +64,17 @@ export class UserService {
         throw new Error("Vous ne pouvez pas créer un utilisateur avec ce rôle");
         }
 
-        const { user, inviteToken } = await this.repo.create({ ...dto, organizationId, role: dto.role as Role });
+        // Backstop DB (User.email @unique) : si deux soumissions concurrentes
+        // passent toutes deux le check ci-dessus, une seule réussit — l'autre lève
+        // P2002 ici, avant tout envoi d'email d'invitation.
+        let user: Awaited<ReturnType<typeof this.repo.create>>["user"];
+        let inviteToken: Awaited<ReturnType<typeof this.repo.create>>["inviteToken"];
+        try {
+        ({ user, inviteToken } = await this.repo.create({ ...dto, organizationId, role: dto.role as Role }));
+        } catch (err: any) {
+        if (err?.code === "P2002") throw new Error("Cet email est déjà utilisé");
+        throw err;
+        }
 
         const organization = await prisma.organization.findUnique({
         where: { id: organizationId },

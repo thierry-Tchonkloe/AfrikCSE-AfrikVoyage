@@ -8,6 +8,10 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 // tous les tokens (access ET refresh) émis avant, sans attendre leur expiration.
 export interface JwtPayload { userId: string; role: string; organizationId: string | null; isHost: boolean; tokenVersion: number; }
 
+// Durée de vie du refresh token — partagée avec le calcul de UserSession.expiresAt
+// (auth.service.ts) pour que le JWT et la ligne en base expirent en même temps.
+export const REFRESH_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+
 export function signAccessToken(payload: JwtPayload): string {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
 }

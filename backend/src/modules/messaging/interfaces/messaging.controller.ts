@@ -118,28 +118,33 @@ export class MessagingController {
     }
 
     async sendMessage(req: Request<IdParamString>, res: Response): Promise<void> {
-        const { content } = req.body;
+        const { content, idempotencyKey } = req.body;
         if (!content?.trim()) {
         res.status(400).json({ message: "Message vide" });
         return;
         }
         try {
-        const msg = await repo.sendMessage(req.params.id, req.user!.userId, content);
-        if (msg === null) {
+        const result = await repo.sendMessage(req.params.id, req.user!.userId, content, idempotencyKey);
+        if (result === null) {
             res.status(403).json({ message: "Accès refusé à cette conversation" });
             return;
         }
+        const { msg, created } = result;
 
-        const recipients = await repo.getOtherParticipants(req.params.id, req.user!.userId);
-        const preview = content.length > 100 ? `${content.slice(0, 100)}…` : content;
-        for (const recipient of recipients) {
-            await notificationRepo.createForUsers(
-            [recipient.id],
-            `Nouveau message de ${msg.sender.firstName} ${msg.sender.lastName}`,
-            preview,
-            "MESSAGE_RECEIVED",
-            messagingLinkForRole(recipient.role)
-            );
+        // Un retry (idempotencyKey déjà vue) renvoie le message existant sans
+        // renotifier les autres participants une 2e fois.
+        if (created) {
+            const recipients = await repo.getOtherParticipants(req.params.id, req.user!.userId);
+            const preview = content.length > 100 ? `${content.slice(0, 100)}…` : content;
+            for (const recipient of recipients) {
+                await notificationRepo.createForUsers(
+                [recipient.id],
+                `Nouveau message de ${msg.sender.firstName} ${msg.sender.lastName}`,
+                preview,
+                "MESSAGE_RECEIVED",
+                messagingLinkForRole(recipient.role)
+                );
+            }
         }
 
         res.status(201).json(msg);

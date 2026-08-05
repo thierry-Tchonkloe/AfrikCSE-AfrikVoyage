@@ -213,7 +213,10 @@ export class AuthController {
         return res.status(400).json({ errors: parsed.error.flatten() });
         }
         try {
-        const result = await service.login(parsed.data);
+        const result = await service.login(parsed.data, {
+            userAgent: req.headers["user-agent"],
+            ipAddress: req.ip,
+        });
 
         if (result.type === "partner") {
             setPartnerAuthCookies(res, result.accessToken, result.refreshToken);
@@ -250,10 +253,12 @@ export class AuthController {
     }
 
     // ── Logout ───────────────────────────────────────────────────────────
-    // Révoque immédiatement access token ET refresh token (tokenVersion en BDD) + supprime les deux cookies.
+    // Supprime UNIQUEMENT la session de l'appareil courant (identifiée par le
+    // cookie refreshToken) + efface les deux cookies de CE navigateur. Les
+    // autres sessions actives de l'utilisateur (autres appareils) ne sont pas affectées.
     async logout(req: Request, res: Response) {
         try {
-        await service.logout(req.user!.userId);
+        await service.logout(req.user!.userId, req.cookies?.refreshToken);
         await logAudit({
             action: "USER_LOGOUT",
             entity: "User",
@@ -388,6 +393,38 @@ export class AuthController {
             req,
         });
         return res.status(200).json({ message: "Mot de passe modifié avec succès" });
+        } catch (err: any) {
+        return res.status(400).json({ message: err.message });
+        }
+    }
+
+    // ── Sessions (appareils connectés) ───────────────────────────────────
+    // Liste les sessions actives de l'utilisateur — `isCurrent` distingue
+    // l'appareil depuis lequel la requête est faite (via le cookie refreshToken).
+    async listSessions(req: Request, res: Response) {
+        try {
+        const sessions = await service.listSessions(req.user!.userId, req.cookies?.refreshToken);
+        return res.status(200).json({ sessions });
+        } catch (err: any) {
+        return res.status(500).json({ message: err.message });
+        }
+    }
+
+    // Révoque une session précise (un appareil) — scopée à l'utilisateur authentifié.
+    async revokeSession(req: Request, res: Response) {
+        try {
+        await service.revokeSession(req.user!.userId, String(req.params.id));
+        return res.status(200).json({ message: "Session révoquée" });
+        } catch (err: any) {
+        return res.status(400).json({ message: err.message });
+        }
+    }
+
+    // Déconnexion de tous les autres appareils — la session courante reste active.
+    async revokeOtherSessions(req: Request, res: Response) {
+        try {
+        await service.revokeOtherSessions(req.user!.userId, req.cookies?.refreshToken);
+        return res.status(200).json({ message: "Déconnecté des autres appareils" });
         } catch (err: any) {
         return res.status(400).json({ message: err.message });
         }

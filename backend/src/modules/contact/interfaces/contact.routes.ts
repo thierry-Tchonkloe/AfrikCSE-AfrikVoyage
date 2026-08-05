@@ -3,6 +3,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { ContactController } from "./contact.controller";
 import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamInt, IdParamInt } from "../../../core/validators/param.validators";
 // import { authMiddleware } from "../../../core/middlewares/auth.middleware";
 
@@ -10,7 +11,7 @@ const router = Router();
 const controller = new ContactController();
 
 // Public routes
-router.post("/", (req: Request, res: Response, next: NextFunction) => controller.create(req, res, next));
+router.post("/", idempotency(), (req: Request, res: Response, next: NextFunction) => controller.create(req, res, next));
 
 // Admin-protected routes (uncomment authMiddleware when ready)
 router.get(

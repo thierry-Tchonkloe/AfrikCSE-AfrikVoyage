@@ -20,6 +20,11 @@ export class ApiDeveloperRepository {
         });
     }
 
+    /** Un client actif portant déjà ce nom pour cette org — évite le doublon de clé sur double-clic/retry. */
+    async findActiveByName(orgId: string, name: string) {
+        return prisma.apiClient.findFirst({ where: { orgId, name, isActive: true } });
+    }
+
     /** Crée un client API, retourne la clé raw (une seule fois). */
     async createClient(orgId: string, data: { name: string; scopes: string[]; expiresAt?: Date }) {
         const rawKey   = `ak_${randomBytes(24).toString("hex")}`;

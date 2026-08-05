@@ -115,22 +115,17 @@ export class CommissionService {
     }
 
     async triggerPayout(partnerId: string, period: string, triggeredById: string) {
-        const entries = await repo.listEntriesForPayout(partnerId, period);
-        if (entries.length === 0) throw new AppError("Aucune commission confirmée pour cette période", 400);
-
-        const totalGross      = entries.reduce((s, e) => s.add(e.grossAmount),      new Prisma.Decimal(0));
-        const totalCommission = entries.reduce((s, e) => s.add(e.commissionAmount), new Prisma.Decimal(0));
-        const netAmount       = totalGross.sub(totalCommission);
-
-        return repo.createPayout({
-            partnerId,
-            period,
-            totalGross,
-            totalCommission,
-            netAmount,
-            triggeredById,
-            entryIds: entries.map((e) => e.id),
-        });
+        let payout;
+        try {
+            payout = await repo.createPayoutForPeriod(partnerId, period, triggeredById);
+        } catch (err: any) {
+            if (err?.code === "P2002") {
+                throw new AppError("Un versement existe déjà pour ce partenaire et cette période", 409);
+            }
+            throw err;
+        }
+        if (!payout) throw new AppError("Aucune commission confirmée pour cette période", 400);
+        return payout;
     }
 
     async markPayoutPaid(id: string) {

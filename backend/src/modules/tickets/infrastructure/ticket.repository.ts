@@ -123,18 +123,33 @@ export class TicketRepository {
     }
 
     async markUsed(code: string) {
-        const ticket = await prisma.ticket.findUnique({ where: { code } });
-        if (!ticket)                       throw new AppError("Ticket introuvable", 404);
-        if (ticket.status === "USED")      throw new AppError("Ticket déjà utilisé", 409);
-        if (ticket.status === "CANCELLED") throw new AppError("Ticket annulé", 409);
-        if (ticket.status === "EXPIRED")   throw new AppError("Ticket expiré", 410);
-        if (ticket.expiresAt && ticket.expiresAt < new Date()) {
-            throw new AppError("Ticket expiré", 410);
-        }
-        return prisma.ticket.update({
-            where: { code },
-            data:  { status: "USED", usedAt: new Date() },
+        const now = new Date();
+
+        // Update conditionnel atomique : le WHERE (status='VALID') est réévalué par
+        // Postgres au moment de l'écriture, verrou de ligne inclus. Deux scans
+        // strictement simultanés du même QR ne peuvent donc jamais tous les deux
+        // réussir — un seul affecte une ligne, l'autre obtient count=0.
+        const { count } = await prisma.ticket.updateMany({
+            where: {
+                code,
+                status: "VALID",
+                OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+            },
+            data: { status: "USED", usedAt: now },
         });
+
+        if (count === 0) {
+            const ticket = await prisma.ticket.findUnique({ where: { code } });
+            if (!ticket)                       throw new AppError("Ticket introuvable", 404);
+            if (ticket.status === "CANCELLED") throw new AppError("Ticket annulé", 409);
+            if (ticket.status === "EXPIRED" || (ticket.expiresAt && ticket.expiresAt < now)) {
+                throw new AppError("Ticket expiré", 410);
+            }
+            // status === "USED" (déjà consommé par ce scan-ci ou un scan concurrent)
+            throw new AppError("Ticket déjà utilisé", 409);
+        }
+
+        return prisma.ticket.findUniqueOrThrow({ where: { code } });
     }
 
     async cancel(id: string, userId: string) {

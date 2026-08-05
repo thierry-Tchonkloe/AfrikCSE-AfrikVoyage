@@ -25,6 +25,15 @@ export async function createClient(orgId: string, body: unknown) {
     const parsed = createClientSchema.safeParse(body);
     if (!parsed.success) throw new AppError(parsed.error.flatten().fieldErrors as never, 422);
     const d = parsed.data;
+
+    // La clé brute n'étant jamais stockée (seul son hash l'est), un retry ne peut
+    // pas se voir renvoyer la même clé — on bloque donc explicitement le doublon
+    // plutôt que de laisser un double-clic générer une 2e clé active silencieuse.
+    const existing = await repo.findActiveByName(orgId, d.name);
+    if (existing) {
+        throw new AppError(`Un client API actif nommé "${d.name}" existe déjà — révoquez-le avant d'en recréer un.`, 409);
+    }
+
     return repo.createClient(orgId, {
         name:      d.name,
         scopes:    d.scopes,

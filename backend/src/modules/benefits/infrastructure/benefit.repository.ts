@@ -90,18 +90,34 @@ export class BenefitRepository {
         });
     }
 
+    /**
+     * Transition PENDING → APPROVED atomique : le WHERE (status:"PENDING") est
+     * réévalué par Postgres au moment de l'écriture. Un retry, un double-clic, ou
+     * une tentative sur une demande déjà REJECTED ne peuvent donc plus jamais
+     * réussir silencieusement — count===0 signale explicitement "déjà traitée".
+     */
     async approveRequest(id: string, organizationId: string, approverId: string) {
-        return prisma.benefitRequest.update({
-        where: { id, organizationId },
+        const { count } = await prisma.benefitRequest.updateMany({
+        where: { id, organizationId, status: "PENDING" },
         data: { status: "APPROVED", approvedById: approverId, approvedAt: new Date() },
+        });
+        if (count === 0) return null;
+
+        return prisma.benefitRequest.findUnique({
+        where: { id },
         include: { employee: { select: { userId: true } }, category: { select: { name: true } } },
         });
     }
 
     async rejectRequest(id: string, organizationId: string, note: string) {
-        return prisma.benefitRequest.update({
-        where: { id, organizationId },
+        const { count } = await prisma.benefitRequest.updateMany({
+        where: { id, organizationId, status: "PENDING" },
         data: { status: "REJECTED", rejectionNote: note },
+        });
+        if (count === 0) return null;
+
+        return prisma.benefitRequest.findUnique({
+        where: { id },
         include: { employee: { select: { userId: true } }, category: { select: { name: true } } },
         });
     }
@@ -111,13 +127,28 @@ export class BenefitRepository {
         where: { id: { in: ids }, organizationId, status: "PENDING" },
         select: { id: true, employee: { select: { userId: true } }, category: { select: { name: true } } },
         });
+        if (targets.length === 0) return { count: 0, requests: [] };
 
+        // Le WHERE reconfirme status:"PENDING" au moment de l'écriture — deux
+        // bulk-approve concurrents sur le même lot ne peuvent plus tous les deux
+        // "gagner" les mêmes lignes ni notifier deux fois les mêmes employés.
+        const approvedAt = new Date();
         const result = await prisma.benefitRequest.updateMany({
-        where: { id: { in: targets.map((t) => t.id) } },
-        data: { status: "APPROVED", approvedById: approverId, approvedAt: new Date() },
+        where: { id: { in: targets.map((t) => t.id) }, status: "PENDING" },
+        data: { status: "APPROVED", approvedById: approverId, approvedAt },
         });
 
-        return { count: result.count, requests: targets };
+        // Ne notifie que les lignes réellement basculées par CET appel (approvedAt
+        // exact) — si une partie du lot a été raflée entre-temps par un appel
+        // concurrent, elle n'est pas comptée ici (et n'a pas été notifiée deux fois).
+        const requests = result.count === targets.length
+        ? targets
+        : (await prisma.benefitRequest.findMany({
+            where: { id: { in: targets.map((t) => t.id) }, approvedAt },
+            select: { id: true, employee: { select: { userId: true } }, category: { select: { name: true } } },
+          }));
+
+        return { count: result.count, requests };
     }
 
     // ── Stats approbation ────────────────────────────────
