@@ -7,7 +7,7 @@ import { startTripReminderJob } from "./modules/travels/application/travel-remin
 const PORT = process.env.PORT || 5000;
 
 // Vérifie les variables critiques au démarrage
-const requiredEnvVars = ["DATABASE_URL", "JWT_SECRET"];
+const requiredEnvVars = ["DATABASE_URL", "JWT_SECRET", "TICKET_SECRET", "ENCRYPTION_KEY"];
 const missingVars = requiredEnvVars.filter((v) => !process.env[v]);
 
 if (missingVars.length > 0) {

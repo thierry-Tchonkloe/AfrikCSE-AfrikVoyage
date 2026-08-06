@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import { DateFormat, DATE_FORMATS, TIMEZONES } from "@/lib/date";
 import { employeeService } from "@/services/employes/employee.service";
+import { authService, UserSession } from "@/services/auth.service";
 
 // ── Journal d'activité ──────────────────────────────────────────────────────
 type ActivityLogEntry = {
@@ -55,6 +56,28 @@ function formatRelativeTime(dateStr: string): string {
     if (diffMonth < 12) return `Il y a ${diffMonth} mois`;
     const diffYear = Math.floor(diffDay / 365);
     return `Il y a ${diffYear} an${diffYear > 1 ? "s" : ""}`;
+}
+
+// ── Sessions actives (appareils connectés) ───────────────────────────────────
+function describeSession(userAgent: string | null): { label: string; icon: string } {
+    if (!userAgent) return { label: "Appareil inconnu", icon: "💻" };
+    const ua = userAgent.toLowerCase();
+    const isMobile = /iphone|ipad|android|mobile/.test(ua);
+
+    let browser = "Navigateur";
+    if (ua.includes("edg/")) browser = "Edge";
+    else if (ua.includes("chrome")) browser = "Chrome";
+    else if (ua.includes("firefox")) browser = "Firefox";
+    else if (ua.includes("safari")) browser = "Safari";
+
+    let os = "";
+    if (ua.includes("windows")) os = "Windows";
+    else if (ua.includes("mac os")) os = "macOS";
+    else if (ua.includes("android")) os = "Android";
+    else if (ua.includes("iphone") || ua.includes("ipad")) os = "iOS";
+    else if (ua.includes("linux")) os = "Linux";
+
+    return { label: os ? `${browser} · ${os}` : browser, icon: isMobile ? "📱" : "💻" };
 }
 
 export default function ParametresPage() {
@@ -172,11 +195,51 @@ export default function ParametresPage() {
     // 2FA
     const [twoFA, setTwoFA] = useState(true);
 
-    // Sessions actives (mock)
-    const sessions = [
-        { device: "Chrome on Windows", location: "Lagos, Nigeria",   time: "Now",         active: true },
-        { device: "Safari on iPhone",  location: "Lagos, Nigeria",   time: "1 hour ago",  active: false },
-    ];
+    // Sessions actives (appareils connectés)
+    const [sessions, setSessions] = useState<UserSession[]>([]);
+    const [sessionsLoading, setSessionsLoading] = useState(true);
+    const [revokingId, setRevokingId] = useState<string | null>(null);
+    const [revokingOthers, setRevokingOthers] = useState(false);
+
+    useEffect(() => {
+        const loadSessions = async () => {
+            try {
+                const data = await authService.getSessions();
+                setSessions(data.sessions);
+            } catch (err) {
+                toast.error(getErrorMessage(err, "Erreur lors du chargement des sessions"));
+            } finally {
+                setSessionsLoading(false);
+            }
+        };
+        loadSessions();
+    }, []);
+
+    const handleRevokeSession = async (id: string) => {
+        setRevokingId(id);
+        try {
+            await authService.revokeSession(id);
+            setSessions((prev) => prev.filter((s) => s.id !== id));
+            toast.success("Session révoquée");
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Erreur lors de la révocation de la session"));
+        } finally {
+            setRevokingId(null);
+        }
+    };
+
+    const handleRevokeOtherSessions = async () => {
+        setRevokingOthers(true);
+        try {
+            await authService.revokeOtherSessions();
+            setSessions((prev) => prev.filter((s) => s.isCurrent));
+            toast.success("Déconnecté de tous les autres appareils");
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Erreur lors de la déconnexion des autres appareils"));
+        } finally {
+            setRevokingOthers(false);
+        }
+    };
 
     const handleChangePassword = async () => {
         if (!currentPwd || !newPwd || !confirmPwd) {
@@ -370,32 +433,58 @@ export default function ParametresPage() {
 
             {/* Sessions actives */}
             <div className="border-t border-gray-100 pt-4">
-            <p className="text-sm font-medium text-gray-900 mb-3">Active Sessions</p>
-            <div className="space-y-2">
-                {sessions.map((s) => (
-                <div key={s.device}
-                    className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
-                    <div className="flex items-center gap-2">
-                    <span className="text-lg">{s.device.includes("iPhone") ? "📱" : "💻"}</span>
-                    <div>
-                        <p className="text-xs font-medium text-gray-900">{s.device}</p>
-                        <p className="text-xs text-gray-400">{s.location} · {s.time}</p>
-                    </div>
-                    </div>
-                    {s.active ? (
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full"
-                        style={{ color: "#0f766e", background: "#f0fdf4" }}>
-                        NOW
-                    </span>
-                    ) : (
-                    <button className="text-xs text-red-500 hover:underline">Revoke</button>
-                    )}
-                </div>
+            <p className="text-sm font-medium text-gray-900 mb-3">Appareils connectés</p>
+            {sessionsLoading ? (
+                <div className="space-y-2">
+                {[1, 2].map((i) => (
+                    <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
                 ))}
-            </div>
+                </div>
+            ) : sessions.length === 0 ? (
+                <p className="text-xs text-gray-400">Aucune session active</p>
+            ) : (
+                <div className="space-y-2">
+                {sessions.map((s) => {
+                    const { label, icon } = describeSession(s.userAgent);
+                    return (
+                    <div key={s.id}
+                        className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
+                        <div className="flex items-center gap-2">
+                        <span className="text-lg">{icon}</span>
+                        <div>
+                            <p className="text-xs font-medium text-gray-900">{label}</p>
+                            <p className="text-xs text-gray-400">
+                            {s.ipAddress ? `${s.ipAddress} · ` : ""}{formatRelativeTime(s.lastUsedAt)}
+                            </p>
+                        </div>
+                        </div>
+                        {s.isCurrent ? (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+                            style={{ color: "#0f766e", background: "#f0fdf4" }}>
+                            CET APPAREIL
+                        </span>
+                        ) : (
+                        <button
+                            onClick={() => handleRevokeSession(s.id)}
+                            disabled={revokingId === s.id}
+                            className="text-xs text-red-500 hover:underline disabled:opacity-50">
+                            {revokingId === s.id ? "…" : "Révoquer"}
+                        </button>
+                        )}
+                    </div>
+                    );
+                })}
+                </div>
+            )}
+            {sessions.some((s) => !s.isCurrent) && (
+                <button onClick={handleRevokeOtherSessions} disabled={revokingOthers}
+                className="mt-2 w-full py-2 rounded-lg text-white text-xs font-medium bg-red-500 disabled:opacity-50">
+                {revokingOthers ? "Déconnexion…" : "Se déconnecter des autres appareils"}
+                </button>
+            )}
             <button onClick={logout}
-                className="mt-2 w-full py-2 rounded-lg text-white text-xs font-medium bg-red-500">
-                Logout from all devices
+                className="mt-2 w-full py-2 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">
+                Se déconnecter de cet appareil
             </button>
             </div>
         </div>

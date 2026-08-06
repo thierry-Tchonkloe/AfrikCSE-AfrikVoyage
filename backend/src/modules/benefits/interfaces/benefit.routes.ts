@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { BenefitController } from "./benefit.controller";
 import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 
@@ -11,7 +12,7 @@ router.use(authenticate);
 
 // Catégories — admin/manager
 router.get("/categories",        authorize("SUPER_ADMIN", "ADMIN", "MANAGER"), ctrl.getCategories.bind(ctrl));
-router.post("/categories",       authorize("SUPER_ADMIN", "ADMIN"), ctrl.createCategory.bind(ctrl));
+router.post("/categories",       authorize("SUPER_ADMIN", "ADMIN"), idempotency(), ctrl.createCategory.bind(ctrl));
 router.patch("/categories/:id",  authorize("SUPER_ADMIN", "ADMIN"), validateParams(idParamString), ctrl.updateCategory.bind(ctrl));
 router.delete("/categories/:id", authorize("SUPER_ADMIN", "ADMIN"), validateParams(idParamString), ctrl.deleteCategory.bind(ctrl));
 

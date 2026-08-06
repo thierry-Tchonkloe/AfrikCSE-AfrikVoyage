@@ -4,6 +4,10 @@ import type { NextConfig } from "next";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  // Sortie "standalone" utilisée uniquement pour l'image Docker (voir Dockerfile,
+  // ENV DOCKER_BUILD=1 au build). Sans effet sur les builds Vercel, qui gèrent
+  // leur propre trace de sortie.
+  output: process.env.DOCKER_BUILD ? "standalone" : undefined,
   images: {
     remotePatterns: [
       // Cloudinary (votre CDN principal)

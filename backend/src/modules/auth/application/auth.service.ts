@@ -51,7 +51,7 @@
 
 import { AuthRepository } from "../infrastructure/auth.repository";
 import { hashPassword, comparePassword, generateSecureToken, hashToken, } from "../../../core/utils/hash";
-import { signAccessToken, signRefreshToken, verifyRefreshToken, JwtPayload } from "../../../core/utils/jwt";
+import { signAccessToken, signRefreshToken, verifyRefreshToken, JwtPayload, REFRESH_TOKEN_TTL_MS } from "../../../core/utils/jwt";
 import { RegisterCompanyDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, CompleteProfileDto, ChangePasswordDto, } from "../interfaces/auth.validator";
 import { sendMail } from "../../../core/services/email.service";
 import { companyRegistrationReceivedEmail, newCompanyPendingValidationEmail, passwordResetEmail, } from "../../../core/mailer/email.templates";
@@ -81,7 +81,14 @@ export class AuthService {
 
         const hashedPassword = await hashPassword(dto.adminPassword);
 
-        const { org } = await this.repo.createOrganizationWithAdmin({
+        // Backstop DB (User.email / Organization.email / Organization.slug sont
+        // @unique) : si deux soumissions concurrentes passent toutes deux le check
+        // ci-dessus, une seule transaction réussit — l'autre lève P2002 ici plutôt
+        // que de créer un doublon, et AVANT tout envoi d'email (les emails ne sont
+        // envoyés qu'après ce bloc).
+        let org: Awaited<ReturnType<typeof this.repo.createOrganizationWithAdmin>>["org"];
+        try {
+        ({ org } = await this.repo.createOrganizationWithAdmin({
         org: {
             name: dto.companyName,
             slug,
@@ -107,7 +114,11 @@ export class AuthService {
             firstName: dto.adminFirstName,
             lastName: dto.adminLastName,
         },
-        });
+        }));
+        } catch (err: any) {
+        if (err?.code === "P2002") throw new Error("Cet email est déjà utilisé");
+        throw err;
+        }
 
         // Email "demande reçue" à l'admin de l'entreprise
         const received = companyRegistrationReceivedEmail({
@@ -149,7 +160,7 @@ export class AuthService {
      * contrôleur utilise pour poser la bonne paire de cookies (les deux systèmes
      * de session restent totalement séparés, seul le point d'entrée est commun).
      */
-    async login(dto: LoginDto) {
+    async login(dto: LoginDto, meta: { userAgent?: string | null; ipAddress?: string | null } = {}) {
         const user = await this.repo.findUserByEmail(dto.email);
 
         if (!user) {
@@ -186,7 +197,16 @@ export class AuthService {
         const accessToken  = signAccessToken(payload);
         const refreshToken = signRefreshToken(payload);
 
-        await this.repo.updateRefreshToken(user.id, hashToken(refreshToken));
+        // Crée une NOUVELLE session (une ligne par appareil) au lieu d'écraser
+        // l'unique refresh token stocké — permet plusieurs sessions actives
+        // simultanées (ex : téléphone + ordinateur) sans se déconnecter mutuellement.
+        await this.repo.createSession({
+            userId: user.id,
+            refreshTokenHash: hashToken(refreshToken),
+            expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+            userAgent: meta.userAgent,
+            ipAddress: meta.ipAddress,
+        });
         await this.repo.updateLastLogin(user.id);
 
         return {
@@ -209,9 +229,17 @@ export class AuthService {
         };
     }
 
-    /** Déconnexion : révoque IMMÉDIATEMENT tous les tokens de la session (access ET refresh) */
-    async logout(userId: string) {
-        await this.repo.revokeUserSessions(userId);
+    /**
+     * Déconnexion ciblée : supprime UNIQUEMENT la session de l'appareil courant
+     * (identifiée par le refresh token présenté), sans toucher aux autres
+     * sessions actives du même utilisateur (téléphone, autre navigateur…).
+     * Si aucun refresh token n'est présenté (cookie déjà absent), il n'y a
+     * rien à révoquer côté base — les cookies sont de toute façon effacés par
+     * le contrôleur.
+     */
+    async logout(userId: string, refreshToken?: string) {
+        if (!refreshToken) return;
+        await this.repo.deleteSessionByHash(userId, hashToken(refreshToken));
     }
 
     /** Renouvelle l'access token via le refresh token (double vérification signature + hash en base) */
@@ -223,13 +251,16 @@ export class AuthService {
             throw new Error("Refresh token invalide");
         }
 
-        const user = await this.repo.findUserById(payload.userId);
-        if (!user || !user.refreshToken) {
+        // Retrouve la session exacte correspondant à CE refresh token — jamais
+        // une simple colonne unique sur User, pour ne cibler que cet appareil.
+        const session = await this.repo.findSessionByHash(hashToken(refreshToken));
+        if (!session || session.userId !== payload.userId || session.expiresAt < new Date()) {
             throw new Error("Session expirée, veuillez vous reconnecter");
         }
 
-        if (user.refreshToken !== hashToken(refreshToken)) {
-            throw new Error("Refresh token invalide");
+        const user = await this.repo.findUserById(payload.userId);
+        if (!user) {
+            throw new Error("Session expirée, veuillez vous reconnecter");
         }
 
         const refreshedPayload: JwtPayload = {
@@ -242,11 +273,61 @@ export class AuthService {
         const newAccessToken  = signAccessToken(refreshedPayload);
         const newRefreshToken = signRefreshToken(refreshedPayload);
 
-        // Rotation : le hash en base doit refléter le nouveau refresh token, sinon
-        // le prochain appel à /refresh échouerait (mismatch avec l'ancien hash).
-        await this.repo.updateRefreshToken(user.id, hashToken(newRefreshToken));
+        // Rotation ciblée : seule CETTE session (cette ligne, cet appareil) est
+        // mise à jour avec le nouveau hash — les autres sessions actives du
+        // même utilisateur ne sont ni lues ni modifiées.
+        await this.repo.rotateSession(
+            session.id,
+            hashToken(newRefreshToken),
+            new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
+        );
 
         return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+    }
+
+    /**
+     * Liste les sessions actives (appareils connectés) de l'utilisateur.
+     * `currentRefreshToken` (cookie de la requête en cours) permet de signaler
+     * quelle ligne correspond à l'appareil depuis lequel l'utilisateur consulte
+     * la liste, pour que le frontend puisse l'afficher distinctement et empêcher
+     * sa révocation directe (bouton désactivé côté UI).
+     */
+    async listSessions(userId: string, currentRefreshToken?: string) {
+        const [sessions, currentSession] = await Promise.all([
+            this.repo.listSessions(userId),
+            currentRefreshToken ? this.repo.findSessionByHash(hashToken(currentRefreshToken)) : null,
+        ]);
+
+        return sessions.map((session) => ({
+            ...session,
+            isCurrent: currentSession?.id === session.id,
+        }));
+    }
+
+    /**
+     * Révoque une session précise (un appareil) — l'utilisateur ne peut révoquer
+     * que ses propres sessions (vérifié via findSessionByIdForUser).
+     */
+    async revokeSession(userId: string, sessionId: string) {
+        const session = await this.repo.findSessionByIdForUser(userId, sessionId);
+        if (!session) throw new Error("Session introuvable");
+        await this.repo.deleteSessionById(userId, sessionId);
+    }
+
+    /**
+     * Déconnexion de tous les autres appareils : supprime toutes les sessions
+     * du user SAUF celle en cours (identifiée par le cookie refreshToken de la
+     * requête), pour que l'utilisateur reste connecté sur l'appareil courant.
+     */
+    async revokeOtherSessions(userId: string, currentRefreshToken?: string) {
+        if (!currentRefreshToken) throw new Error("Session courante introuvable");
+
+        const currentSession = await this.repo.findSessionByHash(hashToken(currentRefreshToken));
+        if (!currentSession || currentSession.userId !== userId) {
+            throw new Error("Session courante introuvable");
+        }
+
+        await this.repo.deleteOtherSessions(userId, currentSession.id);
     }
 
     /** Envoie un email de reset password */
@@ -283,10 +364,12 @@ export class AuthService {
         const hashedPassword = await hashPassword(dto.password);
         await this.repo.resetPassword(user.id, hashedPassword);
 
-        // Révoque toutes les sessions actives (access ET refresh tokens) — l'utilisateur
-        // n'étant pas connecté pendant ce flow (lien reçu par email), aucune session en
-        // cours ne dépend de rester valide, contrairement à changePassword().
-        await this.repo.revokeUserSessions(user.id);
+        // Révoque TOUTES les sessions actives, sur TOUS les appareils (access ET
+        // refresh tokens) — contrairement au logout ciblé, un reset password est
+        // un événement de sécurité global : l'utilisateur n'étant pas connecté
+        // pendant ce flow (lien reçu par email), aucune session en cours ne
+        // dépend de rester valide, contrairement à changePassword().
+        await this.repo.revokeAllSessions(user.id);
     }
 
     /** Complétion du profil au premier login */

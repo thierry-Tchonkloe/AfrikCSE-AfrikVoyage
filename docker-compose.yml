@@ -1,0 +1,62 @@
+# Environnement de développement local uniquement.
+# La production continue de passer par Render (backend) + Vercel (frontend) —
+# voir .github/workflows/deploy.yml et DEPLOYMENT.md.
+#
+# Usage :
+#   docker compose up --build
+#
+# Prérequis : backend/.env doit exister (copier backend/.env.example).
+# DATABASE_URL, FRONTEND_URL et PORT y sont ignorés/écrasés ci-dessous car ils
+# dépendent du réseau Docker (le backend doit joindre "postgres", pas "localhost").
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: afrikcse-afrikvoyage_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - afrikcse_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      DATABASE_URL: postgresql://postgres:root@postgres:5432/afrikcse-afrikvoyage_db?schema=public
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5000/api
+        NEXT_PUBLIC_APP_NAME: AfrikCSE & AfrikVoyage
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  afrikcse_postgres_data:

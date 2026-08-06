@@ -3,6 +3,7 @@ import { OrganizationController } from "./organization.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 import { logoUpload } from "../../../core/middlewares/upload.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 
 const router = Router();
@@ -16,7 +17,7 @@ const requireSuper = authorize("SUPER_ADMIN");
 
 // Routes réservées au SUPER_ADMIN
 router.get("/", requireSuper, ctrl.getAll.bind(ctrl));
-router.post("/", requireSuper, ctrl.createByAdmin.bind(ctrl));
+router.post("/", requireSuper, idempotency(), ctrl.createByAdmin.bind(ctrl));
 router.get("/paginated", requireSuper, ctrl.getPaginated.bind(ctrl));
 // Doit être déclarée avant "/:id" — sinon "export" serait interprété comme un id
 router.get("/export", requireSuper, ctrl.exportCsv.bind(ctrl));
@@ -36,10 +37,10 @@ router.patch("/:id/validate", requireSuper, ctrl.validate.bind(ctrl));
 router.patch("/:id/reject", requireSuper, ctrl.reject.bind(ctrl));
 router.patch("/:id/modules", requireSuper, ctrl.updateModules.bind(ctrl));
 router.patch("/:id/suspend", requireSuper, ctrl.suspend.bind(ctrl));
-router.patch("/:id/validate-invite", requireSuper, ctrl.validateWithInvitation.bind(ctrl));
+router.patch("/:id/validate-invite", requireSuper, idempotency(), ctrl.validateWithInvitation.bind(ctrl));
 router.delete("/:id", requireSuper, ctrl.softDelete.bind(ctrl));
 
 router.patch("/:id",              requireSuper, ctrl.update.bind(ctrl));
 router.patch("/:id/reactivate",   requireSuper, ctrl.reactivate.bind(ctrl));
-router.post("/:id/invite",        requireSuper, ctrl.regenerateInvitation.bind(ctrl));
+router.post("/:id/invite",        requireSuper, idempotency(), ctrl.regenerateInvitation.bind(ctrl));
 export default router;

@@ -3,6 +3,7 @@ import { EmployeeSpaceController } from "./employee-space.controller";
 import { authenticate } from "../../../core/middlewares/auth.middleware";
 import { receiptUpload, logoUpload } from "../../../core/middlewares/upload.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 
 const router = Router();
@@ -43,7 +44,7 @@ router.get("/activity-log", ctrl.getActivityLog.bind(ctrl));
 
 // ── Documents ─────────────────────────────────────────────────────────────────
 router.get("/documents",         ctrl.getDocuments.bind(ctrl));
-router.post("/documents",        ctrl.addDocument.bind(ctrl));
+router.post("/documents",        idempotency(), ctrl.addDocument.bind(ctrl));
 router.delete("/documents/:id",  validateParams(idParamString), ctrl.deleteDocument.bind(ctrl));
 
 export default router;

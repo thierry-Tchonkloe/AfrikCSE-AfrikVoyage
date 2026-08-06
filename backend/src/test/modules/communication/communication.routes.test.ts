@@ -74,11 +74,14 @@ describe("GET /api/communication/posts", () => {
 });
 
 describe("POST /api/communication/posts", () => {
-  const validBody = { type: "ARTICLE", content: "Nouvelle publication interne" };
+  const validBody = { type: "ARTICLE", content: "Nouvelle publication interne", idempotencyKey: "post-key-1" };
 
   it("201 — crée une publication", async () => {
     const cookie = withSession();
-    createPostMock.mockResolvedValueOnce({ id: "post-1", type: "ARTICLE", content: validBody.content });
+    createPostMock.mockResolvedValueOnce({
+      post: { id: "post-1", type: "ARTICLE", content: validBody.content },
+      created: true,
+    });
 
     const res = await request(app).post("/api/communication/posts").set("Cookie", cookie).send(validBody);
 
@@ -106,7 +109,7 @@ describe("POST /api/communication/posts", () => {
     const res = await request(app)
       .post("/api/communication/posts")
       .set("Cookie", cookie)
-      .send({ type: "POLL", content: "Vote", pollOptions: [] });
+      .send({ type: "POLL", content: "Vote", pollOptions: [], idempotencyKey: "post-key-2" });
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ message: "Sondage sans options" });

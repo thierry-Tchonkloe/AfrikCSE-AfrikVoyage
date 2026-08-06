@@ -95,11 +95,11 @@ export class BookingService {
         const booking = await repo.findById(id);
         if (!booking) throw new AppError("Réservation introuvable", 404);
         if (booking.partnerId !== partnerId) throw new AppError("Accès interdit", 403);
-        if (booking.status !== "PENDING") throw new AppError("Seule une réservation PENDING peut être confirmée", 400);
-        const updated = await repo.updateStatus(id, BookingStatus.CONFIRMED, {
+        const updated = await repo.updateStatusFrom(id, BookingStatus.PENDING, BookingStatus.CONFIRMED, {
             confirmedAt:  new Date(),
             partnerNotes,
         });
+        if (!updated) throw new AppError("Seule une réservation PENDING peut être confirmée", 400);
         // Notify user
         const user = await prisma.user.findUnique({ where: { id: booking.userId }, select: { email: true } });
         dispatchNotification("BOOKING_CONFIRMED", {
@@ -114,11 +114,11 @@ export class BookingService {
         const booking = await repo.findById(id);
         if (!booking) throw new AppError("Réservation introuvable", 404);
         if (booking.partnerId !== partnerId) throw new AppError("Accès interdit", 403);
-        if (booking.status !== "PENDING") throw new AppError("Seule une réservation PENDING peut être refusée", 400);
-        await repo.updateStatus(id, BookingStatus.REJECTED, {
+        const updated = await repo.updateStatusFrom(id, BookingStatus.PENDING, BookingStatus.REJECTED, {
             cancelledAt:  new Date(),
             cancelReason: reason,
         });
+        if (!updated) throw new AppError("Seule une réservation PENDING peut être refusée", 400);
         // Remboursement wallet automatique si paiement wallet
         await this._refundIfWalletPayment(booking.userId, booking.organizationId, booking.id);
         // Notify user
@@ -134,8 +134,8 @@ export class BookingService {
         const booking = await repo.findById(id);
         if (!booking) throw new AppError("Réservation introuvable", 404);
         if (booking.partnerId !== partnerId) throw new AppError("Accès interdit", 403);
-        if (booking.status !== "CONFIRMED") throw new AppError("Seule une réservation CONFIRMED peut être complétée", 400);
-        const updated = await repo.updateStatus(id, BookingStatus.COMPLETED, { completedAt: new Date() });
+        const updated = await repo.updateStatusFrom(id, BookingStatus.CONFIRMED, BookingStatus.COMPLETED, { completedAt: new Date() });
+        if (!updated) throw new AppError("Seule une réservation CONFIRMED peut être complétée", 400);
 
         // Déclenche le calcul de commission si la réservation est liée à une commande payée
         if (booking.order?.finalAmount) {

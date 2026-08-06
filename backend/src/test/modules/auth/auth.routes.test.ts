@@ -45,6 +45,9 @@ const forgotPasswordMock = AuthService.prototype.forgotPassword as jest.Mock;
 const resetPasswordMock = AuthService.prototype.resetPassword as jest.Mock;
 const completeProfileMock = AuthService.prototype.completeProfile as jest.Mock;
 const changePasswordMock = AuthService.prototype.changePassword as jest.Mock;
+const listSessionsMock = AuthService.prototype.listSessions as jest.Mock;
+const revokeSessionMock = AuthService.prototype.revokeSession as jest.Mock;
+const revokeOtherSessionsMock = AuthService.prototype.revokeOtherSessions as jest.Mock;
 
 beforeEach(() => {
   mockReset(prismaMock);
@@ -450,6 +453,97 @@ describe("PATCH /api/auth/change-password", () => {
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ message: "Mot de passe actuel incorrect" });
+  });
+});
+
+describe("GET /api/auth/sessions", () => {
+  it("200 — liste les sessions actives de l'utilisateur authentifié", async () => {
+    const cookie = withValidSession();
+    listSessionsMock.mockResolvedValueOnce([
+      { id: "session-1", userAgent: "Chrome", ipAddress: "1.2.3.4", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-04-01", isCurrent: true },
+      { id: "session-2", userAgent: "Safari", ipAddress: "5.6.7.8", createdAt: "2026-01-01", lastUsedAt: "2026-01-01", expiresAt: "2026-04-01", isCurrent: false },
+    ]);
+
+    const res = await request(app).get("/api/auth/sessions").set("Cookie", cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.sessions).toHaveLength(2);
+    expect(res.body.sessions[0].isCurrent).toBe(true);
+  });
+
+  it("401 — rejette une requête sans cookie de session", async () => {
+    const res = await request(app).get("/api/auth/sessions");
+
+    expect(res.status).toBe(401);
+    expect(listSessionsMock).not.toHaveBeenCalled();
+  });
+
+  it("500 — propage une erreur inattendue du service", async () => {
+    const cookie = withValidSession();
+    listSessionsMock.mockRejectedValueOnce(new Error("Panne base de données"));
+
+    const res = await request(app).get("/api/auth/sessions").set("Cookie", cookie);
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ message: "Panne base de données" });
+  });
+});
+
+describe("DELETE /api/auth/sessions/:id", () => {
+  it("200 — révoque une session précise", async () => {
+    const cookie = withValidSession();
+    revokeSessionMock.mockResolvedValueOnce(undefined);
+
+    const res = await request(app).delete("/api/auth/sessions/session-2").set("Cookie", cookie);
+
+    expect(res.status).toBe(200);
+    expect(revokeSessionMock).toHaveBeenCalledWith("user-1", "session-2");
+  });
+
+  it("401 — rejette une requête sans cookie de session", async () => {
+    const res = await request(app).delete("/api/auth/sessions/session-2");
+
+    expect(res.status).toBe(401);
+    expect(revokeSessionMock).not.toHaveBeenCalled();
+  });
+
+  it("400 — rejette la révocation d'une session introuvable ou n'appartenant pas à l'utilisateur", async () => {
+    const cookie = withValidSession();
+    revokeSessionMock.mockRejectedValueOnce(new Error("Session introuvable"));
+
+    const res = await request(app).delete("/api/auth/sessions/session-inconnue").set("Cookie", cookie);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Session introuvable" });
+  });
+});
+
+describe("DELETE /api/auth/sessions/others", () => {
+  it("200 — déconnecte tous les autres appareils, en laissant la session courante intacte", async () => {
+    const cookie = withValidSession();
+    revokeOtherSessionsMock.mockResolvedValueOnce(undefined);
+
+    const res = await request(app).delete("/api/auth/sessions/others").set("Cookie", cookie);
+
+    expect(res.status).toBe(200);
+    expect(revokeOtherSessionsMock).toHaveBeenCalledWith("user-1", undefined);
+  });
+
+  it("401 — rejette une requête sans cookie de session", async () => {
+    const res = await request(app).delete("/api/auth/sessions/others");
+
+    expect(res.status).toBe(401);
+    expect(revokeOtherSessionsMock).not.toHaveBeenCalled();
+  });
+
+  it("400 — propage l'erreur si la session courante est introuvable", async () => {
+    const cookie = withValidSession();
+    revokeOtherSessionsMock.mockRejectedValueOnce(new Error("Session courante introuvable"));
+
+    const res = await request(app).delete("/api/auth/sessions/others").set("Cookie", cookie);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Session courante introuvable" });
   });
 });
 

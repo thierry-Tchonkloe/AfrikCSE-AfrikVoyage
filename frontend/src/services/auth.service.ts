@@ -1,6 +1,16 @@
 import api from "@/lib/api";
 import { AuthResponse } from "@/types";
 
+export type UserSession = {
+    id: string;
+    userAgent: string | null;
+    ipAddress: string | null;
+    createdAt: string;
+    lastUsedAt: string;
+    expiresAt: string;
+    isCurrent: boolean;
+};
+
 export const authService = {
     async login(email: string, password: string): Promise<AuthResponse> {
         const { data } = await api.post("/auth/login", { email, password });
@@ -24,6 +34,22 @@ export const authService = {
 
     async completeProfile(payload: Record<string, unknown>) {
         const { data } = await api.patch("/auth/complete-profile", payload);
+        return data;
+    },
+
+    // ── Sessions (appareils connectés) ───────────────────────────────────
+    async getSessions(): Promise<{ sessions: UserSession[] }> {
+        const { data } = await api.get("/auth/sessions");
+        return data;
+    },
+
+    async revokeSession(id: string) {
+        const { data } = await api.delete(`/auth/sessions/${id}`);
+        return data;
+    },
+
+    async revokeOtherSessions() {
+        const { data } = await api.delete("/auth/sessions/others");
         return data;
     },
 };

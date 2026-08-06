@@ -75,7 +75,10 @@ export function mockAuthenticatedPartnerSession(
     ...overrides,
   };
 
-  const token = jwt.sign(payload, process.env.JWT_SECRET as string);
+  // `type: "access"` requis depuis l'ajout du claim anti-confusion access/refresh
+  // (voir core/utils/jwt.ts et partner-portal.service.ts) — authenticatePartner
+  // rejette désormais tout token qui ne porte pas ce claim.
+  const token = jwt.sign({ ...payload, type: "access" }, process.env.JWT_SECRET as string);
   prismaMock.partnerUser.findUnique.mockResolvedValueOnce({
     tokenVersion: payload.tokenVersion,
     isActive: true,

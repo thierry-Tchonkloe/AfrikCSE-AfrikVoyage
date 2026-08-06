@@ -50,6 +50,7 @@ export class BenefitService {
 
     async approveRequest(id: string, organizationId: string, approverId: string) {
         const result = await this.repo.approveRequest(id, organizationId, approverId);
+        if (!result) throw new Error("Cette demande a déjà été traitée");
         await this.notificationRepo.createForUsers(
             [result.employee.userId],
             "Demande d'avantage approuvée",
@@ -63,6 +64,7 @@ export class BenefitService {
     async rejectRequest(id: string, organizationId: string, note: string) {
         if (!note?.trim()) throw new Error("Note de rejet requise");
         const result = await this.repo.rejectRequest(id, organizationId, note);
+        if (!result) throw new Error("Cette demande a déjà été traitée");
         await this.notificationRepo.createForUsers(
             [result.employee.userId],
             "Demande d'avantage rejetée",

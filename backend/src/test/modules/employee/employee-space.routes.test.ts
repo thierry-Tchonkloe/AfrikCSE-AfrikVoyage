@@ -130,11 +130,12 @@ describe("POST /api/employee/travels", () => {
     destination: "Cotonou",
     departureDate: "2026-08-01T00:00:00.000Z",
     returnDate: "2026-08-05T00:00:00.000Z",
+    idempotencyKey: "travel-req-key-1",
   };
 
   it("201 — crée une demande de voyage", async () => {
     const cookie = withSession();
-    createTravelRequestMock.mockResolvedValueOnce({ id: "travel-1", ...validBody });
+    createTravelRequestMock.mockResolvedValueOnce({ request: { id: "travel-1", ...validBody }, created: true });
 
     const res = await request(app).post("/api/employee/travels").set("Cookie", cookie).send(validBody);
 
@@ -181,11 +182,11 @@ describe("GET /api/employee/expenses", () => {
 
 // ── POST /expenses ────────────────────────────────────────────────────────
 describe("POST /api/employee/expenses", () => {
-  const validBody = { title: "Taxi aéroport", amount: 5000 };
+  const validBody = { title: "Taxi aéroport", amount: 5000, idempotencyKey: "expense-key-1" };
 
   it("201 — crée une note de frais", async () => {
     const cookie = withSession();
-    createExpenseMock.mockResolvedValueOnce({ id: "exp-1", ...validBody });
+    createExpenseMock.mockResolvedValueOnce({ expense: { id: "exp-1", ...validBody }, created: true });
 
     const res = await request(app).post("/api/employee/expenses").set("Cookie", cookie).send(validBody);
 
@@ -199,7 +200,7 @@ describe("POST /api/employee/expenses", () => {
     const res = await request(app)
       .post("/api/employee/expenses")
       .set("Cookie", cookie)
-      .send({ title: "Taxi", amount: -100 });
+      .send({ title: "Taxi", amount: -100, idempotencyKey: "expense-key-2" });
 
     expect(res.status).toBe(400);
     expect(res.body.errors.fieldErrors.amount).toBeDefined();
@@ -312,11 +313,14 @@ describe("GET /api/employee/benefits/requests", () => {
 
 // ── POST /benefits/requests ───────────────────────────────────────────────
 describe("POST /api/employee/benefits/requests", () => {
-  const validBody = { categoryId: "cat-1", amount: 20000 };
+  const validBody = { categoryId: "cat-1", amount: 20000, idempotencyKey: "benefit-req-key-1" };
 
   it("201 — soumet une demande d'avantage", async () => {
     const cookie = withSession();
-    createBenefitRequestMock.mockResolvedValueOnce({ id: "req-1", category: { name: "Sport" }, ...validBody });
+    createBenefitRequestMock.mockResolvedValueOnce({
+      request: { id: "req-1", category: { name: "Sport" }, ...validBody },
+      created: true,
+    });
 
     const res = await request(app).post("/api/employee/benefits/requests").set("Cookie", cookie).send(validBody);
 

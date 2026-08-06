@@ -28,13 +28,15 @@ export class CommunicationController {
         return;
         }
         try {
-        const post = await repo.createPost(
+        const { post, created } = await repo.createPost(
             req.user!.organizationId!,
             req.user!.userId,
             { ...parsed.data, type: parsed.data.type as PostType }
         );
 
-        if (["ADMIN", "MANAGER", "RH"].includes(req.user!.role)) {
+        // Un retry (idempotencyKey déjà vue) renvoie la publication existante sans
+        // renotifier toute l'organisation une 2e fois.
+        if (created && ["ADMIN", "MANAGER", "RH"].includes(req.user!.role)) {
             const title = post.title || POST_TYPE_LABELS[post.type];
             const body  = post.content.length > 140 ? `${post.content.slice(0, 140)}…` : post.content;
             await notificationRepo.createForOrg(req.user!.organizationId!, title, body, "SYSTEM_UPDATE", req.user!.userId, "/employes/communication");
@@ -47,8 +49,9 @@ export class CommunicationController {
     }
 
     async toggleLike(req: Request<IdParamString>, res: Response): Promise<void> {
+        const action = req.body?.action === "like" || req.body?.action === "unlike" ? req.body.action : undefined;
         try {
-        const result = await repo.toggleLike(req.params.id, req.user!.userId, req.user!.organizationId!);
+        const result = await repo.toggleLike(req.params.id, req.user!.userId, req.user!.organizationId!, action);
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });

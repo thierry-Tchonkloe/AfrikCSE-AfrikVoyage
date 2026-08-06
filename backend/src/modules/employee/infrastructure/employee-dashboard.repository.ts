@@ -115,8 +115,12 @@ export class EmployeeDashboardRepository {
         returnDate: Date;
         estimatedCost?: number;
         department?: string;
+        idempotencyKey: string;
     }) {
-        return prisma.travelRequest.create({
+        const existing = await prisma.travelRequest.findUnique({ where: { idempotencyKey: data.idempotencyKey } });
+        if (existing) return { request: existing, created: false };
+
+        const request = await prisma.travelRequest.create({
             data: {
                 ...data,
                 organizationId: orgId,
@@ -124,6 +128,7 @@ export class EmployeeDashboardRepository {
                 status: "PENDING",
             },
         });
+        return { request, created: true };
     }
 
     // ── Notes de frais ────────────────────────────────────────────────────────
@@ -150,7 +155,11 @@ export class EmployeeDashboardRepository {
         returnDate?: Date;
         travelId?: string;
         receipts?: string[];
+        idempotencyKey: string;
     }) {
+        const existingByKey = await prisma.expenseReport.findUnique({ where: { idempotencyKey: data.idempotencyKey } });
+        if (existingByKey) return { expense: existingByKey, created: false };
+
         const emp = await prisma.employee.findUnique({ where: { userId } });
         if (!emp) throw new Error("Profil employé introuvable");
 
@@ -163,7 +172,7 @@ export class EmployeeDashboardRepository {
             if (!travel) throw new Error("Voyage introuvable");
         }
 
-        return prisma.expenseReport.create({
+        const expense = await prisma.expenseReport.create({
             data: {
                 title: data.title,
                 amount: data.amount,
@@ -180,8 +189,10 @@ export class EmployeeDashboardRepository {
                 organizationId: orgId,
                 employeeId: emp.id,
                 status: "PENDING",
+                idempotencyKey: data.idempotencyKey,
             },
         });
+        return { expense, created: true };
     }
 
     // ── Avantages CSE ─────────────────────────────────────────────────────────
@@ -245,7 +256,14 @@ export class EmployeeDashboardRepository {
         description?: string;
         urgency?: "LOW" | "MEDIUM" | "HIGH";
         receipts?: string[];
+        idempotencyKey: string;
     }) {
+        const existingByKey = await prisma.benefitRequest.findUnique({
+            where: { idempotencyKey: data.idempotencyKey },
+            include: { category: { select: { id: true, name: true, icon: true } } },
+        });
+        if (existingByKey) return { request: existingByKey, created: false };
+
         const emp = await prisma.employee.findUnique({ where: { userId } });
         if (!emp) throw new Error("Profil employé introuvable");
 
@@ -274,7 +292,7 @@ export class EmployeeDashboardRepository {
             );
         }
 
-        return prisma.benefitRequest.create({
+        const request = await prisma.benefitRequest.create({
             data: {
                 ...data,
                 receipts: data.receipts ?? [],
@@ -287,6 +305,7 @@ export class EmployeeDashboardRepository {
                 category: { select: { id: true, name: true, icon: true } },
             },
         });
+        return { request, created: true };
     }
 
     async cancelBenefitRequest(requestId: string, userId: string) {
