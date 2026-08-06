@@ -13,7 +13,7 @@ const ctrl   = new PartnerPortalController();
 // ── Limiteur anti-bruteforce (même politique que /api/auth/login) ──────────
 const strictAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10,
+    max: process.env.RATELIMIT_MAX ? parseInt(process.env.RATELIMIT_MAX) : 5,
     message: { message: "Trop de tentatives, réessayez dans 15 minutes" },
     standardHeaders: true,
     legacyHeaders: false,

@@ -52,8 +52,13 @@ const validRuleBody = { type: "PERCENTAGE", rate: 0.1 };
 const validPayoutBody = { partnerId: "clh3p9a1x0000qzrmn831i7am", period: "2026-07" };
 
 describe("GET /api/commissions/rules", () => {
-  it("200 — un FINANCE reçoit les règles de commission", async () => {
-    const cookie = withSession({ role: "FINANCE" });
+  // RBAC renforcé sur cette route précise (voir commission.routes.ts) : CommissionRule
+  // est une entité plateforme (liée à partnerId, pas à organizationId) et listRules()
+  // n'est pas scopée par tenant — ADMIN/FINANCE (rôles scopés à une organisation
+  // cliente) ne doivent PAS pouvoir lister les taux négociés avec tous les partenaires
+  // de la plateforme, contrairement aux autres routes de ce fichier (entries/payouts).
+  it("200 — un PLATFORM_MANAGER reçoit les règles de commission", async () => {
+    const cookie = withSession({ role: "PLATFORM_MANAGER" });
     listRulesMock.mockResolvedValueOnce([{ id: "rule-1", type: "PERCENTAGE" }]);
 
     const res = await request(app).get("/api/commissions/rules").set("Cookie", cookie);
@@ -76,6 +81,24 @@ describe("GET /api/commissions/rules", () => {
 
     expect(res.status).toBe(403);
     expect(res.body).toEqual({ message: "Accès interdit" });
+    expect(listRulesMock).not.toHaveBeenCalled();
+  });
+
+  it("403 — refuse l'accès à un FINANCE (autorisé sur entries/payouts mais pas sur rules — fuite cross-tenant corrigée)", async () => {
+    const cookie = withSession({ role: "FINANCE" });
+
+    const res = await request(app).get("/api/commissions/rules").set("Cookie", cookie);
+
+    expect(res.status).toBe(403);
+    expect(listRulesMock).not.toHaveBeenCalled();
+  });
+
+  it("403 — refuse l'accès à un ADMIN (autorisé sur entries/payouts mais pas sur rules — fuite cross-tenant corrigée)", async () => {
+    const cookie = withSession({ role: "ADMIN" });
+
+    const res = await request(app).get("/api/commissions/rules").set("Cookie", cookie);
+
+    expect(res.status).toBe(403);
     expect(listRulesMock).not.toHaveBeenCalled();
   });
 

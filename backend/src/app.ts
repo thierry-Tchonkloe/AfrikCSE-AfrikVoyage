@@ -48,6 +48,7 @@ import hotelRoutes           from "./modules/hotels/interfaces/hotel.routes";
 import trainRoutes           from "./modules/trains/interfaces/train.routes";
 import carRentalRoutes       from "./modules/car-rentals/interfaces/car-rental.routes";
 import { errorMiddleware }   from "./core/middlewares/error.middleware";
+import { csrfProtection }    from "./core/middlewares/csrf.middleware";
 
 const app = express();
 
@@ -83,10 +84,14 @@ app.use(cors({
 // ── cookie-parser ── doit être avant les routes ─────────────────────────────
 app.use(cookieParser());
 
+// ── CSRF (double-submit cookie) ─────────────────────────────────────────────
+// Doit être après cookieParser (lit req.cookies) et avant les routes.
+app.use(csrfProtection);
+
 // ── Rate limiting global ─────────────────────────────────────────────────────
 app.use(rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 1000,
+    max: process.env.RATELIMIT_MAX ? parseInt(process.env.RATELIMIT_MAX) : 100,
     message: { message: "Trop de requêtes, réessayez dans 15 minutes" },
 }));
 

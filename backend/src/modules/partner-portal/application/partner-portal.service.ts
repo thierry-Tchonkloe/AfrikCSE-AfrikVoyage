@@ -7,7 +7,12 @@ import { hashToken } from "../../../core/utils/hash";
 
 const repo = new PartnerPortalRepository();
 
-const JWT_SECRET          = process.env.JWT_SECRET ?? "change-me";
+// Pas de fallback en dur : server.ts vérifie déjà JWT_SECRET au boot. Typé
+// `string` (pas `string | undefined`) via l'IIFE ci-dessous pour que le
+// contrôle de flux TypeScript reste valable dans les fonctions plus bas.
+const JWT_SECRET: string = process.env.JWT_SECRET ?? (() => {
+    throw new Error("JWT_SECRET manquant dans l'environnement");
+})();
 const ACCESS_TOKEN_EXPIRES  = process.env.JWT_PARTNER_ACCESS_EXPIRES  ?? "24h";
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_PARTNER_REFRESH_EXPIRES ?? "90d";
 
@@ -18,12 +23,17 @@ export interface PartnerTokenPayload {
     tokenVersion:  number;
 }
 
+// Claim `type` : même remarque que core/utils/jwt.ts — access et refresh
+// partagent le même secret et la même forme de payload, ce claim empêche un
+// refresh token volé d'être rejoué comme access token.
+type SignedPartnerTokenPayload = PartnerTokenPayload & { type: "access" | "refresh" };
+
 function signPartnerAccessToken(payload: PartnerTokenPayload): string {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRES } as never);
+    return jwt.sign({ ...payload, type: "access" }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRES } as never);
 }
 
 function signPartnerRefreshToken(payload: PartnerTokenPayload): string {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES } as never);
+    return jwt.sign({ ...payload, type: "refresh" }, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES } as never);
 }
 
 function toSessionUser(user: {
@@ -71,9 +81,10 @@ export class PartnerPortalService {
 
     /** Renouvelle la paire de tokens via le refresh token (cookie partnerRefreshToken) */
     async refresh(refreshToken: string) {
-        let payload: PartnerTokenPayload;
+        let payload: SignedPartnerTokenPayload;
         try {
-            payload = jwt.verify(refreshToken, JWT_SECRET) as PartnerTokenPayload;
+            payload = jwt.verify(refreshToken, JWT_SECRET) as SignedPartnerTokenPayload;
+            if (payload.type !== "refresh") throw new Error("Type de token invalide");
         } catch {
             throw new AppError("Refresh token invalide", 401);
         }

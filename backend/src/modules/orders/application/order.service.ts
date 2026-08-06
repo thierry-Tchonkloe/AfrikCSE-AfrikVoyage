@@ -79,6 +79,14 @@ export class OrderService {
             const verified = await marketplacePaymentSvc.verifyKkiapayTransaction(data.kkiapayTransactionId);
             if (!verified.success) throw new AppError("Transaction KkiaPay invalide ou non complétée", 400);
 
+            // Anti-fraude : le montant réellement confirmé par KkiaPay doit couvrir
+            // le montant final calculé côté serveur — jamais faire confiance au prix
+            // envoyé par le client (data.amount), qui n'est qu'indicatif à ce stade.
+            if (verified.amount < finalAmount.toNumber()) {
+                await repo.cancel(order.id, userId, "Montant payé insuffisant par rapport au montant de la commande");
+                throw new AppError("Le montant payé ne correspond pas au montant de la commande", 402);
+            }
+
             // Anti-rejeu : un même paiement KkiaPay ne peut financer qu'une seule
             // commande — sans ce check, un client peut réutiliser un transactionId
             // déjà validé pour créer plusieurs commandes payées une seule fois réellement.

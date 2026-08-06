@@ -84,7 +84,9 @@ export class MessagingRepository {
      */
     async getConversationsByOrg(orgId: string, userId: string) {
         const convs = await prisma.conversation.findMany({
-        where: { organizationId: orgId },
+        // Anti-IDOR : un employé ne doit voir (même en aperçu) que les
+        // conversations dont il est réellement participant.
+        where: { organizationId: orgId, participants: { some: { userId } } },
         include: {
             participants: {
             include: {

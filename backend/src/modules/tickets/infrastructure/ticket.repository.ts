@@ -2,7 +2,13 @@ import { createHmac, randomBytes, createHash } from "crypto";
 import { prisma } from "../../../core/config/prisma";
 import { AppError } from "../../../core/errors/app.error";
 
-const TICKET_SECRET = process.env.TICKET_SECRET ?? "";
+// Pas de fallback silencieux : server.ts vérifie déjà TICKET_SECRET au boot,
+// mais on refuse aussi ici de signer/vérifier avec une clé vide en défense en
+// profondeur. Typé `string` via l'IIFE pour que le contrôle de flux TypeScript
+// reste valable dans les fonctions plus bas.
+const TICKET_SECRET: string = process.env.TICKET_SECRET ?? (() => {
+    throw new Error("TICKET_SECRET manquant dans l'environnement");
+})();
 
 interface GenerateInput {
     offerId:        string;

@@ -1,14 +1,26 @@
 services:
   - type: web
     name: afrikcse-afrikvoyage
-    runtime: node
+    runtime: image
     region: frankfurt
     plan: free
 
-    buildCommand: npm install && npx prisma generate --early-access && npm run build
+    # Image construite et poussée par .github/workflows/deploy.yml (job
+    # build-and-push-backend) à chaque push sur main. Render re-tire le tag
+    # `latest` quand le Deploy Hook est appelé (job deploy-backend).
+    #
+    # ⚠️ Bascule d'un service existant de runtime "node" vers "image" :
+    # à faire une première fois manuellement dans le Dashboard Render
+    # (Settings → le sync Blueprint ne migre pas toujours le runtime tout seul).
+    # ⚠️ Si le package GHCR est privé, ajouter les identifiants du registre dans
+    # Render Dashboard → Account Settings → Credentials (PAT GitHub, scope
+    # read:packages), ou rendre le package public dans les settings du package
+    # sur GitHub.
+    image:
+      url: ghcr.io/thierry-tchonkloe/afrikcse-afrikvoyage-backend:latest
 
-    # Migration + démarrage séparés avec les bons flags
-    startCommand: npx prisma migrate deploy --early-access && node dist/server.js
+    # La migration Prisma (prisma migrate deploy) et le démarrage du serveur
+    # sont désormais gérés par le ENTRYPOINT de l'image (docker-entrypoint.sh).
 
     envVars:
       - key: NODE_ENV
@@ -20,6 +32,8 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: TICKET_SECRET
         generateValue: true
       - key: FRONTEND_URL
         sync: false

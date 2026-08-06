@@ -340,7 +340,8 @@ export class EmployeeSpaceController {
             });
             if (!user) { res.status(404).json({ message: "Utilisateur introuvable" }); return; }
 
-            const secret = process.env.JWT_SECRET ?? "change-me";
+            // Pas de fallback en dur : server.ts vérifie déjà JWT_SECRET au boot.
+            const secret = process.env.JWT_SECRET!;
             const payload = `${userId}:${orgId}:${user.createdAt.getTime()}`;
             const qrData  = createHmac("sha256", secret).update(payload).digest("hex");
 

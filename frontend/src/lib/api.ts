@@ -80,11 +80,32 @@ const api = axios.create({
     timeout: 15000, // évite qu'une requête bloquée laisse l'UI en chargement indéfiniment
 });
 
+// ── CSRF (double-submit cookie) ──────────────────────────────────────
+// Le backend pose un cookie `csrfToken` non-httpOnly à la connexion (voir
+// core/utils/auth-cookies.ts) : on le relit ici et on le renvoie dans un
+// en-tête custom sur chaque requête d'écriture, vérifié côté serveur par
+// csrfProtection. Nécessaire car les cookies de session sont en
+// SameSite=None en production (frontend/backend sur des domaines différents),
+// ce qui désactive la protection CSRF native de SameSite=Lax/Strict.
+const MUTATING_METHODS = new Set(["post", "put", "patch", "delete"]);
+
+export function getCsrfToken(): string | null {
+    if (typeof document === "undefined") return null;
+    const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
 // ── Intercepteur requête ────────────────────────────────────────────
 // Plus besoin d'injecter manuellement le Bearer token :
 // le cookie accessToken HTTP-only est transmis par le navigateur.
-// On garde l'intercepteur vide pour d'éventuels headers custom.
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    const method = config.method?.toLowerCase();
+    if (method && MUTATING_METHODS.has(method)) {
+        const csrfToken = getCsrfToken();
+        if (csrfToken) {
+            config.headers.set("X-CSRF-Token", csrfToken);
+        }
+    }
     return config;
 });
 
@@ -112,11 +133,19 @@ api.interceptors.response.use(
         const refreshPath = isPartner ? "/partner-portal/refresh" : "/auth/refresh";
 
         try {
-            // Le refresh token est dans le cookie HTTP-only correspondant → withCredentials suffit
+            // Le refresh token est dans le cookie HTTP-only correspondant → withCredentials
+            // suffit pour le token lui-même, mais /auth/refresh reste une requête POST
+            // authentifiée par cookie : le en-tête CSRF est requis (voir csrfProtection).
+            // Appel en axios brut (pas l'instance `api`) pour éviter toute boucle de retry
+            // sur ce endpoint — l'en-tête doit donc être ajouté manuellement ici.
+            const csrfToken = getCsrfToken();
             await axios.post(
             `${process.env.NEXT_PUBLIC_API_URL}${refreshPath}`,
             {},
-            { withCredentials: true }
+            {
+                withCredentials: true,
+                headers: csrfToken ? { "X-CSRF-Token": csrfToken } : undefined,
+            }
             );
             // Le backend renvoie un nouveau cookie access token HTTP-only.
             // On relance simplement la requête originale.

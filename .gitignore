@@ -11,10 +11,15 @@ out/
 
 # ─── Variables d'environnement ─────────────────────────
 # IMPORTANT : ne jamais committer les .env avec de vraies valeurs
+# (backend/.env.production et frontend/.env.production sont déjà suivis par
+# Git depuis avant cette règle — ils ne contiennent que des placeholders,
+# mais ne doivent plus jamais recevoir de vraies valeurs. Voir explication
+# de configuration sécurisée fournie par Claude.)
 .env
 .env.local
 .env.development.local
 .env.test.local
+.env.production
 .env.production.local
 
 # ─── Prisma ────────────────────────────────────────────
