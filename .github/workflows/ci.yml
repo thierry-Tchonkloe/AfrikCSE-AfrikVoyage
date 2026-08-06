@@ -30,9 +30,12 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma Client
+        # `prisma generate` ne se connecte jamais à la base : il lit juste le
+        # schéma. La valeur n'a donc pas besoin d'être réelle, seulement
+        # non-vide (prisma.config.ts échoue sinon avec PrismaConfigEnvError).
         run: npm run prisma:generate
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
 
       - name: Run tests
         run: npm test

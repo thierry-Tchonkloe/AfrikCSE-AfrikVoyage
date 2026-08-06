@@ -19,6 +19,10 @@ COPY package.json package-lock.json ./
 COPY prisma ./prisma
 COPY prisma.config.ts tsconfig.json ./
 COPY src ./src
+# `prisma generate` ne se connecte jamais à la base, il lit seulement le schéma.
+# Valeur factice uniquement pour satisfaire la validation de prisma.config.ts
+# (PrismaConfigEnvError si DATABASE_URL est vide/absent).
+ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 RUN npx prisma generate --early-access
 RUN npm run build
 
