@@ -39,6 +39,24 @@ export class WalletService {
         if (amount.lessThanOrEqualTo(0)) {
             throw new AppError("Le montant d'allocation doit être positif", 400);
         }
+
+        // Anti cross-tenant : Wallet.userId est @unique GLOBALEMENT (pas de clé
+        // composite avec organizationId) — sans ce filtre, un userId d'une autre
+        // organisation pourrait être crédité via getOrCreate/upsert. On ne retient
+        // que les userIds qui appartiennent réellement à CETTE organisation.
+        const members = await prisma.user.findMany({
+            where:  { id: { in: userIds }, organizationId },
+            select: { id: true, email: true },
+        });
+        const validIds    = new Set(members.map((m) => m.id));
+        const rejectedIds = userIds.filter((id) => !validIds.has(id));
+        if (rejectedIds.length > 0) {
+            throw new AppError(
+                `Utilisateur(s) hors de l'organisation, allocation refusée : ${rejectedIds.join(", ")}`,
+                403
+            );
+        }
+
         const results = await Promise.allSettled(
             userIds.map(async (userId) => {
                 const wallet = await repo.getOrCreate(userId, organizationId);
@@ -53,12 +71,8 @@ export class WalletService {
         const succeeded = results.filter((r) => r.status === "fulfilled").length;
         const failed    = results.filter((r) => r.status === "rejected").length;
 
-        // Notify allocated users
-        const users = await prisma.user.findMany({
-            where:  { id: { in: userIds } },
-            select: { id: true, email: true },
-        });
-        for (const user of users) {
+        // Notify allocated users (réutilise `members`, déjà scopé à l'organisation)
+        for (const user of members) {
             dispatchNotification("WALLET_CREDITED", {
                 userId: user.id,
                 email:  user.email,

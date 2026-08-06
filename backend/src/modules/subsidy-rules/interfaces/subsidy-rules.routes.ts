@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
+import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { SubsidyRulesController } from "./subsidy-rules.controller";
 
 const router = Router();
@@ -9,7 +10,7 @@ router.use(authenticate, authorize("ADMIN", "SUPER_ADMIN"));
 
 router.get("/",        ctrl.getAll.bind(ctrl));
 router.get("/:id",     ctrl.getById.bind(ctrl));
-router.post("/",       ctrl.create.bind(ctrl));
+router.post("/",       idempotency(), ctrl.create.bind(ctrl));
 router.put("/:id",     ctrl.update.bind(ctrl));
 router.delete("/:id",  ctrl.remove.bind(ctrl));
 

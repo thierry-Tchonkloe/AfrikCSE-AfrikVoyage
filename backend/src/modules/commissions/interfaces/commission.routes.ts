@@ -2,6 +2,7 @@ import { Router } from "express";
 import { CommissionController } from "./commission.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 
 const router = Router();
@@ -11,8 +12,12 @@ router.use(authenticate);
 router.use(authorize("SUPER_ADMIN", "PLATFORM_MANAGER", "FINANCE", "ADMIN"));
 
 // ── Rules ─────────────────────────────────────────────────────────────────────
-router.get("/rules",         ctrl.listRules.bind(ctrl));
-router.post("/rules",        authorize("SUPER_ADMIN"), ctrl.createRule.bind(ctrl));
+// CommissionRule est une entité plateforme (liée à partnerId, pas à organizationId)
+// et listRules() n'est pas scopée par tenant — réservée aux rôles plateforme pour
+// éviter qu'un ADMIN/FINANCE d'une organisation cliente voie les taux négociés
+// avec TOUS les partenaires de la plateforme.
+router.get("/rules",         authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.listRules.bind(ctrl));
+router.post("/rules",        authorize("SUPER_ADMIN"), idempotency(), ctrl.createRule.bind(ctrl));
 router.patch("/rules/:id",   authorize("SUPER_ADMIN"), validateParams(idParamString), ctrl.updateRule.bind(ctrl));
 router.delete("/rules/:id",  authorize("SUPER_ADMIN"), validateParams(idParamString), ctrl.deleteRule.bind(ctrl));
 

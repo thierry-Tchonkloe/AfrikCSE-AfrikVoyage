@@ -4,16 +4,61 @@ on:
   push:
     branches: [main] # Déclenché uniquement sur main
 
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}-backend
+
 jobs:
-  # ── Deploy Backend sur Render ──────────────────────────
+  # ── Build & Push l'image backend sur GHCR ──────────────
+  build-and-push-backend:
+    name: Build & Push Backend Image → GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image_lower }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Compute lowercase image name
+        id: meta
+        run: echo "image_lower=$(echo '${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image_lower }}:latest
+            ${{ steps.meta.outputs.image_lower }}:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+  # ── Deploy Backend sur Render (pull la nouvelle image) ─
   deploy-backend:
     name: Deploy Backend → Render
+    needs: build-and-push-backend
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render Deploy Hook
         run: |
           curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
-        # RENDER_DEPLOY_HOOK_URL : récupéré dans Render > Service > Deploy Hook
+        # RENDER_DEPLOY_HOOK_URL : récupéré dans Render > Service > Settings > Deploy Hook.
+        # Le service Render est configuré (render.yaml) pour tirer l'image
+        # ghcr.io/.../..-backend:latest qui vient d'être poussée ci-dessus.
 
   # ── Deploy Frontend sur Vercel ─────────────────────────
   deploy-frontend:

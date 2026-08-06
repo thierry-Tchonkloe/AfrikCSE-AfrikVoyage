@@ -42,5 +42,12 @@ router.patch("/complete-profile", authenticate, ctrl.completeProfile.bind(ctrl))
 router.patch("/change-password", authenticate, ctrl.changePassword.bind(ctrl));
 router.post("/activate", strictAuthLimiter, ctrl.activateAccount.bind(ctrl));
 
+// ── Sessions (appareils connectés) ────────────────────
+// ⚠️ "/sessions/others" doit être déclaré AVANT "/sessions/:id", sinon Express
+// interpréterait "others" comme un :id.
+router.get("/sessions", authenticate, ctrl.listSessions.bind(ctrl));
+router.delete("/sessions/others", authenticate, ctrl.revokeOtherSessions.bind(ctrl));
+router.delete("/sessions/:id", authenticate, ctrl.revokeSession.bind(ctrl));
+
 
 export default router;

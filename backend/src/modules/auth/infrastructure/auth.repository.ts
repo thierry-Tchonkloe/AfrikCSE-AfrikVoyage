@@ -204,22 +204,103 @@ export class AuthRepository {
         });
     }
 
-    async updateRefreshToken(userId: string, hashedToken: string | null) {
-        return prisma.user.update({
-        where: { id: userId },
-        data: { refreshToken: hashedToken },
+    /** Crée une nouvelle session (une par appareil/navigateur) au login */
+    async createSession(data: {
+        userId: string;
+        refreshTokenHash: string;
+        expiresAt: Date;
+        userAgent?: string | null;
+        ipAddress?: string | null;
+    }) {
+        return prisma.userSession.create({
+        data: {
+            userId: data.userId,
+            refreshTokenHash: data.refreshTokenHash,
+            expiresAt: data.expiresAt,
+            userAgent: data.userAgent ?? null,
+            ipAddress: data.ipAddress ?? null,
+        },
+        });
+    }
+
+    /** Retrouve la session correspondant au refresh token présenté (non expirée) */
+    async findSessionByHash(refreshTokenHash: string) {
+        return prisma.userSession.findUnique({
+        where: { refreshTokenHash },
         });
     }
 
     /**
-     * Révoque toutes les sessions actives d'un user : supprime le refresh token
-     * en base ET incrémente tokenVersion, ce qui invalide immédiatement tout
-     * access token déjà émis (vérifié à chaque requête par `authenticate`).
+     * Rotation : remplace le hash de la session par celui du nouveau refresh
+     * token émis, en ciblant UNIQUEMENT cette session (par son id) — les
+     * autres sessions du même utilisateur ne sont jamais touchées.
      */
-    async revokeUserSessions(userId: string) {
-        return prisma.user.update({
-        where: { id: userId },
-        data: { refreshToken: null, tokenVersion: { increment: 1 } },
+    async rotateSession(sessionId: string, newHash: string, expiresAt: Date) {
+        return prisma.userSession.update({
+        where: { id: sessionId },
+        data: { refreshTokenHash: newHash, expiresAt, lastUsedAt: new Date() },
+        });
+    }
+
+    /**
+     * Déconnexion ciblée : supprime UNIQUEMENT la session de l'appareil courant
+     * (identifiée par le hash de son refresh token), en laissant les autres
+     * sessions actives de cet utilisateur intactes.
+     */
+    async deleteSessionByHash(userId: string, refreshTokenHash: string) {
+        return prisma.userSession.deleteMany({
+        where: { userId, refreshTokenHash },
+        });
+    }
+
+    /**
+     * Révoque TOUTES les sessions d'un user (toutes lignes UserSession) ET
+     * incrémente tokenVersion, ce qui invalide immédiatement tout access token
+     * déjà émis (vérifié à chaque requête par `authenticate`) — utilisé pour
+     * les événements de sécurité globaux (ex : reset password), jamais pour un
+     * logout normal qui doit rester limité à l'appareil courant.
+     */
+    async revokeAllSessions(userId: string) {
+        return prisma.$transaction([
+        prisma.userSession.deleteMany({ where: { userId } }),
+        prisma.user.update({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } }),
+        ]);
+    }
+
+    /** Liste les sessions actives d'un user (appareils connectés), plus récentes d'abord */
+    async listSessions(userId: string) {
+        return prisma.userSession.findMany({
+        where: { userId },
+        orderBy: { lastUsedAt: "desc" },
+        select: {
+            id: true,
+            userAgent: true,
+            ipAddress: true,
+            createdAt: true,
+            lastUsedAt: true,
+            expiresAt: true,
+        },
+        });
+    }
+
+    /** Retrouve une session par son id, scopée au user (empêche de révoquer la session d'un tiers) */
+    async findSessionByIdForUser(userId: string, sessionId: string) {
+        return prisma.userSession.findFirst({ where: { id: sessionId, userId } });
+    }
+
+    /** Révoque une session précise (un appareil), scopée au user propriétaire */
+    async deleteSessionById(userId: string, sessionId: string) {
+        return prisma.userSession.deleteMany({ where: { id: sessionId, userId } });
+    }
+
+    /**
+     * Révoque toutes les sessions d'un user SAUF celle en cours — utilisé par
+     * « Déconnexion des autres appareils » : l'utilisateur reste connecté sur
+     * l'appareil depuis lequel il déclenche l'action.
+     */
+    async deleteOtherSessions(userId: string, currentSessionId: string) {
+        return prisma.userSession.deleteMany({
+        where: { userId, id: { not: currentSessionId } },
         });
     }
 

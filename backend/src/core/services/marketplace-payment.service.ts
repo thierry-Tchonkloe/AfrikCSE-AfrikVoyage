@@ -46,16 +46,28 @@ export class MarketplacePaymentService {
      * l'envoie au backend. On vérifie ici la transaction auprès de l'API.
      */
     async verifyKkiapayTransaction(transactionId: string): Promise<{ success: boolean; amount: number }> {
+        const publicKey  = process.env.KKIAPAY_PUBLIC_KEY;
         const secretKey  = process.env.KKIAPAY_SECRET_KEY;
         const privateKey = process.env.KKIAPAY_PRIVATE_KEY;
         if (!secretKey) throw new Error("KKIAPAY_SECRET_KEY manquant dans les variables d'environnement");
 
-        const baseUrl  = process.env.KKIAPAY_API_URL ?? "https://api.kkiapay.me";
-        const response = await fetch(`${baseUrl}/api/v1/transactions/${transactionId}/status`, {
+        // Le sandbox KkiaPay est servi par un host distinct de la prod — vérifier
+        // une transaction sandbox sur l'host live renvoie 404 (transaction inconnue là-bas).
+        const sandbox = process.env.NODE_ENV !== "production";
+        const baseUrl = process.env.KKIAPAY_API_URL
+            ?? (sandbox ? "https://api-sandbox.kkiapay.me" : "https://api.kkiapay.me");
+
+        // L'API attend un POST avec le transactionId dans le body, pas dans l'URL
+        // (endpoint unique /transactions/status, cf. SDK officiel @kkiapay-org/nodejs-sdk).
+        const response = await fetch(`${baseUrl}/api/v1/transactions/status`, {
+            method: "POST",
             headers: {
+                "Content-Type": "application/json",
+                ...(publicKey ? { "x-api-key": publicKey } : {}),
                 "x-secret-key": secretKey,
                 ...(privateKey ? { "x-private-key": privateKey } : {}),
             },
+            body: JSON.stringify({ transactionId }),
         });
 
         if (!response.ok) {

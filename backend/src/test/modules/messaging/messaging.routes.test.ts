@@ -160,7 +160,7 @@ describe("GET /api/messaging/conversations/:id/messages", () => {
 describe("POST /api/messaging/conversations/:id/messages", () => {
   it("201 — envoie un message et notifie les autres participants", async () => {
     const cookie = withSession();
-    sendMessageMock.mockResolvedValueOnce({ id: "msg-1", sender: { firstName: "Awa", lastName: "Traoré" } });
+    sendMessageMock.mockResolvedValueOnce({ msg: { id: "msg-1", sender: { firstName: "Awa", lastName: "Traoré" } }, created: true });
 
     const res = await request(app)
       .post("/api/messaging/conversations/conv-1/messages")

@@ -7,150 +7,170 @@ datasource db {
 }
 
 model Organization {
-  id            String     @id @default(uuid())
-  name          String
-  email         String?    @unique
-  slug          String     @unique
-  status        OrgStatus  @default(PENDING)
-  hasVoyage     Boolean    @default(false)
-  hasCSE        Boolean    @default(false)
-  isHost        Boolean    @default(false) // True pour l'entreprise propriétaire
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @default(now())
-  address       String?
-  businessEmail String?
-  city          String?
-  country       String?
-  industry      String?
-  phone         String?
-  plan          Plan       @default(STARTER)
-  postalCode    String?
-  region        String?
-  rejectedAt    DateTime?
-  rejectionNote String?
-  size          String?
-  validatedAt   DateTime?
-  validatedById String?
-  logoUrl            String?
-  primaryColor       String?
-  secondaryColor     String?
-  accentColor        String?
-  legalName          String?
-  registrationNumber String?
-  vatNumber          String?
+  id                  String    @id @default(uuid())
+  name                String
+  email               String?   @unique
+  slug                String    @unique
+  status              OrgStatus @default(PENDING)
+  hasVoyage           Boolean   @default(false)
+  hasCSE              Boolean   @default(false)
+  isHost              Boolean   @default(false) // True pour l'entreprise propriétaire
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @default(now())
+  address             String?
+  businessEmail       String?
+  city                String?
+  country             String?
+  industry            String?
+  phone               String?
+  plan                Plan      @default(STARTER)
+  postalCode          String?
+  region              String?
+  rejectedAt          DateTime?
+  rejectionNote       String?
+  size                String?
+  validatedAt         DateTime?
+  validatedById       String?
+  logoUrl             String?
+  primaryColor        String?
+  secondaryColor      String?
+  accentColor         String?
+  legalName           String?
+  registrationNumber  String?
+  vatNumber           String?
   // ─── Branding V2 Sprint 1 ───────────────────────────
-  backgroundColor    String?
-  faviconUrl         String?
-  welcomeMessage     String?
-  customDomain       String?
-  maxFamilyMembers   Int      @default(5)
+  backgroundColor     String?
+  faviconUrl          String?
+  welcomeMessage      String?
+  customDomain        String?
+  maxFamilyMembers    Int       @default(5)
   // ─── V3 Sprint 1 ────────────────────────────────────
-  countryCode        String   @default("CI")
-  currencyCode       String   @default("XOF")
-  defaultLocale      String   @default("fr")
-  developerApiEnabled Boolean @default(false)
+  countryCode         String    @default("CI")
+  currencyCode        String    @default("XOF")
+  defaultLocale       String    @default("fr")
+  developerApiEnabled Boolean   @default(false)
 
-  auditLogs     AuditLog[]
-  users         User[]
+  auditLogs        AuditLog[]
+  users            User[]
   invitationTokens InvitationToken[]
 
-  employees        Employee[]
-  familyMembers    FamilyMember[]
-  tickets          Ticket[]
-  benefitCategories BenefitCategory[]
-  benefitRequests  BenefitRequest[]
+  employees              Employee[]
+  familyMembers          FamilyMember[]
+  tickets                Ticket[]
+  benefitCategories      BenefitCategory[]
+  benefitRequests        BenefitRequest[]
   complianceRequirements ComplianceRequirement[]
-  expenseReports   ExpenseReport[]
-  travelRequests   TravelRequest[]
-  conversations    Conversation[]
-  subscription     Subscription?
-  invoices         Invoice[]
-  apiIntegrations  ApiIntegration[]
-  events           Event[]
-  csePosts         CsePost[]
-  benefitCatalog   BenefitCatalogItem[]
-  travelPolicies   TravelPolicy[]
-  groupTravels     GroupTravel[]
-  travelRewards    TravelReward[]
-  ocrScans         OcrScan[]
-  eventPhotos      EventPhoto[]
-  faqEntries       FaqEntry[]
-  wallets          Wallet[]
-  cashbackRules    CashbackRule[]
-  orders           Order[]
-  bookings         Booking[]
-  apiClients       ApiClient[]
-  webhookEndpoints WebhookEndpoint[]
-  subsidyRules     SubsidyRule[]
+  expenseReports         ExpenseReport[]
+  travelRequests         TravelRequest[]
+  conversations          Conversation[]
+  subscription           Subscription?
+  invoices               Invoice[]
+  apiIntegrations        ApiIntegration[]
+  events                 Event[]
+  csePosts               CsePost[]
+  benefitCatalog         BenefitCatalogItem[]
+  travelPolicies         TravelPolicy[]
+  groupTravels           GroupTravel[]
+  travelRewards          TravelReward[]
+  ocrScans               OcrScan[]
+  eventPhotos            EventPhoto[]
+  faqEntries             FaqEntry[]
+  wallets                Wallet[]
+  cashbackRules          CashbackRule[]
+  orders                 Order[]
+  bookings               Booking[]
+  apiClients             ApiClient[]
+  webhookEndpoints       WebhookEndpoint[]
+  subsidyRules           SubsidyRule[]
 
   @@map("organizations")
 }
 
 model User {
-  id                     String       @id @default(uuid())
-  email                  String       @unique
-  password               String
-  role                   Role         @default(EMPLOYE)
-  firstName              String
-  lastName               String
-  isActive               Boolean      @default(true)
-  refreshToken           String?
-  tokenVersion           Int          @default(0) // incrémenté au logout / reset password → révoque tous les tokens émis avant
-  lastLoginAt            DateTime?
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @default(now())
-  organizationId         String
-  avatar                 String?
-  costCenter             String?
-  department             String?
-  emailVerified          Boolean      @default(false)
-  emailVerifiedAt        DateTime?
-  jobTitle               String?
-  managerId              String?
-  phone                  String?
-  profileCompleted       Boolean      @default(false)
-  resetPasswordExpiresAt DateTime?
-  resetPasswordToken     String?
-  timezone               String       @default("Africa/Lome")
-  dateFormat             String       @default("DD/MM/YYYY")
-  notificationPreferences Json        @default("{\"email\":true,\"travelAlerts\":true,\"cseUpdates\":true,\"systemUpdates\":true}")
-  auditLogs              AuditLog[]
-  manager                User?        @relation("UserManager", fields: [managerId], references: [id])
-  managedUsers           User[]       @relation("UserManager")
-  organization           Organization @relation(fields: [organizationId], references: [id])
+  id                      String       @id @default(uuid())
+  email                   String       @unique
+  password                String
+  role                    Role         @default(EMPLOYE)
+  firstName               String
+  lastName                String
+  isActive                Boolean      @default(true)
+  tokenVersion            Int          @default(0) // incrémenté au reset password → révoque immédiatement l'access token de TOUTES les sessions
+  lastLoginAt             DateTime?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @default(now())
+  organizationId          String
+  avatar                  String?
+  costCenter              String?
+  department              String?
+  emailVerified           Boolean      @default(false)
+  emailVerifiedAt         DateTime?
+  jobTitle                String?
+  managerId               String?
+  phone                   String?
+  profileCompleted        Boolean      @default(false)
+  resetPasswordExpiresAt  DateTime?
+  resetPasswordToken      String?
+  timezone                String       @default("Africa/Lome")
+  dateFormat              String       @default("DD/MM/YYYY")
+  notificationPreferences Json         @default("{\"email\":true,\"travelAlerts\":true,\"cseUpdates\":true,\"systemUpdates\":true}")
+  auditLogs               AuditLog[]
+  manager                 User?        @relation("UserManager", fields: [managerId], references: [id])
+  managedUsers            User[]       @relation("UserManager")
+  organization            Organization @relation(fields: [organizationId], references: [id])
 
-  employee         Employee?
-  sentMessages     Message[]        @relation("MessageSender")
-  conversations    ConversationParticipant[]
+  employee      Employee?
+  sentMessages  Message[]                 @relation("MessageSender")
+  conversations ConversationParticipant[]
 
-  eventRegistrations EventRegistration[]
-  postLikes          PostLike[]          @relation("PostLiker")
-  postComments       PostComment[]       @relation("CommentAuthor")
-  pollVotes          PollVote[]          @relation("PollVoter")
-  authoredPosts      CsePost[]           @relation("PostAuthor")
-  documents          UserDocument[]
-  travelRequests     TravelRequest[]     @relation("TravelRequester")
-  notifications      Notification[]
-  familyMembers      FamilyMember[]
-  tickets            Ticket[]
-  travelRewards      TravelReward[]      @relation("TravelRewardUser")
-  ocrScans           OcrScan[]           @relation("OcrScanUser")
-  ledGroupTravels    GroupTravel[]       @relation("GroupTravelLeader")
-  groupParticipations GroupTravelParticipant[] @relation("GroupTravelParticipant")
-  uploadedPhotos     EventPhoto[]        @relation("EventPhotoUploader")
-  eventPhotoLikes    EventPhotoLike[]    @relation("EventPhotoLiker")
-  faqEntriesAuthored FaqEntry[]          @relation("FaqEntryAuthor")
-  faqVotes           FaqVote[]           @relation("FaqVoter")
+  eventRegistrations   EventRegistration[]
+  postLikes            PostLike[]               @relation("PostLiker")
+  postComments         PostComment[]            @relation("CommentAuthor")
+  pollVotes            PollVote[]               @relation("PollVoter")
+  authoredPosts        CsePost[]                @relation("PostAuthor")
+  documents            UserDocument[]
+  travelRequests       TravelRequest[]          @relation("TravelRequester")
+  notifications        Notification[]
+  familyMembers        FamilyMember[]
+  tickets              Ticket[]
+  travelRewards        TravelReward[]           @relation("TravelRewardUser")
+  ocrScans             OcrScan[]                @relation("OcrScanUser")
+  ledGroupTravels      GroupTravel[]            @relation("GroupTravelLeader")
+  groupParticipations  GroupTravelParticipant[] @relation("GroupTravelParticipant")
+  uploadedPhotos       EventPhoto[]             @relation("EventPhotoUploader")
+  eventPhotoLikes      EventPhotoLike[]         @relation("EventPhotoLiker")
+  faqEntriesAuthored   FaqEntry[]               @relation("FaqEntryAuthor")
+  faqVotes             FaqVote[]                @relation("FaqVoter")
   // ─── V3 Sprint 1 ────────────────────────────────────
-  memberCardToken    String?
-  notifNewPartnerOffer Boolean           @default(true)
-  preferredLocale    String              @default("fr")
-  wallet             Wallet?
+  memberCardToken      String?
+  notifNewPartnerOffer Boolean                  @default(true)
+  preferredLocale      String                   @default("fr")
+  wallet               Wallet?
   cashbackTransactions CashbackTransaction[]
-  orders             Order[]
-  bookings           Booking[]
+  orders               Order[]
+  bookings             Booking[]
+  sessions             UserSession[]
 
   @@map("users")
+}
+
+// ─── USER SESSION (un refresh token par appareil/session) ──────────────
+// Remplace l'ancien champ unique User.refreshToken : chaque login crée une
+// ligne distincte, ce qui permet plusieurs sessions actives simultanées et
+// une déconnexion ciblée (une seule ligne supprimée) sans impacter les autres
+// appareils.
+model UserSession {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String   @unique
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  lastUsedAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@map("user_sessions")
 }
 
 model AuditLog {
@@ -196,30 +216,29 @@ enum Role {
   PARTNER_STAFF
 }
 
-
 // ─── PLATFORM SETTINGS ─────────────────────────────────
 
 model PlatformSettings {
-  id                    String   @id @default("singleton") // Un seul enregistrement
+  id String @id @default("singleton") // Un seul enregistrement
 
-  logoUrl               String?
-  primaryColor          String   @default("#0f766e")
-  secondaryColor        String   @default("#f59e0b")
-  darkModeEnabled       Boolean  @default(true)
+  logoUrl         String?
+  primaryColor    String  @default("#0f766e")
+  secondaryColor  String  @default("#f59e0b")
+  darkModeEnabled Boolean @default(true)
 
-  faviconUrl            String?
+  faviconUrl String?
 
-  manualValidation      Boolean  @default(true)
-  autoRegistration      Boolean  @default(false)
+  manualValidation Boolean @default(true)
+  autoRegistration Boolean @default(false)
 
-  defaultHasCSE         Boolean  @default(false)
-  defaultHasVoyage      Boolean  @default(false)
+  defaultHasCSE    Boolean @default(false)
+  defaultHasVoyage Boolean @default(false)
 
-  notifyOnValidation    Boolean  @default(true)
-  notifyOnRejection     Boolean  @default(true)
-  notifyWelcome         Boolean  @default(false)
+  notifyOnValidation Boolean @default(true)
+  notifyOnRejection  Boolean @default(true)
+  notifyWelcome      Boolean @default(false)
 
-  updatedAt             DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 
   @@map("platform_settings")
 }
@@ -227,21 +246,21 @@ model PlatformSettings {
 // ─── PLAN ──────────────────────────────────────────────
 
 model PlanConfig {
-  id                String   @id @default(cuid())
-  name              String   @unique // "STARTER", "BUSINESS", "ENTERPRISE"
-  label             String
-  price             String            // Libellé affiché ("Gratuit", "Sur devis")
-  pricePerEmployee  Decimal? @db.Decimal(10,2) // Prix/employé actif/mois
-  billingCycle      String?           // "MONTHLY" | "ANNUAL"
-  maxUsers          Int?
-  hasVoyage         Boolean  @default(false)
-  hasCSE            Boolean  @default(false)
-  features          String[]
-  apiAccess         Boolean  @default(false)
-  webhookAccess     Boolean  @default(false)
-  isActive          Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String   @id @default(cuid())
+  name             String   @unique // "STARTER", "BUSINESS", "ENTERPRISE"
+  label            String
+  price            String // Libellé affiché ("Gratuit", "Sur devis")
+  pricePerEmployee Decimal? @db.Decimal(10, 2) // Prix/employé actif/mois
+  billingCycle     String? // "MONTHLY" | "ANNUAL"
+  maxUsers         Int?
+  hasVoyage        Boolean  @default(false)
+  hasCSE           Boolean  @default(false)
+  features         String[]
+  apiAccess        Boolean  @default(false)
+  webhookAccess    Boolean  @default(false)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@map("plan_configs")
 }
@@ -249,20 +268,20 @@ model PlanConfig {
 // ─── API DEVELOPER (F29) ────────────────────────────────
 
 model ApiClient {
-  id          String       @id @default(cuid())
-  orgId       String
-  org         Organization @relation(fields: [orgId], references: [id])
-  name        String
-  keyPrefix   String       // Premiers 12 chars visibles en UI
-  keyHash     String       @unique // SHA-256 de la clé complète
-  scopes      String[]
-  isActive    Boolean      @default(true)
-  lastUsedAt  DateTime?
-  expiresAt   DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id])
+  name       String
+  keyPrefix  String // Premiers 12 chars visibles en UI
+  keyHash    String       @unique // SHA-256 de la clé complète
+  scopes     String[]
+  isActive   Boolean      @default(true)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
-  webhooks    WebhookEndpoint[]
+  webhooks WebhookEndpoint[]
 
   @@map("api_clients")
 }
@@ -280,7 +299,7 @@ model WebhookEndpoint {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  deliveries  WebhookDelivery[]
+  deliveries WebhookDelivery[]
 
   @@map("webhook_endpoints")
 }
@@ -310,8 +329,8 @@ model CountryConfig {
   name         String
   currencyCode String   @default("XOF")
   locale       String   @default("fr")
-  taxRate      Decimal  @default(0) @db.Decimal(5,4)
-  phonePrefix  String?  // "+225"
+  taxRate      Decimal  @default(0) @db.Decimal(5, 4)
+  phonePrefix  String? // "+225"
   isActive     Boolean  @default(true)
   metadata     Json?
   createdAt    DateTime @default(now())
@@ -323,22 +342,22 @@ model CountryConfig {
 // ─── SUBSIDY RULES (F18) ───────────────────────────────
 
 model SubsidyRule {
-  id             String    @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  label          String    // ex : "CSE Transport", "Bien-être"
-  category       String?   // filtre par catégorie d'offre (null = toutes)
+  label          String // ex : "CSE Transport", "Bien-être"
+  category       String? // filtre par catégorie d'offre (null = toutes)
   offerType      OfferType? // filtre par type d'offre (null = tous)
-  subsidyPct     Int?      // % de subvention (prioritaire sur subsidyAmount)
-  subsidyAmount  Decimal?  @db.Decimal(10,2) // montant fixe XOF
-  currencyCode   String    @default("XOF")
-  maxPerEmployee Decimal?  @db.Decimal(10,2) // plafond par employé
+  subsidyPct     Int? // % de subvention (prioritaire sur subsidyAmount)
+  subsidyAmount  Decimal?     @db.Decimal(10, 2) // montant fixe XOF
+  currencyCode   String       @default("XOF")
+  maxPerEmployee Decimal?     @db.Decimal(10, 2) // plafond par employé
   startsAt       DateTime?
   endsAt         DateTime?
-  isActive       Boolean   @default(true)
-  priority       Int       @default(0) // plus élevé = priorité plus haute
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  isActive       Boolean      @default(true)
+  priority       Int          @default(0) // plus élevé = priorité plus haute
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@map("subsidy_rules")
 }
@@ -346,17 +365,16 @@ model SubsidyRule {
 // ─── INVITATION TOKEN ──────────────────────────────────// Token d'activation envoyé à l'admin après validation
 
 model InvitationToken {
-  id             String    @id @default(cuid())
-  token          String    @unique // Token hashé
+  id             String       @id @default(cuid())
+  token          String       @unique // Token hashé
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   usedAt         DateTime?
   expiresAt      DateTime
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime     @default(now())
 
   @@map("invitation_tokens")
 }
-
 
 // ─── Enum ─────────────────────────────────────────────────────────────────────
 
@@ -369,29 +387,26 @@ enum ContactStatus {
 // ─── Model ────────────────────────────────────────────────────────────────────
 
 model ContactRequest {
-  id               Int           @id @default(autoincrement())
-  fullName         String
-  company          String
-  email            String
-  phone            String        @default("")
-  companySize      String        @default("")
-  message          String
-  acceptMarketing  Boolean       @default(false)
-  status           ContactStatus @default(PENDING)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id              Int           @id @default(autoincrement())
+  fullName        String
+  company         String
+  email           String
+  phone           String        @default("")
+  companySize     String        @default("")
+  message         String
+  acceptMarketing Boolean       @default(false)
+  status          ContactStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@map("contact_requests")
 }
 
-
-
-
 // ─── EMPLOYEE (profil étendu dans l'org) ───────────────
 model Employee {
   id             String       @id @default(cuid())
-  matricule      String?      // Numéro matricule RH
-  avatar         String?      // URL Cloudinary
+  matricule      String? // Numéro matricule RH
+  avatar         String? // URL Cloudinary
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   userId         String       @unique
@@ -410,21 +425,21 @@ model Employee {
 
 // ─── BENEFIT CATEGORY (catégories de subventions CSE) ──
 model BenefitCategory {
-  id              String       @id @default(cuid())
-  name            String
-  description     String?
-  icon            String?
-  annualBudget    Float        @default(0)
-  perEmployeeLimit Float       @default(0)
-  currency        String       @default("EUR")
-  isActive        Boolean      @default(true)
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id])
-  eligibleServices String[]    // Liste des services éligibles
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id               String       @id @default(cuid())
+  name             String
+  description      String?
+  icon             String?
+  annualBudget     Float        @default(0)
+  perEmployeeLimit Float        @default(0)
+  currency         String       @default("EUR")
+  isActive         Boolean      @default(true)
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  eligibleServices String[] // Liste des services éligibles
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
-  requests        BenefitRequest[]
+  requests BenefitRequest[]
 
   @@map("benefit_categories")
 }
@@ -466,30 +481,31 @@ enum Urgency {
 }
 
 model BenefitRequest {
-  id             String        @id @default(cuid())
+  id             String          @id @default(cuid())
   amount         Float
   description    String?
-  receipts       String[]      @default([]) // URLs des justificatifs
-  status         RequestStatus @default(PENDING)
-  urgency        Urgency       @default(LOW)
+  receipts       String[]        @default([]) // URLs des justificatifs
+  status         RequestStatus   @default(PENDING)
+  urgency        Urgency         @default(LOW)
   rejectionNote  String?
   organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id])
+  organization   Organization    @relation(fields: [organizationId], references: [id])
   employeeId     String
-  employee       Employee      @relation(fields: [employeeId], references: [id])
+  employee       Employee        @relation(fields: [employeeId], references: [id])
   categoryId     String
   category       BenefitCategory @relation(fields: [categoryId], references: [id])
   approvedById   String?
   approvedAt     DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  idempotencyKey String?         @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@map("benefit_requests")
 }
 
 // ─── EXPENSE REPORT (notes de frais voyage) ────────────
 model ExpenseReport {
-  id             String        @id @default(cuid())
+  id             String         @id @default(cuid())
   title          String
   description    String?
   destination    String?
@@ -501,19 +517,20 @@ model ExpenseReport {
   departureDate  DateTime?
   returnDate     DateTime?
   amount         Float
-  co2Emissions   Float?        // en tonnes
-  status         RequestStatus @default(PENDING)
+  co2Emissions   Float? // en tonnes
+  status         RequestStatus  @default(PENDING)
   rejectionNote  String?
   department     String?
   organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id])
   employeeId     String
-  employee       Employee      @relation(fields: [employeeId], references: [id])
+  employee       Employee       @relation(fields: [employeeId], references: [id])
   approvedById   String?
   approvedAt     DateTime?
-  receipts       String[]      // URLs des justificatifs
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  receipts       String[] // URLs des justificatifs
+  idempotencyKey String?        @unique
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@map("expense_reports")
 }
@@ -529,38 +546,39 @@ enum TravelStatus {
 }
 
 model TravelRequest {
-  id             String        @id @default(cuid())
-  destination    String
-  purpose        String?
-  departureDate  DateTime
-  returnDate     DateTime
-  estimatedCost  Float?
-  actualCost     Float?
-  department     String?
-  status         TravelStatus  @default(PENDING)
-  urgency        Urgency       @default(LOW)
-  rejectionNote  String?
-  partnerName    String?
-  paymentStatus  PaymentStatus @default(PENDING)
-  paymentLink    String?
-  organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id])
-  requestedById  String
-  requestedBy    User          @relation("TravelRequester", fields: [requestedById], references: [id])
-  approvedById   String?
-  approvedAt     DateTime?
+  id                 String        @id @default(cuid())
+  destination        String
+  purpose            String?
+  departureDate      DateTime
+  returnDate         DateTime
+  estimatedCost      Float?
+  actualCost         Float?
+  department         String?
+  status             TravelStatus  @default(PENDING)
+  urgency            Urgency       @default(LOW)
+  rejectionNote      String?
+  partnerName        String?
+  paymentStatus      PaymentStatus @default(PENDING)
+  paymentLink        String?
+  organizationId     String
+  organization       Organization  @relation(fields: [organizationId], references: [id])
+  requestedById      String
+  requestedBy        User          @relation("TravelRequester", fields: [requestedById], references: [id])
+  approvedById       String?
+  approvedAt         DateTime?
   tripReminderSentAt DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  idempotencyKey     String?       @unique
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
   // ─── Sprint 3 ────────────────────────────────────────
-  policyId       String?
-  policy         TravelPolicy?  @relation(fields: [policyId], references: [id])
-  groupTravelId  String?
-  groupTravel    GroupTravel?   @relation(fields: [groupTravelId], references: [id])
-  reward         TravelReward?  @relation("TravelRequestReward")
+  policyId      String?
+  policy        TravelPolicy? @relation(fields: [policyId], references: [id])
+  groupTravelId String?
+  groupTravel   GroupTravel?  @relation(fields: [groupTravelId], references: [id])
+  reward        TravelReward? @relation("TravelRequestReward")
 
-  expenses       ExpenseReport[]
+  expenses ExpenseReport[]
 
   @@map("travel_requests")
 }
@@ -579,8 +597,8 @@ model Conversation {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
-  participants   ConversationParticipant[]
-  messages       Message[]
+  participants ConversationParticipant[]
+  messages     Message[]
 
   @@map("conversations")
 }
@@ -606,8 +624,10 @@ model Message {
   senderId       String
   sender         User         @relation("MessageSender", fields: [senderId], references: [id])
   readAt         DateTime?
+  idempotencyKey String? // fourni par le frontend, unique par (conversation, expéditeur) — anti-retry
   createdAt      DateTime     @default(now())
 
+  @@unique([conversationId, senderId, idempotencyKey])
   @@map("messages")
 }
 
@@ -626,81 +646,80 @@ enum PaymentMethod {
 }
 
 model Subscription {
-  id             String    @id @default(cuid())
-  organizationId String    @unique
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  plan           Plan      @default(STARTER)
-  status         String    @default("ACTIVE") // ACTIVE, CANCELLED, PAST_DUE
+  id                 String       @id @default(cuid())
+  organizationId     String       @unique
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  plan               Plan         @default(STARTER)
+  status             String       @default("ACTIVE") // ACTIVE, CANCELLED, PAST_DUE
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
-  cancelAtPeriodEnd  Boolean @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  cancelAtPeriodEnd  Boolean      @default(false)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
-  invoices       Invoice[]
+  invoices Invoice[]
 
   @@map("subscriptions")
 }
 
 model Invoice {
-  id             String        @id @default(cuid())
-  invoiceNumber  String        @unique // INV-2025-001
+  id             String         @id @default(cuid())
+  invoiceNumber  String         @unique // INV-2025-001
   amount         Float
-  currency       String        @default("EUR")
-  status         PaymentStatus @default(PENDING)
+  currency       String         @default("EUR")
+  status         PaymentStatus  @default(PENDING)
   paymentMethod  PaymentMethod?
-  paymentRef     String?       // Référence transaction externe
+  paymentRef     String?        @unique // Référence transaction externe — backstop anti-rejeu (KkiaPay/FedaPay)
+  checkoutUrl    String? // URL de paiement externe (FedaPay) — rejouée si retry dans la fenêtre anti-doublon
   description    String?
   subscriptionId String
-  subscription   Subscription  @relation(fields: [subscriptionId], references: [id])
+  subscription   Subscription   @relation(fields: [subscriptionId], references: [id])
   organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id])
   paidAt         DateTime?
   dueDate        DateTime
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@map("invoices")
 }
 
 // ─── PLATFORM SETTINGS (ajout champ logo) ──────────────
 
-
 // ─── API INTEGRATION ───────────────────────────────────
 model ApiIntegration {
   id             String       @id @default(cuid())
-  name           String       // "SAP SuccessFactors", "Workday", etc.
-  type           String       // "HR", "ACCOUNTING"
-  apiKey         String?      // Stocké chiffré
+  name           String // "SAP SuccessFactors", "Workday", etc.
+  type           String // "HR", "ACCOUNTING"
+  apiKey         String? // Stocké chiffré
   webhookUrl     String?
   isActive       Boolean      @default(false)
   lastSyncAt     DateTime?
-  syncConfig     Json?        // Mapping des champs
+  syncConfig     Json? // Mapping des champs
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   syncLogs        SyncLog[]
-  integrationType String   @default("HR_SYSTEM")
+  integrationType String    @default("HR_SYSTEM")
 
   @@map("api_integrations")
 }
 
 model SyncLog {
-  id              String         @id @default(cuid())
-  integrationId   String
-  integration     ApiIntegration @relation(fields: [integrationId], references: [id])
-  type            String         // "AUTOMATIC", "MANUAL"
-  employeesCreated Int           @default(0)
-  employeesUpdated Int           @default(0)
-  errors          Int            @default(0)
-  status          String         // "SUCCESS", "PARTIAL", "FAILED"
-  createdAt       DateTime       @default(now())
+  id               String         @id @default(cuid())
+  integrationId    String
+  integration      ApiIntegration @relation(fields: [integrationId], references: [id])
+  type             String // "AUTOMATIC", "MANUAL"
+  employeesCreated Int            @default(0)
+  employeesUpdated Int            @default(0)
+  errors           Int            @default(0)
+  status           String // "SUCCESS", "PARTIAL", "FAILED"
+  createdAt        DateTime       @default(now())
 
   @@map("sync_logs")
 }
-
 
 // ─── EVENT (Calendrier CSE) ────────────────────────────
 enum EventStatus {
@@ -711,24 +730,24 @@ enum EventStatus {
 }
 
 model Event {
-  id             String      @id @default(cuid())
-  title          String
-  description    String?
-  startDate      DateTime
-  endDate        DateTime
-  location       String?
+  id              String       @id @default(cuid())
+  title           String
+  description     String?
+  startDate       DateTime
+  endDate         DateTime
+  location        String?
   maxParticipants Int?
-  icon           String?     // emoji ou URL
-  color          String?     // couleur calendrier
-  status         EventStatus @default(PUBLISHED)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  createdById    String
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  icon            String? // emoji ou URL
+  color           String? // couleur calendrier
+  status          EventStatus  @default(PUBLISHED)
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  createdById     String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  registrations  EventRegistration[]
-  photos         EventPhoto[]
+  registrations EventRegistration[]
+  photos        EventPhoto[]
 
   @@map("events")
 }
@@ -754,21 +773,22 @@ enum PostType {
 }
 
 model CsePost {
-  id             String    @id @default(cuid())
-  type           PostType  @default(ARTICLE)
+  id             String       @id @default(cuid())
+  type           PostType     @default(ARTICLE)
   title          String?
   content        String
   imageUrl       String?
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   authorId       String
-  author         User      @relation("PostAuthor", fields: [authorId], references: [id])
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  author         User         @relation("PostAuthor", fields: [authorId], references: [id])
+  idempotencyKey String?      @unique
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  likes          PostLike[]
-  comments       PostComment[]
-  pollOptions    PollOption[]
+  likes       PostLike[]
+  comments    PostComment[]
+  pollOptions PollOption[]
 
   @@map("cse_posts")
 }
@@ -803,7 +823,7 @@ model PollOption {
   post      CsePost  @relation(fields: [postId], references: [id])
   createdAt DateTime @default(now())
 
-  votes     PollVote[]
+  votes PollVote[]
 
   @@map("poll_options")
 }
@@ -812,70 +832,72 @@ model PollVote {
   id           String     @id @default(cuid())
   pollOptionId String
   pollOption   PollOption @relation(fields: [pollOptionId], references: [id])
+  postId       String // dénormalisé depuis PollOption.postId pour porter la contrainte "1 vote par sondage"
   userId       String
   user         User       @relation("PollVoter", fields: [userId], references: [id])
   createdAt    DateTime   @default(now())
 
   @@unique([pollOptionId, userId])
+  @@unique([postId, userId])
   @@map("poll_votes")
 }
 
 // ─── BENEFIT CATALOG (catalogue avantages employé) ─────
 model BenefitCatalogItem {
-  id               String    @id @default(cuid())
-  title            String
-  description      String?
-  imageUrl         String?
-  category         String
-  subsidyPct       Int       // % existant V1 — voir subsidyAmount pour le montant fixe V2
-  employeePrice    Float
-  companyPrice     Float
-  validUntil       DateTime?
-  maxPerFamily     Int?
-  isActive         Boolean   @default(true)
-  organizationId   String
-  organization     Organization @relation(fields: [organizationId], references: [id])
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id             String       @id @default(cuid())
+  title          String
+  description    String?
+  imageUrl       String?
+  category       String
+  subsidyPct     Int // % existant V1 — voir subsidyAmount pour le montant fixe V2
+  employeePrice  Float
+  companyPrice   Float
+  validUntil     DateTime?
+  maxPerFamily   Int?
+  isActive       Boolean      @default(true)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   // ─── Champs V2 Sprint 1 ─────────────────────────────
-  partnerId          String?
-  partner            Partner?  @relation(fields: [partnerId], references: [id])
-  offerType          OfferType @default(VOUCHER)
-  isFeatured         Boolean   @default(false)
-  isCommitteeChoice  Boolean   @default(false)
-  boostUntil         DateTime?
-  boostLabel         String?
-  subsidyAmount      Decimal?  @db.Decimal(10,2)
-  subsidyStart       DateTime?
-  subsidyEnd         DateTime?
-  city               String?
-  region             String?
-  country            String?
-  latitude           Decimal?  @db.Decimal(9,6)
-  longitude          Decimal?  @db.Decimal(9,6)
-  requiresTicket     Boolean   @default(false)
-  requiresFamilyMember Boolean @default(false)
-  publishedAt        DateTime?
-  unpublishedAt      DateTime?
-  validFrom          DateTime?
-  stock              Int?
+  partnerId            String?
+  partner              Partner?          @relation(fields: [partnerId], references: [id])
+  offerType            OfferType         @default(VOUCHER)
+  isFeatured           Boolean           @default(false)
+  isCommitteeChoice    Boolean           @default(false)
+  boostUntil           DateTime?
+  boostLabel           String?
+  subsidyAmount        Decimal?          @db.Decimal(10, 2)
+  subsidyStart         DateTime?
+  subsidyEnd           DateTime?
+  city                 String?
+  region               String?
+  country              String?
+  latitude             Decimal?          @db.Decimal(9, 6)
+  longitude            Decimal?          @db.Decimal(9, 6)
+  requiresTicket       Boolean           @default(false)
+  requiresFamilyMember Boolean           @default(false)
+  publishedAt          DateTime?
+  unpublishedAt        DateTime?
+  validFrom            DateTime?
+  stock                Int?
   // ─── V3 Sprint 1 ────────────────────────────────────
-  cashbackRuleId     String?
-  cashbackRule       CashbackRule? @relation(fields: [cashbackRuleId], references: [id])
+  cashbackRuleId       String?
+  cashbackRule         CashbackRule?     @relation(fields: [cashbackRuleId], references: [id])
   // ─── Validation SA des offres partenaires ───────────
   // Distinct de `isActive` (gate d'affichage catalogue) : trace où en est
   // l'offre dans le circuit de revue Super Admin. Les offres créées via le
   // catalogue interne (sans partnerId) restent APPROVED par défaut — seules
   // les offres soumises par un partenaire démarrent en PENDING.
-  reviewStatus       OfferReviewStatus @default(APPROVED)
-  reviewNote         String?
-  reviewedAt         DateTime?
-  reviewedById       String?
+  reviewStatus         OfferReviewStatus @default(APPROVED)
+  reviewNote           String?
+  reviewedAt           DateTime?
+  reviewedById         String?
 
-  auditEntries     OfferAuditEntry[]
-  tickets          Ticket[]
-  bookings         Booking[]
+  auditEntries OfferAuditEntry[]
+  tickets      Ticket[]
+  bookings     Booking[]
 
   @@map("benefit_catalog_items")
 }
@@ -889,10 +911,10 @@ enum OfferReviewStatus {
 // ─── USER DOCUMENT ─────────────────────────────────────
 model UserDocument {
   id        String   @id @default(cuid())
-  name      String   // "Passport Copy", "National ID"
-  url       String   // URL Cloudinary
-  type      String   // "PDF", "IMAGE"
-  size      String?  // "2.4 MB"
+  name      String // "Passport Copy", "National ID"
+  url       String // URL Cloudinary
+  type      String // "PDF", "IMAGE"
+  size      String? // "2.4 MB"
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
@@ -938,17 +960,17 @@ enum NotificationLogStatus {
 }
 
 model NotificationTemplate {
-  id            String             @id @default(cuid())
-  event         NotificationType   @unique
-  channels      NotificationChannel[]
-  emailSubject  String?
-  emailBody     String?            @db.Text
-  smsBody       String?
-  inAppTitle    String?
-  inAppBody     String?
-  isActive      Boolean            @default(true)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id           String                @id @default(cuid())
+  event        NotificationType      @unique
+  channels     NotificationChannel[]
+  emailSubject String?
+  emailBody    String?               @db.Text
+  smsBody      String?
+  inAppTitle   String?
+  inAppBody    String?
+  isActive     Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
 
   @@map("notification_templates")
 }
@@ -1005,47 +1027,47 @@ enum OfferType {
 }
 
 model Partner {
-  id              String        @id @default(cuid())
-  name            String
-  sector          String
-  logoUrl         String?
-  description     String?
-  contactEmail    String?
-  phone           String?
-  websiteUrl      String?
-  notes           String?
-  status          PartnerStatus @default(DRAFT)
-  scopeType       PartnerScope  @default(CSE)
-  apiEnabled      Boolean       @default(false)
-  apiBaseUrl      String?
-  apiKeyEncrypted String?
-  apiFormat       String?
-  syncFrequencyH  Int           @default(24)
-  isGlobal        Boolean       @default(true)
-  organizationIds String[]
-  partnerToken    String?       @unique
-  warningCount    Int           @default(0)
-  flaggedAt       DateTime?
+  id                         String        @id @default(cuid())
+  name                       String
+  sector                     String
+  logoUrl                    String?
+  description                String?
+  contactEmail               String?
+  phone                      String?
+  websiteUrl                 String?
+  notes                      String?
+  status                     PartnerStatus @default(DRAFT)
+  scopeType                  PartnerScope  @default(CSE)
+  apiEnabled                 Boolean       @default(false)
+  apiBaseUrl                 String?
+  apiKeyEncrypted            String?
+  apiFormat                  String?
+  syncFrequencyH             Int           @default(24)
+  isGlobal                   Boolean       @default(true)
+  organizationIds            String[]
+  partnerToken               String?       @unique
+  warningCount               Int           @default(0)
+  flaggedAt                  DateTime?
   // ─── V3 Sprint 1 ────────────────────────────────────
-  cancellationPolicy            String?
-  paymentMethod                 String?  // MOBILE_MONEY | BANK_TRANSFER
-  mobileMoneyNumberEncrypted    String?
-  bankDetailsEncrypted          String?
-  createdBy       String
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  cancellationPolicy         String?
+  paymentMethod              String? // MOBILE_MONEY | BANK_TRANSFER
+  mobileMoneyNumberEncrypted String?
+  bankDetailsEncrypted       String?
+  createdBy                  String
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
 
-  offers          BenefitCatalogItem[]
-  syncLogs        PartnerSyncLog[]
-  auditEntries    OfferAuditEntry[]
-  cashbackRules   CashbackRule[]
+  offers            BenefitCatalogItem[]
+  syncLogs          PartnerSyncLog[]
+  auditEntries      OfferAuditEntry[]
+  cashbackRules     CashbackRule[]
   // ─── V3 Sprint 2 ────────────────────────────────────
-  partnerUsers    PartnerUser[]
-  locations       PartnerLocation[]
-  bookings        Booking[]
-  commissionRules CommissionRule[]
+  partnerUsers      PartnerUser[]
+  locations         PartnerLocation[]
+  bookings          Booking[]
+  commissionRules   CommissionRule[]
   commissionEntries CommissionEntry[]
-  payouts         PartnerPayout[]
+  payouts           PartnerPayout[]
   // ─── Catalogue Voyage ───────────────────────────────
   flightRoutes      FlightRoute[]
   hotelProperties   HotelProperty[]
@@ -1071,16 +1093,16 @@ model PartnerSyncLog {
 }
 
 model OfferAuditEntry {
-  id        String   @id @default(cuid())
+  id        String             @id @default(cuid())
   offerId   String
   offer     BenefitCatalogItem @relation(fields: [offerId], references: [id])
   partnerId String?
-  partner   Partner? @relation(fields: [partnerId], references: [id])
+  partner   Partner?           @relation(fields: [partnerId], references: [id])
   action    String
   changedBy String
   snapshot  Json
   version   Int
-  createdAt DateTime @default(now())
+  createdAt DateTime           @default(now())
 
   @@map("offer_audit_entries")
 }
@@ -1110,7 +1132,7 @@ model FamilyMember {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
-  tickets        Ticket[]
+  tickets Ticket[]
 
   @@map("family_members")
 }
@@ -1125,23 +1147,23 @@ enum TicketStatus {
 }
 
 model Ticket {
-  id              String            @id @default(cuid())
-  code            String            @unique
-  organizationId  String
-  organization    Organization      @relation(fields: [organizationId], references: [id])
-  offerId         String
-  offer           BenefitCatalogItem @relation(fields: [offerId], references: [id])
-  userId          String
-  user            User              @relation(fields: [userId], references: [id])
-  familyMemberId  String?
-  familyMember    FamilyMember?     @relation(fields: [familyMemberId], references: [id])
-  qrPayload       String            // JSON HMAC-signé — ne jamais exposer directement
-  status          TicketStatus      @default(VALID)
-  usedAt          DateTime?
-  expiresAt       DateTime?
-  idempotencyKey  String            @unique
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id             String             @id @default(cuid())
+  code           String             @unique
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  offerId        String
+  offer          BenefitCatalogItem @relation(fields: [offerId], references: [id])
+  userId         String
+  user           User               @relation(fields: [userId], references: [id])
+  familyMemberId String?
+  familyMember   FamilyMember?      @relation(fields: [familyMemberId], references: [id])
+  qrPayload      String // JSON HMAC-signé — ne jamais exposer directement
+  status         TicketStatus       @default(VALID)
+  usedAt         DateTime?
+  expiresAt      DateTime?
+  idempotencyKey String             @unique
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   @@map("tickets")
 }
@@ -1156,14 +1178,14 @@ model TravelPolicy {
   description            String?
   isDefault              Boolean      @default(false)
   isActive               Boolean      @default(true)
-  maxFlightBudget        Decimal?     @db.Decimal(10,2)
-  maxHotelBudgetPerNight Decimal?     @db.Decimal(10,2)
-  maxDailyAllowance      Decimal?     @db.Decimal(10,2)
+  maxFlightBudget        Decimal?     @db.Decimal(10, 2)
+  maxHotelBudgetPerNight Decimal?     @db.Decimal(10, 2)
+  maxDailyAllowance      Decimal?     @db.Decimal(10, 2)
   currency               String       @default("XOF")
-  allowedFlightClass     String?      // "ECONOMY" | "BUSINESS" | "FIRST"
+  allowedFlightClass     String? // "ECONOMY" | "BUSINESS" | "FIRST"
   maxAdvanceBookingDays  Int?
   requiresApproval       Boolean      @default(true)
-  approvalThreshold      Decimal?     @db.Decimal(10,2)
+  approvalThreshold      Decimal?     @db.Decimal(10, 2)
   allowedDestinations    String[]     @default([])
   restrictedDestinations String[]     @default([])
   appliesToDepartments   String[]     @default([])
@@ -1203,7 +1225,7 @@ model GroupTravel {
   destination     String
   departureDate   DateTime
   returnDate      DateTime
-  estimatedCost   Decimal?          @db.Decimal(10,2)
+  estimatedCost   Decimal?          @db.Decimal(10, 2)
   maxParticipants Int?
   status          GroupTravelStatus @default(DRAFT)
   currency        String            @default("XOF")
@@ -1242,23 +1264,23 @@ enum RewardStatus {
 }
 
 model TravelReward {
-  id              String        @id @default(cuid())
+  id              String         @id @default(cuid())
   organizationId  String
-  organization    Organization  @relation(fields: [organizationId], references: [id])
+  organization    Organization   @relation(fields: [organizationId], references: [id])
   userId          String
-  user            User          @relation("TravelRewardUser", fields: [userId], references: [id])
-  travelRequestId String?       @unique
+  user            User           @relation("TravelRewardUser", fields: [userId], references: [id])
+  travelRequestId String?        @unique
   travelRequest   TravelRequest? @relation("TravelRequestReward", fields: [travelRequestId], references: [id])
   points          Int
-  reason          String        // "ECONOMY_BOOKING" | "EARLY_BOOKING" | "MANUAL"
-  status          RewardStatus  @default(EARNED)
-  estimatedCost   Decimal?      @db.Decimal(10,2)
-  actualCost      Decimal?      @db.Decimal(10,2)
-  savedAmount     Decimal?      @db.Decimal(10,2)
-  currency        String        @default("XOF")
+  reason          String // "ECONOMY_BOOKING" | "EARLY_BOOKING" | "MANUAL"
+  status          RewardStatus   @default(EARNED)
+  estimatedCost   Decimal?       @db.Decimal(10, 2)
+  actualCost      Decimal?       @db.Decimal(10, 2)
+  savedAmount     Decimal?       @db.Decimal(10, 2)
+  currency        String         @default("XOF")
   expiresAt       DateTime?
   redeemedAt      DateTime?
-  createdAt       DateTime      @default(now())
+  createdAt       DateTime       @default(now())
 
   @@map("travel_rewards")
 }
@@ -1273,19 +1295,19 @@ enum OcrStatus {
 }
 
 model OcrScan {
-  id              String        @id @default(cuid())
+  id              String       @id @default(cuid())
   userId          String
-  user            User          @relation("OcrScanUser", fields: [userId], references: [id])
+  user            User         @relation("OcrScanUser", fields: [userId], references: [id])
   organizationId  String
-  organization    Organization  @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id])
   fileUrl         String
   rawText         String?
-  extractedData   Json?         // { amount, date, vendor, currency }
-  status          OcrStatus     @default(PENDING)
+  extractedData   Json? // { amount, date, vendor, currency }
+  status          OcrStatus    @default(PENDING)
   errorMessage    String?
   expenseReportId String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@map("ocr_scans")
 }
@@ -1299,19 +1321,19 @@ enum PhotoStatus {
 }
 
 model EventPhoto {
-  id             String      @id @default(cuid())
+  id             String       @id @default(cuid())
   eventId        String
-  event          Event       @relation(fields: [eventId], references: [id])
+  event          Event        @relation(fields: [eventId], references: [id])
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   uploadedBy     String
-  uploader       User        @relation("EventPhotoUploader", fields: [uploadedBy], references: [id])
+  uploader       User         @relation("EventPhotoUploader", fields: [uploadedBy], references: [id])
   url            String
   caption        String?
-  status         PhotoStatus @default(PENDING)
-  createdAt      DateTime    @default(now())
+  status         PhotoStatus  @default(PENDING)
+  createdAt      DateTime     @default(now())
 
-  likes          EventPhotoLike[]
+  likes EventPhotoLike[]
 
   @@map("event_photos")
 }
@@ -1337,20 +1359,20 @@ enum FaqStatus {
 }
 
 model FaqEntry {
-  id             String    @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   question       String
   answer         String
   category       String?
-  order          Int       @default(0)
-  status         FaqStatus @default(DRAFT)
+  order          Int          @default(0)
+  status         FaqStatus    @default(DRAFT)
   createdById    String
-  createdBy      User      @relation("FaqEntryAuthor", fields: [createdById], references: [id])
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdBy      User         @relation("FaqEntryAuthor", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  votes          FaqVote[]
+  votes FaqVote[]
 
   @@map("faq_entries")
 }
@@ -1382,35 +1404,35 @@ enum WalletEntryType {
 }
 
 model Wallet {
-  id             String    @id @default(cuid())
-  userId         String    @unique
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  currencyCode   String    @default("XOF")
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  currencyCode   String       @default("XOF")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  entries        WalletEntry[]
+  entries WalletEntry[]
 
   @@map("wallets")
 }
 
 model WalletEntry {
-  id              String          @id @default(cuid())
-  walletId        String
-  wallet          Wallet          @relation(fields: [walletId], references: [id])
-  type            WalletEntryType
+  id             String          @id @default(cuid())
+  walletId       String
+  wallet         Wallet          @relation(fields: [walletId], references: [id])
+  type           WalletEntryType
   // positif = crédit, négatif = débit — jamais modifié après insertion
-  amount          Decimal         @db.Decimal(14,2)
+  amount         Decimal         @db.Decimal(14, 2)
   // snapshot du solde après cette entrée (dénormalisation pour perf)
-  runningBalance  Decimal         @db.Decimal(14,2)
-  description     String?
-  referenceId     String?
-  referenceType   String?         // ORDER | TICKET | CASHBACK | EXPENSE | ALLOCATION
-  idempotencyKey  String          @unique
-  expiresAt       DateTime?       // allocations uniquement
-  createdAt       DateTime        @default(now())
+  runningBalance Decimal         @db.Decimal(14, 2)
+  description    String?
+  referenceId    String?
+  referenceType  String? // ORDER | TICKET | CASHBACK | EXPENSE | ALLOCATION
+  idempotencyKey String          @unique
+  expiresAt      DateTime? // allocations uniquement
+  createdAt      DateTime        @default(now())
 
   @@map("wallet_entries")
 }
@@ -1433,26 +1455,26 @@ enum CashbackStatus {
 }
 
 model CashbackRule {
-  id             String       @id @default(cuid())
+  id             String        @id @default(cuid())
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
   partnerId      String?
-  partner        Partner?     @relation(fields: [partnerId], references: [id])
+  partner        Partner?      @relation(fields: [partnerId], references: [id])
   type           CashbackType
-  rate           Decimal      @db.Decimal(5,4)  // 0.0000 → 1.0000
-  fixedAmount    Decimal?     @db.Decimal(14,2)
-  maxPerEmployee Decimal?     @db.Decimal(14,2)
-  maxPerPeriod   Decimal?     @db.Decimal(14,2)
+  rate           Decimal       @db.Decimal(5, 4) // 0.0000 → 1.0000
+  fixedAmount    Decimal?      @db.Decimal(14, 2)
+  maxPerEmployee Decimal?      @db.Decimal(14, 2)
+  maxPerPeriod   Decimal?      @db.Decimal(14, 2)
   startDate      DateTime?
   endDate        DateTime?
-  isActive       Boolean      @default(true)
+  isActive       Boolean       @default(true)
   category       String?
-  currencyCode   String       @default("XOF")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  currencyCode   String        @default("XOF")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  transactions   CashbackTransaction[]
-  offers         BenefitCatalogItem[]
+  transactions CashbackTransaction[]
+  offers       BenefitCatalogItem[]
 
   @@map("cashback_rules")
 }
@@ -1466,10 +1488,10 @@ model CashbackTransaction {
   ticketId       String?
   ruleId         String
   rule           CashbackRule   @relation(fields: [ruleId], references: [id])
-  rawAmount      Decimal        @db.Decimal(14,2)
-  creditedAmount Decimal        @db.Decimal(14,2)
+  rawAmount      Decimal        @db.Decimal(14, 2)
+  creditedAmount Decimal        @db.Decimal(14, 2)
   status         CashbackStatus @default(CALCULATED)
-  fraudScore     Decimal?       @db.Decimal(5,4) @default(0)
+  fraudScore     Decimal?       @default(0) @db.Decimal(5, 4)
   idempotencyKey String         @unique
   currencyCode   String         @default("XOF")
   createdAt      DateTime       @default(now())
@@ -1478,16 +1500,16 @@ model CashbackTransaction {
 }
 
 model FraudSignal {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   userId        String
   transactionId String
-  signalType    String   // HIGH_FREQUENCY | SAME_MERCHANT | AMOUNT_ANOMALY
-  score         Decimal  @db.Decimal(5,4)
+  signalType    String // HIGH_FREQUENCY | SAME_MERCHANT | AMOUNT_ANOMALY
+  score         Decimal   @db.Decimal(5, 4)
   metadata      Json?
-  reviewed      Boolean  @default(false)
+  reviewed      Boolean   @default(false)
   reviewedById  String?
   reviewedAt    DateTime?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   @@map("fraud_signals")
 }
@@ -1511,33 +1533,34 @@ enum OrderPaymentStatus {
 }
 
 model Order {
-  id              String             @id @default(cuid())
-  userId          String
-  user            User               @relation(fields: [userId], references: [id])
-  organizationId  String
-  organization    Organization       @relation(fields: [organizationId], references: [id])
-  partnerId       String?
-  offerId         String?
-  amount          Decimal            @db.Decimal(14,2)
-  discountAmount  Decimal            @db.Decimal(14,2) @default(0)
-  subsidyAmount   Decimal            @db.Decimal(14,2) @default(0)
-  cashbackAmount  Decimal            @db.Decimal(14,2) @default(0)
-  finalAmount     Decimal            @db.Decimal(14,2)
-  currencyCode    String             @default("XOF")
-  paymentMethod   String?            // WALLET | MOBILE_MONEY | CARD
-  paymentStatus   OrderPaymentStatus @default(UNPAID)
-  transactionId   String?
-  idempotencyKey  String             @unique
-  status          OrderStatus        @default(PENDING)
-  cancelledAt     DateTime?
-  cancelReason    String?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  id             String             @id @default(cuid())
+  userId         String
+  user           User               @relation(fields: [userId], references: [id])
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  partnerId      String?
+  offerId        String?
+  amount         Decimal            @db.Decimal(14, 2)
+  discountAmount Decimal            @default(0) @db.Decimal(14, 2)
+  subsidyAmount  Decimal            @default(0) @db.Decimal(14, 2)
+  cashbackAmount Decimal            @default(0) @db.Decimal(14, 2)
+  finalAmount    Decimal            @db.Decimal(14, 2)
+  currencyCode   String             @default("XOF")
+  paymentMethod  String? // WALLET | MOBILE_MONEY | CARD
+  paymentStatus  OrderPaymentStatus @default(UNPAID)
+  transactionId  String?            @unique // anti-rejeu : un paiement externe ne finance qu'une commande
+  idempotencyKey String             @unique
+  status         OrderStatus        @default(PENDING)
+  cancelledAt    DateTime?
+  cancelReason   String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
-  booking         Booking?
+  booking Booking?
 
   @@map("orders")
 }
+
 // ═══════════════════════════════════════════════════════════════════════════
 // V3 SPRINT 2 — Portail partenaire (F21), Booking (F22), Commissions (F23)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1585,7 +1608,7 @@ model PartnerUser {
   lastName     String
   role         Role      @default(PARTNER_ADMIN)
   isActive     Boolean   @default(true)
-  refreshToken String?   // hash du refresh token courant (rotation, cookie partnerRefreshToken dédié)
+  refreshToken String? // hash du refresh token courant (rotation, cookie partnerRefreshToken dédié)
   tokenVersion Int       @default(0) // incrémenté au logout → révoque tous les tokens émis avant
   lastLoginAt  DateTime?
   invitedById  String?
@@ -1596,19 +1619,19 @@ model PartnerUser {
 }
 
 model PartnerLocation {
-  id          String    @id @default(cuid())
-  partnerId   String
-  partner     Partner   @relation(fields: [partnerId], references: [id])
-  name        String
-  address     String
-  city        String
-  country     String    @default("CI")
-  latitude    Decimal?  @db.Decimal(10,7)
-  longitude   Decimal?  @db.Decimal(10,7)
-  phone       String?
-  isMain      Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  partnerId String
+  partner   Partner  @relation(fields: [partnerId], references: [id])
+  name      String
+  address   String
+  city      String
+  country   String   @default("CI")
+  latitude  Decimal? @db.Decimal(10, 7)
+  longitude Decimal? @db.Decimal(10, 7)
+  phone     String?
+  isMain    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   availabilities PartnerAvailability[]
   bookings       Booking[]
@@ -1617,16 +1640,16 @@ model PartnerLocation {
 }
 
 model PartnerAvailability {
-  id            String    @id @default(cuid())
+  id            String          @id @default(cuid())
   locationId    String
   location      PartnerLocation @relation(fields: [locationId], references: [id])
-  dayOfWeek     Int?      // 0=Sun … 6=Sat — null = exception
-  openTime      String    // HH:MM
-  closeTime     String    // HH:MM
-  isClosed      Boolean   @default(false)
+  dayOfWeek     Int? // 0=Sun … 6=Sat — null = exception
+  openTime      String // HH:MM
+  closeTime     String // HH:MM
+  isClosed      Boolean         @default(false)
   exceptionDate DateTime? // set → exception date, null → weekly schedule
   note          String?
-  createdAt     DateTime  @default(now())
+  createdAt     DateTime        @default(now())
 
   @@map("partner_availabilities")
 }
@@ -1634,19 +1657,19 @@ model PartnerAvailability {
 // ─── Booking ─────────────────────────────────────────────────────────────────
 
 model Booking {
-  id              String        @id @default(cuid())
-  userId          String
-  user            User          @relation(fields: [userId], references: [id])
-  organizationId  String
-  organization    Organization  @relation(fields: [organizationId], references: [id])
-  partnerId       String
-  partner         Partner       @relation(fields: [partnerId], references: [id])
-  offerId         String?
-  offer           BenefitCatalogItem? @relation(fields: [offerId], references: [id])
-  locationId      String?
-  location        PartnerLocation?    @relation(fields: [locationId], references: [id])
-  orderId         String?       @unique
-  order           Order?        @relation(fields: [orderId], references: [id])
+  id             String              @id @default(cuid())
+  userId         String
+  user           User                @relation(fields: [userId], references: [id])
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  partnerId      String
+  partner        Partner             @relation(fields: [partnerId], references: [id])
+  offerId        String?
+  offer          BenefitCatalogItem? @relation(fields: [offerId], references: [id])
+  locationId     String?
+  location       PartnerLocation?    @relation(fields: [locationId], references: [id])
+  orderId        String?             @unique
+  order          Order?              @relation(fields: [orderId], references: [id])
 
   status          BookingStatus @default(PENDING)
   bookingDate     DateTime
@@ -1674,7 +1697,7 @@ model BookingRating {
   bookingId String   @unique
   booking   Booking  @relation(fields: [bookingId], references: [id])
   userId    String
-  score     Int      // 1–5
+  score     Int // 1–5
   comment   String?
   createdAt DateTime @default(now())
 
@@ -1703,10 +1726,10 @@ model FlightRoute {
   originCity      String
   destinationIata String
   destinationCity String
-  departureTime   String   // "HH:MM"
+  departureTime   String // "HH:MM"
   durationMinutes Int
   stops           Int      @default(0)
-  basePrice       Decimal  @db.Decimal(10,2)
+  basePrice       Decimal  @db.Decimal(10, 2)
   currency        String   @default("XOF")
   operatingDays   Int[]    @default([]) // 0=Dim..6=Sam, [] = tous les jours
   isActive        Boolean  @default(true)
@@ -1743,7 +1766,7 @@ model HotelRoomType {
   hotel         HotelProperty @relation(fields: [hotelId], references: [id])
   name          String
   capacity      Int           @default(2)
-  pricePerNight Decimal       @db.Decimal(10,2)
+  pricePerNight Decimal       @db.Decimal(10, 2)
   currency      String        @default("XOF")
   totalRooms    Int           @default(1)
   isActive      Boolean       @default(true)
@@ -1762,7 +1785,7 @@ model TrainRoute {
   destinationStation String
   departureTime      String
   durationMinutes    Int
-  basePrice          Decimal  @db.Decimal(10,2)
+  basePrice          Decimal  @db.Decimal(10, 2)
   currency           String   @default("XOF")
   travelClass        String   @default("Économique")
   operatingDays      Int[]    @default([])
@@ -1778,12 +1801,12 @@ model CarRentalVehicle {
   id           String   @id @default(cuid())
   partnerId    String
   partner      Partner  @relation(fields: [partnerId], references: [id])
-  category     String   // Économique | Compacte | SUV | Luxe | Utilitaire
+  category     String // Économique | Compacte | SUV | Luxe | Utilitaire
   brand        String
   model        String
   city         String
   country      String
-  pricePerDay  Decimal  @db.Decimal(10,2)
+  pricePerDay  Decimal  @db.Decimal(10, 2)
   currency     String   @default("XOF")
   seats        Int      @default(5)
   transmission String   @default("MANUELLE") // MANUELLE | AUTOMATIQUE
@@ -1804,35 +1827,35 @@ model CommissionRule {
   partner      Partner?       @relation(fields: [partnerId], references: [id])
   category     String?
   type         CommissionType @default(PERCENTAGE)
-  rate         Decimal        @db.Decimal(5,4)    // 0.10 = 10%
-  fixedAmount  Decimal?       @db.Decimal(14,2)
+  rate         Decimal        @db.Decimal(5, 4) // 0.10 = 10%
+  fixedAmount  Decimal?       @db.Decimal(14, 2)
   currencyCode String         @default("XOF")
   isActive     Boolean        @default(true)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  entries      CommissionEntry[]
+  entries CommissionEntry[]
 
   @@map("commission_rules")
 }
 
 model CommissionEntry {
-  id               String           @id @default(cuid())
-  bookingId        String           @unique
-  booking          Booking          @relation(fields: [bookingId], references: [id])
-  ruleId           String
-  rule             CommissionRule   @relation(fields: [ruleId], references: [id])
-  partnerId        String
-  partner          Partner          @relation(fields: [partnerId], references: [id])
+  id        String         @id @default(cuid())
+  bookingId String         @unique
+  booking   Booking        @relation(fields: [bookingId], references: [id])
+  ruleId    String
+  rule      CommissionRule @relation(fields: [ruleId], references: [id])
+  partnerId String
+  partner   Partner        @relation(fields: [partnerId], references: [id])
 
-  grossAmount      Decimal          @db.Decimal(14,2)
-  commissionAmount Decimal          @db.Decimal(14,2)
-  netAmount        Decimal          @db.Decimal(14,2)
-  currencyCode     String           @default("XOF")
+  grossAmount      Decimal @db.Decimal(14, 2)
+  commissionAmount Decimal @db.Decimal(14, 2)
+  netAmount        Decimal @db.Decimal(14, 2)
+  currencyCode     String  @default("XOF")
 
-  status           CommissionStatus @default(PENDING)
-  payoutId         String?
-  payout           PartnerPayout?   @relation(fields: [payoutId], references: [id])
+  status   CommissionStatus @default(PENDING)
+  payoutId String?
+  payout   PartnerPayout?   @relation(fields: [payoutId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1841,26 +1864,48 @@ model CommissionEntry {
 }
 
 model PartnerPayout {
-  id              String      @id @default(cuid())
-  partnerId       String
-  partner         Partner     @relation(fields: [partnerId], references: [id])
-  period          String      // e.g., "2026-07"
+  id        String  @id @default(cuid())
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id])
+  period    String // e.g., "2026-07"
 
-  totalGross      Decimal     @db.Decimal(14,2)
-  totalCommission Decimal     @db.Decimal(14,2)
-  netAmount       Decimal     @db.Decimal(14,2)
-  currencyCode    String      @default("XOF")
+  totalGross      Decimal @db.Decimal(14, 2)
+  totalCommission Decimal @db.Decimal(14, 2)
+  netAmount       Decimal @db.Decimal(14, 2)
+  currencyCode    String  @default("XOF")
 
-  status          PayoutStatus @default(PENDING)
-  paymentMethod   String?
-  paidAt          DateTime?
-  notes           String?
-  triggeredById   String?
+  status        PayoutStatus @default(PENDING)
+  paymentMethod String?
+  paidAt        DateTime?
+  notes         String?
+  triggeredById String?
 
-  entries         CommissionEntry[]
+  entries CommissionEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([partnerId, period]) // un seul payout par partenaire et par période
   @@map("partner_payouts")
+}
+
+// ─── IDEMPOTENCY (middleware générique Idempotency-Key) ─────────────────
+// Une ligne "PENDING" est créée avant d'exécuter le handler (claim atomique
+// via la contrainte unique ci-dessous) ; elle passe à "DONE" avec la réponse
+// mise en cache une fois le handler terminé avec succès, ou est supprimée en
+// cas d'échec serveur (5xx) pour permettre un retry propre. Voir
+// backend/src/core/middlewares/idempotency.middleware.ts.
+model IdempotencyRecord {
+  id             String   @id @default(cuid())
+  key            String // header Idempotency-Key fourni par le client
+  route          String // ex: "POST:/api/flights/admin/routes"
+  organizationId String // "platform" si l'appelant n'a pas d'org (SUPER_ADMIN plateforme)
+  status         String   @default("PENDING") // PENDING | DONE
+  responseStatus Int?
+  responseBody   Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([route, organizationId, key])
+  @@map("idempotency_records")
 }

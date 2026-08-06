@@ -51,6 +51,11 @@ export class OrderRepository {
         return prisma.order.findFirst({ where: { transactionId, paymentStatus: "UNPAID" } });
     }
 
+    /** Anti-rejeu : retrouve une commande par transactionId quel que soit son statut. */
+    async findByTransactionIdAny(transactionId: string) {
+        return prisma.order.findFirst({ where: { transactionId } });
+    }
+
     async updateStatus(id: string, status: OrderStatus, paymentStatus?: OrderPaymentStatus) {
         return prisma.order.update({
             where: { id },

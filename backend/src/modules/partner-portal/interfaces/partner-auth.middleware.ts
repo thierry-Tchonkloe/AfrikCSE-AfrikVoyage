@@ -11,7 +11,9 @@ declare global {
     }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "change-me";
+const JWT_SECRET: string = process.env.JWT_SECRET ?? (() => {
+    throw new Error("JWT_SECRET manquant dans l'environnement");
+})();
 
 export async function authenticatePartner(req: Request, res: Response, next: NextFunction): Promise<void> {
     const token = req.cookies?.partnerAccessToken ?? req.headers.authorization?.replace("Bearer ", "");
@@ -20,7 +22,11 @@ export async function authenticatePartner(req: Request, res: Response, next: Nex
         return;
     }
     try {
-        const payload = jwt.verify(token, JWT_SECRET) as PartnerTokenPayload;
+        const payload = jwt.verify(token, JWT_SECRET) as PartnerTokenPayload & { type?: string };
+        if (payload.type !== "access") {
+            res.status(401).json({ message: "Type de token invalide" });
+            return;
+        }
 
         // Révocation immédiate (même mécanisme que auth.middleware.ts) : un logout
         // incrémente PartnerUser.tokenVersion, invalidant tous les tokens émis avant.

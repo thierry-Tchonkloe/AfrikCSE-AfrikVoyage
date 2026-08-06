@@ -115,6 +115,27 @@ export class BookingRepository {
         });
     }
 
+    /**
+     * Transition d'état atomique : le WHERE (status: fromStatus) est réévalué par
+     * Postgres au moment de l'écriture. Un retry, un double-clic, ou une action
+     * concurrente sur la même réservation ne peuvent donc jamais tous les deux
+     * réussir — count===0 signale explicitement "déjà dans un autre état".
+     */
+    async updateStatusFrom(id: string, fromStatus: BookingStatus, status: BookingStatus, extra?: {
+        confirmedAt?: Date;
+        completedAt?: Date;
+        cancelledAt?: Date;
+        cancelReason?: string;
+        partnerNotes?: string;
+    }) {
+        const { count } = await prisma.booking.updateMany({
+            where: { id, status: fromStatus },
+            data: { status, ...extra },
+        });
+        if (count === 0) return null;
+        return prisma.booking.findUnique({ where: { id } });
+    }
+
     async addRating(bookingId: string, userId: string, score: number, comment?: string) {
         return prisma.bookingRating.upsert({
             where:  { bookingId },

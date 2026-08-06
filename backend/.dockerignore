@@ -1,0 +1,30 @@
+node_modules
+dist
+npm-debug.log*
+
+# Env & secrets — jamais dans l'image
+.env
+.env.*
+!.env.example
+
+# Git & CI
+.git
+.github
+
+# Tests & coverage
+src/test
+**/*.test.ts
+coverage
+
+# Docs
+*.md
+API_DOCUMENTATION.md
+README.md
+
+# Divers
+.vscode
+.idea
+.claudeignore
+Dockerfile
+.dockerignore
+docker-compose.yml

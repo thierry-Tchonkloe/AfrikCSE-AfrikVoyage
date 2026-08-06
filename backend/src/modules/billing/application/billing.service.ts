@@ -123,6 +123,27 @@ export class BillingService {
             return { checkoutUrl: null, subscription: sub, message: "Plan gratuit activé" };
         }
 
+        // Anti double-clic / retry réseau : si une facture FedaPay PENDING pour ce
+        // même plan a été créée il y a moins de 10 min, on rejoue son checkoutUrl
+        // au lieu de créer une nouvelle transaction FedaPay + facture orpheline.
+        const recentPending = await prisma.invoice.findFirst({
+            where: {
+                organizationId: orgId,
+                paymentMethod:  "FEDAPAY",
+                status:         "PENDING",
+                description:    { contains: plan },
+                createdAt:      { gt: new Date(Date.now() - 10 * 60 * 1000) },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+        if (recentPending?.checkoutUrl) {
+            return {
+                checkoutUrl:    recentPending.checkoutUrl,
+                transactionRef: recentPending.paymentRef ?? undefined,
+                message:        "Redirection FedaPay (paiement déjà initié)",
+            };
+        }
+
         const secretKey = process.env.FEDAPAY_SECRET_KEY;
         if (!secretKey) throw new Error("FEDAPAY_SECRET_KEY manquant dans les variables d'environnement");
 
@@ -165,6 +186,7 @@ export class BillingService {
                 description: `Abonnement ${plan} — FedaPay en attente`,
                 paymentMethod: "FEDAPAY",
                 paymentRef: String(transaction.id ?? reference),
+                checkoutUrl: transaction.payment_url,
                 status: "PENDING",
                 organizationId: orgId,
                 subscriptionId: (await this._getOrCreateSubscription(orgId)).id,
@@ -275,18 +297,29 @@ export class BillingService {
     // ── Helpers privés ────────────────────────────────────────────────────────
 
     private async _verifyKkiapayTransaction(transactionId: string): Promise<KkiapayVerifyResponse> {
+        const publicKey = process.env.KKIAPAY_PUBLIC_KEY;
         const secretKey = process.env.KKIAPAY_SECRET_KEY;
         const privateKey = process.env.KKIAPAY_PRIVATE_KEY;
 
         if (!secretKey) throw new Error("KKIAPAY_SECRET_KEY manquant dans les variables d'environnement");
 
-        const baseUrl = process.env.KKIAPAY_API_URL ?? "https://api.kkiapay.me";
+        // Le sandbox KkiaPay est servi par un host distinct de la prod — vérifier
+        // une transaction sandbox sur l'host live renvoie 404 (transaction inconnue là-bas).
+        const sandbox = process.env.NODE_ENV !== "production";
+        const baseUrl = process.env.KKIAPAY_API_URL
+            ?? (sandbox ? "https://api-sandbox.kkiapay.me" : "https://api.kkiapay.me");
 
-        const response = await fetch(`${baseUrl}/api/v1/transactions/${transactionId}/status`, {
+        // L'API attend un POST avec le transactionId dans le body, pas dans l'URL
+        // (endpoint unique /transactions/status, cf. SDK officiel @kkiapay-org/nodejs-sdk).
+        const response = await fetch(`${baseUrl}/api/v1/transactions/status`, {
+            method: "POST",
             headers: {
+                "Content-Type": "application/json",
+                ...(publicKey ? { "x-api-key": publicKey } : {}),
                 "x-secret-key": secretKey,
                 ...(privateKey ? { "x-private-key": privateKey } : {}),
             },
+            body: JSON.stringify({ transactionId }),
         });
 
         if (!response.ok) {

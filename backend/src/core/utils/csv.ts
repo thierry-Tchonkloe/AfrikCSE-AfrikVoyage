@@ -6,7 +6,13 @@ export function toCsv<T extends Record<string, unknown>>(
 ): string {
     const escape = (value: unknown): string => {
         if (value === null || value === undefined) return "";
-        const str = String(value);
+        let str = String(value);
+        // Anti CSV/Formula Injection : neutralise les valeurs commençant par un
+        // caractère interprété comme déclencheur de formule par Excel/Sheets
+        // (=, +, -, @) en les préfixant d'une apostrophe avant l'échappement CSV.
+        if (/^[=+\-@]/.test(str)) {
+            str = `'${str}`;
+        }
         if (/[",\n;]/.test(str)) {
             return `"${str.replace(/"/g, '""')}"`;
         }

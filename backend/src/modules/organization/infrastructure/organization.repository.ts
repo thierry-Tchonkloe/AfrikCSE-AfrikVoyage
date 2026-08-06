@@ -167,8 +167,12 @@ export class OrganizationRepository {
         hasCSE: boolean
     ) {
     return prisma.$transaction(async (tx) => {
-        const org = await tx.organization.update({
-            where: { id },
+        // Transition atomique : le WHERE (status:"PENDING") est réévalué par
+        // Postgres au moment de l'écriture — deux appels concurrents (double-clic,
+        // retry réseau) ne peuvent jamais tous les deux réussir à activer l'org, ce
+        // qui évite de générer deux tokens d'invitation et d'envoyer deux emails.
+        const { count } = await tx.organization.updateMany({
+            where: { id, status: "PENDING" },
             data: {
                 status: "ACTIVE",
                 hasVoyage,
@@ -176,6 +180,11 @@ export class OrganizationRepository {
                 validatedAt: new Date(),
                 validatedById: superAdminId,
             },
+        });
+        if (count === 0) throw new Error("Organisation non en attente");
+
+        const org = await tx.organization.findUniqueOrThrow({
+            where: { id },
             include: { users: { where: { role: "ADMIN" }, take: 1 } },
         });
 

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { CatalogController } from "./catalog.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
+import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 
 const router = Router();
@@ -26,6 +27,7 @@ router.get(
 router.post(
     "/",
     authorize("ADMIN", "MANAGER", "SUPER_ADMIN"),
+    idempotency(),
     ctrl.create.bind(ctrl)
 );
 router.patch(

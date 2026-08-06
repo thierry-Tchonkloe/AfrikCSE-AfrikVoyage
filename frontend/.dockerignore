@@ -1,0 +1,26 @@
+node_modules
+.next
+out
+
+# Env & secrets — jamais dans l'image
+.env
+.env.*
+!.env.local.example
+
+# Git & CI
+.git
+.github
+
+# Tests & build cache
+coverage
+tsconfig.tsbuildinfo
+
+# Docs
+*.md
+README.md
+
+# Divers
+.vscode
+.idea
+Dockerfile
+.dockerignore
