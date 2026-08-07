@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { Plus, Pencil, Clock, CheckCircle2, XCircle, X, Loader2, Layers } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Pencil, Clock, CheckCircle2, XCircle, X, Loader2, Layers, Settings, ImagePlus } from "lucide-react";
 import { partnerPortalService, PartnerOffer, OfferInput } from "@/services/partner/partner-portal.service";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
 const EMPTY_FORM: OfferInput = { title: "", category: "", employeePrice: 0, companyPrice: 0, subsidyPct: 0 };
+
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_IMAGE_SIZE = 3 * 1024 * 1024; // 3 Mo — doit rester cohérent avec offerImageUpload côté backend
 
 const REVIEW_BADGE: Record<PartnerOffer["reviewStatus"], { label: string; className: string; icon: typeof Clock }> = {
     PENDING:  { label: "En attente de validation", className: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: Clock },
@@ -17,12 +21,15 @@ const REVIEW_BADGE: Record<PartnerOffer["reviewStatus"], { label: string; classN
 const CATEGORIES = ["Restauration", "Loisirs", "Sport", "Culture", "Bien-être", "Transport", "Éducation", "Autre"];
 
 export default function PartnerOffersPage() {
+    const router = useRouter();
     const [offers, setOffers]     = useState<PartnerOffer[]>([]);
     const [loading, setLoading]   = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing]   = useState<PartnerOffer | null>(null);
     const [form, setForm]         = useState<OfferInput>(EMPTY_FORM);
     const [saving, setSaving]     = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -81,6 +88,33 @@ export default function PartnerOffersPage() {
         }
     };
 
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = ""; // permet de re-sélectionner le même fichier
+        if (!file || !editing) return;
+
+        if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+            toast.error("Format non supporté (JPG, PNG ou WEBP uniquement)");
+            return;
+        }
+        if (file.size > MAX_IMAGE_SIZE) {
+            toast.error("Image trop volumineuse (3 Mo maximum)");
+            return;
+        }
+
+        setUploadingImage(true);
+        try {
+            const updated = await partnerPortalService.uploadOfferImage(editing.id, file);
+            setEditing(updated);
+            setOffers((prev) => prev.map((o) => o.id === updated.id ? updated : o));
+            toast.success("Image mise à jour — l'offre repasse en validation");
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Échec de l'upload de l'image"));
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
     const fmt = (v: number) => new Intl.NumberFormat("fr-FR").format(v);
 
     return (
@@ -90,10 +124,16 @@ export default function PartnerOffersPage() {
                     <h1 className="text-xl font-bold text-gray-900 dark:text-white">Offres</h1>
                     <p className="text-xs text-gray-500 mt-0.5">{offers.length} offre{offers.length !== 1 ? "s" : ""}</p>
                 </div>
-                <button onClick={openCreate}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition">
-                    <Plus size={16} /> Nouvelle offre
-                </button>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => router.push("/partner-portal/settings")}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl transition">
+                        <Settings size={16} /> Paramètres
+                    </button>
+                    <button onClick={openCreate}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition">
+                        <Plus size={16} /> Nouvelle offre
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -164,6 +204,27 @@ export default function PartnerOffersPage() {
                         </div>
 
                         <div className="space-y-3">
+                            {editing && (
+                                <Field label="Image">
+                                    <div className="flex items-center gap-3">
+                                        {editing.imageUrl ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img src={editing.imageUrl} alt="" className="w-16 h-16 rounded-xl object-cover border border-gray-200 dark:border-gray-700" />
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
+                                                <ImagePlus size={20} />
+                                            </div>
+                                        )}
+                                        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage}
+                                            className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center gap-1.5">
+                                            {uploadingImage ? <Loader2 size={13} className="animate-spin" /> : <ImagePlus size={13} />}
+                                            {editing.imageUrl ? "Changer" : "Ajouter une image"}
+                                        </button>
+                                        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp"
+                                            onChange={handleImageChange} className="hidden" />
+                                    </div>
+                                </Field>
+                            )}
                             <Field label="Titre *">
                                 <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                                     className="input-field" placeholder="Ex. Menu déjeuner" />

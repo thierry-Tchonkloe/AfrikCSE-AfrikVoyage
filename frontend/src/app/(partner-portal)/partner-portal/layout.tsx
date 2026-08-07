@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useLayoutEffect } from "react";
-import { LayoutDashboard, CalendarCheck, Layers, Users, MapPin, Building2, ChevronLeft, ChevronRight, LogOut, Menu,} from "lucide-react";
+import { LayoutDashboard, CalendarCheck, Layers, Users, MapPin, Building2, Settings, ChevronLeft, ChevronRight, LogOut, Menu,} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePartnerAuth } from "@/hooks/usePartnerAuth";
 
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
     { href: "/partner-portal/locations",  label: "Établissements",   icon: MapPin },
     { href: "/partner-portal/staff",      label: "Équipe",           icon: Users },
     { href: "/partner-portal/profile",    label: "Profil",           icon: Building2 },
+    { href: "/partner-portal/settings",   label: "Paramètres",       icon: Settings },
 ];
 
 export default function PartnerPortalLayout({ children }: { children: React.ReactNode }) {

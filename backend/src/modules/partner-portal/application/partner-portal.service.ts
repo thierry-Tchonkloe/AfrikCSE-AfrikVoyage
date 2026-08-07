@@ -1,11 +1,35 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import type { UploadApiResponse } from "cloudinary";
+import { PartnerPaymentMethodType } from "@prisma/client";
 import { PartnerPortalRepository } from "../infrastructure/partner-portal.repository";
 import { prisma } from "../../../core/config/prisma";
 import { AppError } from "../../../core/errors/app.error";
 import { hashToken } from "../../../core/utils/hash";
+import { encrypt } from "../../../core/utils/crypto";
+import { cloudinary } from "../../../core/config/cloudinary";
 
 const repo = new PartnerPortalRepository();
+
+function uploadImageToCloudinary(buffer: Buffer, folder: string): Promise<UploadApiResponse> {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder, resource_type: "image" },
+            (err, result) => {
+                if (err || !result) reject(err ?? new Error("Échec de l'upload"));
+                else resolve(result);
+            }
+        );
+        stream.end(buffer);
+    });
+}
+
+/** Aperçu non-sensible affichable en UI (ex: "•••• 4821") — dérivé, jamais réversible vers la valeur brute. */
+function maskDetails(details: Record<string, string>): string | undefined {
+    const value = Object.values(details).find((v) => v.trim().length > 0);
+    if (!value) return undefined;
+    return `•••• ${value.slice(-4)}`;
+}
 
 // Pas de fallback en dur : server.ts vérifie déjà JWT_SECRET au boot. Typé
 // `string` (pas `string | undefined`) via l'IIFE ci-dessous pour que le
@@ -197,6 +221,76 @@ export class PartnerPortalService {
 
     async updateOffer(id: string, partnerId: string, data: Parameters<typeof repo.updateOffer>[2]) {
         return repo.updateOffer(id, partnerId, data);
+    }
+
+    async uploadOfferImage(offerId: string, partnerId: string, fileBuffer: Buffer) {
+        const owned = await repo.findOfferByIdAndPartner(offerId, partnerId);
+        if (!owned) throw new AppError("Offre introuvable", 404);
+        const result = await uploadImageToCloudinary(fileBuffer, `afrikcse/offers/${partnerId}`);
+        return repo.updateOfferImage(offerId, partnerId, result.secure_url);
+    }
+
+    // ── Paramètres ────────────────────────────────────────────────────────────
+
+    async getSettings(partnerId: string) {
+        const partner = await repo.getSettingsPartner(partnerId);
+        if (!partner) throw new AppError("Partenaire introuvable", 404);
+        const { apiKeyEncrypted, ...rest } = partner;
+        const paymentMethods = await repo.listPaymentMethods(partnerId);
+        return { ...rest, hasApiKey: !!apiKeyEncrypted, paymentMethods };
+    }
+
+    async updateCurrency(partnerId: string, currencyCode: string) {
+        const partner = await repo.updateCurrency(partnerId, currencyCode);
+        return { currencyCode: partner.currencyCode };
+    }
+
+    async updateApiIntegration(partnerId: string, data: {
+        apiEnabled?: boolean; apiBaseUrl?: string; apiFormat?: string; apiKey?: string;
+    }) {
+        const { apiKey, ...rest } = data;
+        const partner = await repo.updateApiIntegration(partnerId, {
+            ...rest,
+            ...(apiKey !== undefined ? { apiKeyEncrypted: encrypt(apiKey) } : {}),
+        });
+        return {
+            apiEnabled: partner.apiEnabled,
+            apiBaseUrl: partner.apiBaseUrl,
+            apiFormat:  partner.apiFormat,
+            hasApiKey:  !!partner.apiKeyEncrypted,
+        };
+    }
+
+    // ── Moyens de réception de paiement ─────────────────────────────────────────
+
+    async listPaymentMethods(partnerId: string) {
+        return repo.listPaymentMethods(partnerId);
+    }
+
+    async createPaymentMethod(partnerId: string, createdById: string, data: {
+        type: PartnerPaymentMethodType; provider: string; label: string; details: Record<string, string>;
+    }) {
+        return repo.createPaymentMethod(partnerId, createdById, {
+            type:             data.type,
+            provider:         data.provider,
+            label:            data.label,
+            detailsEncrypted: encrypt(JSON.stringify(data.details)),
+            maskedHint:       maskDetails(data.details),
+        });
+    }
+
+    async updatePaymentMethod(id: string, partnerId: string, data: {
+        label?: string; isActive?: boolean; details?: Record<string, string>;
+    }) {
+        const { details, ...rest } = data;
+        return repo.updatePaymentMethod(id, partnerId, {
+            ...rest,
+            ...(details ? { detailsEncrypted: encrypt(JSON.stringify(details)), maskedHint: maskDetails(details) } : {}),
+        });
+    }
+
+    async deletePaymentMethod(id: string, partnerId: string) {
+        return repo.deletePaymentMethod(id, partnerId);
     }
 
     private async _getHostOrgId(): Promise<string> {

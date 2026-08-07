@@ -3,6 +3,8 @@ import { PartnerPortalService } from "../application/partner-portal.service";
 import {
     loginSchema, createStaffSchema, updateProfileSchema,
     locationSchema, setAvailabilitiesSchema, createOfferSchema,
+    updateCurrencySchema, updateApiIntegrationSchema,
+    paymentMethodSchema, updatePaymentMethodSchema,
     LocationIdParam,
 } from "./partner-portal.validator";
 import { IdParamString } from "../../../core/validators/param.validators";
@@ -155,6 +157,70 @@ export class PartnerPortalController {
                 validUntil: parsed.data.validUntil ? new Date(parsed.data.validUntil) : undefined,
             };
             res.json(await service.updateOffer(req.params.id, partnerId, data));
+        } catch (err) { next(err); }
+    }
+
+    async uploadOfferImage(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { partnerId } = req.partnerUser!;
+            if (!req.file) { res.status(400).json({ message: "Aucun fichier fourni" }); return; }
+            res.json(await service.uploadOfferImage(req.params.id, partnerId, req.file.buffer));
+        } catch (err) { next(err); }
+    }
+
+    // ── Paramètres ────────────────────────────────────────────────────────────
+
+    async getSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            res.json(await service.getSettings(req.partnerUser!.partnerId));
+        } catch (err) { next(err); }
+    }
+
+    async updateCurrency(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const parsed = updateCurrencySchema.safeParse(req.body);
+            if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
+            res.json(await service.updateCurrency(req.partnerUser!.partnerId, parsed.data.currencyCode));
+        } catch (err) { next(err); }
+    }
+
+    async updateApiIntegration(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const parsed = updateApiIntegrationSchema.safeParse(req.body);
+            if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
+            res.json(await service.updateApiIntegration(req.partnerUser!.partnerId, parsed.data));
+        } catch (err) { next(err); }
+    }
+
+    async listPaymentMethods(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            res.json(await service.listPaymentMethods(req.partnerUser!.partnerId));
+        } catch (err) { next(err); }
+    }
+
+    async createPaymentMethod(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { partnerId, partnerUserId } = req.partnerUser!;
+            const parsed = paymentMethodSchema.safeParse(req.body);
+            if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
+            res.status(201).json(await service.createPaymentMethod(partnerId, partnerUserId, parsed.data));
+        } catch (err) { next(err); }
+    }
+
+    async updatePaymentMethod(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { partnerId } = req.partnerUser!;
+            const parsed = updatePaymentMethodSchema.safeParse(req.body);
+            if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
+            res.json(await service.updatePaymentMethod(req.params.id, partnerId, parsed.data));
+        } catch (err) { next(err); }
+    }
+
+    async deletePaymentMethod(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { partnerId } = req.partnerUser!;
+            await service.deletePaymentMethod(req.params.id, partnerId);
+            res.status(204).send();
         } catch (err) { next(err); }
     }
 }

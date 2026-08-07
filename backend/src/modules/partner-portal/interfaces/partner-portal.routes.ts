@@ -6,6 +6,7 @@ import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import { locationIdParamSchema } from "./partner-portal.validator";
+import { offerImageUpload } from "../../../core/middlewares/upload.middleware";
 
 const router = Router();
 const ctrl   = new PartnerPortalController();
@@ -43,10 +44,22 @@ router.put("/locations/:locationId/availabilities", validateParams(locationIdPar
 router.get("/offers",    ctrl.listOffers.bind(ctrl));
 router.post("/offers",   idempotency(), ctrl.createOffer.bind(ctrl));
 router.patch("/offers/:id", validateParams(idParamString), ctrl.updateOffer.bind(ctrl));
+router.post("/offers/:id/image", validateParams(idParamString), offerImageUpload.single("file"), ctrl.uploadOfferImage.bind(ctrl));
 
 // Staff — PARTNER_ADMIN only
 router.get("/staff",         requirePartnerAdmin, ctrl.listStaff.bind(ctrl));
 router.post("/staff",        requirePartnerAdmin, ctrl.createStaff.bind(ctrl));
 router.patch("/staff/:id/deactivate", requirePartnerAdmin, validateParams(idParamString), ctrl.deactivateStaff.bind(ctrl));
+
+// Paramètres
+router.get("/settings",   ctrl.getSettings.bind(ctrl));
+router.patch("/settings/currency",        requirePartnerAdmin, ctrl.updateCurrency.bind(ctrl));
+router.patch("/settings/api-integration", requirePartnerAdmin, ctrl.updateApiIntegration.bind(ctrl));
+
+// Moyens de réception de paiement — PARTNER_ADMIN only
+router.get("/settings/payment-methods",     requirePartnerAdmin, ctrl.listPaymentMethods.bind(ctrl));
+router.post("/settings/payment-methods",    requirePartnerAdmin, idempotency(), ctrl.createPaymentMethod.bind(ctrl));
+router.patch("/settings/payment-methods/:id", requirePartnerAdmin, validateParams(idParamString), ctrl.updatePaymentMethod.bind(ctrl));
+router.delete("/settings/payment-methods/:id", requirePartnerAdmin, validateParams(idParamString), ctrl.deletePaymentMethod.bind(ctrl));
 
 export default router;

@@ -69,6 +69,14 @@ const updateOfferMock = PartnerPortalService.prototype.updateOffer as jest.Mock;
 const listStaffMock = PartnerPortalService.prototype.listStaff as jest.Mock;
 const createStaffMock = PartnerPortalService.prototype.createStaff as jest.Mock;
 const deactivateStaffMock = PartnerPortalService.prototype.deactivateStaff as jest.Mock;
+const uploadOfferImageMock = PartnerPortalService.prototype.uploadOfferImage as jest.Mock;
+const getSettingsMock = PartnerPortalService.prototype.getSettings as jest.Mock;
+const updateCurrencyMock = PartnerPortalService.prototype.updateCurrency as jest.Mock;
+const updateApiIntegrationMock = PartnerPortalService.prototype.updateApiIntegration as jest.Mock;
+const listPaymentMethodsMock = PartnerPortalService.prototype.listPaymentMethods as jest.Mock;
+const createPaymentMethodMock = PartnerPortalService.prototype.createPaymentMethod as jest.Mock;
+const updatePaymentMethodMock = PartnerPortalService.prototype.updatePaymentMethod as jest.Mock;
+const deletePaymentMethodMock = PartnerPortalService.prototype.deletePaymentMethod as jest.Mock;
 
 beforeEach(() => {
   mockReset(prismaMock);
@@ -830,5 +838,371 @@ describe("PATCH /api/partner-portal/staff/:id/deactivate", () => {
 
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ success: false, message: "Erreur interne du serveur" });
+  });
+});
+
+// ── POST /offers/:id/image ────────────────────────────────────────────────
+describe("POST /api/partner-portal/offers/:id/image", () => {
+  it("200 — upload l'image d'une offre du partenaire authentifié", async () => {
+    const cookie = withPartnerSession();
+    uploadOfferImageMock.mockResolvedValueOnce({ id: "offer-1", imageUrl: "https://res.cloudinary.com/afrikcse/offers/photo.jpg" });
+
+    const res = await request(app)
+      .post("/api/partner-portal/offers/offer-1/image")
+      .set("Cookie", cookie)
+      .attach("file", Buffer.from("fake-image-bytes"), "photo.jpg");
+
+    expect(res.status).toBe(200);
+    expect(res.body.imageUrl).toContain("cloudinary");
+    expect(uploadOfferImageMock).toHaveBeenCalledWith("offer-1", "partner-1", expect.any(Buffer));
+  });
+
+  it("400 — rejette l'absence de fichier", async () => {
+    const cookie = withPartnerSession();
+
+    const res = await request(app).post("/api/partner-portal/offers/offer-1/image").set("Cookie", cookie);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Aucun fichier fourni" });
+    expect(uploadOfferImageMock).not.toHaveBeenCalled();
+  });
+
+  it("400 — rejette un format de fichier non supporté (multer fileFilter)", async () => {
+    const cookie = withPartnerSession();
+
+    const res = await request(app)
+      .post("/api/partner-portal/offers/offer-1/image")
+      .set("Cookie", cookie)
+      .attach("file", Buffer.from("pas-une-image"), "document.txt");
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/format d'image non supporté/i);
+    expect(uploadOfferImageMock).not.toHaveBeenCalled();
+  });
+
+  it("401 — rejette une requête sans cookie de session partenaire", async () => {
+    const res = await request(app)
+      .post("/api/partner-portal/offers/offer-1/image")
+      .attach("file", Buffer.from("fake-image-bytes"), "photo.jpg");
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: "Token partenaire manquant" });
+  });
+
+  it("404 — isolation multi-tenant : offre d'un AUTRE partenaire (anti-IDOR)", async () => {
+    const cookie = withPartnerSession();
+    uploadOfferImageMock.mockRejectedValueOnce(new AppError("Offre introuvable", 404));
+
+    const res = await request(app)
+      .post("/api/partner-portal/offers/offre-dun-autre-partenaire/image")
+      .set("Cookie", cookie)
+      .attach("file", Buffer.from("fake-image-bytes"), "photo.jpg");
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ success: false, message: "Offre introuvable" });
+  });
+});
+
+// ── GET /settings ──────────────────────────────────────────────────────────
+describe("GET /api/partner-portal/settings", () => {
+  it("200 — retourne les paramètres du partenaire authentifié, sans la clé API en clair", async () => {
+    const cookie = withPartnerSession();
+    getSettingsMock.mockResolvedValueOnce({
+      currencyCode: "XOF", apiEnabled: false, apiBaseUrl: null, apiFormat: null,
+      hasApiKey: true, paymentMethods: [],
+    });
+
+    const res = await request(app).get("/api/partner-portal/settings").set("Cookie", cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.hasApiKey).toBe(true);
+    expect(res.body.apiKeyEncrypted).toBeUndefined();
+    expect(getSettingsMock).toHaveBeenCalledWith("partner-1");
+  });
+
+  it("401 — rejette une requête sans cookie de session partenaire", async () => {
+    const res = await request(app).get("/api/partner-portal/settings");
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: "Token partenaire manquant" });
+  });
+
+  it("accessible à un PARTNER_STAFF (lecture seule, pas réservée aux admins)", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_STAFF" });
+    getSettingsMock.mockResolvedValueOnce({ currencyCode: "XOF", apiEnabled: false, hasApiKey: false, paymentMethods: [] });
+
+    const res = await request(app).get("/api/partner-portal/settings").set("Cookie", cookie);
+
+    expect(res.status).toBe(200);
+  });
+});
+
+// ── PATCH /settings/currency — PARTNER_ADMIN uniquement ──────────────────────
+describe("PATCH /api/partner-portal/settings/currency", () => {
+  it("200 — un PARTNER_ADMIN met à jour la devise", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
+    updateCurrencyMock.mockResolvedValueOnce({ currencyCode: "GHS" });
+
+    const res = await request(app)
+      .patch("/api/partner-portal/settings/currency")
+      .set("Cookie", cookie)
+      .send({ currencyCode: "GHS" });
+
+    expect(res.status).toBe(200);
+    expect(updateCurrencyMock).toHaveBeenCalledWith("partner-1", "GHS");
+  });
+
+  it("400 — rejette une devise non supportée", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
+
+    const res = await request(app)
+      .patch("/api/partner-portal/settings/currency")
+      .set("Cookie", cookie)
+      .send({ currencyCode: "USD_FAKE" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors.fieldErrors.currencyCode).toBeDefined();
+    expect(updateCurrencyMock).not.toHaveBeenCalled();
+  });
+
+  it("403 — refuse l'accès à un PARTNER_STAFF (réservé aux administrateurs partenaires)", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_STAFF" });
+
+    const res = await request(app)
+      .patch("/api/partner-portal/settings/currency")
+      .set("Cookie", cookie)
+      .send({ currencyCode: "XOF" });
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ message: "Accès réservé aux administrateurs partenaires" });
+    expect(updateCurrencyMock).not.toHaveBeenCalled();
+  });
+
+  it("401 — rejette une requête sans cookie de session partenaire", async () => {
+    const res = await request(app).patch("/api/partner-portal/settings/currency").send({ currencyCode: "XOF" });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: "Token partenaire manquant" });
+  });
+});
+
+// ── PATCH /settings/api-integration — PARTNER_ADMIN uniquement ───────────────
+describe("PATCH /api/partner-portal/settings/api-integration", () => {
+  it("200 — un PARTNER_ADMIN configure l'intégration API sans exposer la clé en retour", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
+    updateApiIntegrationMock.mockResolvedValueOnce({
+      apiEnabled: true, apiBaseUrl: "https://api.partenaire.com", apiFormat: "JSON", hasApiKey: true,
+    });
+
+    const res = await request(app)
+      .patch("/api/partner-portal/settings/api-integration")
+      .set("Cookie", cookie)
+      .send({ apiEnabled: true, apiBaseUrl: "https://api.partenaire.com", apiFormat: "JSON", apiKey: "un-secret-tres-long" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ apiEnabled: true, apiBaseUrl: "https://api.partenaire.com", apiFormat: "JSON", hasApiKey: true });
+    expect(JSON.stringify(res.body)).not.toContain("un-secret-tres-long");
+  });
+
+  it("400 — rejette une apiBaseUrl mal formée", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
+
+    const res = await request(app)
+      .patch("/api/partner-portal/settings/api-integration")
+      .set("Cookie", cookie)
+      .send({ apiBaseUrl: "pas-une-url" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors.fieldErrors.apiBaseUrl).toBeDefined();
+    expect(updateApiIntegrationMock).not.toHaveBeenCalled();
+  });
+
+  it("403 — refuse l'accès à un PARTNER_STAFF (réservé aux administrateurs partenaires)", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_STAFF" });
+
+    const res = await request(app)
+      .patch("/api/partner-portal/settings/api-integration")
+      .set("Cookie", cookie)
+      .send({ apiEnabled: true });
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ message: "Accès réservé aux administrateurs partenaires" });
+    expect(updateApiIntegrationMock).not.toHaveBeenCalled();
+  });
+
+  it("401 — rejette une requête sans cookie de session partenaire", async () => {
+    const res = await request(app).patch("/api/partner-portal/settings/api-integration").send({ apiEnabled: true });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: "Token partenaire manquant" });
+  });
+});
+
+// ── Moyens de réception de paiement — PARTNER_ADMIN uniquement ───────────────
+describe("GET /api/partner-portal/settings/payment-methods", () => {
+  it("200 — un PARTNER_ADMIN liste les moyens de paiement sans jamais voir le détail chiffré", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
+    listPaymentMethodsMock.mockResolvedValueOnce([
+      { id: "pm-1", type: "MOBILE_MONEY", provider: "Orange Money", label: "Compte principal", maskedHint: "•••• 4821", isActive: true },
+    ]);
+
+    const res = await request(app).get("/api/partner-portal/settings/payment-methods").set("Cookie", cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body[0].maskedHint).toBe("•••• 4821");
+    expect(JSON.stringify(res.body)).not.toMatch(/detailsEncrypted/i);
+  });
+
+  it("403 — refuse l'accès à un PARTNER_STAFF", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_STAFF" });
+
+    const res = await request(app).get("/api/partner-portal/settings/payment-methods").set("Cookie", cookie);
+
+    expect(res.status).toBe(403);
+    expect(listPaymentMethodsMock).not.toHaveBeenCalled();
+  });
+
+  it("401 — rejette une requête sans cookie de session partenaire", async () => {
+    const res = await request(app).get("/api/partner-portal/settings/payment-methods");
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: "Token partenaire manquant" });
+  });
+});
+
+describe("POST /api/partner-portal/settings/payment-methods", () => {
+  const validPaymentMethodBody = {
+    type: "MOBILE_MONEY", provider: "Orange Money", label: "Compte principal",
+    details: { numero: "+229 90 00 00 00" },
+  };
+
+  it("201 — un PARTNER_ADMIN ajoute un moyen de paiement", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN", partnerUserId: "admin-1" });
+    createPaymentMethodMock.mockResolvedValueOnce({ id: "pm-1", ...validPaymentMethodBody, maskedHint: "•••• 0000", isActive: true });
+
+    const res = await request(app)
+      .post("/api/partner-portal/settings/payment-methods")
+      .set("Cookie", cookie)
+      .send(validPaymentMethodBody);
+
+    expect(res.status).toBe(201);
+    expect(createPaymentMethodMock).toHaveBeenCalledWith("partner-1", "admin-1", expect.objectContaining({ provider: "Orange Money" }));
+  });
+
+  it("400 — rejette un corps invalide (details vide)", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
+
+    const res = await request(app)
+      .post("/api/partner-portal/settings/payment-methods")
+      .set("Cookie", cookie)
+      .send({ ...validPaymentMethodBody, details: {} });
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors.fieldErrors.details).toBeDefined();
+    expect(createPaymentMethodMock).not.toHaveBeenCalled();
+  });
+
+  it("403 — refuse l'accès à un PARTNER_STAFF", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_STAFF" });
+
+    const res = await request(app)
+      .post("/api/partner-portal/settings/payment-methods")
+      .set("Cookie", cookie)
+      .send(validPaymentMethodBody);
+
+    expect(res.status).toBe(403);
+    expect(createPaymentMethodMock).not.toHaveBeenCalled();
+  });
+
+  it("401 — rejette une requête sans cookie de session partenaire", async () => {
+    const res = await request(app).post("/api/partner-portal/settings/payment-methods").send(validPaymentMethodBody);
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: "Token partenaire manquant" });
+  });
+});
+
+describe("PATCH /api/partner-portal/settings/payment-methods/:id", () => {
+  it("200 — un PARTNER_ADMIN désactive un moyen de paiement de son partenaire", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
+    updatePaymentMethodMock.mockResolvedValueOnce({ id: "pm-1", isActive: false });
+
+    const res = await request(app)
+      .patch("/api/partner-portal/settings/payment-methods/pm-1")
+      .set("Cookie", cookie)
+      .send({ isActive: false });
+
+    expect(res.status).toBe(200);
+    expect(updatePaymentMethodMock).toHaveBeenCalledWith("pm-1", "partner-1", expect.objectContaining({ isActive: false }));
+  });
+
+  it("403 — refuse l'accès à un PARTNER_STAFF", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_STAFF" });
+
+    const res = await request(app)
+      .patch("/api/partner-portal/settings/payment-methods/pm-1")
+      .set("Cookie", cookie)
+      .send({ isActive: false });
+
+    expect(res.status).toBe(403);
+    expect(updatePaymentMethodMock).not.toHaveBeenCalled();
+  });
+
+  it("404 — isolation multi-tenant : moyen de paiement d'un AUTRE partenaire (anti-IDOR)", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
+    updatePaymentMethodMock.mockRejectedValueOnce(foreignOrMissingResourceError());
+
+    const res = await request(app)
+      .patch("/api/partner-portal/settings/payment-methods/pm-dun-autre-partenaire")
+      .set("Cookie", cookie)
+      .send({ isActive: false });
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ success: false, message: "Ressource introuvable" });
+  });
+
+  it("401 — rejette une requête sans cookie de session partenaire", async () => {
+    const res = await request(app).patch("/api/partner-portal/settings/payment-methods/pm-1").send({ isActive: false });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: "Token partenaire manquant" });
+  });
+});
+
+describe("DELETE /api/partner-portal/settings/payment-methods/:id", () => {
+  it("204 — un PARTNER_ADMIN supprime un moyen de paiement de son partenaire", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
+    deletePaymentMethodMock.mockResolvedValueOnce(undefined);
+
+    const res = await request(app).delete("/api/partner-portal/settings/payment-methods/pm-1").set("Cookie", cookie);
+
+    expect(res.status).toBe(204);
+    expect(deletePaymentMethodMock).toHaveBeenCalledWith("pm-1", "partner-1");
+  });
+
+  it("403 — refuse l'accès à un PARTNER_STAFF", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_STAFF" });
+
+    const res = await request(app).delete("/api/partner-portal/settings/payment-methods/pm-1").set("Cookie", cookie);
+
+    expect(res.status).toBe(403);
+    expect(deletePaymentMethodMock).not.toHaveBeenCalled();
+  });
+
+  it("404 — isolation multi-tenant : moyen de paiement d'un AUTRE partenaire (anti-IDOR)", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
+    deletePaymentMethodMock.mockRejectedValueOnce(foreignOrMissingResourceError());
+
+    const res = await request(app).delete("/api/partner-portal/settings/payment-methods/pm-dun-autre-partenaire").set("Cookie", cookie);
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ success: false, message: "Ressource introuvable" });
+  });
+
+  it("401 — rejette une requête sans cookie de session partenaire", async () => {
+    const res = await request(app).delete("/api/partner-portal/settings/payment-methods/pm-1");
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: "Token partenaire manquant" });
   });
 });

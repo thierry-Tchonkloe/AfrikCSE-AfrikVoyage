@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Pencil, Trash2, X, Loader2, MapPin, Clock } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Loader2, MapPin, Clock, ExternalLink } from "lucide-react";
 import { partnerPortalService, AvailabilitySlot } from "@/services/partner/partner-portal.service";
 import { PartnerLocation } from "@/types";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
-type LocationForm = Omit<PartnerLocation, "id" | "partnerId" | "createdAt" | "updatedAt" | "availabilities">;
+type LocationForm = Omit<PartnerLocation, "id" | "partnerId" | "createdAt" | "updatedAt" | "availabilities" | "latitude" | "longitude" | "phone" | "mapsUrl"> & {
+    latitude?: number;
+    longitude?: number;
+    phone?: string;
+    mapsUrl?: string;
+};
 
 const EMPTY_LOC: LocationForm = { name: "", address: "", city: "", country: "Bénin", isMain: false };
 
@@ -55,7 +60,10 @@ export default function PartnerLocationsPage() {
     const openEdit = (loc: PartnerLocation) => {
         setEditing(loc);
         setForm({ name: loc.name, address: loc.address, city: loc.city, country: loc.country, isMain: loc.isMain,
-                  latitude: loc.latitude ?? undefined, longitude: loc.longitude ?? undefined, phone: loc.phone ?? undefined });
+                  latitude: loc.latitude != null ? Number(loc.latitude) : undefined,
+                  longitude: loc.longitude != null ? Number(loc.longitude) : undefined,
+                  mapsUrl: loc.mapsUrl ?? undefined,
+                  phone: loc.phone ?? undefined });
         setShowLocModal(true);
     };
 
@@ -171,6 +179,12 @@ export default function PartnerLocationsPage() {
                                         </div>
                                         <p className="text-xs text-gray-500 mt-0.5 truncate">{loc.address}, {loc.city}, {loc.country}</p>
                                         {loc.phone && <p className="text-xs text-gray-400">{loc.phone}</p>}
+                                        {loc.mapsUrl && (
+                                            <a href={loc.mapsUrl} target="_blank" rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-0.5">
+                                                Voir sur Google Maps <ExternalLink size={11} />
+                                            </a>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex gap-1.5 shrink-0">
@@ -246,6 +260,22 @@ export default function PartnerLocationsPage() {
                                 <input value={form.phone ?? ""} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                                     className="inp" placeholder="+229…" />
                             </F>
+                            <F label="Lien Google Maps">
+                                <input type="url" value={form.mapsUrl ?? ""} onChange={(e) => setForm((f) => ({ ...f, mapsUrl: e.target.value }))}
+                                    className="inp" placeholder="https://maps.app.goo.gl/…" />
+                            </F>
+                            <div className="grid grid-cols-2 gap-3">
+                                <F label="Latitude">
+                                    <input type="number" step="any" min={-90} max={90} value={form.latitude ?? ""}
+                                        onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                                        className="inp" placeholder="6.3703" />
+                                </F>
+                                <F label="Longitude">
+                                    <input type="number" step="any" min={-180} max={180} value={form.longitude ?? ""}
+                                        onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                                        className="inp" placeholder="2.3912" />
+                                </F>
+                            </div>
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" checked={form.isMain}
                                     onChange={(e) => setForm((f) => ({ ...f, isMain: e.target.checked }))}
