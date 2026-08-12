@@ -99,7 +99,7 @@ const validLoginBody = { email: "contact@partenaire.com", password: "SecretPass1
 const validProfileUpdateBody = { contactEmail: "contact@partenaire.com", notes: "RAS" };
 const validLocationBody = { name: "Boutique Cocody", address: "Rue des Jardins", city: "Abidjan" };
 const validAvailabilitiesBody = { slots: [{ openTime: "08:00", closeTime: "18:00" }] };
-const validOfferBody = { title: "Réduction 20%", category: "Restauration", employeePrice: 5000, companyPrice: 6000 };
+const validOfferBody = { title: "Réduction 20%", category: "Restauration", employeePrice: 5000, companyPrice: 6000, imageUrl: "https://res.cloudinary.com/afrikcse/offers/photo.jpg" };
 const validStaffBody = { email: "staff@partenaire.com", password: "StaffPass123", firstName: "Jean", lastName: "Kouassi" };
 
 // ── POST /login (public) ──────────────────────────────────────────────────────
@@ -608,6 +608,18 @@ describe("POST /api/partner-portal/offers", () => {
     expect(createOfferMock).not.toHaveBeenCalled();
   });
 
+  it("400 — rejette une offre sans image (image obligatoire dès la création)", async () => {
+    const cookie = withPartnerSession();
+    const { imageUrl, ...bodyWithoutImage } = validOfferBody;
+    void imageUrl;
+
+    const res = await request(app).post("/api/partner-portal/offers").set("Cookie", cookie).send(bodyWithoutImage);
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors.fieldErrors.imageUrl).toBeDefined();
+    expect(createOfferMock).not.toHaveBeenCalled();
+  });
+
   it("401 — rejette une requête sans cookie de session partenaire", async () => {
     const res = await request(app).post("/api/partner-portal/offers").send(validOfferBody);
 
@@ -842,25 +854,25 @@ describe("PATCH /api/partner-portal/staff/:id/deactivate", () => {
 });
 
 // ── POST /offers/:id/image ────────────────────────────────────────────────
-describe("POST /api/partner-portal/offers/:id/image", () => {
-  it("200 — upload l'image d'une offre du partenaire authentifié", async () => {
+describe("POST /api/partner-portal/offers/image", () => {
+  it("200 — upload une image et retourne son URL (indépendant de toute offre existante, pour permettre l'image dès la création)", async () => {
     const cookie = withPartnerSession();
-    uploadOfferImageMock.mockResolvedValueOnce({ id: "offer-1", imageUrl: "https://res.cloudinary.com/afrikcse/offers/photo.jpg" });
+    uploadOfferImageMock.mockResolvedValueOnce({ imageUrl: "https://res.cloudinary.com/afrikcse/offers/photo.jpg" });
 
     const res = await request(app)
-      .post("/api/partner-portal/offers/offer-1/image")
+      .post("/api/partner-portal/offers/image")
       .set("Cookie", cookie)
       .attach("file", Buffer.from("fake-image-bytes"), "photo.jpg");
 
     expect(res.status).toBe(200);
     expect(res.body.imageUrl).toContain("cloudinary");
-    expect(uploadOfferImageMock).toHaveBeenCalledWith("offer-1", "partner-1", expect.any(Buffer));
+    expect(uploadOfferImageMock).toHaveBeenCalledWith("partner-1", expect.any(Buffer));
   });
 
   it("400 — rejette l'absence de fichier", async () => {
     const cookie = withPartnerSession();
 
-    const res = await request(app).post("/api/partner-portal/offers/offer-1/image").set("Cookie", cookie);
+    const res = await request(app).post("/api/partner-portal/offers/image").set("Cookie", cookie);
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ message: "Aucun fichier fourni" });
@@ -871,7 +883,7 @@ describe("POST /api/partner-portal/offers/:id/image", () => {
     const cookie = withPartnerSession();
 
     const res = await request(app)
-      .post("/api/partner-portal/offers/offer-1/image")
+      .post("/api/partner-portal/offers/image")
       .set("Cookie", cookie)
       .attach("file", Buffer.from("pas-une-image"), "document.txt");
 
@@ -882,24 +894,24 @@ describe("POST /api/partner-portal/offers/:id/image", () => {
 
   it("401 — rejette une requête sans cookie de session partenaire", async () => {
     const res = await request(app)
-      .post("/api/partner-portal/offers/offer-1/image")
+      .post("/api/partner-portal/offers/image")
       .attach("file", Buffer.from("fake-image-bytes"), "photo.jpg");
 
     expect(res.status).toBe(401);
     expect(res.body).toEqual({ message: "Token partenaire manquant" });
   });
 
-  it("404 — isolation multi-tenant : offre d'un AUTRE partenaire (anti-IDOR)", async () => {
+  it("500 — propage une erreur inattendue (ex. échec Cloudinary)", async () => {
     const cookie = withPartnerSession();
-    uploadOfferImageMock.mockRejectedValueOnce(new AppError("Offre introuvable", 404));
+    uploadOfferImageMock.mockRejectedValueOnce(new Error("Échec de l'upload"));
 
     const res = await request(app)
-      .post("/api/partner-portal/offers/offre-dun-autre-partenaire/image")
+      .post("/api/partner-portal/offers/image")
       .set("Cookie", cookie)
       .attach("file", Buffer.from("fake-image-bytes"), "photo.jpg");
 
-    expect(res.status).toBe(404);
-    expect(res.body).toEqual({ success: false, message: "Offre introuvable" });
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ success: false, message: "Erreur interne du serveur" });
   });
 });
 

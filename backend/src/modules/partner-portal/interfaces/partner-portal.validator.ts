@@ -58,7 +58,7 @@ export const setAvailabilitiesSchema = z.object({
 export const createOfferSchema = z.object({
     title:          z.string().min(1),
     description:    z.string().optional(),
-    imageUrl:       z.string().url().optional(),
+    imageUrl:       z.string().url("Image requise"),
     category:       z.string().min(1),
     employeePrice:  z.number().min(0),
     companyPrice:   z.number().min(0),

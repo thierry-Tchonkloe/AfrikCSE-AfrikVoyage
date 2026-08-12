@@ -20,6 +20,7 @@ function buildApp() {
   app.use(csrfProtection);
   app.get("/ping", (_req: Request, res: Response) => res.status(200).json({ ok: true }));
   app.post("/widgets", (_req: Request, res: Response) => res.status(201).json({ ok: true }));
+  app.post("/api/auth/login", (_req: Request, res: Response) => res.status(200).json({ ok: true }));
   return app;
 }
 
@@ -82,5 +83,14 @@ describe("csrfProtection middleware", () => {
       .set("Cookie", ["partnerRefreshToken=abc", "csrfToken=secret-token"])
       .send({ name: "x" });
     expect(res.status).toBe(403);
+  });
+
+  it("laisse toujours passer /api/auth/login, même avec un cookie de session ambiant SANS csrfToken associé (session antérieure à l'ajout de cette protection)", async () => {
+    const app = buildApp();
+    const res = await request(app)
+      .post("/api/auth/login")
+      .set("Cookie", ["accessToken=jeton-perime"]) // pas de csrfToken : simule un cookie antérieur à cette fonctionnalité
+      .send({ email: "a@b.com", password: "x" });
+    expect(res.status).toBe(200);
   });
 });

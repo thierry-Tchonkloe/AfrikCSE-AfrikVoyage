@@ -28,8 +28,16 @@ export default function PartnerOffersPage() {
     const [editing, setEditing]   = useState<PartnerOffer | null>(null);
     const [form, setForm]         = useState<OfferInput>(EMPTY_FORM);
     const [saving, setSaving]     = useState(false);
-    const [uploadingImage, setUploadingImage] = useState(false);
+    // L'image n'est envoyée au serveur qu'au clic sur "Enregistrer", avec le reste du
+    // formulaire — pas d'upload instantané à la sélection du fichier (juste un aperçu local).
+    const [imageFile, setImageFile]       = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const resetImagePick = () => {
+        setImagePreview((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+        setImageFile(null);
+    };
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -44,12 +52,13 @@ export default function PartnerOffersPage() {
 
     useEffect(() => { load(); }, [load]);
 
-    const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setShowModal(true); };
+    const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); resetImagePick(); setShowModal(true); };
     const openEdit   = (o: PartnerOffer) => {
         setEditing(o);
         setForm({
             title:         o.title,
             description:   o.description ?? "",
+            imageUrl:      o.imageUrl ?? undefined,
             employeePrice: o.employeePrice,
             companyPrice:  o.companyPrice,
             subsidyPct:    o.subsidyPct,
@@ -57,18 +66,29 @@ export default function PartnerOffersPage() {
             stock:         o.stock ?? undefined,
             validUntil:    o.validUntil ? o.validUntil.slice(0, 10) : "",
         });
+        resetImagePick();
         setShowModal(true);
     };
+
+    const closeModal = () => { setShowModal(false); resetImagePick(); };
 
     const handleSave = async () => {
         if (!form.title.trim() || !form.category.trim() || form.employeePrice <= 0 || form.companyPrice <= 0) {
             toast.error("Titre, catégorie et prix requis");
             return;
         }
+        if (!imageFile && !form.imageUrl) {
+            toast.error("Une image est requise pour l'offre");
+            return;
+        }
         setSaving(true);
         try {
+            // L'image part avec le reste du formulaire, au clic sur "Enregistrer" :
+            // upload (si un nouveau fichier a été choisi) puis création/mise à jour de l'offre.
+            const imageUrl = imageFile ? (await partnerPortalService.uploadOfferImage(imageFile)).imageUrl : form.imageUrl;
             const payload = {
                 ...form,
+                imageUrl,
                 validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : undefined,
             };
             if (editing) {
@@ -80,7 +100,7 @@ export default function PartnerOffersPage() {
                 setOffers((prev) => [created, ...prev]);
                 toast.success("Offre créée");
             }
-            setShowModal(false);
+            closeModal();
         } catch (err) {
             toast.error(getErrorMessage(err, "Erreur lors de la sauvegarde"));
         } finally {
@@ -88,10 +108,10 @@ export default function PartnerOffersPage() {
         }
     };
 
-    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         e.target.value = ""; // permet de re-sélectionner le même fichier
-        if (!file || !editing) return;
+        if (!file) return;
 
         if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
             toast.error("Format non supporté (JPG, PNG ou WEBP uniquement)");
@@ -102,20 +122,12 @@ export default function PartnerOffersPage() {
             return;
         }
 
-        setUploadingImage(true);
-        try {
-            const updated = await partnerPortalService.uploadOfferImage(editing.id, file);
-            setEditing(updated);
-            setOffers((prev) => prev.map((o) => o.id === updated.id ? updated : o));
-            toast.success("Image mise à jour — l'offre repasse en validation");
-        } catch (err) {
-            toast.error(getErrorMessage(err, "Échec de l'upload de l'image"));
-        } finally {
-            setUploadingImage(false);
-        }
+        setImageFile(file);
+        setImagePreview((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(file); });
     };
 
     const fmt = (v: number) => new Intl.NumberFormat("fr-FR").format(v);
+    const previewSrc = imagePreview ?? form.imageUrl;
 
     return (
         <div className="space-y-5">
@@ -198,33 +210,32 @@ export default function PartnerOffersPage() {
                             <h2 className="font-bold text-gray-900 dark:text-white">
                                 {editing ? "Modifier l'offre" : "Nouvelle offre"}
                             </h2>
-                            <button onClick={() => setShowModal(false)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <button onClick={closeModal} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <X size={18} />
                             </button>
                         </div>
 
                         <div className="space-y-3">
-                            {editing && (
-                                <Field label="Image">
-                                    <div className="flex items-center gap-3">
-                                        {editing.imageUrl ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img src={editing.imageUrl} alt="" className="w-16 h-16 rounded-xl object-cover border border-gray-200 dark:border-gray-700" />
-                                        ) : (
-                                            <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
-                                                <ImagePlus size={20} />
-                                            </div>
-                                        )}
-                                        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage}
-                                            className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center gap-1.5">
-                                            {uploadingImage ? <Loader2 size={13} className="animate-spin" /> : <ImagePlus size={13} />}
-                                            {editing.imageUrl ? "Changer" : "Ajouter une image"}
-                                        </button>
-                                        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp"
-                                            onChange={handleImageChange} className="hidden" />
-                                    </div>
-                                </Field>
-                            )}
+                            <Field label="Image *">
+                                <div className="flex items-center gap-3">
+                                    {previewSrc ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={previewSrc} alt="" className="w-16 h-16 rounded-xl object-cover border border-gray-200 dark:border-gray-700" />
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
+                                            <ImagePlus size={20} />
+                                        </div>
+                                    )}
+                                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={saving}
+                                        className="px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center gap-1.5">
+                                        <ImagePlus size={13} />
+                                        {previewSrc ? "Changer" : "Ajouter une image"}
+                                    </button>
+                                    <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp"
+                                        onChange={handleImageChange} className="hidden" />
+                                </div>
+                                <p className="text-xs text-gray-400">L&apos;image sera envoyée avec le reste du formulaire, au clic sur « Enregistrer ».</p>
+                            </Field>
                             <Field label="Titre *">
                                 <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                                     className="input-field" placeholder="Ex. Menu déjeuner" />
@@ -275,7 +286,7 @@ export default function PartnerOffersPage() {
                         </div>
 
                         <div className="flex justify-end gap-2 pt-2">
-                            <button onClick={() => setShowModal(false)}
+                            <button onClick={closeModal}
                                 className="px-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">
                                 Annuler
                             </button>

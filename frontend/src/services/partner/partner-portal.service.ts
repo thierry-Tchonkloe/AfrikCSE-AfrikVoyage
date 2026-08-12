@@ -163,10 +163,12 @@ export const partnerPortalService = {
         return data;
     },
 
-    async uploadOfferImage(id: string, file: File): Promise<PartnerOffer> {
+    // Upload indépendant de toute offre existante (nécessaire pour permettre l'image dès la
+    // création : on l'upload d'abord pour obtenir l'URL, incluse ensuite dans createOffer/updateOffer).
+    async uploadOfferImage(file: File): Promise<{ imageUrl: string }> {
         const formData = new FormData();
         formData.append("file", file);
-        const { data } = await api.post<PartnerOffer>(`/partner-portal/offers/${id}/image`, formData, {
+        const { data } = await api.post<{ imageUrl: string }>(`/partner-portal/offers/image`, formData, {
             headers: { "Content-Type": undefined },
         });
         return data;

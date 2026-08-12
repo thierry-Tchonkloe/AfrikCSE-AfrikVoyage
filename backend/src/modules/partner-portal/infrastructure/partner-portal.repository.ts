@@ -198,18 +198,6 @@ export class PartnerPortalRepository {
         });
     }
 
-    async findOfferByIdAndPartner(id: string, partnerId: string) {
-        return prisma.benefitCatalogItem.findFirst({ where: { id, partnerId } });
-    }
-
-    async updateOfferImage(id: string, partnerId: string, imageUrl: string) {
-        return prisma.benefitCatalogItem.update({
-            where: { id, partnerId },
-            // Même politique de re-revue que updateOffer : changer le visuel public remet l'offre en attente.
-            data:  { imageUrl, isActive: false, reviewStatus: "PENDING", reviewNote: null, reviewedAt: null, reviewedById: null },
-        });
-    }
-
     // ── Paramètres ────────────────────────────────────────────────────────────
 
     async getSettingsPartner(partnerId: string) {

@@ -44,7 +44,9 @@ router.put("/locations/:locationId/availabilities", validateParams(locationIdPar
 router.get("/offers",    ctrl.listOffers.bind(ctrl));
 router.post("/offers",   idempotency(), ctrl.createOffer.bind(ctrl));
 router.patch("/offers/:id", validateParams(idParamString), ctrl.updateOffer.bind(ctrl));
-router.post("/offers/:id/image", validateParams(idParamString), offerImageUpload.single("file"), ctrl.uploadOfferImage.bind(ctrl));
+// Upload indépendant de l'offre (nécessaire pour rendre l'image obligatoire dès la création :
+// on l'upload d'abord pour obtenir l'URL, puis on la fournit à POST/PATCH /offers).
+router.post("/offers/image", offerImageUpload.single("file"), ctrl.uploadOfferImage.bind(ctrl));
 
 // Staff — PARTNER_ADMIN only
 router.get("/staff",         requirePartnerAdmin, ctrl.listStaff.bind(ctrl));

@@ -160,11 +160,11 @@ export class PartnerPortalController {
         } catch (err) { next(err); }
     }
 
-    async uploadOfferImage(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+    async uploadOfferImage(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { partnerId } = req.partnerUser!;
             if (!req.file) { res.status(400).json({ message: "Aucun fichier fourni" }); return; }
-            res.json(await service.uploadOfferImage(req.params.id, partnerId, req.file.buffer));
+            res.json(await service.uploadOfferImage(partnerId, req.file.buffer));
         } catch (err) { next(err); }
     }
 

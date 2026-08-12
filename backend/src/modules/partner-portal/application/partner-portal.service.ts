@@ -223,11 +223,9 @@ export class PartnerPortalService {
         return repo.updateOffer(id, partnerId, data);
     }
 
-    async uploadOfferImage(offerId: string, partnerId: string, fileBuffer: Buffer) {
-        const owned = await repo.findOfferByIdAndPartner(offerId, partnerId);
-        if (!owned) throw new AppError("Offre introuvable", 404);
+    async uploadOfferImage(partnerId: string, fileBuffer: Buffer) {
         const result = await uploadImageToCloudinary(fileBuffer, `afrikcse/offers/${partnerId}`);
-        return repo.updateOfferImage(offerId, partnerId, result.secure_url);
+        return { imageUrl: result.secure_url };
     }
 
     // ── Paramètres ────────────────────────────────────────────────────────────
