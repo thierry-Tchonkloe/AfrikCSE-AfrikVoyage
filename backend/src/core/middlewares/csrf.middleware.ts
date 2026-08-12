@@ -8,6 +8,22 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 // potentiellement forgeable en CSRF si elle déclenche une action d'écriture.
 const SESSION_COOKIE_NAMES = ["accessToken", "refreshToken", "partnerAccessToken", "partnerRefreshToken"];
 
+// Endpoints publics qui prouvent l'intention via un secret explicite (mot de
+// passe, jeton d'activation/réinitialisation) plutôt que via l'autorité
+// ambiante d'un cookie de session — le CSRF n'apporte donc rien ici. Exemptés
+// explicitement par chemin car un navigateur peut porter un cookie de session
+// PÉRIMÉ ou antérieur à l'introduction de cette protection (donc sans son
+// cookie `csrfToken` associé) : sans cette liste, `hasSessionCookie` bloquerait
+// alors même la tentative de connexion censée permettre d'en sortir.
+const CSRF_EXEMPT_PATHS = new Set([
+    "/api/auth/login",
+    "/api/auth/register-company",
+    "/api/auth/forgot-password",
+    "/api/auth/reset-password",
+    "/api/auth/activate",
+    "/api/partner-portal/login",
+]);
+
 /**
  * Protection CSRF — pattern double-submit cookie (OWASP CSRF Prevention Cheat
  * Sheet). Les cookies de session sont posés en `SameSite=None` en production
@@ -22,6 +38,11 @@ const SESSION_COOKIE_NAMES = ["accessToken", "refreshToken", "partnerAccessToken
  */
 export function csrfProtection(req: Request, res: Response, next: NextFunction): void {
     if (SAFE_METHODS.has(req.method)) {
+        next();
+        return;
+    }
+
+    if (CSRF_EXEMPT_PATHS.has(req.path)) {
         next();
         return;
     }

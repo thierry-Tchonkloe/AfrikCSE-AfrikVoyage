@@ -128,9 +128,34 @@ export interface Partner {
     isGlobal:         boolean;
     warningCount:     number;
     flaggedAt?:       string | null;
+    currencyCode:     string;
     createdAt:        string;
     updatedAt:        string;
     _count?: { offers: number };
+}
+
+export type PartnerPaymentMethodType = "MOBILE_MONEY" | "BANK_TRANSFER" | "OTHER";
+
+// Aucune donnée sensible : `maskedHint` est un aperçu non réversible (ex: "•••• 4821"),
+// le détail brut chiffré n'est jamais renvoyé par l'API.
+export interface PartnerPaymentMethod {
+    id:         string;
+    type:       PartnerPaymentMethodType;
+    provider:   string;
+    label:      string;
+    maskedHint?: string | null;
+    isActive:   boolean;
+    createdAt:  string;
+    updatedAt:  string;
+}
+
+export interface PartnerSettings {
+    currencyCode: string;
+    apiEnabled:   boolean;
+    apiBaseUrl?:  string | null;
+    apiFormat?:   string | null;
+    hasApiKey:    boolean;
+    paymentMethods: PartnerPaymentMethod[];
 }
 
 export interface PartnerSyncLog {
@@ -466,6 +491,7 @@ export interface PartnerLocation {
     country:   string;
     latitude?: string | null;
     longitude?: string | null;
+    mapsUrl?:  string | null;
     phone?:    string | null;
     isMain:    boolean;
     createdAt: string;
