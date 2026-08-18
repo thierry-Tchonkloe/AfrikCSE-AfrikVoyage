@@ -49,6 +49,14 @@ const ACTIVITY_CONFIG: Record<string, { label: string; color: string }> = {
     EVENT_ANNOUNCEMENT:{ label: "a annoncé un événement", color: "#f59e0b" },
 };
 
+function formatTime(iso: string) {
+    const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 60) return "À l'instant";
+    if (diff < 3600) return `il y a ${Math.round(diff / 60)} min`;
+    if (diff < 86400) return `il y a ${Math.round(diff / 3600)} h`;
+    return `il y a ${Math.round(diff / 86400)} j`;
+}
+
 export default function CommunicationPage() {
     const router = useRouter();
     const { user }  = useAuth();
@@ -168,14 +176,6 @@ export default function CommunicationPage() {
             p.id === postId ? { ...p, _count: { ...p._count, comments: p._count.comments + 1 } } : p
         ));
         } catch { toast.error("Erreur lors de l'ajout du commentaire"); }
-    };
-
-    const formatTime = (iso: string) => {
-        const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-        if (diff < 60) return "À l'instant";
-        if (diff < 3600) return `il y a ${Math.round(diff / 60)} min`;
-        if (diff < 86400) return `il y a ${Math.round(diff / 3600)} h`;
-        return `il y a ${Math.round(diff / 86400)} j`;
     };
 
     const activePolls = posts

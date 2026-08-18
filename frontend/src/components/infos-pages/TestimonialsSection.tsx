@@ -194,7 +194,7 @@ export default function TestimonialsSection() {
         >
           <span className="inline-flex items-center gap-2 bg-amber-100 text-amber-600 rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-[0.15em] mb-4">
             <Sparkles className="w-4 h-4" />
-            Ce qu'ils en disent
+            Ce qu&apos;ils en disent
           </span>
           <h2 className="text-4xl md:text-6xl font-bold text-[rgb(21,0,44)] tracking-tight mb-4 leading-[1.1]">
             Plus de 500 entreprises
@@ -260,7 +260,7 @@ export default function TestimonialsSection() {
                   </div>
                   <StarRating rating={currentTestimonial.rating} />
                   <p className="text-slate-600 mt-4 leading-relaxed text-lg">
-                    "{currentTestimonial.text}"
+                    &quot;{currentTestimonial.text}&quot;
                   </p>
                   <p className="text-slate-400 text-xs mt-4">{currentTestimonial.date}</p>
                 </div>

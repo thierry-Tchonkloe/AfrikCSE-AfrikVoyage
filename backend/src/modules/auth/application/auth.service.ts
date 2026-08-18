@@ -164,13 +164,13 @@ export class AuthService {
         const user = await this.repo.findUserByEmail(dto.email);
 
         if (!user) {
-        try {
-            const partnerResult = await this.partnerPortalService.login(dto.email, dto.password);
-            return { type: "partner" as const, ...partnerResult };
-        } catch {
-            // Même message générique qu'un email User inconnu — pas d'énumération de compte
-            throw new Error("Email ou mot de passe incorrect");
-        }
+            try {
+                const partnerResult = await this.partnerPortalService.login(dto.email, dto.password);
+                return { type: "partner" as const, ...partnerResult };
+            } catch {
+                // Même message générique qu'un email User inconnu — pas d'énumération de compte
+                throw new Error("Email ou mot de passe incorrect");
+            }
         }
 
         const passwordOk = await comparePassword(dto.password, user.password);

@@ -26,6 +26,8 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
     const [open, setOpen]           = useState(false);
     const [, startTransition]       = useTransition();
 
+    // Démarre à "fr" (identique au rendu serveur) puis se synchronise avec le
+    // cookie juste après le montage, pour éviter tout mismatch d'hydratation.
     useEffect(() => { setLocaleState(getCookieLocale()); }, []);
 
     function handleSelect(code: Locale) {

@@ -1921,22 +1921,29 @@ model PartnerPayout {
 }
 
 // ─── IDEMPOTENCY (middleware générique Idempotency-Key) ─────────────────
-// Une ligne "PENDING" est créée avant d'exécuter le handler (claim atomique
-// via la contrainte unique ci-dessous) ; elle passe à "DONE" avec la réponse
-// mise en cache une fois le handler terminé avec succès, ou est supprimée en
-// cas d'échec serveur (5xx) pour permettre un retry propre. Voir
 // backend/src/core/middlewares/idempotency.middleware.ts.
+
 model IdempotencyRecord {
   id             String   @id @default(cuid())
-  key            String // header Idempotency-Key fourni par le client
-  route          String // ex: "POST:/api/flights/admin/routes"
-  organizationId String // "platform" si l'appelant n'a pas d'org (SUPER_ADMIN plateforme)
-  status         String   @default("PENDING") // PENDING | DONE
+  key            String   @db.VarChar(255)
+  route          String   @db.VarChar(255)
+  organizationId String   @db.VarChar(100)
+  requestHash    String   @db.Char(64)
+  status         String   @default("PENDING") @db.VarChar(16) // PENDING | DONE
+  lease               String   @db.VarChar(36)
+  leaseExpiresAt      DateTime
   responseStatus Int?
+  responseEncoding    String?  @db.VarChar(8)
   responseBody   Json?
+  responseText        String?  @db.Text
+  responseContentType String?  @db.VarChar(255)
+  expiresAt      DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@unique([route, organizationId, key])
+  @@index([expiresAt])
+  @@index([createdAt])
+  @@index([status, leaseExpiresAt])
   @@map("idempotency_records")
 }

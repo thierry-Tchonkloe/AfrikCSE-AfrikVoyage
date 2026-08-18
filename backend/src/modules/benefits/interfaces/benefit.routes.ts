@@ -8,6 +8,8 @@ import { authenticate, authorize } from "../../../core/middlewares/auth.middlewa
 const router = Router();
 const ctrl = new BenefitController();
 
+
+
 router.use(authenticate);
 
 // Catégories — admin/manager
