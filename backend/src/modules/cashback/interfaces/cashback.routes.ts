@@ -4,6 +4,7 @@ import { authenticate, authorize } from "../../../core/middlewares/auth.middlewa
 import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 const ctrl   = new CashbackController();
@@ -18,14 +19,14 @@ router.use(authenticate);
 router.get("/my", ctrl.listMyTransactions.bind(ctrl));
 
 // ── Admin CSE / SA ────────────────────────────────────────
-router.get("/rules",                    authorize("ADMIN", "FINANCE", "MANAGER", "SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.listRules.bind(ctrl));
-router.post("/rules",                   authorize("ADMIN", "SUPER_ADMIN"), idempotency(), ctrl.createRule.bind(ctrl));
-router.patch("/rules/:id",              authorize("ADMIN", "SUPER_ADMIN"), validateParams(idParamString), ctrl.updateRule.bind(ctrl));
-router.delete("/rules/:id",             authorize("ADMIN", "SUPER_ADMIN"), validateParams(idParamString), ctrl.deleteRule.bind(ctrl));
-router.get("/transactions",             authorize("ADMIN", "FINANCE", "SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.listTransactions.bind(ctrl));
+router.get("/rules",                    authorize(ROLES.ADMIN, ROLES.FINANCE, ROLES.MANAGER, ROLES.SUPER_ADMIN, ROLES.PLATFORM_MANAGER), ctrl.listRules.bind(ctrl));
+router.post("/rules",                   authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN), idempotency(), ctrl.createRule.bind(ctrl));
+router.patch("/rules/:id",              authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN), validateParams(idParamString), ctrl.updateRule.bind(ctrl));
+router.delete("/rules/:id",             authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN), validateParams(idParamString), ctrl.deleteRule.bind(ctrl));
+router.get("/transactions",             authorize(ROLES.ADMIN, ROLES.FINANCE, ROLES.SUPER_ADMIN, ROLES.PLATFORM_MANAGER), ctrl.listTransactions.bind(ctrl));
 
 // ── SA / Platform Manager ─────────────────────────────────
-router.get("/fraud-signals",            authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.listFraudSignals.bind(ctrl));
-router.patch("/fraud-signals/:id/review", authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), validateParams(idParamString), ctrl.reviewFraudSignal.bind(ctrl));
+router.get("/fraud-signals",            authorize(ROLES.SUPER_ADMIN, ROLES.PLATFORM_MANAGER), ctrl.listFraudSignals.bind(ctrl));
+router.patch("/fraud-signals/:id/review", authorize(ROLES.SUPER_ADMIN, ROLES.PLATFORM_MANAGER), validateParams(idParamString), ctrl.reviewFraudSignal.bind(ctrl));
 
 export default router;

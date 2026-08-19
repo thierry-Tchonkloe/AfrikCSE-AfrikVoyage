@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { SettingsController } from "./settings.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 const ctrl = new SettingsController();
 
-router.use(authenticate, authorize("SUPER_ADMIN"));
+router.use(authenticate, authorize(ROLES.SUPER_ADMIN));
 
 router.get("/", ctrl.get.bind(ctrl));
 router.patch("/", ctrl.update.bind(ctrl));

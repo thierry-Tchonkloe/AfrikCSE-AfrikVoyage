@@ -6,6 +6,7 @@ import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamInt, IdParamInt } from "../../../core/validators/param.validators";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 const controller = new ContactController();
@@ -19,7 +20,7 @@ router.post("/", idempotency(), (req: Request, res: Response, next: NextFunction
 // ci-dessous) pour éviter un conflit d'inférence TypeScript entre le type
 // `Request` non générique de `authenticate`/`authorize` et le `Request<IdParamInt>`
 // de la route PATCH typée.
-router.use(authenticate, authorize("SUPER_ADMIN", "PLATFORM_MANAGER"));
+router.use(authenticate, authorize(ROLES.SUPER_ADMIN, ROLES.PLATFORM_MANAGER));
 
 router.get(
     "/",
