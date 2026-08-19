@@ -4,6 +4,7 @@ import { authenticate, authorize } from "../../../core/middlewares/auth.middlewa
 import { authenticatePartner } from "../../partner-portal/interfaces/partner-auth.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 const ctrl   = new BookingController();
@@ -26,6 +27,6 @@ router.delete("/:id",    authenticate, validateParams(idParamString), ctrl.cance
 router.post("/:id/rate", authenticate, validateParams(idParamString), ctrl.rate.bind(ctrl));
 
 // ── Admin overview ────────────────────────────────────────────────────────────
-router.get("/admin/all", authenticate, authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.getAllForAdmin.bind(ctrl));
+router.get("/admin/all", authenticate, authorize(ROLES.SUPER_ADMIN, ROLES.PLATFORM_MANAGER), ctrl.getAllForAdmin.bind(ctrl));
 
 export default router;

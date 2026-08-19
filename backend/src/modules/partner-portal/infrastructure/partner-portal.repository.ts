@@ -1,6 +1,11 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, PartnerPaymentMethodType } from "@prisma/client";
 import { prisma } from "../../../core/config/prisma";
 import { AppError } from "../../../core/errors/app.error";
+
+const PAYMENT_METHOD_SELECT = {
+    id: true, type: true, provider: true, label: true,
+    maskedHint: true, isActive: true, createdAt: true, updatedAt: true,
+} satisfies Prisma.PartnerPaymentMethodSelect;
 
 export class PartnerPortalRepository {
     // ── Auth / PartnerUser ────────────────────────────────────────────────────
@@ -104,8 +109,9 @@ export class PartnerPortalRepository {
         address:   string;
         city:      string;
         country?:  string;
-        latitude?: Prisma.Decimal;
-        longitude?: Prisma.Decimal;
+        latitude?: number;
+        longitude?: number;
+        mapsUrl?:  string;
         phone?:    string;
         isMain?:   boolean;
     }) {
@@ -114,6 +120,7 @@ export class PartnerPortalRepository {
 
     async updateLocation(id: string, partnerId: string, data: Partial<{
         name: string; address: string; city: string; phone: string; isMain: boolean;
+        latitude: number; longitude: number; mapsUrl: string;
     }>) {
         return prisma.partnerLocation.update({ where: { id, partnerId }, data });
     }
@@ -189,5 +196,73 @@ export class PartnerPortalRepository {
             // aucune offre ne peut redevenir active sans re-validation SA.
             data:  { ...data, isActive: false, reviewStatus: "PENDING", reviewNote: null, reviewedAt: null, reviewedById: null }, // re-submit for review
         });
+    }
+
+    // ── Paramètres ────────────────────────────────────────────────────────────
+
+    async getSettingsPartner(partnerId: string) {
+        return prisma.partner.findUnique({
+            where:  { id: partnerId },
+            select: {
+                currencyCode:    true,
+                apiEnabled:      true,
+                apiBaseUrl:      true,
+                apiFormat:       true,
+                apiKeyEncrypted: true,
+            },
+        });
+    }
+
+    async updateCurrency(partnerId: string, currencyCode: string) {
+        return prisma.partner.update({ where: { id: partnerId }, data: { currencyCode } });
+    }
+
+    async updateApiIntegration(partnerId: string, data: {
+        apiEnabled?: boolean; apiBaseUrl?: string; apiFormat?: string; apiKeyEncrypted?: string;
+    }) {
+        return prisma.partner.update({
+            where: { id: partnerId },
+            data:  {
+                apiEnabled: data.apiEnabled,
+                apiBaseUrl: data.apiBaseUrl,
+                apiFormat:  data.apiFormat,
+                ...(data.apiKeyEncrypted !== undefined ? { apiKeyEncrypted: data.apiKeyEncrypted } : {}),
+            },
+        });
+    }
+
+    // ── Moyens de réception de paiement ─────────────────────────────────────────
+    // Aucune méthode de ce bloc ne sélectionne jamais `detailsEncrypted` en retour.
+
+    async listPaymentMethods(partnerId: string) {
+        return prisma.partnerPaymentMethod.findMany({
+            where:   { partnerId },
+            orderBy: { createdAt: "desc" },
+            select:  PAYMENT_METHOD_SELECT,
+        });
+    }
+
+    async createPaymentMethod(partnerId: string, createdById: string, data: {
+        type: PartnerPaymentMethodType; provider: string; label: string;
+        detailsEncrypted: string; maskedHint?: string;
+    }) {
+        return prisma.partnerPaymentMethod.create({
+            data:   { ...data, partnerId, createdById },
+            select: PAYMENT_METHOD_SELECT,
+        });
+    }
+
+    async updatePaymentMethod(id: string, partnerId: string, data: Partial<{
+        label: string; isActive: boolean; detailsEncrypted: string; maskedHint: string;
+    }>) {
+        return prisma.partnerPaymentMethod.update({
+            where:  { id, partnerId },
+            data,
+            select: PAYMENT_METHOD_SELECT,
+        });
+    }
+
+    async deletePaymentMethod(id: string, partnerId: string) {
+        return prisma.partnerPaymentMethod.delete({ where: { id, partnerId } });
     }
 }

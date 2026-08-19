@@ -3,6 +3,7 @@ import { OrderController } from "./order.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 const ctrl   = new OrderController();
@@ -15,7 +16,7 @@ router.post("/webhook/fedapay",  ctrl.webhookFedapay.bind(ctrl));
 router.use(authenticate);
 router.use("/:id", validateParams(idParamString));
 
-router.get("/admin/all", authorize("SUPER_ADMIN", "PLATFORM_MANAGER"), ctrl.getAllForAdmin.bind(ctrl));
+router.get("/admin/all", authorize(ROLES.SUPER_ADMIN, ROLES.PLATFORM_MANAGER), ctrl.getAllForAdmin.bind(ctrl));
 
 router.post("/",       ctrl.create.bind(ctrl));
 router.get("/",        ctrl.getMyOrders.bind(ctrl));

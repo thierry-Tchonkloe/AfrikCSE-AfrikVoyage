@@ -113,14 +113,14 @@ function HeroSection() {
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-slate-900 leading-tight">
           Bâtissez le futur de{" "}
           <span className="bg-gradient-to-r from-indigo-600 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
-            l'entreprise africaine
+            l&apos;entreprise africaine
           </span>{" "}
           avec nous.
         </h1>
 
         <p className="mt-6 max-w-2xl mx-auto text-lg text-slate-700 leading-relaxed bg-white/50 backdrop-blur-sm px-6 py-3 rounded-2xl inline-block shadow-sm">
           Rejoignez une équipe passionnée qui unifie la rigueur de la performance 
-          financière et l'épanouissement des collaborateurs au sein d'une seule 
+          financière et l&apos;épanouissement des collaborateurs au sein d&apos;une seule
           interface intelligente.
         </p>
 
@@ -183,11 +183,11 @@ function DualMissionSection() {
             <p className="text-base text-slate-600 leading-relaxed">
               Nous ne développons pas seulement du code, nous créons le pivot de 
               la transformation digitale en Afrique. Notre force réside dans notre 
-              capacité à équilibrer l'optimisation métier et l'expérience humaine.
+              capacité à équilibrer l&apos;optimisation métier et l&apos;expérience humaine.
             </p>
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm italic text-slate-700">
-              " L'IA et la rigueur d'AfrikVoyage rencontrent la flexibilité et la 
-              générosité d'AfrikCSE. "
+              &quot;L&apos;IA et la rigueur d&apos;AfrikVoyage rencontrent la flexibilité et la
+              générosité d&apos;AfrikCSE.&quot;
             </div>
           </div>
 
@@ -401,13 +401,13 @@ function ContributionSection() {
           
           <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
             <div className="text-xs font-bold tracking-wider text-[#6366F1] uppercase">
-              Notre Manifeste d'Impact
+              Notre Manifeste d&apos;Impact
             </div>
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               Comment souhaitons-nous contribuer ?
             </h2>
             <p className="text-base text-slate-500 leading-relaxed">
-              Au-delà des lignes de code, nous façonnons des outils qui redéfinissent la valeur du travail et transforment durablement l'économie de notre continent.
+              Au-delà des lignes de code, nous façonnons des outils qui redéfinissent la valeur du travail et transforment durablement l&apos;économie de notre continent.
             </p>
           </div>
 
@@ -478,7 +478,7 @@ function ValuesSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-16 text-center max-w-2xl mx-auto">
           <div className="text-xs font-bold tracking-wider text-[#6366F1] uppercase mb-2">
-            Notre ADN d'ingénierie
+            Notre ADN d&apos;ingénierie
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
             Nos Valeurs Fondamentales

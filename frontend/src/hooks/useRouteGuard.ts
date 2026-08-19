@@ -45,7 +45,7 @@ export function useRouteGuard(space: SpaceType) {
         return;
         }
 
-        const isHost = (user.organization as any)?.isHost ?? false;
+        const isHost = user.organization?.isHost ?? false;
         const canAccess = SPACE_RULES[space](user.role as Role, isHost);
 
         if (!canAccess) {

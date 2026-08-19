@@ -381,7 +381,7 @@ export default function ServicesSection() {
           </h2>
           
           <p className="text-slate-500 text-lg font-medium max-w-3xl mx-auto">
-            Une plateforme tout-en-un qui combine la gestion des avantages CSE et des voyages d'affaires pour une expérience optimale
+            Une plateforme tout-en-un qui combine la gestion des avantages CSE et des voyages d&apos;affaires pour une expérience optimale
           </p>
 
           {/* Indicateurs de confiance */}
@@ -605,7 +605,7 @@ export default function ServicesSection() {
         >
           <span className="flex items-center gap-2">
             <Heart className="w-4 h-4 text-rose-400" />
-            Des milliers d'utilisateurs satisfaits
+            Des milliers d&apos;utilisateurs satisfaits
           </span>
           <span className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-emerald-400" />

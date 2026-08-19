@@ -653,7 +653,7 @@ export default function CompleteAdvantagesSection() {
                 Pourquoi avoir créé cette solution ?
               </h3>
               <p className="text-slate-500 mt-4 text-base sm:text-lg font-medium max-w-2xl mx-auto">
-                L'histoire derrière la convergence unique d'AfrikVoyage et AfrikCSE racontée par ses concepteurs.
+                L&apos;histoire derrière la convergence unique d&apos;AfrikVoyage et AfrikCSE racontée par ses concepteurs.
               </p>
             </div>
 
@@ -675,7 +675,7 @@ export default function CompleteAdvantagesSection() {
                       </div>
                       
                       <p className="text-slate-700 font-medium text-base sm:text-lg leading-relaxed italic mt-8 relative pl-4 border-l-2 border-indigo-500">
-                        "Nous avons constaté que les entreprises africaines perdaient une énergie folle à synchroniser les déplacements terrains et la satisfaction des collaborateurs. Centraliser les dépenses de voyage et les avantages sociaux sur une interface unique était la seule réponse logique pour catalyser la croissance."
+                        &quot;Nous avons constaté que les entreprises africaines perdaient une énergie folle à synchroniser les déplacements terrains et la satisfaction des collaborateurs. Centraliser les dépenses de voyage et les avantages sociaux sur une interface unique était la seule réponse logique pour catalyser la croissance.&quot;
                       </p>
                     </div>
 
@@ -721,7 +721,7 @@ export default function CompleteAdvantagesSection() {
                       </div>
                       
                       <p className="text-slate-700 font-medium text-base sm:text-lg leading-relaxed italic mt-8 relative pl-4 border-l-2 border-emerald-500">
-                        "La tech n'a de valeur que si elle sert l'humain. Avec le volet CSE, nous redonnons du pouvoir d'achat et une reconnaissance directe aux salariés via un catalogue fluide, tandis que la branche Voyage élimine la friction administrative pour les équipes financières."
+                        &quot;La tech n&apos;a de valeur que si elle sert l&apos;humain. Avec le volet CSE, nous redonnons du pouvoir d&apos;achat et une reconnaissance directe aux salariés via un catalogue fluide, tandis que la branche Voyage élimine la friction administrative pour les équipes financières.&quot;
                       </p>
                     </div>
 

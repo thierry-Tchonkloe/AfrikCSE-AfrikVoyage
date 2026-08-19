@@ -27,3 +27,17 @@ export const logoUpload = multer({
         cb(null, true);
     },
 });
+
+const ALLOWED_OFFER_IMAGE_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+export const offerImageUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 3 * 1024 * 1024 }, // 3 Mo
+    fileFilter: (_req, file, cb) => {
+        if (!ALLOWED_OFFER_IMAGE_MIME_TYPES.includes(file.mimetype)) {
+            cb(new AppError("Format d'image non supporté (JPG, PNG ou WEBP uniquement)", 400));
+            return;
+        }
+        cb(null, true);
+    },
+});

@@ -67,6 +67,8 @@ export function GlobalSearch({
         const q = query.trim();
         if (q.length < 2) return;
 
+        // Loader affiché immédiatement, avant le debounce — synchronisation
+        // volontaire avec `query`/`scope`, pas un cas d'usage évitable.
         setLoading(true);
         const timer = setTimeout(() => {
             searchService.search(q, scope)

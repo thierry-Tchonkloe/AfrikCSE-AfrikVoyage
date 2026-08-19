@@ -4,13 +4,14 @@ import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 router.use("/:id", validateParams(idParamString));
 const ctrl = new PartnerController();
 
 router.use(authenticate);
-router.use(authorize("SUPER_ADMIN"));
+router.use(authorize(ROLES.SUPER_ADMIN));
 
 // Offres partenaires en attente de revue — routes fixes déclarées avant `/:id`
 // pour ne jamais être capturées par le paramètre générique.

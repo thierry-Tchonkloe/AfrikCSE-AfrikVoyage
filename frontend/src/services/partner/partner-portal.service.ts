@@ -1,4 +1,4 @@
-import { PartnerUser, PartnerLocation, Partner, Booking, PartnerSessionUser } from "@/types";
+import { PartnerUser, PartnerLocation, Partner, Booking, PartnerSessionUser, PartnerSettings, PartnerPaymentMethod, PartnerPaymentMethodType } from "@/types";
 import api from "@/lib/api";
 
 export interface OfferInput {
@@ -52,6 +52,34 @@ export interface AvailabilitySlot {
     isClosed:   boolean;
 }
 
+export interface LocationInput {
+    name?:      string;
+    address?:   string;
+    city?:      string;
+    country?:   string;
+    phone?:     string;
+    isMain?:    boolean;
+    mapsUrl?:   string;
+    latitude?:  number;
+    longitude?: number;
+}
+
+export const SUPPORTED_CURRENCIES = ["XOF", "GHS", "NGN", "EUR", "USD"] as const;
+
+export interface ApiIntegrationInput {
+    apiEnabled?: boolean;
+    apiBaseUrl?: string;
+    apiFormat?:  string;
+    apiKey?:     string; // omis = clé inchangée
+}
+
+export interface PaymentMethodInput {
+    type:     PartnerPaymentMethodType;
+    provider: string;
+    label:    string;
+    details:  Record<string, string>;
+}
+
 // Tous les appels utilisent les cookies HTTP-only dédiés partnerAccessToken/
 // partnerRefreshToken (withCredentials:true) — distincts des cookies User, pour
 // qu'une session partenaire n'interfère jamais avec une session standard sur le
@@ -102,12 +130,12 @@ export const partnerPortalService = {
         return (partner as unknown as { locations?: PartnerLocation[] }).locations ?? [];
     },
 
-    async createLocation(payload: Partial<PartnerLocation>): Promise<PartnerLocation> {
+    async createLocation(payload: LocationInput): Promise<PartnerLocation> {
         const { data } = await api.post<PartnerLocation>(`/partner-portal/locations`, payload);
         return data;
     },
 
-    async updateLocation(id: string, payload: Partial<PartnerLocation>): Promise<PartnerLocation> {
+    async updateLocation(id: string, payload: LocationInput): Promise<PartnerLocation> {
         const { data } = await api.patch<PartnerLocation>(`/partner-portal/locations/${id}`, payload);
         return data;
     },
@@ -133,6 +161,51 @@ export const partnerPortalService = {
     async updateOffer(id: string, payload: Partial<OfferInput>): Promise<PartnerOffer> {
         const { data } = await api.patch<PartnerOffer>(`/partner-portal/offers/${id}`, payload);
         return data;
+    },
+
+    // Upload indépendant de toute offre existante (nécessaire pour permettre l'image dès la
+    // création : on l'upload d'abord pour obtenir l'URL, incluse ensuite dans createOffer/updateOffer).
+    async uploadOfferImage(file: File): Promise<{ imageUrl: string }> {
+        const formData = new FormData();
+        formData.append("file", file);
+        const { data } = await api.post<{ imageUrl: string }>(`/partner-portal/offers/image`, formData, {
+            headers: { "Content-Type": undefined },
+        });
+        return data;
+    },
+
+    async getSettings(): Promise<PartnerSettings> {
+        const { data } = await api.get<PartnerSettings>(`/partner-portal/settings`);
+        return data;
+    },
+
+    async updateCurrency(currencyCode: string): Promise<{ currencyCode: string }> {
+        const { data } = await api.patch(`/partner-portal/settings/currency`, { currencyCode });
+        return data;
+    },
+
+    async updateApiIntegration(payload: ApiIntegrationInput): Promise<Pick<PartnerSettings, "apiEnabled" | "apiBaseUrl" | "apiFormat" | "hasApiKey">> {
+        const { data } = await api.patch(`/partner-portal/settings/api-integration`, payload);
+        return data;
+    },
+
+    async listPaymentMethods(): Promise<PartnerPaymentMethod[]> {
+        const { data } = await api.get<PartnerPaymentMethod[]>(`/partner-portal/settings/payment-methods`);
+        return data;
+    },
+
+    async createPaymentMethod(payload: PaymentMethodInput): Promise<PartnerPaymentMethod> {
+        const { data } = await api.post<PartnerPaymentMethod>(`/partner-portal/settings/payment-methods`, payload);
+        return data;
+    },
+
+    async updatePaymentMethod(id: string, payload: Partial<Pick<PaymentMethodInput, "label" | "details">> & { isActive?: boolean }): Promise<PartnerPaymentMethod> {
+        const { data } = await api.patch<PartnerPaymentMethod>(`/partner-portal/settings/payment-methods/${id}`, payload);
+        return data;
+    },
+
+    async deletePaymentMethod(id: string): Promise<void> {
+        await api.delete(`/partner-portal/settings/payment-methods/${id}`);
     },
 
     async getPartnerBookings(status?: string, page = 1, limit = 20): Promise<{ bookings: Booking[]; total: number }> {

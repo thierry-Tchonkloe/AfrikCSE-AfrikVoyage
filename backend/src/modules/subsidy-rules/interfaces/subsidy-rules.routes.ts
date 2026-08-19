@@ -2,11 +2,12 @@ import { Router } from "express";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { SubsidyRulesController } from "./subsidy-rules.controller";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 const ctrl = new SubsidyRulesController();
 
-router.use(authenticate, authorize("ADMIN", "SUPER_ADMIN"));
+router.use(authenticate, authorize(ROLES.ADMIN, ROLES.SUPER_ADMIN));
 
 router.get("/",        ctrl.getAll.bind(ctrl));
 router.get("/:id",     ctrl.getById.bind(ctrl));

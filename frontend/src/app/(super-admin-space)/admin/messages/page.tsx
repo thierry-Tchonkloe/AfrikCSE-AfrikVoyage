@@ -34,6 +34,15 @@ interface Message {
 
 const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
 
+/** L'organisation est "en ligne" si un de ses membres s'est connecté récemment */
+function isOrgOnline(conv: Conversation): boolean {
+    const lastLogins = conv.participants
+        .filter((p) => p.user.role !== "SUPER_ADMIN" && p.user.lastLoginAt)
+        .map((p) => new Date(p.user.lastLoginAt as string).getTime());
+    if (lastLogins.length === 0) return false;
+    return Date.now() - Math.max(...lastLogins) < ONLINE_THRESHOLD_MS;
+}
+
 const STATUS_CONFIG: Record<ConvStatus, { label: string; color: string }> = {
     OPEN:     { label: "Ouvert", color: "#f59e0b" },
     RESOLVED: { label: "Résolu", color: "#10b981" },
@@ -178,15 +187,6 @@ export default function AdminMessagesPage() {
     const getOrgColor = (conv: Conversation): string => {
         const colors = ["#0f766e", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444"];
         return colors[getOrgName(conv).charCodeAt(0) % colors.length];
-    };
-
-    /** L'organisation est "en ligne" si un de ses membres s'est connecté récemment */
-    const isOrgOnline = (conv: Conversation): boolean => {
-        const lastLogins = conv.participants
-            .filter((p) => p.user.role !== "SUPER_ADMIN" && p.user.lastLoginAt)
-            .map((p) => new Date(p.user.lastLoginAt as string).getTime());
-        if (lastLogins.length === 0) return false;
-        return Date.now() - Math.max(...lastLogins) < ONLINE_THRESHOLD_MS;
     };
 
     /** Les messages envoyés par un Super Admin s'affichent sous la marque "Support AfrikCSE" */

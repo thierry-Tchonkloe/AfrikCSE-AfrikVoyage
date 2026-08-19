@@ -46,6 +46,8 @@ export default function LoginPage() {
             // le backend — session totalement indépendante de celle des Users.
             if (result.type === "partner" && result.partnerUser) {
                 toast.success(`Bienvenue, ${result.partnerUser.firstName} !`);
+                // Redirection dans un gestionnaire d'événement (soumission du formulaire), pas pendant le rendu.
+                // eslint-disable-next-line react-hooks/immutability
                 window.location.href = "/partner-portal/dashboard";
                 return;
             }
@@ -58,6 +60,8 @@ export default function LoginPage() {
             if (result.sessionToken && typeof window !== "undefined") {
                 const isSecure = window.location.protocol === "https:";
                 const sameSite = isSecure ? "None" : "Lax";
+                // Cookie posé dans un gestionnaire d'événement (soumission du formulaire), pas pendant le rendu.
+                // eslint-disable-next-line react-hooks/immutability
                 document.cookie = `session=${result.sessionToken}; path=/; max-age=60; SameSite=${sameSite}; ${isSecure ? "Secure;" : ""}`;
             }
 
@@ -67,6 +71,7 @@ export default function LoginPage() {
             const isHost = organization?.isHost ?? false;
 
             if (!profileCompleted) {
+                // eslint-disable-next-line react-hooks/immutability -- redirection dans un gestionnaire d'événement, pas pendant le rendu.
                 window.location.href = "/complete-profile";
                 return;
             }
@@ -82,6 +87,7 @@ export default function LoginPage() {
                 destination = "/hub";
             }
 
+            // eslint-disable-next-line react-hooks/immutability -- redirection dans un gestionnaire d'événement, pas pendant le rendu.
             window.location.href = destination;
 
         } catch (err) {

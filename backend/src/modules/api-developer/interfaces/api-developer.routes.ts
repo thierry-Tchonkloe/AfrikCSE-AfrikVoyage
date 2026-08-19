@@ -4,11 +4,12 @@ import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import * as ctrl from "./api-developer.controller";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 
 router.use(authenticate);
-router.use(authorize("SUPER_ADMIN", "ADMIN"));
+router.use(authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN));
 
 // ── API Clients ───────────────────────────────────────────────────────────────
 router.get(  "/clients",          ctrl.listClients);

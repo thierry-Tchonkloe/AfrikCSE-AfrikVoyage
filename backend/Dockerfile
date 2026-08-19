@@ -23,7 +23,7 @@ COPY src ./src
 # Valeur factice uniquement pour satisfaire la validation de prisma.config.ts
 # (PrismaConfigEnvError si DATABASE_URL est vide/absent).
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
-RUN npx prisma generate --early-access
+RUN npx prisma generate
 RUN npm run build
 
 # ── Stage 3: runtime ──────────────────────────────────────────────────────────

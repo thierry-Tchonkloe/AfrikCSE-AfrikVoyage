@@ -3,6 +3,7 @@ import { PlanConfigController } from "./plan-config.controller";
 import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 router.use("/:id", validateParams(idParamString));
@@ -18,7 +19,7 @@ router.get("/", ctrl.getAll.bind(ctrl));
 router.get("/:id", ctrl.getById.bind(ctrl));
 
 // Écriture — réservée au SUPER_ADMIN
-const requireSuper = authorize("SUPER_ADMIN");
+const requireSuper = authorize(ROLES.SUPER_ADMIN);
 router.post("/", requireSuper, ctrl.create.bind(ctrl));
 router.patch("/:id", requireSuper, ctrl.update.bind(ctrl));
 router.delete("/:id", requireSuper, ctrl.delete.bind(ctrl));

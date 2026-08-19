@@ -1053,6 +1053,7 @@ model Partner {
   paymentMethod              String? // MOBILE_MONEY | BANK_TRANSFER
   mobileMoneyNumberEncrypted String?
   bankDetailsEncrypted       String?
+  currencyCode               String        @default("XOF")
   createdBy                  String
   createdAt                  DateTime      @default(now())
   updatedAt                  DateTime      @updatedAt
@@ -1068,6 +1069,7 @@ model Partner {
   commissionRules   CommissionRule[]
   commissionEntries CommissionEntry[]
   payouts           PartnerPayout[]
+  paymentMethods    PartnerPaymentMethod[]
   // ─── Catalogue Voyage ───────────────────────────────
   flightRoutes      FlightRoute[]
   hotelProperties   HotelProperty[]
@@ -1105,6 +1107,34 @@ model OfferAuditEntry {
   createdAt DateTime           @default(now())
 
   @@map("offer_audit_entries")
+}
+
+enum PartnerPaymentMethodType {
+  MOBILE_MONEY
+  BANK_TRANSFER
+  OTHER
+}
+
+// Moyens de réception de paiement du partenaire — gérés exclusivement par PARTNER_ADMIN.
+// Les données sensibles (numéro, IBAN, etc.) ne sont jamais stockées en clair : elles sont
+// chiffrées (AES-256-GCM, cf. core/utils/crypto.ts) dans detailsEncrypted ; seul maskedHint
+// (ex: "•••• 4821") est affichable côté UI.
+model PartnerPaymentMethod {
+  id               String                   @id @default(cuid())
+  partnerId        String
+  partner          Partner                  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  type             PartnerPaymentMethodType
+  provider         String
+  label            String
+  detailsEncrypted String
+  maskedHint       String?
+  isActive         Boolean                  @default(true)
+  createdById      String
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  @@index([partnerId])
+  @@map("partner_payment_methods")
 }
 
 // ─── FAMILY MEMBER (V2 Sprint 2) ──────────────────────────
@@ -1628,6 +1658,7 @@ model PartnerLocation {
   country   String   @default("CI")
   latitude  Decimal? @db.Decimal(10, 7)
   longitude Decimal? @db.Decimal(10, 7)
+  mapsUrl   String?
   phone     String?
   isMain    Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -1890,22 +1921,29 @@ model PartnerPayout {
 }
 
 // ─── IDEMPOTENCY (middleware générique Idempotency-Key) ─────────────────
-// Une ligne "PENDING" est créée avant d'exécuter le handler (claim atomique
-// via la contrainte unique ci-dessous) ; elle passe à "DONE" avec la réponse
-// mise en cache une fois le handler terminé avec succès, ou est supprimée en
-// cas d'échec serveur (5xx) pour permettre un retry propre. Voir
 // backend/src/core/middlewares/idempotency.middleware.ts.
+
 model IdempotencyRecord {
   id             String   @id @default(cuid())
-  key            String // header Idempotency-Key fourni par le client
-  route          String // ex: "POST:/api/flights/admin/routes"
-  organizationId String // "platform" si l'appelant n'a pas d'org (SUPER_ADMIN plateforme)
-  status         String   @default("PENDING") // PENDING | DONE
+  key            String   @db.VarChar(255)
+  route          String   @db.VarChar(255)
+  organizationId String   @db.VarChar(100)
+  requestHash    String   @db.Char(64)
+  status         String   @default("PENDING") @db.VarChar(16) // PENDING | DONE
+  lease               String   @db.VarChar(36)
+  leaseExpiresAt      DateTime
   responseStatus Int?
+  responseEncoding    String?  @db.VarChar(8)
   responseBody   Json?
+  responseText        String?  @db.Text
+  responseContentType String?  @db.VarChar(255)
+  expiresAt      DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@unique([route, organizationId, key])
+  @@index([expiresAt])
+  @@index([createdAt])
+  @@index([status, leaseExpiresAt])
   @@map("idempotency_records")
 }
