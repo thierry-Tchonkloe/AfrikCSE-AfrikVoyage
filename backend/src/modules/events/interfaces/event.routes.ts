@@ -4,6 +4,7 @@ import { authenticate, authorize } from "../../../core/middlewares/auth.middlewa
 import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 router.use("/:id", validateParams(idParamString));
@@ -15,7 +16,7 @@ router.get("/",              ctrl.getAll.bind(ctrl));
 router.get("/upcoming",      ctrl.getUpcoming.bind(ctrl));
 router.get("/recent",        ctrl.getRecent.bind(ctrl));
 router.get("/stats",         ctrl.getStats.bind(ctrl));
-router.post("/",             authorize("ADMIN", "MANAGER", "RH", "SUPER_ADMIN"), idempotency(), ctrl.create.bind(ctrl));
+router.post("/",             authorize(ROLES.ADMIN, ROLES.MANAGER, ROLES.RH, ROLES.SUPER_ADMIN), idempotency(), ctrl.create.bind(ctrl));
 router.post("/:id/register", ctrl.register.bind(ctrl));
 router.delete("/:id/register", ctrl.unregister.bind(ctrl));
 

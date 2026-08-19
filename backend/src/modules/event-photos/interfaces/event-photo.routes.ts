@@ -5,6 +5,7 @@ import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import { eventIdParamSchema } from "./event-photo.validator";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 router.use("/:id", validateParams(idParamString));
@@ -19,9 +20,9 @@ router.post("/",                       idempotency(), ctrl.upload.bind(ctrl));
 // Like toggle
 router.post("/:id/like",               ctrl.like.bind(ctrl));
 // Modération (admin+)
-router.patch("/:id/moderate",          authorize("ADMIN", "MANAGER", "SUPER_ADMIN"), ctrl.moderate.bind(ctrl));
+router.patch("/:id/moderate",          authorize(ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPER_ADMIN), ctrl.moderate.bind(ctrl));
 // Compteur en attente (admin+)
-router.get("/pending/count",           authorize("ADMIN", "MANAGER", "SUPER_ADMIN"), ctrl.pendingCount.bind(ctrl));
+router.get("/pending/count",           authorize(ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPER_ADMIN), ctrl.pendingCount.bind(ctrl));
 // Suppression (auteur ou admin)
 router.delete("/:id",                  ctrl.delete.bind(ctrl));
 

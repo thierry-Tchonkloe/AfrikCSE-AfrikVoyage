@@ -4,12 +4,13 @@ import { authenticate, authorize } from "../../../core/middlewares/auth.middlewa
 import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 const ctrl   = new TravelPolicyController();
 
 router.use(authenticate);
-router.use(authorize("ADMIN", "MANAGER", "SUPER_ADMIN"));
+router.use(authorize(ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPER_ADMIN));
 router.use("/:id", validateParams(idParamString));
 
 router.get("/",      ctrl.list.bind(ctrl));

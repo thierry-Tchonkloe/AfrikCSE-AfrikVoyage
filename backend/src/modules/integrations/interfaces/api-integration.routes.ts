@@ -4,13 +4,14 @@ import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 router.use("/:id", validateParams(idParamString));
 const ctrl = new ApiIntegrationController();
 
 router.use(authenticate);
-router.use(authorize("SUPER_ADMIN", "ADMIN"));
+router.use(authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN));
 
 router.get("/",                ctrl.getAll.bind(ctrl));
 router.post("/",               idempotency(), ctrl.create.bind(ctrl));

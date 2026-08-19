@@ -2,6 +2,7 @@ import { Router } from "express";
 import { BillingController } from "./billing.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 const ctrl = new BillingController();
@@ -16,7 +17,7 @@ router.post("/webhook/fedapay",  ctrl.fedapayWebhook.bind(ctrl));
 router.get("/plans",             ctrl.getPlans.bind(ctrl));
 
 // ── Routes authentifiées ──────────────────────────────────────────────────────
-router.use(authenticate, authorize("SUPER_ADMIN", "ADMIN", "FINANCE"));
+router.use(authenticate, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.FINANCE));
 
 router.get("/",              ctrl.getSubscription.bind(ctrl));
 router.post("/upgrade",      ctrl.upgradePlan.bind(ctrl));

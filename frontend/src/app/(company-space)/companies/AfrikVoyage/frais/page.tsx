@@ -53,6 +53,29 @@ const DEPT_DATA = [
     { label: "Finance",    pct: 5.0,  color: "#8b5cf6" },
 ];
 
+function getPiePath(pct: number, offset: number): string {
+    const r = 80;
+    const cx = 100; const cy = 100;
+    const startAngle = (offset / 100) * 2 * Math.PI - Math.PI / 2;
+    const endAngle = ((offset + pct) / 100) * 2 * Math.PI - Math.PI / 2;
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+    const large = pct > 50 ? 1 : 0;
+    return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z`;
+}
+
+// Chemins SVG précalculés une seule fois (offsets cumulés via un accumulateur
+// immuable, pas de variable réassignée pendant le rendu).
+const DEPT_SLICES = DEPT_DATA.reduce<{ items: Array<(typeof DEPT_DATA)[number] & { path: string }>; offset: number }>(
+    (acc, d) => ({
+        items: [...acc.items, { ...d, path: getPiePath(d.pct, acc.offset) }],
+        offset: acc.offset + d.pct,
+    }),
+    { items: [], offset: 0 }
+).items;
+
 export default function FraisPage() {
     const [stats, setStats]     = useState<ExpenseStats | null>(null);
     const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -77,22 +100,6 @@ export default function FraisPage() {
     }, [status]);
 
     useEffect(() => { load(); }, [load]);
-
-    // Calcul SVG pie chart simplifié
-    const getPiePath = (pct: number, offset: number): string => {
-        const r = 80;
-        const cx = 100; const cy = 100;
-        const startAngle = (offset / 100) * 2 * Math.PI - Math.PI / 2;
-        const endAngle = ((offset + pct) / 100) * 2 * Math.PI - Math.PI / 2;
-        const x1 = cx + r * Math.cos(startAngle);
-        const y1 = cy + r * Math.sin(startAngle);
-        const x2 = cx + r * Math.cos(endAngle);
-        const y2 = cy + r * Math.sin(endAngle);
-        const large = pct > 50 ? 1 : 0;
-        return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z`;
-    };
-
-    let offset = 0;
 
     return (
         <div className="space-y-5">
@@ -226,11 +233,9 @@ export default function FraisPage() {
             <h3 className="font-semibold text-gray-900 mb-4">Dépenses par département</h3>
             <div className="flex items-center gap-6">
                 <svg viewBox="0 0 200 200" className="w-40 h-40 shrink-0">
-                {DEPT_DATA.map((d) => {
-                    const path = getPiePath(d.pct, offset);
-                    offset += d.pct;
-                    return <path key={d.label} d={path} fill={d.color} />;
-                })}
+                {DEPT_SLICES.map((d) => (
+                    <path key={d.label} d={d.path} fill={d.color} />
+                ))}
                 </svg>
                 <div className="space-y-2">
                 {DEPT_DATA.map((d) => (

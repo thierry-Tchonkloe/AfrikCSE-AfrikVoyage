@@ -68,6 +68,11 @@ export default function ReportingPage() {
     const [travels, setTravels] = useState<TravelRequestItem[]>([]);
     const [stats, setStats] = useState<TravelStats | null>(null);
     const [search, setSearch] = useState("");
+    // Instantané pris au chargement des données, jamais recalculé pendant le rendu :
+    // appeler Date.now() directement dans le corps du composant est une fonction
+    // impure au sens du React Compiler (résultat non déterministe pour les mêmes
+    // props/state), ce qui casserait sa mémoïsation automatique.
+    const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
         const load = async () => {
@@ -82,6 +87,7 @@ export default function ReportingPage() {
                 if (inProgressRes.status === "fulfilled") all.push(...(inProgressRes.value?.data ?? []));
                 setTravels(all);
                 if (statsRes.status === "fulfilled") setStats(statsRes.value);
+                setNow(Date.now());
             } catch {
                 toast.error("Erreur lors du chargement des données de voyage");
             } finally {
@@ -93,7 +99,6 @@ export default function ReportingPage() {
 
     if (loading) return <Skeleton />;
 
-    const now = Date.now();
     const in7Days = now + 7 * 24 * 60 * 60 * 1000;
     const in48h = now + 48 * 60 * 60 * 1000;
 

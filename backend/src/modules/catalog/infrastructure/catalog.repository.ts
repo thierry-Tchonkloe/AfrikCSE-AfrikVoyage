@@ -65,22 +65,17 @@ export interface CatalogItemInput {
 export class CatalogRepository {
     async getAll(orgId: string, filters: CatalogFilters = {}) {
         const now = new Date();
+        // Chaque contrainte "OU" (fenêtre de publication, recherche, subventionné)
+        // vit dans son propre groupe AND : elles se combinent au lieu de s'écraser.
+        const and: Prisma.BenefitCatalogItemWhereInput[] = [
+            { OR: [{ publishedAt: null }, { publishedAt: { lte: now } }] },
+            { OR: [{ unpublishedAt: null }, { unpublishedAt: { gt: now } }] },
+        ];
+
         const where: Prisma.BenefitCatalogItemWhereInput = {
             organizationId: orgId,
             isActive: true,
-            // Ne montrer que les offres publiées (ou sans contrainte de publication)
-            OR: [
-                { publishedAt: null },
-                { publishedAt: { lte: now } },
-            ],
-            AND: [
-                {
-                    OR: [
-                        { unpublishedAt: null },
-                        { unpublishedAt: { gt: now } },
-                    ],
-                },
-            ],
+            AND: and,
         };
 
         if (filters.category && filters.category !== "all") {
@@ -88,20 +83,24 @@ export class CatalogRepository {
         }
 
         if (filters.search) {
-            where.OR = [
-                { title: { contains: filters.search, mode: "insensitive" } },
-                { description: { contains: filters.search, mode: "insensitive" } },
-            ];
+            and.push({
+                OR: [
+                    { title: { contains: filters.search, mode: "insensitive" } },
+                    { description: { contains: filters.search, mode: "insensitive" } },
+                ],
+            });
         }
 
         if (filters.featured) where.isFeatured = true;
         if (filters.offerType) where.offerType = filters.offerType;
         if (filters.partnerId) where.partnerId = filters.partnerId;
         if (filters.subsidized) {
-            where.OR = [
-                { subsidyPct: { gt: 0 } },
-                { subsidyAmount: { gt: 0 } },
-            ];
+            and.push({
+                OR: [
+                    { subsidyPct: { gt: 0 } },
+                    { subsidyAmount: { gt: 0 } },
+                ],
+            });
         }
 
         if (filters.city) {

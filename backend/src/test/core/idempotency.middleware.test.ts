@@ -1,10 +1,7 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Tests unitaires du middleware générique d'idempotence
-// (core/middlewares/idempotency.middleware.ts). Monté sur une app Express
-// minimale (pas app.ts complet — pas besoin d'auth/session ici) avec un
+// Tests unitaires du middleware d'idempotence (core/middlewares/idempotency.middleware.ts).
+// Monté sur une app Express minimale (pas besoin d'auth/session ici), avec un
 // handler contrôlé par le test pour simuler succès / erreur métier / panne
-// serveur, et prisma mocké pour observer/piloter le cycle de vie du claim.
-// ─────────────────────────────────────────────────────────────────────────────
+// serveur, et Prisma mocké pour observer/piloter le cycle de vie du claim.
 
 import express, { Request, Response, NextFunction } from "express";
 import request from "supertest";
@@ -17,9 +14,15 @@ jest.mock("../../core/utils/logger", () => ({
 }));
 
 import { prisma } from "../../core/config/prisma";
-import { idempotency } from "../../core/middlewares/idempotency.middleware";
+import { idempotency, hashRequest } from "../../core/middlewares/idempotency.middleware";
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
+
+const KEY = "11111111-1111-4111-8111-111111111111";
+
+// Même hash que celui que produira le middleware pour une requête POST sans
+// query et avec ce corps — sert à simuler une clé déjà vue avec le même payload.
+const hashOf = (body: unknown) => hashRequest({ method: "POST", query: {}, body } as unknown as Request);
 
 function buildApp(handler: (req: Request, res: Response) => void) {
   const app = express();
@@ -54,24 +57,36 @@ describe("idempotency() middleware", () => {
     const handler = jest.fn((_req: Request, res: Response) => res.status(201).json({ id: "w1" }));
     const app = buildApp(handler);
     prismaMock.idempotencyRecord.create.mockResolvedValueOnce({ id: "claim-1" } as never);
-    prismaMock.idempotencyRecord.update.mockResolvedValueOnce({} as never);
+    prismaMock.idempotencyRecord.updateMany.mockResolvedValueOnce({ count: 1 } as never);
 
     const res = await request(app)
       .post("/widgets")
-      .set("Idempotency-Key", "key-1")
+      .set("Idempotency-Key", KEY)
       .set("x-test-org", "org-1")
       .send({ name: "x" });
 
     expect(res.status).toBe(201);
     expect(handler).toHaveBeenCalledTimes(1);
     expect(prismaMock.idempotencyRecord.create).toHaveBeenCalledWith({
-      data: { key: "key-1", route: "POST:/widgets", organizationId: "org-1", status: "PENDING" },
+      data: expect.objectContaining({
+        key: KEY,
+        route: "POST:/widgets",
+        organizationId: "org-1",
+        status: "PENDING",
+      }),
     });
     // Laisse le temps au handler `res.on("finish")` (asynchrone) de s'exécuter.
     await new Promise((r) => setImmediate(r));
-    expect(prismaMock.idempotencyRecord.update).toHaveBeenCalledWith({
-      where: { id: "claim-1" },
-      data: { status: "DONE", responseStatus: 201, responseBody: { id: "w1" } },
+    // `res.json()` sérialise en interne avant d'appeler `res.send()` : le
+    // middleware voit donc une chaîne, pas l'objet — encodage "text", pas "json".
+    expect(prismaMock.idempotencyRecord.updateMany).toHaveBeenCalledWith({
+      where: { id: "claim-1", lease: expect.any(String), status: "PENDING" },
+      data: expect.objectContaining({
+        status: "DONE",
+        responseStatus: 201,
+        responseEncoding: "text",
+        responseText: JSON.stringify({ id: "w1" }),
+      }),
     });
   });
 
@@ -82,12 +97,15 @@ describe("idempotency() middleware", () => {
     prismaMock.idempotencyRecord.findUnique.mockResolvedValueOnce({
       id: "claim-1",
       status: "DONE",
+      requestHash: hashOf({ name: "x" }),
       responseStatus: 201,
-      responseBody: { id: "w1" },
-      createdAt: new Date(),
+      responseEncoding: "text",
+      responseText: JSON.stringify({ id: "w1" }),
+      responseContentType: "application/json; charset=utf-8",
+      expiresAt: new Date(Date.now() + 60_000), // pas encore expirée → rejouable
     } as never);
 
-    const res = await request(app).post("/widgets").set("Idempotency-Key", "key-1").send({ name: "x" });
+    const res = await request(app).post("/widgets").set("Idempotency-Key", KEY).send({ name: "x" });
 
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ id: "w1" });
@@ -101,12 +119,11 @@ describe("idempotency() middleware", () => {
     prismaMock.idempotencyRecord.findUnique.mockResolvedValueOnce({
       id: "claim-1",
       status: "PENDING",
-      responseStatus: null,
-      responseBody: null,
-      createdAt: new Date(), // récente → dans la fenêtre TTL, pas orpheline
+      requestHash: hashOf({ name: "x" }),
+      leaseExpiresAt: new Date(Date.now() + 60_000), // encore dans la fenêtre du lease, pas orpheline
     } as never);
 
-    const res = await request(app).post("/widgets").set("Idempotency-Key", "key-1").send({ name: "x" });
+    const res = await request(app).post("/widgets").set("Idempotency-Key", KEY).send({ name: "x" });
 
     expect(res.status).toBe(409);
     expect(handler).not.toHaveBeenCalled();
@@ -116,13 +133,15 @@ describe("idempotency() middleware", () => {
     const handler = jest.fn((_req: Request, res: Response) => res.status(500).json({ message: "boom" }));
     const app = buildApp(handler);
     prismaMock.idempotencyRecord.create.mockResolvedValueOnce({ id: "claim-1" } as never);
-    prismaMock.idempotencyRecord.delete.mockResolvedValueOnce({} as never);
+    prismaMock.idempotencyRecord.deleteMany.mockResolvedValueOnce({ count: 1 } as never);
 
-    const res = await request(app).post("/widgets").set("Idempotency-Key", "key-1").send({ name: "x" });
+    const res = await request(app).post("/widgets").set("Idempotency-Key", KEY).send({ name: "x" });
 
     expect(res.status).toBe(500);
     await new Promise((r) => setImmediate(r));
-    expect(prismaMock.idempotencyRecord.delete).toHaveBeenCalledWith({ where: { id: "claim-1" } });
-    expect(prismaMock.idempotencyRecord.update).not.toHaveBeenCalled();
+    expect(prismaMock.idempotencyRecord.deleteMany).toHaveBeenCalledWith({
+      where: { id: "claim-1", lease: expect.any(String) },
+    });
+    expect(prismaMock.idempotencyRecord.updateMany).not.toHaveBeenCalled();
   });
 });

@@ -307,7 +307,7 @@ export default function OffersMapSection() {
             </span>
           </h2>
           <p className="text-slate-300 text-lg font-medium">
-            Plus de 500 000 offres à prix attractifs dans toute l'Afrique
+            Plus de 500 000 offres à prix attractifs dans toute l&apos;Afrique
           </p>
         </motion.div>
 

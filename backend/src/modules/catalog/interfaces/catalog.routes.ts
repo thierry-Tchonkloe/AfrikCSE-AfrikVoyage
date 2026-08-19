@@ -4,6 +4,7 @@ import { authenticate, authorize } from "../../../core/middlewares/auth.middlewa
 import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 router.use("/:id", validateParams(idParamString));
@@ -21,28 +22,28 @@ router.get("/categories", ctrl.getCategories.bind(ctrl));
 // ── Admin — gestion des offres ───────────────────────────────────────────────
 router.get(
     "/admin",
-    authorize("ADMIN", "MANAGER", "SUPER_ADMIN"),
+    authorize(ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPER_ADMIN),
     ctrl.getAllAdmin.bind(ctrl)
 );
 router.post(
     "/",
-    authorize("ADMIN", "MANAGER", "SUPER_ADMIN"),
+    authorize(ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPER_ADMIN),
     idempotency(),
     ctrl.create.bind(ctrl)
 );
 router.patch(
     "/:id",
-    authorize("ADMIN", "MANAGER", "SUPER_ADMIN"),
+    authorize(ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPER_ADMIN),
     ctrl.update.bind(ctrl)
 );
 router.delete(
     "/:id",
-    authorize("ADMIN", "MANAGER", "SUPER_ADMIN"),
+    authorize(ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPER_ADMIN),
     ctrl.delete.bind(ctrl)
 );
 router.get(
     "/:id/audit",
-    authorize("ADMIN", "MANAGER", "SUPER_ADMIN"),
+    authorize(ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPER_ADMIN),
     ctrl.getAuditHistory.bind(ctrl)
 );
 

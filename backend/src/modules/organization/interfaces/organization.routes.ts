@@ -5,6 +5,7 @@ import { logoUpload } from "../../../core/middlewares/upload.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
+import { ROLES } from "../../../shared/types";
 
 const router = Router();
 router.use("/:id", validateParams(idParamString));
@@ -13,7 +14,7 @@ const ctrl = new OrganizationController();
 // Toutes les routes organisations nécessitent d'être authentifié.
 router.use(authenticate);
 // Middleware helper pour routes réservées au SUPER_ADMIN
-const requireSuper = authorize("SUPER_ADMIN");
+const requireSuper = authorize(ROLES.SUPER_ADMIN);
 
 // Routes réservées au SUPER_ADMIN
 router.get("/", requireSuper, ctrl.getAll.bind(ctrl));
@@ -26,10 +27,10 @@ router.get("/export", requireSuper, ctrl.exportCsv.bind(ctrl));
 router.get("/my/dashboard", ctrl.getMyDashboard.bind(ctrl));
 
 // Mise à jour de sa propre organisation — réservée ADMIN, MANAGER, RH, FINANCE
-router.patch("/my", authorize("ADMIN", "MANAGER"), ctrl.updateMyOrg.bind(ctrl));
+router.patch("/my", authorize(ROLES.ADMIN, ROLES.MANAGER), ctrl.updateMyOrg.bind(ctrl));
 
 // Upload du logo de l'organisation connectée — réservée ADMIN, MANAGER
-router.post("/my/logo", authorize("ADMIN", "MANAGER"), logoUpload.single("file"), ctrl.uploadLogo.bind(ctrl));
+router.post("/my/logo", authorize(ROLES.ADMIN, ROLES.MANAGER), logoUpload.single("file"), ctrl.uploadLogo.bind(ctrl));
 
 // Routes CRUD/Admin — réservées au SUPER_ADMIN
 router.get("/:id", requireSuper, ctrl.getById.bind(ctrl));
