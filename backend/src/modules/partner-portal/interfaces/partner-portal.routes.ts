@@ -6,7 +6,7 @@ import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import { locationIdParamSchema } from "./partner-portal.validator";
-import { offerImageUpload } from "../../../core/middlewares/upload.middleware";
+import { offerImageUpload, logoUpload } from "../../../core/middlewares/upload.middleware";
 
 const router = Router();
 const ctrl   = new PartnerPortalController();
@@ -33,6 +33,7 @@ router.get("/me",      ctrl.me.bind(ctrl));
 // Profile
 router.get("/profile",  ctrl.getProfile.bind(ctrl));
 router.patch("/profile", ctrl.updateProfile.bind(ctrl));
+router.post("/profile/logo", logoUpload.single("file"), ctrl.uploadPartnerLogo.bind(ctrl));
 
 // Locations
 router.post("/locations",                  idempotency(), ctrl.createLocation.bind(ctrl));

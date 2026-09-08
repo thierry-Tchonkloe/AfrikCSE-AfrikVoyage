@@ -168,6 +168,14 @@ export class PartnerPortalController {
         } catch (err) { next(err); }
     }
 
+    async uploadPartnerLogo(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { partnerId } = req.partnerUser!;
+            if (!req.file) { res.status(400).json({ message: "Aucun fichier fourni" }); return; }
+            res.json(await service.uploadPartnerLogo(partnerId, req.file.buffer));
+        } catch (err) { next(err); }
+    }
+
     // ── Paramètres ────────────────────────────────────────────────────────────
 
     async getSettings(req: Request, res: Response, next: NextFunction): Promise<void> {

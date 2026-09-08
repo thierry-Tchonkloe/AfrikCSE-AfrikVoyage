@@ -62,13 +62,14 @@ function signPartnerRefreshToken(payload: PartnerTokenPayload): string {
 
 function toSessionUser(user: {
     id: string; email: string; firstName: string; lastName: string;
-    role: string; partnerId: string; partner: { name: string } | null;
+    role: string; partnerId: string; partner: { name: string; logoUrl?: string | null } | null;
 }) {
     return {
         id: user.id, email: user.email,
         firstName: user.firstName, lastName: user.lastName,
         role: user.role, partnerId: user.partnerId,
         partnerName: user.partner?.name ?? "",
+        partnerLogoUrl: user.partner?.logoUrl ?? null,
     };
 }
 
@@ -226,6 +227,12 @@ export class PartnerPortalService {
     async uploadOfferImage(partnerId: string, fileBuffer: Buffer) {
         const result = await uploadImageToCloudinary(fileBuffer, `afrikcse/offers/${partnerId}`);
         return { imageUrl: result.secure_url };
+    }
+
+    async uploadPartnerLogo(partnerId: string, fileBuffer: Buffer) {
+        const result = await uploadImageToCloudinary(fileBuffer, `afrikcse/logos/partners/${partnerId}`);
+        const partner = await repo.updatePartnerProfile(partnerId, { logoUrl: result.secure_url });
+        return { logoUrl: partner.logoUrl };
     }
 
     // ── Paramètres ────────────────────────────────────────────────────────────

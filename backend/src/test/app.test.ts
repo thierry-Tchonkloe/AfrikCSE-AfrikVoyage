@@ -16,6 +16,7 @@ import { MulterError } from "multer";
 import { mockReset, DeepMockProxy } from "jest-mock-extended";
 import type { PrismaClient } from "@prisma/client";
 import { Role } from "@prisma/client";
+import { jest, describe, it, expect, beforeEach } from "@jest/globals";
 
 jest.mock("../core/config/prisma");
 jest.mock("../core/utils/jwt");

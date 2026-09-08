@@ -13,7 +13,7 @@ export class PartnerPortalRepository {
     async findUserByEmail(email: string) {
         return prisma.partnerUser.findUnique({
             where: { email },
-            include: { partner: { select: { id: true, name: true, status: true } } },
+            include: { partner: { select: { id: true, name: true, status: true, logoUrl: true } } },
         });
     }
 
