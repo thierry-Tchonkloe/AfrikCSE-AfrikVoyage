@@ -42,6 +42,16 @@ export class EmployeeSpaceController {
         res.json(travels);
     }
 
+    /** Contexte d'un voyage approuvé — alimente le bandeau de /employes/reserver?travelRequestId=... */
+    async getTravelById(req: Request<IdParamString>, res: Response): Promise<void> {
+        const travel = await repo.getTravelById(req.params.id, req.user!.userId);
+        if (!travel) {
+            res.status(404).json({ message: "Voyage introuvable" });
+            return;
+        }
+        res.json(travel);
+    }
+
     async createTravel(req: Request, res: Response): Promise<void> {
         const parsed = createTravelRequestSchema.safeParse(req.body);
         if (!parsed.success) {

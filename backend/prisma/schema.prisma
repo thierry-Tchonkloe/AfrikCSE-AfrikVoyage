@@ -557,7 +557,8 @@ model TravelRequest {
   status             TravelStatus  @default(PENDING)
   urgency            Urgency       @default(LOW)
   rejectionNote      String?
-  partnerName        String?
+  partnerId          String?
+  partner            Partner?      @relation(fields: [partnerId], references: [id])
   paymentStatus      PaymentStatus @default(PENDING)
   paymentLink        String?
   organizationId     String
@@ -579,7 +580,9 @@ model TravelRequest {
   reward        TravelReward? @relation("TravelRequestReward")
 
   expenses ExpenseReport[]
+  bookings Booking[]
 
+  @@index([partnerId])
   @@map("travel_requests")
 }
 
@@ -1075,6 +1078,7 @@ model Partner {
   hotelProperties   HotelProperty[]
   trainRoutes       TrainRoute[]
   carRentalVehicles CarRentalVehicle[]
+  travelRequests    TravelRequest[]
 
   @@map("partners")
 }
@@ -1702,6 +1706,26 @@ model Booking {
   orderId        String?             @unique
   order          Order?              @relation(fields: [orderId], references: [id])
 
+  // ─── Lien optionnel vers une demande de voyage d'affaires approuvée ───────
+  // Un TravelRequest peut porter plusieurs Booking (vol + hôtel + voiture d'un
+  // même voyage). Rempli uniquement quand la réservation est faite depuis le
+  // contexte d'un voyage approuvé (cf. /employes/reserver?travelRequestId=...).
+  travelRequestId String?
+  travelRequest   TravelRequest? @relation(fields: [travelRequestId], references: [id])
+
+  // ─── Cible précise dans le catalogue voyage — exclusive avec offerId ──────
+  // Au plus un seul de ces 4 champs (+ offerId) est renseigné par réservation ;
+  // contrainte vérifiée applicativement (Zod, cf. booking.validator.ts) plutôt
+  // qu'en base : Prisma ne modélise pas nativement les FK polymorphes/exclusives.
+  flightRouteId      String?
+  flightRoute        FlightRoute?      @relation(fields: [flightRouteId], references: [id])
+  hotelRoomTypeId    String?
+  hotelRoomType      HotelRoomType?    @relation(fields: [hotelRoomTypeId], references: [id])
+  trainRouteId       String?
+  trainRoute         TrainRoute?       @relation(fields: [trainRouteId], references: [id])
+  carRentalVehicleId String?
+  carRentalVehicle   CarRentalVehicle? @relation(fields: [carRentalVehicleId], references: [id])
+
   status          BookingStatus @default(PENDING)
   bookingDate     DateTime
   numberOfPersons Int           @default(1)
@@ -1720,6 +1744,11 @@ model Booking {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([travelRequestId])
+  @@index([flightRouteId])
+  @@index([hotelRoomTypeId])
+  @@index([trainRouteId])
+  @@index([carRentalVehicleId])
   @@map("bookings")
 }
 
@@ -1767,6 +1796,8 @@ model FlightRoute {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  bookings Booking[]
+
   @@index([originIata, destinationIata])
   @@map("flight_routes")
 }
@@ -1803,6 +1834,8 @@ model HotelRoomType {
   isActive      Boolean       @default(true)
   createdAt     DateTime      @default(now())
 
+  bookings Booking[]
+
   @@map("hotel_room_types")
 }
 
@@ -1823,6 +1856,8 @@ model TrainRoute {
   isActive           Boolean  @default(true)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+
+  bookings Booking[]
 
   @@index([originCity, destinationCity])
   @@map("train_routes")
@@ -1845,6 +1880,8 @@ model CarRentalVehicle {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  bookings Booking[]
 
   @@index([city])
   @@map("car_rental_vehicles")
@@ -1924,22 +1961,22 @@ model PartnerPayout {
 // backend/src/core/middlewares/idempotency.middleware.ts.
 
 model IdempotencyRecord {
-  id             String   @id @default(cuid())
-  key            String   @db.VarChar(255)
-  route          String   @db.VarChar(255)
-  organizationId String   @db.VarChar(100)
-  requestHash    String   @db.Char(64)
-  status         String   @default("PENDING") @db.VarChar(16) // PENDING | DONE
-  lease               String   @db.VarChar(36)
+  id                  String    @id @default(cuid())
+  key                 String    @db.VarChar(255)
+  route               String    @db.VarChar(255)
+  organizationId      String    @db.VarChar(100)
+  requestHash         String    @db.Char(64)
+  status              String    @default("PENDING") @db.VarChar(16) // PENDING | DONE
+  lease               String    @db.VarChar(36)
   leaseExpiresAt      DateTime
-  responseStatus Int?
-  responseEncoding    String?  @db.VarChar(8)
-  responseBody   Json?
-  responseText        String?  @db.Text
-  responseContentType String?  @db.VarChar(255)
-  expiresAt      DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  responseStatus      Int?
+  responseEncoding    String?   @db.VarChar(8)
+  responseBody        Json?
+  responseText        String?   @db.Text
+  responseContentType String?   @db.VarChar(255)
+  expiresAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@unique([route, organizationId, key])
   @@index([expiresAt])

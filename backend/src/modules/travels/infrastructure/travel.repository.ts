@@ -46,6 +46,7 @@ export class TravelRepository {
             where, skip, take: limit,
             include: {
             requestedBy: { select: { id: true, firstName: true, lastName: true, email: true, department: true, jobTitle: true } },
+            partner:     { select: { id: true, name: true, sector: true } },
             },
             orderBy: { createdAt: "desc" },
         }),
@@ -60,7 +61,9 @@ export class TravelRepository {
         where: { id, organizationId: orgId },
         include: {
             requestedBy: { select: { id: true, firstName: true, lastName: true, email: true, department: true, jobTitle: true } },
+            partner:     { select: { id: true, name: true, sector: true } },
             expenses: true,
+            bookings: true,
         },
         });
     }
@@ -159,10 +162,20 @@ export class TravelRepository {
         };
     }
 
-    async assignPartner(id: string, organizationId: string, partnerName: string) {
+    async assignPartner(id: string, organizationId: string, partnerId: string) {
         return prisma.travelRequest.update({
         where: { id, organizationId },
-        data: { partnerName },
+        data: { partnerId },
+        include: { partner: { select: { id: true, name: true, sector: true } } },
+        });
+    }
+
+    /** Liste minimale (id + nom) pour le sélecteur d'assignation — pas de champs sensibles. */
+    async listActivePartners() {
+        return prisma.partner.findMany({
+        where: { status: "ACTIVE" },
+        select: { id: true, name: true, sector: true },
+        orderBy: { name: "asc" },
         });
     }
 

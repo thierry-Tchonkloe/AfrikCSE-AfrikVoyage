@@ -6,6 +6,11 @@ export interface CreateBookingPayload {
     partnerId:       string;
     offerId?:        string;
     locationId?:     string;
+    travelRequestId?:    string;
+    flightRouteId?:      string;
+    hotelRoomTypeId?:    string;
+    trainRouteId?:       string;
+    carRentalVehicleId?: string;
     bookingDate:     string;
     numberOfPersons?: number;
     notes?:          string;

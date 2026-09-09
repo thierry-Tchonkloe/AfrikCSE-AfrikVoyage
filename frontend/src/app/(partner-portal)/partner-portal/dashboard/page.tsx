@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { CalendarCheck, Clock, CheckCircle2, Loader2 } from "lucide-react";
 import { partnerPortalService } from "@/services/partner/partner-portal.service";
 import { Booking } from "@/types";
+import { getBookingLabel } from "@/lib/booking-label";
 import { usePartnerAuth } from "@/hooks/usePartnerAuth";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
@@ -106,7 +107,7 @@ export default function PartnerDashboardPage() {
                             <div key={b.id} className="px-5 py-4 flex items-start justify-between gap-4">
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium text-sm text-gray-900 dark:text-white">
-                                        {b.offer?.title ?? "Réservation"}
+                                        {getBookingLabel(b)}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-0.5">
                                         {b.numberOfPersons} pers. ·{" "}

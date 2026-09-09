@@ -126,7 +126,7 @@ export default function PendingPartnerOffersPage() {
 
                             <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-100">
                                 <p className="font-bold text-gray-900">
-                                    {fmt(o.employeePrice)} <span className="text-xs font-normal text-gray-400">XOF employé</span>
+                                    {fmt(o.employeePrice)} <span className="text-xs font-normal text-gray-400">XOF l&#39;unité</span>
                                 </p>
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{o.category}</span>
                             </div>

@@ -35,7 +35,8 @@ interface Reservation {
     status: TravelStatus;
     urgency: string;
     rejectionNote: string | null;
-    partnerName: string | null;
+    partnerId: string | null;
+    partner: { id: string; name: string; sector: string } | null;
     paymentStatus: PaymentStatusT;
     paymentLink: string | null;
     requestedBy: Traveler;
@@ -190,10 +191,10 @@ export default function ReservationsPage() {
         }
     };
 
-    const handleAssignPartner = async (item: Reservation, partnerName: string) => {
+    const handleAssignPartner = async (item: Reservation, partnerId: string) => {
         setProcessing(true);
         try {
-        const updated = await voyageService.assignPartner(item.id, partnerName);
+        const updated = await voyageService.assignPartner(item.id, partnerId);
         toast.success("Partenaire assigné");
         refreshDetail({ ...item, ...updated });
         load();
@@ -367,7 +368,7 @@ export default function ReservationsPage() {
                             </span>
                         </td>
                         <td className="px-5 py-3 text-xs text-gray-600">
-                            {r.partnerName ?? "—"}
+                            {r.partner?.name ?? "—"}
                         </td>
                         <td className="px-5 py-3">
                             <div className="flex items-center gap-1">
@@ -447,17 +448,20 @@ function DetailModal({
     onApprove: (item: Reservation) => void;
     onReject: (item: Reservation) => void;
     onStatusChange: (item: Reservation, status: TravelStatus) => void;
-    onAssignPartner: (item: Reservation, partnerName: string) => void;
+    onAssignPartner: (item: Reservation, partnerId: string) => void;
     onUpdatePayment: (item: Reservation, payload: { paymentStatus?: string; paymentLink?: string }) => void;
 }) {
-    const [partnerName, setPartnerName] = useState(item.partnerName ?? "");
+    const [partnerId, setPartnerId] = useState(item.partnerId ?? "");
+    const [partners, setPartners] = useState<{ id: string; name: string; sector: string }[]>([]);
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatusT>(item.paymentStatus);
     const [paymentLink, setPaymentLink] = useState(item.paymentLink ?? "");
+
+    useEffect(() => { voyageService.getPartners().then(setPartners).catch(() => {}); }, []);
 
     const sc = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.PENDING;
     const pc = PAYMENT_CONFIG[item.paymentStatus] ?? PAYMENT_CONFIG.PENDING;
 
-    const partnerChanged = partnerName !== (item.partnerName ?? "");
+    const partnerChanged = partnerId !== (item.partnerId ?? "");
     const paymentChanged = paymentStatus !== item.paymentStatus || paymentLink !== (item.paymentLink ?? "");
 
     return (
@@ -574,11 +578,15 @@ function DetailModal({
                 <Building2 size={13} /> Partenaire assigné
             </p>
             <div className="flex gap-2">
-                <input value={partnerName} onChange={(e) => setPartnerName(e.target.value)}
-                placeholder="Nom de l'agence / partenaire"
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
-                <button disabled={processing || !partnerChanged}
-                onClick={() => onAssignPartner(item, partnerName)}
+                <select value={partnerId} onChange={(e) => setPartnerId(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white">
+                <option value="">— Choisir un partenaire —</option>
+                {partners.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name} ({p.sector})</option>
+                ))}
+                </select>
+                <button disabled={processing || !partnerChanged || !partnerId}
+                onClick={() => onAssignPartner(item, partnerId)}
                 className="px-3 py-2 rounded-lg text-white text-xs font-medium disabled:opacity-50"
                 style={{ background: "var(--color-primary)" }}>
                 Enregistrer

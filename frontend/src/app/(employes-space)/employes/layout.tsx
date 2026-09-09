@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useLayoutEffect } from "react";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -170,25 +171,15 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
             <div className="flex items-center h-16 px-3 gap-2 border-b border-gray-200 dark:border-gray-700">
             {sidebarOpen ? (
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ background: ACCENT }}
-                >
-                    A
-                </div>
+                <Image src="/logo/logo_waxeho.png" alt="Waxeho" width={40} height={40} className="w-10 h-10 rounded-lg shrink-0 object-contain" />
                 <div className="min-w-0">
-                    <p className="text-sm font-bold truncate" style={{ color: ACCENT }}>AfrikCSE &</p>
-                    <p className="text-sm font-bold truncate" style={{ color: ACCENT }}>AfrikVoyage</p>
+                    <p className="text-base font-display font-bold truncate" style={{ color: ACCENT }}>Afrik-workspace</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Espace employé</p>
                 </div>
                 </div>
             ) : (
                 <div className="flex-1 flex justify-center">
-                <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                    style={{ background: ACCENT }}
-                >
-                    A
-                </div>
+                <Image src="/logo/logo_waxeho.png" alt="Waxeho" width={40} height={40} className="w-10 h-10 rounded-lg object-contain" />
                 </div>
             )}
             <button
@@ -334,23 +325,28 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
             <div className="p-3 border-t border-gray-200 dark:border-gray-700">
             {sidebarOpen ? (
                 <div className="flex items-center gap-2">
-                <UserAvatar
-                    avatar={user.avatar}
-                    firstName={user.firstName}
-                    lastName={user.lastName}
-                    background={ACCENT}
-                    className="w-8 h-8 text-xs"
-                />
-                <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold truncate">
-                    {user.firstName} {user.lastName}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {user.role.replace("_", " ")}
-                    </p>
-                </div>
+                <button
+                    onClick={() => router.push("/employes/profile")}
+                    className="flex items-center gap-2 flex-1 min-w-0 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 p-1 -m-1 transition-colors"
+                >
+                    <UserAvatar
+                        avatar={user.avatar}
+                        firstName={user.firstName}
+                        lastName={user.lastName}
+                        background={ACCENT}
+                        className="w-8 h-8 text-xs shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold truncate">
+                        {user.firstName} {user.lastName}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {user.role.replace("_", " ")}
+                        </p>
+                    </div>
+                </button>
                 <button onClick={logout} title="Déconnexion"
-                    className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400">
+                    className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 shrink-0">
                     <LogOut size={14} />
                 </button>
                 </div>
@@ -396,26 +392,21 @@ export default function EmployeLayout({ children }: { children: React.ReactNode 
                 <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
                 <Mail size={18} />
                 </button>
+                {/* Identité de l'organisation connectée */}
                 <div className={cn(
-                    "flex items-center gap-2 pl-2 border-l",
+                    "flex items-center gap-2 pl-2 border-l min-w-0",
                     darkMode ? "border-gray-700" : "border-gray-200"
                 )}>
-                <UserAvatar
-                    avatar={user.avatar}
-                    firstName={user.firstName}
-                    lastName={user.lastName}
-                    background={ACCENT}
-                    className="w-8 h-8 text-xs cursor-pointer"
-                    onClick={() => router.push("/employes/profile")}
-                />
-                <div className="hidden sm:block">
-                    <p className="text-xs font-semibold">
-                    {user.firstName} {user.lastName}
-                    </p>
-                    <p className="text-xs" style={{ color: darkMode ? "#9ca3af" : "#6b7280" }}>
-                    {user.role.replace("_", " ")}
-                    </p>
-                </div>
+                <span className="hidden sm:block text-sm font-medium truncate max-w-40" style={{ color: darkMode ? "#e5e7eb" : "#374151" }}>
+                    {user.organization?.name ?? "Organisation"}
+                </span>
+                {user.organization?.logoUrl ? (
+                    <Image src={user.organization.logoUrl} alt={user.organization?.name ?? "Logo"} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                ) : (
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: ACCENT }}>
+                        {user.organization?.name?.[0] ?? "A"}
+                    </div>
+                )}
                 </div>
             </div>
             </header>

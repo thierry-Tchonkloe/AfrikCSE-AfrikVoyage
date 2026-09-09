@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
 import { Plus, Pencil, Trash2, X, Loader2, MapPin, Clock, ExternalLink } from "lucide-react";
 import { partnerPortalService, AvailabilitySlot } from "@/services/partner/partner-portal.service";
 import { PartnerLocation } from "@/types";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import { LocationViewToggle, LocationViewMode } from "@/components/partner-portal/LocationViewToggle";
+import { LocationCard, locationCardVariants } from "@/components/partner-portal/LocationCard";
 
 type LocationForm = Omit<PartnerLocation, "id" | "partnerId" | "createdAt" | "updatedAt" | "availabilities" | "latitude" | "longitude" | "phone" | "mapsUrl"> & {
     latitude?: number;
@@ -37,6 +40,7 @@ export default function PartnerLocationsPage() {
     const [savingAvail, setSavingAvail]   = useState(false);
     const [deleting, setDeleting]         = useState<string | null>(null);
     const [selectedLocId, setSelectedLocId] = useState<string | null>(null);
+    const [viewMode, setViewMode]         = useState<LocationViewMode>("grid");
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -142,10 +146,13 @@ export default function PartnerLocationsPage() {
                     <h1 className="text-xl font-bold text-gray-900 dark:text-white">Établissements</h1>
                     <p className="text-xs text-gray-500 mt-0.5">{locations.length} établissement{locations.length !== 1 ? "s" : ""}</p>
                 </div>
-                <button onClick={openCreate}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition">
-                    <Plus size={16} /> Ajouter
-                </button>
+                <div className="flex items-center gap-2">
+                    <LocationViewToggle mode={viewMode} onChange={setViewMode} />
+                    <button onClick={openCreate}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition">
+                        <Plus size={16} /> Ajouter
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -159,10 +166,33 @@ export default function PartnerLocationsPage() {
                         Ajouter un établissement
                     </button>
                 </div>
-            ) : (
-                <div className="space-y-3">
+            ) : viewMode === "grid" ? (
+                <motion.div
+                    variants={{ show: { transition: { staggerChildren: 0.06 } } }}
+                    initial="hidden"
+                    animate="show"
+                    className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+                >
                     {locations.map((loc) => (
-                        <div key={loc.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
+                        <LocationCard
+                            key={loc.id}
+                            location={loc}
+                            deleting={deleting === loc.id}
+                            onEdit={openEdit}
+                            onDelete={handleDelete}
+                            onAvailabilities={openAvailabilities}
+                        />
+                    ))}
+                </motion.div>
+            ) : (
+                <motion.div
+                    variants={{ show: { transition: { staggerChildren: 0.04 } } }}
+                    initial="hidden"
+                    animate="show"
+                    className="space-y-3"
+                >
+                    {locations.map((loc) => (
+                        <motion.div key={loc.id} variants={locationCardVariants} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex gap-3 flex-1 min-w-0">
                                     <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
@@ -220,9 +250,9 @@ export default function PartnerLocationsPage() {
                                     })}
                                 </div>
                             )}
-                        </div>
+                        </motion.div>
                     ))}
-                </div>
+                </motion.div>
             )}
 
             {/* Modal — Établissement */}

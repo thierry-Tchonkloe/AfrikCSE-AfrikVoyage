@@ -378,13 +378,14 @@ export interface AuthResponse {
 // ── Auth partenaire (portail dédié — cookies partnerAccessToken/partnerRefreshToken) ──
 
 export interface PartnerSessionUser {
-    id:          string;
-    email:       string;
-    firstName:   string;
-    lastName:    string;
-    role:        "PARTNER_ADMIN" | "PARTNER_STAFF";
-    partnerId:   string;
-    partnerName: string;
+    id:             string;
+    email:          string;
+    firstName:      string;
+    lastName:       string;
+    role:           "PARTNER_ADMIN" | "PARTNER_STAFF";
+    partnerId:      string;
+    partnerName:    string;
+    partnerLogoUrl: string | null;
 }
 
 // ── Wallet ────────────────────────────────────────────────────────────────────
@@ -528,6 +529,11 @@ export interface Booking {
     offerId?:        string | null;
     locationId?:     string | null;
     orderId?:        string | null;
+    travelRequestId?:    string | null;
+    flightRouteId?:      string | null;
+    hotelRoomTypeId?:    string | null;
+    trainRouteId?:       string | null;
+    carRentalVehicleId?: string | null;
     status:          BookingStatus;
     bookingDate:     string;
     numberOfPersons: number;
@@ -545,6 +551,11 @@ export interface Booking {
     location?: { id: string; name: string; address: string; city: string } | null;
     rating?:  BookingRating | null;
     commissionEntry?: { id: string; commissionAmount: string; netAmount: string; status: string } | null;
+    travelRequest?:    { id: string; destination: string; status: string } | null;
+    flightRoute?:      { id: string; originCity: string; destinationCity: string; airlineCode: string } | null;
+    hotelRoomType?:    { id: string; name: string; hotel: { id: string; name: string; city: string } } | null;
+    trainRoute?:       { id: string; originCity: string; destinationCity: string } | null;
+    carRentalVehicle?: { id: string; brand: string; model: string; city: string } | null;
 }
 
 // ── Commissions ───────────────────────────────────────────────────────────────

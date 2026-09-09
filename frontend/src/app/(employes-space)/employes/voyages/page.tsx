@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Plane, MapPin, Calendar } from "lucide-react";
+import { Plus, Plane, MapPin, Calendar, ArrowRight } from "lucide-react";
 import { employeeService } from "@/services/employes/employee.service";
 import { toast } from "sonner";
 
@@ -135,6 +135,15 @@ export default function VoyagesPage() {
                         )}
                         <span>{getDuration(t.departureDate, t.returnDate)}</span>
                     </div>
+                    {t.status === "APPROVED" && (
+                        <button
+                        onClick={() => router.push(`/employes/reserver?travelRequestId=${t.id}`)}
+                        className="mt-3 flex items-center gap-1.5 text-xs font-medium"
+                        style={{ color: "#0f766e" }}
+                        >
+                        Réserver vol/hôtel pour ce voyage <ArrowRight size={12} />
+                        </button>
+                    )}
                     </div>
                 </div>
                 );

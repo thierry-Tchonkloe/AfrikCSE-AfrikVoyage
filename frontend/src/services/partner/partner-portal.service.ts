@@ -43,6 +43,7 @@ export interface ProfileInput {
     contactEmail?: string;
     websiteUrl?:   string;
     phone?:        string;
+    logoUrl?:      string;
 }
 
 export interface AvailabilitySlot {
@@ -122,6 +123,17 @@ export const partnerPortalService = {
 
     async updateProfile(payload: ProfileInput): Promise<Partner> {
         const { data } = await api.patch<Partner>(`/partner-portal/profile`, payload);
+        return data;
+    },
+
+    // Upload + persistance immédiate : le partenaire existe déjà (contrairement aux offres),
+    // pas besoin de round-trip séparé via updateProfile.
+    async uploadPartnerLogo(file: File): Promise<{ logoUrl: string }> {
+        const formData = new FormData();
+        formData.append("file", file);
+        const { data } = await api.post<{ logoUrl: string }>(`/partner-portal/profile/logo`, formData, {
+            headers: { "Content-Type": undefined },
+        });
         return data;
     },
 

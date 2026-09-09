@@ -21,6 +21,11 @@ export class BookingService {
             partnerId:      string;
             offerId?:       string;
             locationId?:    string;
+            travelRequestId?:    string;
+            flightRouteId?:      string;
+            hotelRoomTypeId?:    string;
+            trainRouteId?:       string;
+            carRentalVehicleId?: string;
             bookingDate:    string;
             numberOfPersons?: number;
             notes?:         string;
@@ -29,13 +34,57 @@ export class BookingService {
             amount:         number;
         }
     ) {
+        // Un voyage d'affaires lié doit être approuvé — et appartenir au demandeur —
+        // AVANT toute création de réservation ou débit, pas seulement avant confirmation
+        // partenaire : sinon un employé pourrait payer un voyage jamais validé par son manager.
+        if (data.travelRequestId) {
+            const travelRequest = await prisma.travelRequest.findUnique({
+                where:  { id: data.travelRequestId },
+                select: { status: true, requestedById: true, organizationId: true },
+            });
+            if (!travelRequest || travelRequest.requestedById !== userId || travelRequest.organizationId !== organizationId) {
+                throw new AppError("Voyage d'affaires introuvable", 404);
+            }
+            if (travelRequest.status !== "APPROVED") {
+                throw new AppError("Ce voyage d'affaires doit être approuvé avant d'y rattacher une réservation", 400);
+            }
+        }
+
+        // Le partenaire réel vient de l'entité catalogue elle-même, jamais du client :
+        // évite qu'un partnerId incohérent (ou falsifié) ne détourne commission/paiement.
+        let partnerId = data.partnerId;
+        if (data.flightRouteId) {
+            const route = await prisma.flightRoute.findUnique({ where: { id: data.flightRouteId }, select: { partnerId: true } });
+            if (!route) throw new AppError("Route aérienne introuvable", 404);
+            partnerId = route.partnerId;
+        } else if (data.hotelRoomTypeId) {
+            const roomType = await prisma.hotelRoomType.findUnique({
+                where: { id: data.hotelRoomTypeId }, select: { hotel: { select: { partnerId: true } } },
+            });
+            if (!roomType) throw new AppError("Type de chambre introuvable", 404);
+            partnerId = roomType.hotel.partnerId;
+        } else if (data.trainRouteId) {
+            const route = await prisma.trainRoute.findUnique({ where: { id: data.trainRouteId }, select: { partnerId: true } });
+            if (!route) throw new AppError("Trajet ferroviaire introuvable", 404);
+            partnerId = route.partnerId;
+        } else if (data.carRentalVehicleId) {
+            const vehicle = await prisma.carRentalVehicle.findUnique({ where: { id: data.carRentalVehicleId }, select: { partnerId: true } });
+            if (!vehicle) throw new AppError("Véhicule introuvable", 404);
+            partnerId = vehicle.partnerId;
+        }
+
         const amount  = new Prisma.Decimal(data.amount);
         const booking = await repo.create({
             userId,
             organizationId,
-            partnerId:      data.partnerId,
-            offerId:        data.offerId,
-            locationId:     data.locationId,
+            partnerId,
+            offerId:            data.offerId,
+            locationId:         data.locationId,
+            travelRequestId:    data.travelRequestId,
+            flightRouteId:      data.flightRouteId,
+            hotelRoomTypeId:    data.hotelRoomTypeId,
+            trainRouteId:       data.trainRouteId,
+            carRentalVehicleId: data.carRentalVehicleId,
             bookingDate:    new Date(data.bookingDate),
             numberOfPersons: data.numberOfPersons,
             notes:          data.notes,

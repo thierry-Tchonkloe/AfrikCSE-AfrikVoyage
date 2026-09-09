@@ -1,14 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Search, Plane, Hotel, Train, Car, Filter, ChevronLeft, ChevronRight, MapPin, Loader2, X, Users } from "lucide-react";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Search, Plane, Hotel, Train, Car, Filter, ChevronLeft, ChevronRight, MapPin, Loader2, X, Users, Briefcase } from "lucide-react";
 import { flightsService, AirportOption, FlightOffer, FlightLeg } from "@/services/employes/flights.service";
 import { hotelsService, HotelOffer } from "@/services/employes/hotels.service";
 import { trainsService, TrainOffer } from "@/services/employes/trains.service";
 import { carRentalsService, CarRentalOffer } from "@/services/employes/car-rentals.service";
 import { bookingService } from "@/services/employes/booking.service";
+import { employeeService } from "@/services/employes/employee.service";
 import { toast } from "sonner";
+
+interface TravelContext {
+    id: string;
+    destination: string;
+    departureDate: string;
+    returnDate: string;
+}
+
+// Bandeau de contexte affiché quand la réservation est liée à un voyage d'affaires approuvé.
+function TravelContextBanner({ travel }: { travel: TravelContext }) {
+    return (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534" }}>
+            <Briefcase size={15} className="shrink-0" />
+            <span>
+                Réservation liée au voyage <strong>{travel.destination}</strong> du{" "}
+                {new Date(travel.departureDate).toLocaleDateString("fr-FR")} au{" "}
+                {new Date(travel.returnDate).toLocaleDateString("fr-FR")}
+            </span>
+        </div>
+    );
+}
 
 type TabType = "Flights" | "Hotels" | "Trains" | "Car Rental";
 type PaymentMethod = "WALLET" | "MOBILE_MONEY" | "CARD";
@@ -68,7 +90,7 @@ function PaymentMethodField({ value, onChange }: { value: PaymentMethod; onChang
 
 // ─── Onglet Hôtels ─────────────────────────────────────────────────────────────
 
-function HotelsTab() {
+function HotelsTab({ travelRequestId }: { travelRequestId?: string }) {
     const router = useRouter();
     const [city, setCity]           = useState("Cotonou");
     const [cities, setCities]       = useState<string[]>([]);
@@ -118,9 +140,11 @@ function HotelsTab() {
             const total = confirmHotel.pricePerNight * nights;
             await bookingService.create({
                 partnerId:      confirmHotel.partnerId,
+                hotelRoomTypeId: confirmHotel.roomTypeId,
+                travelRequestId,
                 bookingDate:    toIsoMidnight(checkIn),
                 numberOfPersons: guests,
-                notes: `Hôtel ${confirmHotel.name} (${confirmHotel.roomTypeName}), ${confirmHotel.city} — du ${checkIn} au ${checkOut} (${nights} nuit${nights > 1 ? "s" : ""})${purpose ? ` — ${purpose}` : ""}`,
+                notes: purpose || undefined,
                 idempotencyKey: crypto.randomUUID(),
                 paymentMethod,
                 amount: total,
@@ -261,7 +285,7 @@ function HotelsTab() {
 
 // ─── Onglet Trains ──────────────────────────────────────────────────────────────
 
-function TrainsTab() {
+function TrainsTab({ travelRequestId }: { travelRequestId?: string }) {
     const router = useRouter();
     const [origin, setOrigin]           = useState("Abidjan");
     const [destination, setDestination] = useState("Ouagadougou");
@@ -308,9 +332,11 @@ function TrainsTab() {
             const total = confirmTrain.price * passengers;
             await bookingService.create({
                 partnerId:      confirmTrain.partnerId,
+                trainRouteId:   confirmTrain.routeId,
+                travelRequestId,
                 bookingDate:    toIsoMidnight(departureDate),
                 numberOfPersons: passengers,
-                notes: `Train ${confirmTrain.operator} ${confirmTrain.originCity} → ${confirmTrain.destinationCity} (${confirmTrain.travelClass}), départ ${departureDate} ${confirmTrain.departureTime}${purpose ? ` — ${purpose}` : ""}`,
+                notes: purpose || undefined,
                 idempotencyKey: crypto.randomUUID(),
                 paymentMethod,
                 amount: total,
@@ -448,7 +474,7 @@ function TrainsTab() {
 
 // ─── Onglet Location de voitures ───────────────────────────────────────────────
 
-function CarRentalTab() {
+function CarRentalTab({ travelRequestId }: { travelRequestId?: string }) {
     const router = useRouter();
     const [city, setCity]           = useState("Abidjan");
     const [cities, setCities]       = useState<string[]>([]);
@@ -498,9 +524,11 @@ function CarRentalTab() {
             const total = confirmVehicle.pricePerDay * days;
             await bookingService.create({
                 partnerId:      confirmVehicle.partnerId,
+                carRentalVehicleId: confirmVehicle.id,
+                travelRequestId,
                 bookingDate:    toIsoMidnight(pickupDate),
                 numberOfPersons: 1,
-                notes: `Location ${confirmVehicle.brand} ${confirmVehicle.model} (${confirmVehicle.category}), ${confirmVehicle.city} — du ${pickupDate} au ${returnDate} (${days} jour${days > 1 ? "s" : ""})${purpose ? ` — ${purpose}` : ""}`,
+                notes: purpose || undefined,
                 idempotencyKey: crypto.randomUUID(),
                 paymentMethod,
                 amount: total,
@@ -641,8 +669,11 @@ function CarRentalTab() {
 
 // ─── Page principale ────────────────────────────────────────────────────────────
 
-export default function ReserverPage() {
+function ReserverPageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const travelRequestId = searchParams.get("travelRequestId") ?? undefined;
+    const [travelContext, setTravelContext] = useState<TravelContext | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>("Flights");
     const [tripType, setTripType]   = useState("roundtrip");
     const [directOnly, setDirectOnly] = useState(false);
@@ -685,6 +716,14 @@ export default function ReserverPage() {
         { id: "Trains",     icon: Train },
         { id: "Car Rental", icon: Car },
     ];
+
+    // ── Contexte voyage d'affaires (si ouvert depuis /employes/voyages) ──────
+    useEffect(() => {
+        if (!travelRequestId) { setTravelContext(null); return; }
+        employeeService.getTravelById(travelRequestId)
+            .then((t) => setTravelContext(t))
+            .catch(() => setTravelContext(null));
+    }, [travelRequestId]);
 
     // ── Autocomplétion aéroports ─────────────────────────────────────────────
     useEffect(() => {
@@ -785,11 +824,11 @@ export default function ReserverPage() {
             const adults = parseInt(passengers, 10) || 1;
             await bookingService.create({
                 partnerId:      confirmFlight.partnerId,
+                flightRouteId:  confirmFlight.routeId,
+                travelRequestId,
                 bookingDate:    toIsoMidnight(confirmFlight.outbound.departDate),
                 numberOfPersons: adults,
-                notes: `Vol ${confirmFlight.airline} ${confirmFlight.outbound.from} → ${confirmFlight.outbound.to}, départ ${confirmFlight.outbound.departDate} ${confirmFlight.outbound.departTime}`
-                    + (confirmFlight.inbound ? ` — retour ${confirmFlight.inbound.departDate} ${confirmFlight.inbound.departTime}` : "")
-                    + (purpose ? ` — ${purpose}` : ""),
+                notes: purpose || undefined,
                 idempotencyKey: crypto.randomUUID(),
                 paymentMethod,
                 amount: confirmFlight.price * adults,
@@ -863,6 +902,8 @@ export default function ReserverPage() {
             <h1 className="text-xl font-bold text-gray-900">Search & Booking</h1>
             <p className="text-sm text-gray-500">Recherchez et réservez vos déplacements professionnels</p>
         </div>
+
+        {travelContext && <TravelContextBanner travel={travelContext} />}
 
         {/* Card de recherche */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -992,9 +1033,9 @@ export default function ReserverPage() {
             )}
 
             {/* Autres tabs */}
-            {activeTab === "Hotels"     && <div className="p-5"><HotelsTab /></div>}
-            {activeTab === "Trains"     && <div className="p-5"><TrainsTab /></div>}
-            {activeTab === "Car Rental" && <div className="p-5"><CarRentalTab /></div>}
+            {activeTab === "Hotels"     && <div className="p-5"><HotelsTab travelRequestId={travelRequestId} /></div>}
+            {activeTab === "Trains"     && <div className="p-5"><TrainsTab travelRequestId={travelRequestId} /></div>}
+            {activeTab === "Car Rental" && <div className="p-5"><CarRentalTab travelRequestId={travelRequestId} /></div>}
         </div>
 
         {/* Invite à rechercher */}
@@ -1245,5 +1286,15 @@ export default function ReserverPage() {
             </div>
         )}
         </div>
+    );
+}
+
+// useSearchParams() exige une frontière Suspense pour ne pas bloquer le prerendering
+// du reste de la route (cf. doc Next.js sur useSearchParams).
+export default function ReserverPage() {
+    return (
+        <Suspense fallback={<div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>}>
+            <ReserverPageContent />
+        </Suspense>
     );
 }

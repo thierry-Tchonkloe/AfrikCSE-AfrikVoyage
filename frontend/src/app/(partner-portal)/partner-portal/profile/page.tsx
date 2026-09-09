@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Save, Loader2, Building2, Globe, Mail, Phone } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { Save, Loader2, Building2, Globe, Mail, Phone, ImagePlus } from "lucide-react";
 import { partnerPortalService, ProfileInput } from "@/services/partner/partner-portal.service";
 import { Partner } from "@/types";
 import { toast } from "sonner";
@@ -14,11 +15,16 @@ const SECTORS = [
     "Bien-être", "Santé", "Éducation", "Commerce", "Services", "Autre",
 ];
 
+const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/svg+xml", "image/webp"];
+const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2 Mo — doit rester cohérent avec logoUpload côté backend
+
 export default function PartnerProfilePage() {
     const [partner, setPartner] = useState<Partner | null>(null);
     const [form, setForm]       = useState<ProfileInput>(EMPTY);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving]   = useState(false);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const logoInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -56,6 +62,34 @@ export default function PartnerProfilePage() {
         }
     };
 
+    const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = ""; // permet de re-sélectionner le même fichier
+        if (!file) return;
+
+        if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
+            toast.error("Format non supporté (JPG, PNG, SVG ou WEBP uniquement)");
+            return;
+        }
+        if (file.size > MAX_LOGO_SIZE) {
+            toast.error("Image trop volumineuse (2 Mo maximum)");
+            return;
+        }
+
+        setUploadingLogo(true);
+        try {
+            // Persisté immédiatement côté backend (contrairement à l'image d'offre qui
+            // attend l'enregistrement du formulaire) — le partenaire existe déjà.
+            const { logoUrl } = await partnerPortalService.uploadPartnerLogo(file);
+            setPartner((prev) => prev ? { ...prev, logoUrl } : prev);
+            toast.success("Logo mis à jour");
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Erreur lors de l'upload du logo"));
+        } finally {
+            setUploadingLogo(false);
+        }
+    };
+
     if (loading) {
         return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>;
     }
@@ -70,14 +104,23 @@ export default function PartnerProfilePage() {
             {/* Avatar / nom */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
                 <div className="flex items-center gap-4 mb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                    <div className="relative w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0 overflow-hidden">
                         {partner?.logoUrl
-                            ? <img src={partner.logoUrl} alt="" className="w-14 h-14 rounded-2xl object-cover" />
+                            ? <Image src={partner.logoUrl} alt="" fill className="object-cover" />
                             : <Building2 className="h-7 w-7 text-blue-600" />}
                     </div>
-                    <div>
+                    <div className="flex-1">
                         <p className="font-semibold text-gray-900 dark:text-white">{partner?.name}</p>
                         <p className="text-xs text-gray-500">{partner?.sector}</p>
+                    </div>
+                    <div>
+                        <button type="button" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition">
+                            {uploadingLogo ? <Loader2 size={13} className="animate-spin" /> : <ImagePlus size={13} />}
+                            {partner?.logoUrl ? "Changer le logo" : "Ajouter un logo"}
+                        </button>
+                        <input ref={logoInputRef} type="file" accept="image/jpeg,image/png,image/svg+xml,image/webp"
+                            onChange={handleLogoChange} className="hidden" />
                     </div>
                 </div>
 

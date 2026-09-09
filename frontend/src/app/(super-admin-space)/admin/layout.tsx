@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect } from "react";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, ChevronDown, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck, Handshake, Plug, DollarSign, Headphones, BarChart3, Code2, Globe, Plane, ShoppingBag, PackageCheck, type LucideIcon } from "lucide-react";
@@ -226,18 +227,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Logo + toggle */}
             <div className="flex items-center h-16 px-3 gap-2"
             style={{ borderColor: darkMode ? "#374151" : "#e5e7eb" }}>
-            {sidebarOpen && (
+            {sidebarOpen ? (
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold shrink-0"
-                    style={{ background: "var(--color-primary)" }}
-                >
-                    A
-                </div>
-                <span className="font-bold text-sm truncate"
+                <Image src="/logo/logo_waxeho.png" alt="Waxeho" width={40} height={40} className="w-10 h-10 rounded-lg shrink-0 object-contain" />
+                <span className="font-display font-bold text-sm truncate"
                     style={{ color: "var(--color-primary)" }}>
-                    AfrikCSE & AfrikVoyage
+                    Afrik-workspace
                 </span>
+                </div>
+            ) : (
+                <div className="flex-1 flex justify-center">
+                <Image src="/logo/logo_waxeho.png" alt="Waxeho" width={40} height={40} className="w-10 h-10 rounded-lg object-contain" />
                 </div>
             )}
             <button
@@ -250,7 +250,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
 
             {/* Navigation — groupes accordéon */}
-            <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
+            <nav className="flex-1 py-4 space-y-2 px-2 overflow-y-auto">
             {NAV_GROUPS.map((group) => {
                 const GroupIcon = group.icon;
                 const groupActive = group.items.some((it) => it.href === bestMatch);
@@ -276,7 +276,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         ? "text-gray-400 hover:bg-gray-800 hover:text-gray-100"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                     )}
-                    title={!sidebarOpen ? group.label : undefined}
+                    title={group.label}
                     >
                     <GroupIcon size={18} className="shrink-0" />
                     {sidebarOpen && <span className="flex-1 text-left truncate">{group.label}</span>}
@@ -311,6 +311,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                             )}
                             style={active ? { background: "var(--color-primary)" } : {}}
+                            title={label}
                             >
                             <Icon size={16} className="shrink-0" />
                             <span className="truncate">{label}</span>

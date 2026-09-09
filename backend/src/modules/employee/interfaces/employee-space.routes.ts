@@ -17,6 +17,7 @@ router.get("/dashboard",   ctrl.getDashboard.bind(ctrl));
 // ── Voyages ───────────────────────────────────────────────────────────────────
 router.get("/travels",     ctrl.getMyTravels.bind(ctrl));
 router.post("/travels",    ctrl.createTravel.bind(ctrl));
+router.get("/travels/:id", validateParams(idParamString), ctrl.getTravelById.bind(ctrl));
 
 // ── Notes de frais ────────────────────────────────────────────────────────────
 router.get("/expenses",    ctrl.getMyExpenses.bind(ctrl));

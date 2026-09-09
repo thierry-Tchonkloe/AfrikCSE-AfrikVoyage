@@ -108,6 +108,14 @@ export class EmployeeDashboardRepository {
         });
     }
 
+    /** Scoped à son propriétaire — un employé ne doit jamais lire le voyage d'un collègue par id deviné. */
+    async getTravelById(id: string, userId: string) {
+        return prisma.travelRequest.findFirst({
+            where: { id, requestedById: userId },
+            include: { partner: { select: { id: true, name: true } } },
+        });
+    }
+
     async createTravelRequest(userId: string, orgId: string, data: {
         destination: string;
         purpose?: string;

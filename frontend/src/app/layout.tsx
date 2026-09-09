@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { Inter, Raleway } from "next/font/google";
 import { Toaster } from "sonner";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getLocale } from "next-intl/server";
 import { ThemeProvider } from "@/hooks/useTheme";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
 import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const raleway = Raleway({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--font-raleway", display: "swap" });
 
 export const metadata: Metadata = {
   title: "AfrikCSE & AfrikVoyage",
@@ -20,7 +24,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={`${inter.variable} ${raleway.variable}`}>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider>

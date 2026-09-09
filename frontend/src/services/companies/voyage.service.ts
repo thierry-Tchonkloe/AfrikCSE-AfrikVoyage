@@ -33,8 +33,12 @@ export const voyageService = {
         const { data } = await api.patch(`/travels/${id}/status`, { status });
         return data;
     },
-    async assignPartner(id: string, partnerName: string) {
-        const { data } = await api.patch(`/travels/${id}/partner`, { partnerName });
+    async assignPartner(id: string, partnerId: string) {
+        const { data } = await api.patch(`/travels/${id}/partner`, { partnerId });
+        return data;
+    },
+    async getPartners(): Promise<{ id: string; name: string; sector: string }[]> {
+        const { data } = await api.get("/travels/partners");
         return data;
     },
     async updatePayment(id: string, payload: { paymentStatus?: string; paymentLink?: string }) {

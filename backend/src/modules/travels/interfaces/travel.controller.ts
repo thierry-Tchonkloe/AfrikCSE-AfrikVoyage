@@ -135,12 +135,21 @@ export class TravelController {
     }
 
     async assignPartner(req: Request<IdParamString>, res: Response): Promise<void> {
+        const { partnerId } = req.body as { partnerId?: string };
+        if (!partnerId || typeof partnerId !== "string") {
+        res.status(400).json({ message: "partnerId requis" });
+        return;
+        }
         try {
-        const result = await repo.assignPartner(req.params.id, req.user!.organizationId!, req.body.partnerName);
+        const result = await repo.assignPartner(req.params.id, req.user!.organizationId!, partnerId);
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
         }
+    }
+
+    async listPartners(_req: Request, res: Response): Promise<void> {
+        res.json(await repo.listActivePartners());
     }
 
     async updatePayment(req: Request<IdParamString>, res: Response): Promise<void> {

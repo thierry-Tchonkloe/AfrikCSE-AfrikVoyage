@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { CalendarCheck, Loader2, Clock, CheckCircle2, XCircle, Flag } from "lucide-react";
 import { partnerPortalService } from "@/services/partner/partner-portal.service";
 import { Booking, BookingStatus } from "@/types";
+import { getBookingLabel } from "@/lib/booking-label";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -125,7 +126,7 @@ export default function PartnerBookingsPage() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             <p className="font-semibold text-sm text-gray-900 dark:text-white">
-                                                {b.offer?.title ?? "Réservation"}
+                                                {getBookingLabel(b)}
                                             </p>
                                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${sc.color}`}>
                                                 <Icon className="h-3 w-3" />{sc.label}

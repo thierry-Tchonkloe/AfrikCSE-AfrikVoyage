@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Clock, CheckCircle2, XCircle, X, Loader2, Layers, Settings, ImagePlus } from "lucide-react";
+import { motion } from "framer-motion";
+import { Plus, X, Loader2, Layers, Settings, ImagePlus } from "lucide-react";
 import { partnerPortalService, PartnerOffer, OfferInput } from "@/services/partner/partner-portal.service";
+import { OfferCard } from "@/components/partner-portal/OfferCard";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -11,12 +13,6 @@ const EMPTY_FORM: OfferInput = { title: "", category: "", employeePrice: 0, comp
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_SIZE = 3 * 1024 * 1024; // 3 Mo — doit rester cohérent avec offerImageUpload côté backend
-
-const REVIEW_BADGE: Record<PartnerOffer["reviewStatus"], { label: string; className: string; icon: typeof Clock }> = {
-    PENDING:  { label: "En attente de validation", className: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: Clock },
-    APPROVED: { label: "Active",                   className: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle2 },
-    REJECTED: { label: "Refusée",                   className: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",         icon: XCircle },
-};
 
 const CATEGORIES = ["Restauration", "Loisirs", "Sport", "Culture", "Bien-être", "Transport", "Éducation", "Autre"];
 
@@ -126,7 +122,6 @@ export default function PartnerOffersPage() {
         setImagePreview((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(file); });
     };
 
-    const fmt = (v: number) => new Intl.NumberFormat("fr-FR").format(v);
     const previewSrc = imagePreview ?? form.imageUrl;
 
     return (
@@ -161,45 +156,16 @@ export default function PartnerOffersPage() {
                     </button>
                 </div>
             ) : (
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {offers.map((o) => {
-                        const review = REVIEW_BADGE[o.reviewStatus];
-                        const ReviewIcon = review.icon;
-                        return (
-                        <div key={o.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 flex flex-col gap-3">
-                            <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{o.title}</p>
-                                    {o.category && <span className="text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded px-1.5 py-0.5">{o.category}</span>}
-                                </div>
-                                <button onClick={() => openEdit(o)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 shrink-0">
-                                    <Pencil size={14} />
-                                </button>
-                            </div>
-
-                            {o.description && (
-                                <p className="text-xs text-gray-500 line-clamp-2">{o.description}</p>
-                            )}
-
-                            {o.reviewStatus === "REJECTED" && o.reviewNote && (
-                                <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-2.5 py-1.5">
-                                    Motif du refus : {o.reviewNote}
-                                </p>
-                            )}
-
-                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-                                <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                    {fmt(o.employeePrice)} <span className="text-xs font-normal text-gray-400">XOF employé</span>
-                                    <span className="text-xs font-normal text-gray-400"> · {fmt(o.companyPrice)} entreprise</span>
-                                </p>
-                                <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${review.className}`}>
-                                    <ReviewIcon size={12} /> {review.label}
-                                </span>
-                            </div>
-                        </div>
-                        );
-                    })}
-                </div>
+                <motion.div
+                    variants={{ show: { transition: { staggerChildren: 0.06 } } }}
+                    initial="hidden"
+                    animate="show"
+                    className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+                >
+                    {offers.map((o) => (
+                        <OfferCard key={o.id} offer={o} onEdit={openEdit} />
+                    ))}
+                </motion.div>
             )}
 
             {/* Modal */}

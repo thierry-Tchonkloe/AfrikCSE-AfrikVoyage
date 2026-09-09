@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useLayoutEffect } from "react";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -171,26 +172,17 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
             {/* Logo */}
             <div className="flex items-center h-16 px-3 border-b gap-2"
             style={{ borderColor: darkMode ? "#374151" : "#e5e7eb" }}>
-            {sidebarOpen && (
+            {sidebarOpen ? (
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                {user.organization?.logoUrl ? (
-                    <img
-                        src={user.organization.logoUrl}
-                        alt={user.organization?.name ?? "Logo"}
-                        className="w-8 h-8 rounded-lg object-cover shrink-0"
-                    />
-                ) : (
-                    <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"
-                        style={{ background: "var(--color-primary)" }}
-                    >
-                        {user.organization?.name?.[0] ?? "A"}
-                    </div>
-                )}
-                <span className="font-semibold text-sm truncate"
-                    style={{ color: "var(--color-text)" }}>
-                    {user.organization?.name ?? "Entreprise"}
-                </span>
+                <Image src="/logo/logo_waxeho.png" alt="Waxeho" width={40} height={40} className="w-10 h-10 rounded-lg shrink-0 object-contain" />
+                <div className="min-w-0">
+                    <p className="text-base font-display font-bold truncate" style={{ color: "var(--color-primary)" }}>Afrik-workspace</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Espace entreprise</p>
+                </div>
+                </div>
+            ) : (
+                <div className="flex-1 flex justify-center">
+                <Image src="/logo/logo_waxeho.png" alt="Waxeho" width={40} height={40} className="w-10 h-10 rounded-lg object-contain" />
                 </div>
             )}
             <button onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -299,22 +291,27 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
             darkMode ? "border-gray-700" : "border-gray-200")}>
             {sidebarOpen ? (
                 <div className="flex items-center gap-2">
-                <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ background: "var(--color-primary)" }}
+                <button
+                    onClick={() => router.push("/companies/settings")}
+                    className="flex items-center gap-2 flex-1 min-w-0 text-left rounded-lg hover:bg-gray-100 p-1 -m-1 transition-colors"
                 >
-                    {user.firstName[0]}{user.lastName[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold truncate">
-                    {user.firstName} {user.lastName}
-                    </p>
-                    <p className="text-xs truncate" style={{ color: "#9ca3af" }}>
-                    {user.role.replace("_", " ")}
-                    </p>
-                </div>
+                    <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                        style={{ background: "var(--color-primary)" }}
+                    >
+                        {user.firstName[0]}{user.lastName[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold truncate">
+                        {user.firstName} {user.lastName}
+                        </p>
+                        <p className="text-xs truncate" style={{ color: "#9ca3af" }}>
+                        {user.role.replace("_", " ")}
+                        </p>
+                    </div>
+                </button>
                 <button onClick={logout} title="Déconnexion"
-                    className="p-1 rounded hover:bg-gray-100"
+                    className="p-1 rounded hover:bg-gray-100 shrink-0"
                     style={{ color: "#9ca3af" }}>
                     <LogOut size={15} />
                 </button>
@@ -366,6 +363,23 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
                 >
                 Changer de module
                 </button>
+
+                {/* Identité de l'organisation connectée */}
+                <div className={cn(
+                    "flex items-center gap-2 pl-2 border-l min-w-0",
+                    darkMode ? "border-gray-700" : "border-gray-200"
+                )}>
+                <span className="hidden sm:block text-sm font-medium truncate max-w-40" style={{ color: darkMode ? "#e5e7eb" : "#374151" }}>
+                    {user.organization?.name ?? "Organisation"}
+                </span>
+                {user.organization?.logoUrl ? (
+                    <Image src={user.organization.logoUrl} alt={user.organization?.name ?? "Logo"} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                ) : (
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: "var(--color-primary)" }}>
+                        {user.organization?.name?.[0] ?? "A"}
+                    </div>
+                )}
+                </div>
             </div>
             </header>
 

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { CalendarCheck, Clock, CheckCircle2, XCircle, Star, X, Loader2 } from "lucide-react";
 import { bookingService } from "@/services/employes/booking.service";
 import { Booking, BookingStatus } from "@/types";
+import { getBookingLabel } from "@/lib/booking-label";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -107,7 +108,7 @@ export default function ReservationsPage() {
                                     <div className="flex items-start justify-between gap-2">
                                         <div>
                                             <p className="font-semibold text-gray-900 dark:text-white truncate">
-                                                {b.offer?.title ?? b.partner?.name ?? "Réservation"}
+                                                {getBookingLabel(b)}
                                             </p>
                                             <p className="text-sm text-gray-500">
                                                 {b.partner?.name} · {b.numberOfPersons} pers. ·{" "}
@@ -180,7 +181,7 @@ export default function ReservationsPage() {
                             <h2 className="font-semibold text-gray-900 dark:text-white">Notez votre expérience</h2>
                             <button onClick={() => setRatingModal(null)}><X className="h-5 w-5 text-gray-400" /></button>
                         </div>
-                        <p className="text-sm text-gray-500">{ratingModal.offer?.title ?? ratingModal.partner?.name}</p>
+                        <p className="text-sm text-gray-500">{getBookingLabel(ratingModal)}</p>
 
                         <div className="flex gap-2 justify-center">
                             {[1,2,3,4,5].map((s) => (

@@ -9,6 +9,11 @@ export class BookingRepository {
         offerId?:       string;
         locationId?:    string;
         orderId?:       string;
+        travelRequestId?:    string;
+        flightRouteId?:      string;
+        hotelRoomTypeId?:    string;
+        trainRouteId?:       string;
+        carRentalVehicleId?: string;
         bookingDate:    Date;
         numberOfPersons?: number;
         notes?:         string;
@@ -30,6 +35,11 @@ export class BookingRepository {
                 order:    { select: { id: true, finalAmount: true } },
                 rating:   true,
                 commissionEntry: { select: { id: true, commissionAmount: true, netAmount: true, status: true } },
+                travelRequest:    { select: { id: true, destination: true, status: true } },
+                flightRoute:      { select: { id: true, originCity: true, destinationCity: true, airlineCode: true } },
+                hotelRoomType:    { select: { id: true, name: true, hotel: { select: { id: true, name: true, city: true } } } },
+                trainRoute:       { select: { id: true, originCity: true, destinationCity: true } },
+                carRentalVehicle: { select: { id: true, brand: true, model: true, city: true } },
             },
         });
     }
@@ -43,6 +53,10 @@ export class BookingRepository {
                     partner: { select: { id: true, name: true, logoUrl: true } },
                     offer:   { select: { id: true, title: true, category: true, imageUrl: true } },
                     rating:  { select: { score: true, comment: true } },
+                    flightRoute:      { select: { id: true, originCity: true, destinationCity: true, airlineCode: true } },
+                    hotelRoomType:    { select: { id: true, name: true, hotel: { select: { id: true, name: true, city: true } } } },
+                    trainRoute:       { select: { id: true, originCity: true, destinationCity: true } },
+                    carRentalVehicle: { select: { id: true, brand: true, model: true, city: true } },
                 },
                 orderBy: { createdAt: "desc" },
                 skip, take: limit,
@@ -62,6 +76,10 @@ export class BookingRepository {
                     offer:  { select: { id: true, title: true, category: true } },
                     location: { select: { id: true, name: true } },
                     rating: { select: { score: true } },
+                    flightRoute:      { select: { id: true, originCity: true, destinationCity: true, airlineCode: true } },
+                    hotelRoomType:    { select: { id: true, name: true, hotel: { select: { id: true, name: true, city: true } } } },
+                    trainRoute:       { select: { id: true, originCity: true, destinationCity: true } },
+                    carRentalVehicle: { select: { id: true, brand: true, model: true, city: true } },
                 },
                 orderBy: { createdAt: "desc" },
                 skip, take: limit,

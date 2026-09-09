@@ -16,6 +16,10 @@ export const employeeService = {
         const { data } = await api.post("/employee/travels", payload);
         return data;
     },
+    async getTravelById(id: string) {
+        const { data } = await api.get(`/employee/travels/${id}`);
+        return data;
+    },
 
     // ── Notes de frais ────────────────────────────────────────────────────────
     async getMyExpenses() {

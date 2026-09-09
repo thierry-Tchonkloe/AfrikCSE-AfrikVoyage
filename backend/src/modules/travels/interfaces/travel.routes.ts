@@ -13,6 +13,7 @@ router.use(authenticate);
 // Voyages
 router.get("/",            authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.FINANCE), ctrl.getAll.bind(ctrl));
 router.get("/stats",       authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.FINANCE), ctrl.getStats.bind(ctrl));
+router.get("/partners",    authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER), ctrl.listPartners.bind(ctrl));
 router.get("/approvals/stats", authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER), ctrl.getApprovalStats.bind(ctrl));
 router.post("/bulk-approve", authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER), ctrl.bulkApprove.bind(ctrl));
 router.patch("/:id/approve", authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER), validateParams(idParamString), ctrl.approve.bind(ctrl));

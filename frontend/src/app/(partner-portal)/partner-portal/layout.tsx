@@ -1,7 +1,9 @@
-﻿"use client";
+"use client";
 
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useLayoutEffect } from "react";
+import Image from "next/image";
+import { motion } from "framer-motion";
 import { LayoutDashboard, CalendarCheck, Layers, Users, MapPin, Building2, Settings, ChevronLeft, ChevronRight, LogOut, Menu,} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePartnerAuth } from "@/hooks/usePartnerAuth";
@@ -50,27 +52,29 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
         <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
             {open && <div className="fixed inset-0 z-20 bg-black/40 lg:hidden" onClick={() => setOpen(false)} />}
 
-            <aside
+            <motion.aside
+                initial={false}
+                animate={{ width: open ? 220 : 64 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className={cn(
-                    "fixed lg:static inset-y-0 left-0 z-30 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:transition-[width] border-r",
+                    "fixed lg:static inset-y-0 left-0 z-30 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 border-r overflow-hidden",
                     open ? "translate-x-0" : "-translate-x-full",
                     "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 )}
-                style={{ width: open ? "220px" : "64px" }}
             >
                 {/* Logo */}
-                <div className="flex items-center h-16 px-3 gap-2 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center h-16 px-3 gap-2 border-b border-gray-200 dark:border-gray-700 shrink-0">
                     {open ? (
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: ACCENT }}>P</div>
+                            <Image src="/logo/logo_waxeho.png" alt="Waxeho" width={40} height={40} className="w-10 h-10 rounded-lg shrink-0 object-contain" />
                             <div className="min-w-0">
-                                <p className="text-base font-bold truncate" style={{ color: ACCENT }}>Portail</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.partnerName}</p>
+                                <p className="text-base font-display font-bold truncate" style={{ color: ACCENT }}>Afrik-workspace</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Espace partenaire</p>
                             </div>
                         </div>
                     ) : (
                         <div className="flex-1 flex justify-center">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ background: ACCENT }}>P</div>
+                            <Image src="/logo/logo_waxeho.png" alt="Waxeho" width={40} height={40} className="w-10 h-10 rounded-lg object-contain" />
                         </div>
                     )}
                     <button onClick={() => setOpen((v) => !v)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 shrink-0">
@@ -87,14 +91,21 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
                                 key={href}
                                 onClick={() => { router.push(href); if (window.innerWidth < 1024) setOpen(false); }}
                                 className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                                    "relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                                     active
                                         ? "text-white"
                                         : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
                                 )}
-                                style={active ? { background: ACCENT } : {}}
                                 title={!open ? '' : undefined}
                             >
+                                {active && (
+                                    <motion.div
+                                        layoutId="partner-nav-active"
+                                        className="absolute inset-0 rounded-lg -z-10"
+                                        style={{ background: ACCENT }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                                    />
+                                )}
                                 <Icon size={17} className="shrink-0" />
                                 {open && <span className="truncate text-sm">{label}</span>}
                             </button>
@@ -103,7 +114,7 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
                 </nav>
 
                 {/* User */}
-                <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="p-3 border-t border-gray-200 dark:border-gray-700 shrink-0">
                     {open ? (
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: ACCENT }}>
@@ -123,23 +134,40 @@ export default function PartnerPortalLayout({ children }: { children: React.Reac
                         </button>
                     )}
                 </div>
-            </aside>
+            </motion.aside>
 
             {/* Main */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <header className="h-16 flex items-center justify-between px-6 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 shrink-0">
-
+                    <div className="flex items-center gap-3">
                         <button className="lg:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setOpen(true)}>
                             <Menu size={20} />
                         </button>
                         <p className="text-sm font-semibold text-gray-900 dark:text-white">
                             {NAV_ITEMS.find((n) => pathname.startsWith(n.href))?.label ?? "Portail partenaire"}
                         </p>
-                    <div />
+                    </div>
+
+                    {/* Identité du partenaire connecté */}
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate max-w-[160px] sm:max-w-xs">
+                            {user.partnerName}
+                        </span>
+                        {user.partnerLogoUrl ? (
+                            <Image src={user.partnerLogoUrl} alt={user.partnerName} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                        ) : (
+                            <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                                <Building2 size={14} className="text-gray-400" />
+                            </div>
+                        )}
+                    </div>
                 </header>
                 <main className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
                     {children}
                 </main>
+                <footer className="py-3 px-6 text-center text-xs text-gray-400 border-t border-gray-100 dark:border-gray-800 shrink-0">
+                    Tous droits réservés à Waxeho, 2026.
+                </footer>
             </div>
         </div>
     );
