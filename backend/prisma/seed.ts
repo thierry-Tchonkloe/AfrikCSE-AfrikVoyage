@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, NotificationType } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcrypt";
 
@@ -331,6 +331,33 @@ async function main() {
     } else {
         console.log("ℹ️  Catalogue Voyage déjà présent, skip.");
     }
+
+    // ── Templates de notification par défaut ──────────────────────────────
+    // Sans ça, dispatchNotification() ne fait rien : il s'arrête silencieusement
+    // si aucun NotificationTemplate actif n'existe pour l'événement (cf.
+    // notification.service.ts). Canal IN_APP uniquement — TRIP_REMINDER/NEW_EVENT/
+    // SYSTEM_UPDATE gèrent déjà l'email via les préférences utilisateur dans
+    // NotificationRepository.createForUsers, ajouter le canal EMAIL ici enverrait
+    // un second email en doublon pour ces 3 événements.
+    const notificationTemplateDefs: { event: NotificationType; inAppTitle: string; inAppBody: string }[] = [
+        { event: "APPROVAL_REQUEST", inAppTitle: "Nouvelle demande à approuver", inAppBody: "Une nouvelle demande ({{requestType}}) « {{subject}} » est en attente d'approbation." },
+        { event: "REQUEST_APPROVED", inAppTitle: "Demande approuvée", inAppBody: "Votre demande ({{requestType}}) « {{subject}} » a été approuvée." },
+        { event: "REQUEST_REJECTED", inAppTitle: "Demande rejetée", inAppBody: "Votre demande ({{requestType}}) « {{subject}} » a été rejetée. Motif : {{reason}}" },
+        { event: "TRIP_REMINDER", inAppTitle: "Rappel de voyage", inAppBody: "Votre voyage vers {{destination}} part le {{date}}." },
+        { event: "NEW_EVENT", inAppTitle: "Nouvel événement : {{eventTitle}}", inAppBody: "{{eventDescription}}" },
+        { event: "SYSTEM_UPDATE", inAppTitle: "{{postTitle}}", inAppBody: "{{postBody}}" },
+        { event: "BOOKING_CONFIRMED", inAppTitle: "Réservation confirmée", inAppBody: "Votre réservation a été confirmée par le partenaire. {{partnerNotes}}" },
+        { event: "BOOKING_REJECTED", inAppTitle: "Réservation refusée", inAppBody: "Votre réservation a été refusée par le partenaire. Motif : {{reason}}" },
+        { event: "BOOKING_COMPLETED", inAppTitle: "Réservation terminée", inAppBody: "Votre réservation est maintenant terminée." },
+        { event: "BOOKING_CANCELLED", inAppTitle: "Réservation annulée", inAppBody: "Votre réservation a été annulée. Motif : {{reason}}" },
+        { event: "WALLET_CREDITED", inAppTitle: "Wallet crédité", inAppBody: "Votre wallet a été crédité de {{amount}} XOF pour la période {{period}}." },
+    ];
+    await Promise.all(notificationTemplateDefs.map((t) => prisma.notificationTemplate.upsert({
+        where: { event: t.event },
+        update: {},
+        create: { event: t.event, channels: ["IN_APP"], inAppTitle: t.inAppTitle, inAppBody: t.inAppBody, isActive: true },
+    })));
+    console.log(`✅ ${notificationTemplateDefs.length} templates de notification par défaut (idempotent)`);
 
     console.log("\n🔐 Accès de seed :");
     console.log("  Super Admin      : superadmin@waxeho.com     / waxeho@2026!");

@@ -7,6 +7,7 @@ import { prisma } from "../../../core/config/prisma";
 import { AppError } from "../../../core/errors/app.error";
 import { createHash } from "crypto";
 import { dispatchNotification } from "../../notification/application/notification.service";
+import { dispatchWebhook } from "../../../core/services/webhook.service";
 
 const repo               = new BookingRepository();
 const walletService      = new WalletService();
@@ -156,6 +157,9 @@ export class BookingService {
             email:  user?.email,
             vars:   { bookingId: id, partnerNotes: partnerNotes ?? "" },
         }).catch(() => {});
+        dispatchWebhook(booking.organizationId, "booking.confirmed", {
+            bookingId: id, partnerId, confirmedAt: updated.confirmedAt, partnerNotes,
+        }).catch(() => {});
         return updated;
     }
 
@@ -177,6 +181,9 @@ export class BookingService {
             email:  user?.email,
             vars:   { reason },
         }).catch(() => {});
+        dispatchWebhook(booking.organizationId, "booking.rejected", {
+            bookingId: id, partnerId, reason,
+        }).catch(() => {});
     }
 
     async complete(id: string, partnerId: string) {
@@ -186,12 +193,17 @@ export class BookingService {
         const updated = await repo.updateStatusFrom(id, BookingStatus.CONFIRMED, BookingStatus.COMPLETED, { completedAt: new Date() });
         if (!updated) throw new AppError("Seule une réservation CONFIRMED peut être complétée", 400);
 
-        // Déclenche le calcul de commission si la réservation est liée à une commande payée
-        if (booking.order?.finalAmount) {
+        // Déclenche le calcul de commission — montant brut dérivé soit d'une commande
+        // liée (marketplace, rare), soit de l'entrée wallet de débit créée à la
+        // réservation (flux catalogue voyage réel, cf. BookingService.create()).
+        // Sans ce 2e cas, aucune commission n'était jamais générée en pratique : le
+        // flux réel de réservation ne crée jamais d'Order.
+        const grossAmount = booking.order?.finalAmount ?? await this._resolveBookingGrossAmount(booking.id);
+        if (grossAmount) {
             await commissionService.applyCommissionOnBooking(
                 booking.id,
                 booking.partnerId,
-                booking.order.finalAmount,
+                grossAmount,
                 booking.offer?.category ?? undefined,
             ).catch(() => {}); // best-effort : ne bloque pas la complétion
         }
@@ -202,6 +214,9 @@ export class BookingService {
             userId: booking.userId,
             email:  user?.email,
             vars:   { bookingId: id },
+        }).catch(() => {});
+        dispatchWebhook(booking.organizationId, "booking.completed", {
+            bookingId: id, partnerId, completedAt: updated.completedAt,
         }).catch(() => {});
         return updated;
     }
@@ -226,6 +241,9 @@ export class BookingService {
             userId,
             vars: { reason: reason ?? "Annulé par l'utilisateur" },
         }).catch(() => {});
+        dispatchWebhook(booking.organizationId, "booking.cancelled", {
+            bookingId: id, reason: reason ?? "Annulé par l'utilisateur",
+        }).catch(() => {});
     }
 
     async rate(bookingId: string, userId: string, score: number, comment?: string) {
@@ -238,6 +256,15 @@ export class BookingService {
 
     async getAllForAdmin(filters: Parameters<typeof repo.findAllForAdmin>[0]) {
         return repo.findAllForAdmin(filters);
+    }
+
+    /** Montant brut d'une réservation payée par wallet — dérivé de l'entrée de
+     *  débit créée à la création (aucun montant n'est stocké sur Booking lui-même). */
+    private async _resolveBookingGrossAmount(bookingId: string): Promise<Prisma.Decimal | null> {
+        const debitEntry = await prisma.walletEntry.findFirst({
+            where: { referenceId: bookingId, referenceType: "BOOKING", amount: { lt: 0 } },
+        });
+        return debitEntry ? debitEntry.amount.negated() : null;
     }
 
     private async _refundIfWalletPayment(userId: string, organizationId: string, bookingId: string) {

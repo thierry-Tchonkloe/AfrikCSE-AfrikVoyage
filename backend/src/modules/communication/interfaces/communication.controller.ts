@@ -1,12 +1,11 @@
 import { Request, Response } from "express";
 import { CommunicationRepository } from "../infrastructure/communication.repository";
-import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { dispatchNotificationToOrg } from "../../notification/application/notification.service";
 import { PostType } from "@prisma/client";
 import { createPostSchema, addCommentSchema } from "./communication.validator";
 import { IdParamString } from "../../../core/validators/param.validators";
 
 const repo = new CommunicationRepository();
-const notificationRepo = new NotificationRepository();
 
 const POST_TYPE_LABELS: Record<PostType, string> = {
     ARTICLE: "Nouvelle publication CSE",
@@ -37,9 +36,15 @@ export class CommunicationController {
         // Un retry (idempotencyKey déjà vue) renvoie la publication existante sans
         // renotifier toute l'organisation une 2e fois.
         if (created && ["ADMIN", "MANAGER", "RH"].includes(req.user!.role)) {
-            const title = post.title || POST_TYPE_LABELS[post.type];
-            const body  = post.content.length > 140 ? `${post.content.slice(0, 140)}…` : post.content;
-            await notificationRepo.createForOrg(req.user!.organizationId!, title, body, "SYSTEM_UPDATE", req.user!.userId, "/employes/communication");
+            const postTitle = post.title || POST_TYPE_LABELS[post.type];
+            const postBody  = post.content.length > 140 ? `${post.content.slice(0, 140)}…` : post.content;
+            dispatchNotificationToOrg(
+                "SYSTEM_UPDATE",
+                req.user!.organizationId!,
+                { postTitle, postBody },
+                req.user!.userId,
+                "/employes/communication"
+            ).catch(() => {});
         }
 
         res.status(201).json(post);

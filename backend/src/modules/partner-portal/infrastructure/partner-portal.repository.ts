@@ -77,6 +77,56 @@ export class PartnerPortalRepository {
         });
     }
 
+    /** Crée le 1er compte d'un partenaire (bootstrap) avec un token d'activation —
+     *  mot de passe temporaire volontairement non hashé (donc jamais utilisable
+     *  tel quel, cf. commentaire équivalent dans organization.repository.ts). */
+    async createBootstrapUser(data: {
+        partnerId:    string;
+        email:        string;
+        firstName:    string;
+        lastName:     string;
+        tempPassword: string;
+        resetToken:   string;
+        expiresAt:    Date;
+    }) {
+        return prisma.partnerUser.create({
+            data: {
+                partnerId:              data.partnerId,
+                email:                  data.email,
+                passwordHash:           data.tempPassword,
+                firstName:              data.firstName,
+                lastName:               data.lastName,
+                role:                   "PARTNER_ADMIN",
+                resetPasswordToken:     data.resetToken,
+                resetPasswordExpiresAt: data.expiresAt,
+            } as never,
+        });
+    }
+
+    /** Trouve un PartnerUser par son token de reset/activation (non expiré) */
+    async findUserByResetToken(hashedToken: string) {
+        return prisma.partnerUser.findFirst({
+            where: {
+                resetPasswordToken: hashedToken,
+                resetPasswordExpiresAt: { gt: new Date() },
+            } as never,
+        });
+    }
+
+    /** Définit le mot de passe (activation ou reset), efface le token et révoque les sessions. */
+    async setPasswordFromToken(id: string, hashedPassword: string) {
+        return prisma.partnerUser.update({
+            where: { id },
+            data: {
+                passwordHash:           hashedPassword,
+                resetPasswordToken:     null,
+                resetPasswordExpiresAt: null,
+                refreshToken:           null,
+                tokenVersion:           { increment: 1 },
+            } as never,
+        });
+    }
+
     // ── Partner profile ───────────────────────────────────────────────────────
 
     async getPartner(partnerId: string) {

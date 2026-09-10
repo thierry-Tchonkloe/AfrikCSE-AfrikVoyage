@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +8,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Copy, Check } from "lucide-react";
 import { adminService } from "@/services/admin/admin.service";
+import { countryConfigService, CountryConfig } from "@/services/admin/country-config.service";
 import { getErrorMessage } from "@/lib/errors";
 
 const schema = z.object({
@@ -28,23 +29,21 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-const COUNTRIES = [
-    { code: "BJ", name: "Bénin" }, { code: "SN", name: "Sénégal" },
-    { code: "CI", name: "Côte d'Ivoire" }, { code: "ML", name: "Mali" },
-    { code: "BF", name: "Burkina Faso" }, { code: "TG", name: "Togo" },
-    { code: "GH", name: "Ghana" }, { code: "NG", name: "Nigeria" },
-    { code: "CM", name: "Cameroun" }, { code: "MA", name: "Maroc" },
-    { code: "FR", name: "France" },
-];
-
 export default function NewCompanyPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [countries, setCountries] = useState<CountryConfig[]>([]);
     const [result, setResult] = useState<{
         invitationLink: string;
         org: { name: string; id: string };
     } | null>(null);
     const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        countryConfigService.list()
+        .then((list) => setCountries(list.filter((c) => c.isActive)))
+        .catch(() => toast.error("Erreur chargement des pays"));
+    }, []);
 
     const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
         resolver: zodResolver(schema),
@@ -174,7 +173,7 @@ export default function NewCompanyPage() {
                 <Field label="Pays *" error={errors.country?.message}>
                 <select {...register("country")} className={inp}>
                     <option value="">Sélectionner</option>
-                    {COUNTRIES.map((c) => (
+                    {countries.map((c) => (
                     <option key={c.code} value={c.code}>{c.name}</option>
                     ))}
                 </select>

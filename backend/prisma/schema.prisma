@@ -1633,21 +1633,26 @@ enum PayoutStatus {
 // ─── Portail partenaire ──────────────────────────────────────────────────────
 
 model PartnerUser {
-  id           String    @id @default(cuid())
-  partnerId    String
-  partner      Partner   @relation(fields: [partnerId], references: [id])
-  email        String    @unique
-  passwordHash String
-  firstName    String
-  lastName     String
-  role         Role      @default(PARTNER_ADMIN)
-  isActive     Boolean   @default(true)
-  refreshToken String? // hash du refresh token courant (rotation, cookie partnerRefreshToken dédié)
-  tokenVersion Int       @default(0) // incrémenté au logout → révoque tous les tokens émis avant
-  lastLoginAt  DateTime?
-  invitedById  String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                     String    @id @default(cuid())
+  partnerId              String
+  partner                Partner   @relation(fields: [partnerId], references: [id])
+  email                  String    @unique
+  passwordHash           String
+  firstName              String
+  lastName               String
+  role                   Role      @default(PARTNER_ADMIN)
+  isActive               Boolean   @default(true)
+  refreshToken           String? // hash du refresh token courant (rotation, cookie partnerRefreshToken dédié)
+  tokenVersion           Int       @default(0) // incrémenté au logout → révoque tous les tokens émis avant
+  lastLoginAt            DateTime?
+  invitedById            String?
+  // Bootstrap du 1er compte à la création du partenaire par le Super Admin (ou
+  // reset "mot de passe oublié" futur) — même mécanisme que User.resetPasswordToken,
+  // délégué depuis AuthService.resetPassword() pour réutiliser la page /activate.
+  resetPasswordToken     String?   @unique
+  resetPasswordExpiresAt DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   @@map("partner_users")
 }

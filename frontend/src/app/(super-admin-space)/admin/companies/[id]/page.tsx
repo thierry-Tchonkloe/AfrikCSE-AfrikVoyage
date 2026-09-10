@@ -8,6 +8,7 @@ import {
     Briefcase, Calendar, Users, TrendingUp, Plane, Gift, ShieldAlert,
 } from "lucide-react";
 import { adminService } from "@/services/admin/admin.service";
+import { countryConfigService, CountryConfig } from "@/services/admin/country-config.service";
 import { toast } from "sonner";
 
 // ── Types ──────────────────────────────────────────────────
@@ -62,15 +63,6 @@ const COUNTRY_FLAGS: Record<string, string> = {
     CM: "🇨🇲", FR: "🇫🇷", MA: "🇲🇦",
 };
 
-const COUNTRIES = [
-    { code: "BJ", name: "Bénin" }, { code: "SN", name: "Sénégal" },
-    { code: "CI", name: "Côte d'Ivoire" }, { code: "ML", name: "Mali" },
-    { code: "BF", name: "Burkina Faso" }, { code: "TG", name: "Togo" },
-    { code: "GH", name: "Ghana" }, { code: "NG", name: "Nigeria" },
-    { code: "CM", name: "Cameroun" }, { code: "MA", name: "Maroc" },
-    { code: "FR", name: "France" },
-];
-
 const ROLE_LABELS: Record<string, string> = {
     SUPER_ADMIN: "Super Admin",
     ADMIN:       "Administrateur",
@@ -109,6 +101,13 @@ export default function CompanyDetailPage() {
 
     // Modale suppression
     const [deleteOpen, setDeleteOpen] = useState(false);
+
+    const [countries, setCountries] = useState<CountryConfig[]>([]);
+    useEffect(() => {
+        countryConfigService.list()
+        .then((list) => setCountries(list.filter((c) => c.isActive)))
+        .catch(() => toast.error("Erreur chargement des pays"));
+    }, []);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -547,7 +546,7 @@ export default function CompanyDetailPage() {
                     <select value={editForm.country ?? ""}
                     onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
                     className={inp}>
-                    {COUNTRIES.map((c) => (
+                    {countries.map((c) => (
                         <option key={c.code} value={c.code}>{c.name}</option>
                     ))}
                     </select>

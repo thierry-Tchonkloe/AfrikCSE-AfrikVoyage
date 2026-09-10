@@ -22,7 +22,7 @@ const ctrl = new AuthController();
 // ── Limiteur strict anti-bruteforce sur les endpoints sensibles ─────────
 const strictAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10,
+    max: process.env.RATELIMIT_MAX ? parseInt(process.env.RATELIMIT_MAX) : 5,
     message: { message: "Trop de tentatives, réessayez dans 15 minutes" },
     standardHeaders: true,
     legacyHeaders: false,

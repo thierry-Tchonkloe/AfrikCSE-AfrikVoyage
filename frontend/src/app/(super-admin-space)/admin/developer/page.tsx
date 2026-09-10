@@ -11,7 +11,7 @@ import {
 } from "@/services/admin/developer.service";
 
 const AVAILABLE_SCOPES = ["bookings:read","bookings:write","orders:read","wallet:read","commissions:read","reporting:read"];
-const AVAILABLE_EVENTS = ["booking.confirmed","booking.rejected","booking.completed","booking.cancelled","order.confirmed","order.cancelled","wallet.credited"];
+const AVAILABLE_EVENTS = ["booking.confirmed","booking.rejected","booking.completed","booking.cancelled","travel.approved","travel.rejected","order.confirmed","order.cancelled","wallet.credited"];
 
 function CopyButton({ text }: { text: string }) {
     const [copied, setCopied] = useState(false);

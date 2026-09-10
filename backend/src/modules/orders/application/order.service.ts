@@ -174,6 +174,44 @@ export class OrderService {
     }
 
     /**
+     * Remboursement déclenché par le Service Client (Super Admin/Platform Manager),
+     * pas par le propriétaire de la commande — d'où `findByIdInternal` (sans filtre
+     * userId) plutôt que `findById`. Seuls les paiements WALLET peuvent être
+     * remboursés automatiquement : un paiement KkiaPay/FedaPay nécessite un
+     * remboursement manuel côté prestataire, aucune intégration de refund externe
+     * n'existe dans ce projet.
+     */
+    async refundOrderAsAdmin(id: string) {
+        const order = await repo.findByIdInternal(id);
+        if (!order) throw new AppError("Commande introuvable", 404);
+        if (order.paymentStatus !== "PAID") {
+            throw new AppError("Seule une commande payée peut être remboursée", 400);
+        }
+        if (order.paymentMethod !== "WALLET") {
+            throw new AppError(
+                "Remboursement automatique indisponible pour ce mode de paiement — traitez-le manuellement auprès du prestataire (KkiaPay/FedaPay)",
+                400
+            );
+        }
+
+        const ikey = createHash("sha256")
+            .update(`admin-refund:order:${order.id}`)
+            .digest("hex")
+            .slice(0, 32);
+        const wallet     = await walletService.getMyWallet(order.userId, order.organizationId);
+        const walletRepo = new WalletRepository();
+        await walletRepo.addEntry(
+            wallet.wallet.id,
+            WalletEntryType.REFUND,
+            order.finalAmount,
+            ikey,
+            { description: "Remboursement commande (Service Client)", referenceId: order.id, referenceType: "ORDER" }
+        );
+
+        return repo.updateStatus(order.id, OrderStatus.REFUNDED, OrderPaymentStatus.REFUNDED);
+    }
+
+    /**
      * Valide le subsidyAmount fourni par le client contre les règles actives.
      * Retourne le montant autorisé (≤ demande, ≤ règle applicable, ≥ 0).
      * Si aucune règle active : subsidyAmount forcé à 0 pour éviter les fraudes.

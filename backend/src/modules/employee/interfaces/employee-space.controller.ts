@@ -5,7 +5,7 @@ import { prisma } from "../../../core/config/prisma";
 import { createHmac } from "crypto";
 import { cloudinary } from "../../../core/config/cloudinary";
 import { UploadApiResponse } from "cloudinary";
-import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { dispatchNotificationToRoles } from "../../notification/application/notification.service";
 import { logAudit } from "../../../core/utils/audit";
 import {
     createTravelRequestSchema,
@@ -17,7 +17,6 @@ import {
 import { IdParamString } from "../../../core/validators/param.validators";
 
 const repo = new EmployeeDashboardRepository();
-const notificationRepo = new NotificationRepository();
 
 export class EmployeeSpaceController {
 
@@ -68,14 +67,13 @@ export class EmployeeSpaceController {
             // Un retry (idempotencyKey déjà vue) renvoie la demande existante sans
             // renotifier les approbateurs une 2e fois.
             if (created) {
-                await notificationRepo.createForRoles(
+                dispatchNotificationToRoles(
+                    "APPROVAL_REQUEST",
                     req.user!.organizationId!,
                     ["ADMIN", "MANAGER"],
-                    "Nouvelle demande de voyage",
-                    `Une nouvelle demande de voyage pour ${travel.destination} est en attente d'approbation.`,
-                    "APPROVAL_REQUEST",
+                    { requestType: "voyage", subject: travel.destination },
                     "/companies/AfrikVoyage/approbations"
-                );
+                ).catch(() => {});
             }
 
             res.status(201).json(travel);
@@ -105,14 +103,13 @@ export class EmployeeSpaceController {
             );
 
             if (created) {
-                await notificationRepo.createForRoles(
+                dispatchNotificationToRoles(
+                    "APPROVAL_REQUEST",
                     req.user!.organizationId!,
                     ["ADMIN", "MANAGER"],
-                    "Nouvelle note de frais",
-                    `Une nouvelle note de frais « ${expense.title} » est en attente d'approbation.`,
-                    "APPROVAL_REQUEST",
+                    { requestType: "note de frais", subject: expense.title },
                     "/companies/AfrikVoyage/frais"
-                );
+                ).catch(() => {});
             }
 
             res.status(201).json(expense);
@@ -189,14 +186,13 @@ export class EmployeeSpaceController {
             );
 
             if (created) {
-                await notificationRepo.createForRoles(
+                dispatchNotificationToRoles(
+                    "APPROVAL_REQUEST",
                     req.user!.organizationId!,
                     ["ADMIN", "MANAGER", "RH"],
-                    "Nouvelle demande d'avantage",
-                    `Une nouvelle demande « ${request.category.name} » est en attente d'approbation.`,
-                    "APPROVAL_REQUEST",
+                    { requestType: "demande d'avantage", subject: request.category.name },
                     "/companies/AfrikCSE/avantages"
-                );
+                ).catch(() => {});
             }
 
             res.status(201).json(request);

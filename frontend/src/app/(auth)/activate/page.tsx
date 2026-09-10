@@ -85,7 +85,7 @@ function ActivateContent() {
             </h2>
             <p className="text-sm" style={{ color: "var(--color-muted)" }}>
             Votre mot de passe a été défini. Vous pouvez maintenant vous connecter
-            et accéder à votre espace entreprise.
+            et accéder à votre espace.
             </p>
             <button
             onClick={() => router.push("/login")}

@@ -2,13 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Search, Loader2, CheckCircle2, Clock, XCircle, Package, User, RefreshCw } from "lucide-react";
-//import axios from "axios";
 import { Order, Booking } from "@/types";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 import api from "@/lib/api";
-
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 type Tab = "orders" | "bookings";
 
@@ -16,7 +13,9 @@ interface OrdersResult  { orders:   Order[];   total: number }
 interface BookingsResult { bookings: Booking[]; total: number }
 
 async function fetchOrders(search: string, page: number): Promise<OrdersResult> {
-    const { data } = await api.get("/orders", {
+    // /orders (getMyOrders) ne renvoie que les commandes du compte appelant — il
+    // faut la route admin dédiée pour voir les commandes de toute la plateforme.
+    const { data } = await api.get("/orders/admin/all", {
         params: { search, page, limit: 30 },
         withCredentials: true,
     });
@@ -190,9 +189,15 @@ export default function ServiceClientPage() {
                                             <td className="px-5 py-3 text-gray-400 text-xs">{new Date(o.createdAt).toLocaleDateString("fr-FR")}</td>
                                             <td className="px-5 py-3 text-right">
                                                 {o.status === "COMPLETED" && o.paymentStatus === "PAID" && (
-                                                    <button onClick={() => handleRefund(o.id)} className="text-xs text-red-600 hover:underline flex items-center gap-1 ml-auto">
-                                                        <RefreshCw className="h-3 w-3" />Rembourser
-                                                    </button>
+                                                    o.paymentMethod === "WALLET" ? (
+                                                        <button onClick={() => handleRefund(o.id)} className="text-xs text-red-600 hover:underline flex items-center gap-1 ml-auto">
+                                                            <RefreshCw className="h-3 w-3" />Rembourser
+                                                        </button>
+                                                    ) : (
+                                                        <span title="Remboursement automatique disponible uniquement pour les paiements Wallet — à traiter manuellement auprès du prestataire" className="text-xs text-gray-400 flex items-center gap-1 ml-auto cursor-default">
+                                                            <RefreshCw className="h-3 w-3" />Bientôt disponible
+                                                        </span>
+                                                    )
                                                 )}
                                             </td>
                                         </tr>

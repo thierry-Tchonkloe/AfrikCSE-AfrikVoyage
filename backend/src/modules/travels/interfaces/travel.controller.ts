@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { TravelRepository } from "../infrastructure/travel.repository";
 import { RequestStatus, TravelStatus, Urgency } from "@prisma/client";
-import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { dispatchNotificationToUsers } from "../../notification/application/notification.service";
 import { IdParamString } from "../../../core/validators/param.validators";
+import { dispatchWebhook } from "../../../core/services/webhook.service";
 
 const repo = new TravelRepository();
-const notificationRepo = new NotificationRepository();
 
 const TRAVEL_STATUSES: TravelStatus[] = [
     "PENDING", "APPROVED", "REJECTED", "CANCELLED", "IN_PROGRESS", "COMPLETED",
@@ -46,13 +46,16 @@ export class TravelController {
     async approve(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
         const result = await repo.approve(req.params.id, req.user!.organizationId!, req.user!.userId);
-        await notificationRepo.createForUsers(
-            [result.requestedById],
-            "Voyage approuvé",
-            `Votre demande de voyage pour ${result.destination} a été approuvée.`,
+        dispatchNotificationToUsers(
             "REQUEST_APPROVED",
+            [result.requestedById],
+            { requestType: "voyage", subject: result.destination },
             "/employes/voyages"
-        );
+        ).catch(() => {});
+        dispatchWebhook(result.organizationId, "travel.approved", {
+            travelRequestId: result.id, destination: result.destination,
+            requestedById: result.requestedById, approvedAt: result.approvedAt,
+        }).catch(() => {});
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -62,13 +65,16 @@ export class TravelController {
     async reject(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
         const result = await repo.reject(req.params.id, req.user!.organizationId!, req.body.note);
-        await notificationRepo.createForUsers(
-            [result.requestedById],
-            "Voyage rejeté",
-            `Votre demande de voyage pour ${result.destination} a été rejetée. Motif : ${result.rejectionNote}`,
+        dispatchNotificationToUsers(
             "REQUEST_REJECTED",
+            [result.requestedById],
+            { requestType: "voyage", subject: result.destination, reason: result.rejectionNote ?? "" },
             "/employes/voyages"
-        );
+        ).catch(() => {});
+        dispatchWebhook(result.organizationId, "travel.rejected", {
+            travelRequestId: result.id, destination: result.destination,
+            requestedById: result.requestedById, rejectionNote: result.rejectionNote,
+        }).catch(() => {});
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -84,21 +90,27 @@ export class TravelController {
         try {
         const result = await repo.updateStatus(req.params.id, req.user!.organizationId!, status, req.user!.userId);
         if (status === "APPROVED") {
-            await notificationRepo.createForUsers(
-            [result.requestedById],
-            "Voyage approuvé",
-            `Votre demande de voyage pour ${result.destination} a été approuvée.`,
+            dispatchNotificationToUsers(
             "REQUEST_APPROVED",
-            "/employes/voyages"
-            );
-        } else if (status === "REJECTED") {
-            await notificationRepo.createForUsers(
             [result.requestedById],
-            "Voyage rejeté",
-            `Votre demande de voyage pour ${result.destination} a été rejetée.`,
-            "REQUEST_REJECTED",
+            { requestType: "voyage", subject: result.destination },
             "/employes/voyages"
-            );
+            ).catch(() => {});
+            dispatchWebhook(result.organizationId, "travel.approved", {
+            travelRequestId: result.id, destination: result.destination,
+            requestedById: result.requestedById, approvedAt: result.approvedAt,
+            }).catch(() => {});
+        } else if (status === "REJECTED") {
+            dispatchNotificationToUsers(
+            "REQUEST_REJECTED",
+            [result.requestedById],
+            { requestType: "voyage", subject: result.destination, reason: result.rejectionNote ?? "" },
+            "/employes/voyages"
+            ).catch(() => {});
+            dispatchWebhook(result.organizationId, "travel.rejected", {
+            travelRequestId: result.id, destination: result.destination,
+            requestedById: result.requestedById, rejectionNote: result.rejectionNote,
+            }).catch(() => {});
         }
         res.json(result);
         } catch (err: any) {
@@ -118,15 +130,19 @@ export class TravelController {
         return;
         }
         try {
-        const result = await repo.bulkApprove(req.user!.organizationId!, ids, req.user!.userId);
+        const orgId = req.user!.organizationId!;
+        const result = await repo.bulkApprove(orgId, ids, req.user!.userId);
         for (const request of result.requests) {
-            await notificationRepo.createForUsers(
-            [request.requestedById],
-            "Voyage approuvé",
-            `Votre demande de voyage pour ${request.destination} a été approuvée.`,
+            dispatchNotificationToUsers(
             "REQUEST_APPROVED",
+            [request.requestedById],
+            { requestType: "voyage", subject: request.destination },
             "/employes/voyages"
-            );
+            ).catch(() => {});
+            dispatchWebhook(orgId, "travel.approved", {
+            travelRequestId: request.id, destination: request.destination,
+            requestedById: request.requestedById,
+            }).catch(() => {});
         }
         res.json({ count: result.count });
         } catch (err: any) {
@@ -181,13 +197,12 @@ export class TravelController {
     async approveExpense(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
         const result = await repo.approveExpense(req.params.id, req.user!.organizationId!, req.user!.userId);
-        await notificationRepo.createForUsers(
-            [result.employee.userId],
-            "Note de frais approuvée",
-            `Votre note de frais « ${result.title} » a été approuvée.`,
+        dispatchNotificationToUsers(
             "REQUEST_APPROVED",
+            [result.employee.userId],
+            { requestType: "note de frais", subject: result.title },
             "/employes/notes-de-frais"
-        );
+        ).catch(() => {});
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });
@@ -197,13 +212,12 @@ export class TravelController {
     async rejectExpense(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
         const result = await repo.rejectExpense(req.params.id, req.user!.organizationId!, req.body.note);
-        await notificationRepo.createForUsers(
-            [result.employee.userId],
-            "Note de frais rejetée",
-            `Votre note de frais « ${result.title} » a été rejetée. Motif : ${result.rejectionNote}`,
+        dispatchNotificationToUsers(
             "REQUEST_REJECTED",
+            [result.employee.userId],
+            { requestType: "note de frais", subject: result.title, reason: result.rejectionNote ?? "" },
             "/employes/notes-de-frais"
-        );
+        ).catch(() => {});
         res.json(result);
         } catch (err: any) {
         res.status(400).json({ message: err.message });

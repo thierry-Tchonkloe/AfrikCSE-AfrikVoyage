@@ -145,6 +145,23 @@ export class PartnerPortalService {
         await repo.revokeSessions(partnerUserId);
     }
 
+    /**
+     * Réinitialise/active le mot de passe d'un PartnerUser via son token
+     * (bootstrap à la création du partenaire, ou futur "mot de passe oublié").
+     * Délégué depuis AuthService.resetPassword() — même mécanisme que User, cf.
+     * AuthService.login() qui délègue déjà de la même façon. Retourne `false`
+     * (plutôt que de lever une erreur) quand aucun PartnerUser ne correspond au
+     * token, pour laisser l'appelant retomber sur son propre message générique
+     * "lien invalide" sans révéler quel système de compte a été essayé.
+     */
+    async resetPasswordByToken(token: string, password: string): Promise<boolean> {
+        const user = await repo.findUserByResetToken(hashToken(token));
+        if (!user) return false;
+        const hashedPassword = await bcrypt.hash(password, 12);
+        await repo.setPasswordFromToken(user.id, hashedPassword);
+        return true;
+    }
+
     /** Profil de session courant — utilisé par le frontend pour vérifier/afficher la session */
     async me(partnerUserId: string) {
         const user = await repo.findUserById(partnerUserId);

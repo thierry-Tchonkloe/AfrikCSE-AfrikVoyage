@@ -4,7 +4,7 @@ import { useState, useEffect, useLayoutEffect } from "react";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, ChevronDown, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck, Handshake, Plug, DollarSign, Headphones, BarChart3, Code2, Globe, Plane, ShoppingBag, PackageCheck, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Building2, ClipboardCheck, Settings, MessageSquare, ChevronLeft, ChevronRight, ChevronDown, LogOut, Menu, Sun, Moon, Bell, LayoutTemplate, Logs, ShieldCheck, Handshake, DollarSign, Headphones, BarChart3, Code2, Globe, Plane, ShoppingBag, PackageCheck, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
 import { useTheme } from "@/hooks/useTheme";
@@ -101,7 +101,6 @@ const NAV_GROUPS: NavGroup[] = [
         items: [
             { href: "/admin/settings", label: "Paramètres", icon: Settings },
             { href: "/admin/countries", label: "Pays & Devises", icon: Globe },
-            { href: "/admin/integrations", label: "Intégrations GDS", icon: Plug },
             { href: "/admin/developer", label: "API Développeur", icon: Code2 },
         ],
     },

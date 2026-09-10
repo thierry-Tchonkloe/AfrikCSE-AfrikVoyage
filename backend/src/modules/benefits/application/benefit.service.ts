@@ -1,10 +1,9 @@
 import { BenefitRepository } from "../infrastructure/benefit.repository";
-import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { dispatchNotificationToUsers } from "../../notification/application/notification.service";
 import { RequestStatus, Urgency } from "@prisma/client";
 
 export class BenefitService {
     private repo = new BenefitRepository();
-    private notificationRepo = new NotificationRepository();
 
     async getCategories(orgId: string) {
         const cats = await this.repo.getCategories(orgId);
@@ -51,13 +50,12 @@ export class BenefitService {
     async approveRequest(id: string, organizationId: string, approverId: string) {
         const result = await this.repo.approveRequest(id, organizationId, approverId);
         if (!result) throw new Error("Cette demande a déjà été traitée");
-        await this.notificationRepo.createForUsers(
-            [result.employee.userId],
-            "Demande d'avantage approuvée",
-            `Votre demande « ${result.category.name} » a été approuvée.`,
+        dispatchNotificationToUsers(
             "REQUEST_APPROVED",
+            [result.employee.userId],
+            { requestType: "demande d'avantage", subject: result.category.name },
             "/employes/avantages"
-        );
+        ).catch(() => {});
         return result;
     }
 
@@ -65,13 +63,12 @@ export class BenefitService {
         if (!note?.trim()) throw new Error("Note de rejet requise");
         const result = await this.repo.rejectRequest(id, organizationId, note);
         if (!result) throw new Error("Cette demande a déjà été traitée");
-        await this.notificationRepo.createForUsers(
-            [result.employee.userId],
-            "Demande d'avantage rejetée",
-            `Votre demande « ${result.category.name} » a été rejetée. Motif : ${result.rejectionNote}`,
+        dispatchNotificationToUsers(
             "REQUEST_REJECTED",
+            [result.employee.userId],
+            { requestType: "demande d'avantage", subject: result.category.name, reason: result.rejectionNote ?? "" },
             "/employes/avantages"
-        );
+        ).catch(() => {});
         return result;
     }
 
@@ -79,13 +76,12 @@ export class BenefitService {
         if (!ids.length) throw new Error("Aucune demande sélectionnée");
         const result = await this.repo.bulkApprove(ids, organizationId, approverId);
         for (const request of result.requests) {
-            await this.notificationRepo.createForUsers(
-                [request.employee.userId],
-                "Demande d'avantage approuvée",
-                `Votre demande « ${request.category.name} » a été approuvée.`,
+            dispatchNotificationToUsers(
                 "REQUEST_APPROVED",
+                [request.employee.userId],
+                { requestType: "demande d'avantage", subject: request.category.name },
                 "/employes/avantages"
-            );
+            ).catch(() => {});
         }
         return { count: result.count };
     }

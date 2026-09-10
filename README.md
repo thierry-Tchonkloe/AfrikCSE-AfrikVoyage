@@ -173,6 +173,7 @@ Les routes webhook sont publiques et déclarées avant le middleware d'authentif
 | Fichier | Contenu |
 |---|---|
 | [backend/API_DOCUMENTATION.md](backend/API_DOCUMENTATION.md) | Référence complète des endpoints API |
+| [docs/API_DEVELOPER.md](docs/API_DEVELOPER.md) | Guide d'intégration tierce (clé API, webhooks, signature HMAC) |
 | [backend/README.md](backend/README.md) | Setup Prisma/backend détaillé |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Configuration production (Render + Vercel), variables, correctifs cross-origin |
 | [SPECS_FONCTIONNELLES_V3.md](SPECS_FONCTIONNELLES_V3.md) | Spécifications fonctionnelles détaillées (dernière version) |

@@ -89,7 +89,7 @@ export class BillingService {
             throw new Error(`Transaction KkiaPay invalide : ${verified.status}${verified.failureMessage ? ` — ${verified.failureMessage}` : ""}`);
         }
 
-        const expectedAmount = PLAN_PRICES_XOF[plan];
+        const expectedAmount = await this._resolvePlanPriceXOF(orgId, plan);
         if (expectedAmount > 0 && verified.amount < expectedAmount) {
             throw new Error(`Montant insuffisant : reçu ${verified.amount} XOF, attendu ${expectedAmount} XOF`);
         }
@@ -116,7 +116,7 @@ export class BillingService {
     //        → frontend redirige l'utilisateur → FedaPay webhook confirme
 
     async initiateFedapayPayment(orgId: string, plan: Plan, currency: Currency = "XOF") {
-        const amount = PLAN_PRICES_XOF[plan];
+        const amount = await this._resolvePlanPriceXOF(orgId, plan);
         if (amount === 0) {
             // Plan gratuit → pas besoin de paiement
             const sub = await this._upsertSubscription(orgId, plan);
@@ -295,6 +295,23 @@ export class BillingService {
     }
 
     // ── Helpers privés ────────────────────────────────────────────────────────
+
+    /**
+     * Prix XOF réel d'un plan pour une organisation : PlanConfig.pricePerEmployee
+     * (configuré par le Super Admin, prix/employé actif/mois) × nombre d'employés
+     * actifs, avec repli sur les constantes historiques PLAN_PRICES_XOF si aucun
+     * PlanConfig n'existe pour ce plan ou que pricePerEmployee n'est pas défini.
+     * Note : PlanConfig ne stocke qu'un prix en FCFA — les flux USD (PLAN_PRICES_USD)
+     * restent donc sur les constantes statiques, faute d'équivalent dynamique.
+     */
+    private async _resolvePlanPriceXOF(orgId: string, plan: Plan): Promise<number> {
+        const config = await prisma.planConfig.findUnique({ where: { name: plan } });
+        if (config?.pricePerEmployee != null) {
+            const activeEmployees = await prisma.user.count({ where: { organizationId: orgId, isActive: true } });
+            return Number(config.pricePerEmployee) * Math.max(activeEmployees, 1);
+        }
+        return PLAN_PRICES_XOF[plan];
+    }
 
     private async _verifyKkiapayTransaction(transactionId: string): Promise<KkiapayVerifyResponse> {
         const publicKey = process.env.KKIAPAY_PUBLIC_KEY;

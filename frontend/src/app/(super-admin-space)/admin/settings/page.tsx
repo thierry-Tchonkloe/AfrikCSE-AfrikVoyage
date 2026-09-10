@@ -20,18 +20,37 @@ interface Settings {
     notifyWelcome: boolean;
 }
 
+interface DashboardStats {
+    total: number;
+    pending: number;
+    active: number;
+    suspended: number;
+    totalUsers: number;
+}
+
+// Ces 4 réglages sont exposés dans l'UI mais n'ont aucun effet sur le backend
+// à ce jour (comportements standardisés en dur dans le code) — cf. audit
+// Vague 2/3. Affichés avec un badge pour ne pas induire l'admin en erreur.
+const FIXED_SETTINGS = new Set<keyof Settings>([
+    "manualValidation", "autoRegistration", "defaultHasCSE", "defaultHasVoyage",
+]);
+
 export default function SettingsPage() {
     const router = useRouter();
     const [settings, setSettings] = useState<Settings | null>(null);
     const [loading, setLoading]   = useState(true);
     const [saving, setSaving]     = useState(false);
     const [changed, setChanged]   = useState(false);
+    const [stats, setStats]       = useState<DashboardStats | null>(null);
 
     useEffect(() => {
         adminService.getSettings()
         .then(setSettings)
         .catch(() => toast.error("Erreur chargement"))
         .finally(() => setLoading(false));
+        adminService.getDashboard()
+        .then((data) => setStats(data.stats))
+        .catch(() => {});
     }, []);
 
     const update = (key: keyof Settings, value: unknown) => {
@@ -158,12 +177,14 @@ export default function SettingsPage() {
                 desc="Exiger une validation manuelle pour chaque nouvelle inscription"
                 checked={settings.manualValidation}
                 onChange={(v) => update("manualValidation", v)}
+                fixed={FIXED_SETTINGS.has("manualValidation")}
                 />
                 <Toggle
                 label="Inscription automatique"
                 desc="Permettre l'inscription automatique avec vérification email"
                 checked={settings.autoRegistration}
                 onChange={(v) => update("autoRegistration", v)}
+                fixed={FIXED_SETTINGS.has("autoRegistration")}
                 />
             </SettingsSection>
 
@@ -178,6 +199,7 @@ export default function SettingsPage() {
                 checked={settings.defaultHasCSE}
                 onChange={(v) => update("defaultHasCSE", v)}
                 color="#0f766e"
+                fixed={FIXED_SETTINGS.has("defaultHasCSE")}
                 />
                 <Toggle
                 label="AfrikVoyage"
@@ -185,6 +207,7 @@ export default function SettingsPage() {
                 checked={settings.defaultHasVoyage}
                 onChange={(v) => update("defaultHasVoyage", v)}
                 color="#f59e0b"
+                fixed={FIXED_SETTINGS.has("defaultHasVoyage")}
                 />
             </SettingsSection>
 
@@ -255,9 +278,9 @@ export default function SettingsPage() {
             <SettingsSection title="Statistiques" icon="📊">
                 <div className="space-y-2">
                 {[
-                    { label: "Entreprises actives", value: "—", color: "#10b981" },
-                    { label: "En attente de validation", value: "—", color: "#f59e0b" },
-                    { label: "Utilisateurs totaux", value: "—", color: "#6b7280" },
+                    { label: "Entreprises actives", value: stats ? String(stats.active) : "—", color: "#10b981" },
+                    { label: "En attente de validation", value: stats ? String(stats.pending) : "—", color: "#f59e0b" },
+                    { label: "Utilisateurs totaux", value: stats ? String(stats.totalUsers) : "—", color: "#6b7280" },
                 ].map((s) => (
                     <div key={s.label} className="flex justify-between text-xs">
                     <span className="text-gray-500">{s.label}</span>
@@ -290,17 +313,29 @@ function SettingsSection({ title, icon, children }: {
     );
 }
 
-function Toggle({ label, desc, checked, onChange, color }: {
+function Toggle({ label, desc, checked, onChange, color, fixed }: {
     label: string;
     desc: string;
     checked: boolean;
     onChange: (v: boolean) => void;
     color?: string;
+    fixed?: boolean;
 }) {
     return (
         <div className="flex items-center justify-between gap-4">
         <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-medium text-gray-900">{label}</p>
+            {fixed && (
+                <span
+                title="Ce comportement est actuellement standardisé dans le code et n'est pas encore piloté par ce réglage."
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                style={{ background: "#f3f4f6", color: "#6b7280" }}
+                >
+                ⚙️ Système / Fixe
+                </span>
+            )}
+            </div>
             <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
         </div>
         <button

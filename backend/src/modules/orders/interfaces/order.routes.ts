@@ -17,6 +17,7 @@ router.use(authenticate);
 router.use("/:id", validateParams(idParamString));
 
 router.get("/admin/all", authorize(ROLES.SUPER_ADMIN, ROLES.PLATFORM_MANAGER), ctrl.getAllForAdmin.bind(ctrl));
+router.post("/:id/refund", authorize(ROLES.SUPER_ADMIN, ROLES.PLATFORM_MANAGER), ctrl.refundAsAdmin.bind(ctrl));
 
 router.post("/",       ctrl.create.bind(ctrl));
 router.get("/",        ctrl.getMyOrders.bind(ctrl));

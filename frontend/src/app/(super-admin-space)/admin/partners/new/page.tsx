@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Copy, Check } from "lucide-react";
 import { partnersService } from "@/services/admin/partners.service";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
@@ -10,6 +10,8 @@ import { getErrorMessage } from "@/lib/errors";
 export default function NewPartnerPage() {
     const router = useRouter();
     const [saving, setSaving] = useState(false);
+    const [activationLink, setActivationLink] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
 
     const [form, setForm] = useState({
         name:           "",
@@ -56,15 +58,56 @@ export default function NewPartnerPage() {
                 payload.apiFormat      = form.apiFormat;
                 payload.syncFrequencyH = form.syncFrequencyH;
             }
-            await partnersService.create(payload);
+            const created = await partnersService.create(payload);
             toast.success("Partenaire créé");
-            router.push("/admin/partners");
+            if (created.activationLink) {
+                // Un email d'activation a aussi été envoyé à l'email de contact —
+                // ce lien reste affiché pour le communiquer immédiatement si besoin.
+                setActivationLink(created.activationLink);
+            } else {
+                router.push("/admin/partners");
+            }
         } catch (err) {
             toast.error(getErrorMessage(err, "Erreur lors de la création"));
         } finally {
             setSaving(false);
         }
     };
+
+    const handleCopyLink = async () => {
+        if (!activationLink) return;
+        await navigator.clipboard.writeText(activationLink);
+        setCopied(true);
+        toast.success("Lien copié !");
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    if (activationLink) {
+        return (
+            <div className="max-w-lg mx-auto space-y-6 py-10">
+                <div className="text-center">
+                    <h1 className="text-xl font-bold text-gray-900">Partenaire créé</h1>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Un email d&apos;activation a été envoyé à l&apos;adresse de contact.
+                        Vous pouvez aussi communiquer ce lien directement — valable 7 jours.
+                    </p>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                    <p className="text-xs font-mono text-gray-700 flex-1 truncate">{activationLink}</p>
+                    <button onClick={handleCopyLink}
+                        className="shrink-0 p-2 rounded-lg hover:bg-gray-200 transition-colors"
+                        style={{ color: copied ? "#10b981" : "#6b7280" }}>
+                        {copied ? <Check size={16} /> : <Copy size={16} />}
+                    </button>
+                </div>
+                <button onClick={() => router.push("/admin/partners")}
+                    className="w-full py-2.5 rounded-lg text-white text-sm font-medium"
+                    style={{ background: "var(--color-primary)" }}>
+                    Terminé
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -102,6 +145,9 @@ export default function NewPartnerPage() {
                             <input type="email" value={form.contactEmail} onChange={(e) => set("contactEmail", e.target.value)}
                                 placeholder="contact@partenaire.com"
                                 className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-400" />
+                            <p className="text-xs text-gray-400 mt-1">
+                                Un compte d&apos;accès au portail partenaire sera automatiquement créé avec cet email.
+                            </p>
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Site web</label>

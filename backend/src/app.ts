@@ -43,6 +43,7 @@ import bookingRoutes         from "./modules/bookings/interfaces/booking.routes"
 import commissionRoutes      from "./modules/commissions/interfaces/commission.routes";
 import reportingRoutes       from "./modules/reporting/interfaces/reporting.routes";
 import apiDeveloperRoutes    from "./modules/api-developer/interfaces/api-developer.routes";
+import apiDeveloperPublicRoutes from "./modules/api-developer/interfaces/api-developer-public.routes";
 import countryConfigRoutes   from "./modules/country-config/interfaces/country-config.routes";
 import hotelRoutes           from "./modules/hotels/interfaces/hotel.routes";
 import trainRoutes           from "./modules/trains/interfaces/train.routes";
@@ -372,6 +373,13 @@ const API_ROUTES = [
         ],
     },
     {
+        prefix: "/api/v1/public",
+        description: "API publique pour intégrateurs tiers (authentifiée par clé API x-api-key, cf. /admin/developer)",
+        methods: [
+            "GET /ping — Vérifie qu'une clé API est valide et active",
+        ],
+    },
+    {
         prefix: "/api/tickets",
         description: "Tickets QR pour les offres du catalogue nécessitant réservation",
         methods: [
@@ -434,6 +442,7 @@ app.use("/api/bookings",        bookingRoutes);
 app.use("/api/commissions",     commissionRoutes);
 app.use("/api/reporting",       reportingRoutes);
 app.use("/api/developer",       apiDeveloperRoutes);
+app.use("/api/v1/public",       apiDeveloperPublicRoutes);
 app.use("/api/countries",       countryConfigRoutes);
 app.use("/api/subsidy-rules",   subsidyRulesRoutes);
 
