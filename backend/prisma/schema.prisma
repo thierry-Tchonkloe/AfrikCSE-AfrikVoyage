@@ -76,6 +76,7 @@ model Organization {
   eventPhotos            EventPhoto[]
   faqEntries             FaqEntry[]
   wallets                Wallet[]
+  organizationWallet     OrganizationWallet?
   cashbackRules          CashbackRule[]
   orders                 Order[]
   bookings               Booking[]
@@ -431,7 +432,7 @@ model BenefitCategory {
   icon             String?
   annualBudget     Float        @default(0)
   perEmployeeLimit Float        @default(0)
-  currency         String       @default("EUR")
+  currency         String       @default("XOF")
   isActive         Boolean      @default(true)
   organizationId   String
   organization     Organization @relation(fields: [organizationId], references: [id])
@@ -669,7 +670,7 @@ model Invoice {
   id             String         @id @default(cuid())
   invoiceNumber  String         @unique // INV-2025-001
   amount         Float
-  currency       String         @default("EUR")
+  currency       String         @default("XOF")
   status         PaymentStatus  @default(PENDING)
   paymentMethod  PaymentMethod?
   paymentRef     String?        @unique // Référence transaction externe — backstop anti-rejeu (KkiaPay/FedaPay)
@@ -1220,6 +1221,10 @@ model TravelPolicy {
   maxAdvanceBookingDays  Int?
   requiresApproval       Boolean      @default(true)
   approvalThreshold      Decimal?     @db.Decimal(10, 2)
+  // Garde-fou anti-fraude global : au-delà de ce montant, une note de frais est
+  // rejetée à la soumission quelle que soit sa catégorie (indépendant de
+  // approvalThreshold, qui ne concerne que l'auto-approbation des voyages).
+  maxExpenseAmount       Decimal?     @db.Decimal(10, 2)
   allowedDestinations    String[]     @default([])
   restrictedDestinations String[]     @default([])
   appliesToDepartments   String[]     @default([])
@@ -1435,6 +1440,8 @@ enum WalletEntryType {
   REFUND
   EXPIRY
   REWARD_CREDIT
+  EXPENSE_REIMBURSEMENT
+  TOPUP
 }
 
 model Wallet {
@@ -1450,6 +1457,41 @@ model Wallet {
   entries WalletEntry[]
 
   @@map("wallets")
+}
+
+// Trésorerie de l'organisation, distincte des wallets individuels des employés
+// (Wallet.userId est unique par utilisateur — aucun wallet ne peut appartenir à
+// l'organisation elle-même). Alimentée séparément (hors périmètre de ce sprint) ;
+// débitée lors du remboursement d'une note de frais approuvée.
+model OrganizationWallet {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  currencyCode   String       @default("XOF")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  entries OrganizationWalletEntry[]
+
+  @@map("organization_wallets")
+}
+
+model OrganizationWalletEntry {
+  id                   String             @id @default(cuid())
+  organizationWalletId String
+  organizationWallet   OrganizationWallet @relation(fields: [organizationWalletId], references: [id])
+  type                 WalletEntryType
+  // positif = crédit, négatif = débit — jamais modifié après insertion
+  amount               Decimal            @db.Decimal(14, 2)
+  // snapshot du solde après cette entrée (dénormalisation pour perf)
+  runningBalance       Decimal            @db.Decimal(14, 2)
+  description          String?
+  referenceId          String?
+  referenceType        String? // EXPENSE_REIMBURSEMENT | TOPUP
+  idempotencyKey       String             @unique
+  createdAt            DateTime           @default(now())
+
+  @@map("organization_wallet_entries")
 }
 
 model WalletEntry {

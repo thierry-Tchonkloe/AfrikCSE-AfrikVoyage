@@ -29,12 +29,22 @@ export class BookingService {
             carRentalVehicleId?: string;
             bookingDate:    string;
             numberOfPersons?: number;
+            numberOfNights?:  number;
+            numberOfDays?:    number;
             notes?:         string;
             idempotencyKey: string;
             paymentMethod:  "WALLET" | "MOBILE_MONEY" | "CARD";
             amount:         number;
         }
     ) {
+        // MOBILE_MONEY/CARD n'ont aucune passerelle de paiement branchée — accepter
+        // ces valeurs créerait une réservation "payée" qui ne débite jamais rien
+        // réellement, livrant un service partenaire gratuitement. Rejeté avant
+        // toute écriture, en attendant l'intégration réelle de ces moyens de paiement.
+        if (data.paymentMethod !== "WALLET") {
+            throw new AppError("Ce mode de paiement n'est pas encore disponible — utilisez votre Wallet", 400);
+        }
+
         // Un voyage d'affaires lié doit être approuvé — et appartenir au demandeur —
         // AVANT toute création de réservation ou débit, pas seulement avant confirmation
         // partenaire : sinon un employé pourrait payer un voyage jamais validé par son manager.
@@ -51,30 +61,46 @@ export class BookingService {
             }
         }
 
-        // Le partenaire réel vient de l'entité catalogue elle-même, jamais du client :
-        // évite qu'un partnerId incohérent (ou falsifié) ne détourne commission/paiement.
+        // Le partenaire ET le prix réels viennent TOUJOURS de l'entité catalogue
+        // elle-même, jamais du client : `data.amount`/`data.partnerId` ne sont que
+        // des valeurs indicatives d'affichage, ignorées ici. Sans ce recalcul, un
+        // client pouvait envoyer n'importe quel montant (ex: 1 XOF pour un vol à
+        // 250 000 XOF) et le wallet n'était débité que de ce montant falsifié.
         let partnerId = data.partnerId;
+        let amount: Prisma.Decimal;
         if (data.flightRouteId) {
-            const route = await prisma.flightRoute.findUnique({ where: { id: data.flightRouteId }, select: { partnerId: true } });
+            const route = await prisma.flightRoute.findUnique({ where: { id: data.flightRouteId }, select: { partnerId: true, basePrice: true } });
             if (!route) throw new AppError("Route aérienne introuvable", 404);
             partnerId = route.partnerId;
+            amount = route.basePrice.mul(data.numberOfPersons ?? 1);
         } else if (data.hotelRoomTypeId) {
             const roomType = await prisma.hotelRoomType.findUnique({
-                where: { id: data.hotelRoomTypeId }, select: { hotel: { select: { partnerId: true } } },
+                where: { id: data.hotelRoomTypeId }, select: { pricePerNight: true, hotel: { select: { partnerId: true } } },
             });
             if (!roomType) throw new AppError("Type de chambre introuvable", 404);
             partnerId = roomType.hotel.partnerId;
+            amount = roomType.pricePerNight.mul(data.numberOfNights ?? 1);
         } else if (data.trainRouteId) {
-            const route = await prisma.trainRoute.findUnique({ where: { id: data.trainRouteId }, select: { partnerId: true } });
+            const route = await prisma.trainRoute.findUnique({ where: { id: data.trainRouteId }, select: { partnerId: true, basePrice: true } });
             if (!route) throw new AppError("Trajet ferroviaire introuvable", 404);
             partnerId = route.partnerId;
+            amount = route.basePrice.mul(data.numberOfPersons ?? 1);
         } else if (data.carRentalVehicleId) {
-            const vehicle = await prisma.carRentalVehicle.findUnique({ where: { id: data.carRentalVehicleId }, select: { partnerId: true } });
+            const vehicle = await prisma.carRentalVehicle.findUnique({ where: { id: data.carRentalVehicleId }, select: { partnerId: true, pricePerDay: true } });
             if (!vehicle) throw new AppError("Véhicule introuvable", 404);
             partnerId = vehicle.partnerId;
+            amount = vehicle.pricePerDay.mul(data.numberOfDays ?? 1);
+        } else if (data.offerId) {
+            const offer = await prisma.benefitCatalogItem.findUnique({ where: { id: data.offerId }, select: { partnerId: true, employeePrice: true } });
+            if (!offer) throw new AppError("Offre introuvable", 404);
+            partnerId = offer.partnerId ?? partnerId;
+            amount = new Prisma.Decimal(offer.employeePrice);
+        } else {
+            // Aucune entité catalogue référencée : impossible de vérifier un prix
+            // réel côté serveur — on refuse plutôt que de faire confiance au client.
+            throw new AppError("Une réservation doit cibler une offre ou une entité du catalogue", 400);
         }
 
-        const amount  = new Prisma.Decimal(data.amount);
         const booking = await repo.create({
             userId,
             organizationId,
@@ -200,12 +226,20 @@ export class BookingService {
         // flux réel de réservation ne crée jamais d'Order.
         const grossAmount = booking.order?.finalAmount ?? await this._resolveBookingGrossAmount(booking.id);
         if (grossAmount) {
-            await commissionService.applyCommissionOnBooking(
-                booking.id,
-                booking.partnerId,
-                grossAmount,
-                booking.offer?.category ?? undefined,
-            ).catch(() => {}); // best-effort : ne bloque pas la complétion
+            try {
+                const entry = await commissionService.applyCommissionOnBooking(
+                    booking.id,
+                    booking.partnerId,
+                    grossAmount,
+                    booking.offer?.category ?? undefined,
+                );
+                // Confirmation immédiate : la complétion de la réservation EST
+                // l'événement qui certifie la commission (service rendu). Sans cet
+                // appel, l'entrée restait PENDING indéfiniment — aucun autre code
+                // ne la fait jamais passer à CONFIRMED, ce qui bloquait tout
+                // déclenchement de Payout pour ce partenaire.
+                if (entry) await commissionService.confirmEntry(entry.id);
+            } catch { /* best-effort : ne bloque jamais la complétion de la réservation */ }
         }
 
         // Notify user
@@ -258,6 +292,10 @@ export class BookingService {
         return repo.findAllForAdmin(filters);
     }
 
+    async getCompletedGrossRevenueForPartner(partnerId: string): Promise<number> {
+        return repo.getCompletedGrossRevenueForPartner(partnerId);
+    }
+
     /** Montant brut d'une réservation payée par wallet — dérivé de l'entrée de
      *  débit créée à la création (aucun montant n'est stocké sur Booking lui-même). */
     private async _resolveBookingGrossAmount(bookingId: string): Promise<Prisma.Decimal | null> {
@@ -283,7 +321,7 @@ export class BookingService {
                 WalletEntryType.REFUND,
                 debitEntry.amount.negated(),
                 ikey,
-                { description: "Remboursement réservation", referenceId: bookingId, referenceType: "BOOKING" }
+                { description: `Remboursement réservation ${bookingId}`, referenceId: bookingId, referenceType: "BOOKING" }
             );
         } catch { /* refund best-effort */ }
     }

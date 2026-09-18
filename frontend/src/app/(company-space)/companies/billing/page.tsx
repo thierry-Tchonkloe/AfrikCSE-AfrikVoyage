@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Download, CreditCard, Check, Loader2, X, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Download, Check, Loader2, X, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { billingService } from "@/services/companies/billing.service";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import { formatCurrency } from "@/lib/currency";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -12,6 +13,7 @@ interface Invoice {
     id: string;
     invoiceNumber: string;
     amount: number;
+    currency: string;
     status: string;
     description: string | null;
     paymentMethod: string | null;
@@ -25,43 +27,49 @@ interface Subscription {
     invoices: Invoice[];
 }
 
-// ── Constantes ────────────────────────────────────────────────────────────────
+interface Plan {
+    id: string;
+    priceXOF: number;
+    name: string;
+    period: string;
+    desc: string;
+    features: string[];
+    cta: string;
+    highlight: boolean;
+}
 
-const PLANS = [
-    {
-        id: "STARTER",
+// ── Constantes ────────────────────────────────────────────────────────────────
+// Contenu marketing (non-monétaire) par plan — le prix réel est chargé depuis
+// GET /billing/plans/resolved (PlanConfig.pricePerEmployee dynamique, XOF).
+// Pas de tarif USD affiché : aucune conversion de change fiable n'existe côté
+// backend, afficher un second prix statique serait juste une autre confusion.
+
+const PLAN_META: Record<string, Omit<Plan, "id" | "priceXOF">> = {
+    STARTER: {
         name: "Starter",
-        priceXOF: 0,
-        priceUSD: "$0",
         period: "mois",
         desc: "Jusqu'à 50 utilisateurs",
         features: ["50 utilisateurs max", "Gestion voyages basique", "Support standard", "Rapports mensuels"],
         cta: "Passer au Starter",
         highlight: false,
     },
-    {
-        id: "BUSINESS",
+    BUSINESS: {
         name: "Business",
-        priceXOF: 175_000,
-        priceUSD: "$299",
         period: "mois",
         desc: "Pour les équipes en croissance",
         features: ["200 utilisateurs max", "AfrikCSE + AfrikVoyage complet", "Support prioritaire", "Analytics avancés", "Accès API"],
         cta: "Passer au Business",
         highlight: true,
     },
-    {
-        id: "ENTERPRISE",
+    ENTERPRISE: {
         name: "Enterprise",
-        priceXOF: 292_000,
-        priceUSD: "$499",
         period: "mois",
         desc: "Pour les grandes organisations",
         features: ["Utilisateurs illimités", "Accès plateforme complet", "Support dédié 24/7", "Intégrations avancées", "SLA & gestionnaire de compte"],
         cta: "Passer à l'Enterprise",
         highlight: false,
     },
-];
+};
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
     PAID:    { label: "Payé",      color: "#10b981" },
@@ -80,8 +88,8 @@ declare global {
 
 export default function BillingPage() {
     const [sub, setSub]         = useState<Subscription | null>(null);
+    const [plans, setPlans]     = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
-    const [currency, setCurrency] = useState<"XOF" | "USD">("XOF");
     const [payModal, setPayModal] = useState<string | null>(null);
     const [payMethod, setPayMethod] = useState<"card" | "kkiapay" | "fedapay">("kkiapay");
     const [paying, setPaying]   = useState(false);
@@ -105,6 +113,12 @@ export default function BillingPage() {
 
     useEffect(() => { load(); }, [load]);
 
+    useEffect(() => {
+        billingService.getResolvedPlans()
+            .then((resolved) => setPlans(resolved.map((r) => ({ id: r.plan, priceXOF: r.priceXOF, ...PLAN_META[r.plan] }))))
+            .catch(() => toast.error("Erreur chargement des tarifs"));
+    }, []);
+
     // Charger le script KkiaPay dynamiquement si nécessaire
     useEffect(() => {
         const kkiapayPublicKey = process.env.NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY;
@@ -122,7 +136,7 @@ export default function BillingPage() {
 
     const handlePay = async () => {
         if (!payModal) return;
-        const plan = PLANS.find((p) => p.id === payModal);
+        const plan = plans.find((p) => p.id === payModal);
         if (!plan) return;
 
         setPaying(true);
@@ -140,7 +154,7 @@ export default function BillingPage() {
                     return;
                 }
 
-                // Lance le widget KkiaPay
+                // Lance le widget KkiaPay avec le prix XOF réel résolu pour cette org
                 window.openKkiapayWidget({
                     amount: plan.priceXOF,
                     key: kkiapayKey,
@@ -152,7 +166,7 @@ export default function BillingPage() {
                 // Écouter le succès du widget
                 window.addSuccessListener?.(async (response) => {
                     try {
-                        await billingService.confirmKkiapay(payModal, response.transactionId, currency);
+                        await billingService.confirmKkiapay(payModal, response.transactionId);
                         toast.success("Paiement KkiaPay confirmé — abonnement activé !");
                         setPayModal(null);
                         load();
@@ -162,7 +176,7 @@ export default function BillingPage() {
                 });
 
             } else if (payMethod === "fedapay") {
-                const result = await billingService.initiateFedapay(payModal, currency);
+                const result = await billingService.initiateFedapay(payModal);
 
                 if (!result.checkoutUrl) {
                     // Plan gratuit
@@ -218,7 +232,15 @@ export default function BillingPage() {
     const formatCard = (v: string) =>
         v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
 
-    const currentPlan = PLANS.find((p) => p.id === sub?.plan) ?? PLANS[0];
+    const currentPlan = plans.find((p) => p.id === sub?.plan) ?? plans[0];
+
+    if (loading || !currentPlan) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="animate-spin text-gray-400" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -259,12 +281,7 @@ export default function BillingPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {[
-                            {
-                                label: "Coût mensuel",
-                                value: currency === "XOF"
-                                    ? `${currentPlan.priceXOF.toLocaleString()} XOF`
-                                    : currentPlan.priceUSD,
-                            },
+                            { label: "Coût mensuel", value: formatCurrency(currentPlan.priceXOF) },
                             { label: "Utilisateurs", value: currentPlan.id === "ENTERPRISE" ? "Illimité" : currentPlan.id === "BUSINESS" ? "200 max" : "50 max" },
                             {
                                 label: "Prochain renouvellement",
@@ -326,30 +343,12 @@ export default function BillingPage() {
 
             {/* ── Plans disponibles ────────────────────────────────────────────────────── */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="flex items-center justify-between mb-5">
-                    <h3 className="font-semibold text-gray-900">Plans disponibles</h3>
-                    <div className="flex bg-gray-100 rounded-lg p-0.5 text-xs">
-                        {(["XOF", "USD"] as const).map((c) => (
-                            <button
-                                key={c}
-                                onClick={() => setCurrency(c)}
-                                className="px-3 py-1.5 rounded-md font-medium transition-colors"
-                                style={currency === c
-                                    ? { background: "white", color: "#0f766e", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
-                                    : { color: "#6b7280" }}
-                            >
-                                {c}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                <h3 className="font-semibold text-gray-900 mb-5">Plans disponibles</h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {PLANS.map((plan) => {
+                    {plans.map((plan) => {
                         const isCurrent = sub?.plan === plan.id;
-                        const displayPrice = currency === "XOF"
-                            ? plan.priceXOF === 0 ? "Gratuit" : `${plan.priceXOF.toLocaleString()} XOF`
-                            : plan.priceUSD;
+                        const displayPrice = plan.priceXOF === 0 ? "Gratuit" : formatCurrency(plan.priceXOF);
 
                         return (
                             <div
@@ -419,15 +418,7 @@ export default function BillingPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {loading ? (
-                                [...Array(3)].map((_, i) => (
-                                    <tr key={i} className="border-b">
-                                        <td colSpan={7} className="px-5 py-4">
-                                            <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (sub?.invoices ?? []).length === 0 ? (
+                            {(sub?.invoices ?? []).length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="px-5 py-10 text-center text-gray-400 text-sm">
                                         Aucune facture pour le moment
@@ -447,9 +438,7 @@ export default function BillingPage() {
                                                 {inv.paymentMethod ?? "—"}
                                             </td>
                                             <td className="px-5 py-3 text-sm font-semibold text-gray-900">
-                                                {currency === "XOF"
-                                                    ? `${(inv.amount * 585).toLocaleString()} XOF`
-                                                    : `$${inv.amount}`}
+                                                {formatCurrency(inv.amount, inv.currency)}
                                             </td>
                                             <td className="px-5 py-3">
                                                 <span
@@ -481,31 +470,13 @@ export default function BillingPage() {
                             <div>
                                 <h3 className="font-bold text-gray-900">Choisir un mode de paiement</h3>
                                 <p className="text-xs text-gray-500 mt-0.5">
-                                    Plan : <strong>{PLANS.find((p) => p.id === payModal)?.name}</strong> —{" "}
-                                    {currency === "XOF"
-                                        ? `${PLANS.find((p) => p.id === payModal)?.priceXOF.toLocaleString()} XOF`
-                                        : PLANS.find((p) => p.id === payModal)?.priceUSD}/mois
+                                    Plan : <strong>{plans.find((p) => p.id === payModal)?.name}</strong> —{" "}
+                                    {formatCurrency(plans.find((p) => p.id === payModal)?.priceXOF ?? 0)}/mois
                                 </p>
                             </div>
                             <button onClick={() => setPayModal(null)} className="text-gray-400 hover:text-gray-600">
                                 <X size={20} />
                             </button>
-                        </div>
-
-                        {/* Sélection devise */}
-                        <div className="flex gap-2 mb-4">
-                            {(["XOF", "USD"] as const).map((c) => (
-                                <button
-                                    key={c}
-                                    onClick={() => setCurrency(c)}
-                                    className="flex-1 py-1.5 text-xs font-medium rounded-lg border-2 transition-all"
-                                    style={currency === c
-                                        ? { borderColor: "#0f766e", color: "#0f766e", background: "#f0fdf4" }
-                                        : { borderColor: "#e5e7eb", color: "#6b7280" }}
-                                >
-                                    {c}
-                                </button>
-                            ))}
                         </div>
 
                         {/* Méthodes */}

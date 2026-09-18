@@ -31,6 +31,8 @@ export class BenefitService {
         status?: string;
         categoryId?: string;
         urgency?: string;
+        minAmount?: number;
+        maxAmount?: number;
         page?: number;
         limit?: number;
     }) {
@@ -38,6 +40,8 @@ export class BenefitService {
         status: filters?.status as RequestStatus,
         categoryId: filters?.categoryId,
         urgency: filters?.urgency as Urgency,
+        minAmount: filters?.minAmount,
+        maxAmount: filters?.maxAmount,
         page: filters?.page,
         limit: filters?.limit,
         });

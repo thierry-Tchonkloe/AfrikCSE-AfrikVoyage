@@ -17,9 +17,19 @@ export const createBookingSchema = z.object({
     carRentalVehicleId: z.string().cuid().optional(),
     bookingDate:    z.string().datetime(),
     numberOfPersons: z.number().int().min(1).default(1),
+    // Durée déclarée par le client pour les réservations facturées à l'unité
+    // de temps (nuit d'hôtel, jour de location) — le check-in/check-out n'est
+    // jamais persisté sur Booking, donc c'est la seule donnée de durée dont le
+    // serveur dispose pour recalculer le prix réel (cf. booking.service.ts).
+    // Plafonnée pour éviter un séjour absurde ; le partenaire reste libre de
+    // refuser une réservation dont la durée déclarée lui semble incohérente.
+    numberOfNights: z.number().int().min(1).max(90).optional(),
+    numberOfDays:   z.number().int().min(1).max(90).optional(),
     notes:          z.string().optional(),
     idempotencyKey: z.string().min(8),
     paymentMethod:  z.enum(["WALLET", "MOBILE_MONEY", "CARD"]),
+    // Indicatif uniquement — jamais utilisé pour le débit réel, recalculé
+    // côté serveur depuis le catalogue (cf. booking.service.ts).
     amount:         z.number().positive(),
 }).superRefine((data, ctx) => {
     const setCount = TARGET_FIELDS.filter((f) => data[f] !== undefined).length;

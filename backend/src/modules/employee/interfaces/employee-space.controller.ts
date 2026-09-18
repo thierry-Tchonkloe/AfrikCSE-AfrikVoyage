@@ -5,7 +5,7 @@ import { prisma } from "../../../core/config/prisma";
 import { createHmac } from "crypto";
 import { cloudinary } from "../../../core/config/cloudinary";
 import { UploadApiResponse } from "cloudinary";
-import { dispatchNotificationToRoles } from "../../notification/application/notification.service";
+import { dispatchNotificationToRoles, dispatchNotificationToUsers } from "../../notification/application/notification.service";
 import { logAudit } from "../../../core/utils/audit";
 import {
     createTravelRequestSchema,
@@ -58,22 +58,33 @@ export class EmployeeSpaceController {
             return;
         }
         try {
-            const { request: travel, created } = await repo.createTravelRequest(
+            const { request: travel, created, autoApproved } = await repo.createTravelRequest(
                 req.user!.userId,
                 req.user!.organizationId!,
                 parsed.data
             );
 
             // Un retry (idempotencyKey déjà vue) renvoie la demande existante sans
-            // renotifier les approbateurs une 2e fois.
+            // renotifier une 2e fois.
             if (created) {
-                dispatchNotificationToRoles(
-                    "APPROVAL_REQUEST",
-                    req.user!.organizationId!,
-                    ["ADMIN", "MANAGER"],
-                    { requestType: "voyage", subject: travel.destination },
-                    "/companies/AfrikVoyage/approbations"
-                ).catch(() => {});
+                if (autoApproved) {
+                    // Sous le seuil de la politique de voyage : déjà approuvée, on
+                    // notifie l'employé — pas les managers, il n'y a rien à approuver.
+                    dispatchNotificationToUsers(
+                        "REQUEST_APPROVED",
+                        [travel.requestedById],
+                        { requestType: "voyage", subject: travel.destination },
+                        "/employes/voyages"
+                    ).catch(() => {});
+                } else {
+                    dispatchNotificationToRoles(
+                        "APPROVAL_REQUEST",
+                        req.user!.organizationId!,
+                        ["ADMIN", "MANAGER"],
+                        { requestType: "voyage", subject: travel.destination },
+                        "/companies/AfrikVoyage/approbations"
+                    ).catch(() => {});
+                }
             }
 
             res.status(201).json(travel);
@@ -225,12 +236,54 @@ export class EmployeeSpaceController {
     // ── Profil ────────────────────────────────────────────────────────────────
 
     async getProfile(req: Request, res: Response): Promise<void> {
+        // `select` strict — jamais `include` sur `User` : un `include` renvoie TOUS
+        // les champs scalaires, y compris `password` (hash bcrypt) et
+        // `resetPasswordToken`/`resetPasswordExpiresAt`, interceptables par n'importe
+        // quel outil réseau côté client à chaque chargement de cette page. Même
+        // règle appliquée au manager imbriqué (`employee.manager.user`), qui portait
+        // la même fuite.
         const user = await prisma.user.findUnique({
             where: { id: req.user!.userId },
-            include: {
+            select: {
+                id:                      true,
+                email:                   true,
+                firstName:               true,
+                lastName:                true,
+                role:                    true,
+                isActive:                true,
+                avatar:                  true,
+                phone:                   true,
+                jobTitle:                true,
+                department:              true,
+                costCenter:              true,
+                emailVerified:           true,
+                emailVerifiedAt:         true,
+                profileCompleted:        true,
+                timezone:                true,
+                dateFormat:              true,
+                notificationPreferences: true,
+                lastLoginAt:             true,
+                createdAt:               true,
+                organizationId:          true,
                 organization: { select: { name: true } },
                 employee: {
-                    include: { manager: { include: { user: true } } },
+                    select: {
+                        id:        true,
+                        matricule: true,
+                        avatar:    true,
+                        manager: {
+                            select: {
+                                id:        true,
+                                matricule: true,
+                                user: {
+                                    select: {
+                                        id: true, firstName: true, lastName: true,
+                                        email: true, jobTitle: true, avatar: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
                 documents: true,
             },

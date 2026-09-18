@@ -1,6 +1,10 @@
 import { prisma } from "../../../core/config/prisma";
-import { Plan, PaymentMethod } from "@prisma/client";
+import { Plan, PaymentMethod, Prisma } from "@prisma/client";
 import crypto from "node:crypto";
+import { WalletRepository } from "../../wallet/infrastructure/wallet.repository";
+import { AppError } from "../../../core/errors/app.error";
+
+const walletRepo = new WalletRepository();
 
 // ── Constantes ───────────────────────────────────────────────────────────────
 
@@ -15,8 +19,6 @@ export const PLAN_PRICES_USD: Record<Plan, number> = {
     BUSINESS:   299,
     ENTERPRISE: 499,
 };
-
-export type Currency = "XOF" | "USD";
 
 // ── Interfaces internes ───────────────────────────────────────────────────────
 
@@ -65,10 +67,6 @@ export class BillingService {
         return sub;
     }
 
-    async upgradePlan(orgId: string, plan: Plan) {
-        return this._upsertSubscription(orgId, plan);
-    }
-
     async getInvoices(orgId: string) {
         return prisma.invoice.findMany({
             where: { organizationId: orgId },
@@ -76,12 +74,53 @@ export class BillingService {
         });
     }
 
+    /**
+     * Prix réels des plans pour CETTE organisation — contrairement à GET /plans
+     * (public, constantes statiques indicatives), reflète le prix XOF dynamique
+     * (PlanConfig.pricePerEmployee × employés actifs) réellement utilisé pour
+     * le calcul du montant facturé par processKkiapayPayment/initiateFedapayPayment.
+     */
+    async getResolvedPlansForOrg(orgId: string) {
+        const plans: Plan[] = ["STARTER", "BUSINESS", "ENTERPRISE"];
+        return Promise.all(plans.map(async (plan) => ({
+            plan,
+            priceXOF: await this._resolvePlanPriceXOF(orgId, plan),
+        })));
+    }
+
+    // ── Wallet entreprise (trésorerie servant au remboursement des notes de frais) ──
+
+    async getWalletBalance(orgId: string) {
+        const { balance, currencyCode } = await walletRepo.getOrganizationWalletSummary(orgId);
+        return { balance: Number(balance), currencyCode };
+    }
+
+    /**
+     * Rechargement manuel (ADMIN/FINANCE) — pas de passerelle de paiement réelle
+     * ici, contrairement à payWithCard/Kkiapay/Fedapay : simple crédit direct du
+     * ledger, la clé d'idempotence n'a donc qu'un rôle de garde-fou anti double-clic.
+     */
+    async topUpWallet(orgId: string, amount: number) {
+        if (!Number.isFinite(amount) || amount <= 0) {
+            throw new AppError("Le montant doit être un nombre positif", 400);
+        }
+        const idempotencyKey = crypto.randomUUID();
+        const entry = await walletRepo.creditOrganizationWallet(
+            orgId,
+            new Prisma.Decimal(amount),
+            idempotencyKey,
+            { description: "Rechargement du portefeuille entreprise", referenceType: "TOPUP" }
+        );
+        const { balance, currencyCode } = await walletRepo.getOrganizationWalletSummary(orgId);
+        return { entry, balance: Number(balance), currencyCode };
+    }
+
     // ── KkiaPay ───────────────────────────────────────────────────────────────
     // Flow : frontend lance le widget KkiaPay → widget retourne un transactionId
     //        → frontend envoie transactionId au backend → on vérifie avec l'API KkiaPay
     //        → si SUCCESS on crée l'abonnement et la facture
 
-    async processKkiapayPayment(orgId: string, plan: Plan, transactionId: string, currency: Currency = "XOF") {
+    async processKkiapayPayment(orgId: string, plan: Plan, transactionId: string) {
         // 1. Vérifier la transaction avec l'API KkiaPay
         const verified = await this._verifyKkiapayTransaction(transactionId);
 
@@ -99,10 +138,14 @@ export class BillingService {
         if (existing) throw new Error("Ce transactionId a déjà été utilisé");
 
         // 3. Créer/mettre à jour l'abonnement et la facture
+        // KkiaPay est un gateway XOF exclusivement (le widget est toujours lancé
+        // avec un montant XOF plein, cf. billing/page.tsx) — verified.amount est
+        // donc déjà la valeur réelle facturée, sans conversion ni division.
         const sub = await this._upsertSubscription(orgId, plan);
         const invoice = await this._createInvoice(orgId, {
             subscriptionId: sub.id,
-            amount: currency === "XOF" ? verified.amount / 100 : PLAN_PRICES_USD[plan],
+            amount: verified.amount,
+            currency: "XOF",
             description: `Abonnement ${plan} — KkiaPay`,
             paymentMethod: "KKIAPAY",
             paymentRef: transactionId,
@@ -115,7 +158,7 @@ export class BillingService {
     // Flow : backend crée la transaction FedaPay → retourne checkout_url
     //        → frontend redirige l'utilisateur → FedaPay webhook confirme
 
-    async initiateFedapayPayment(orgId: string, plan: Plan, currency: Currency = "XOF") {
+    async initiateFedapayPayment(orgId: string, plan: Plan) {
         const amount = await this._resolvePlanPriceXOF(orgId, plan);
         if (amount === 0) {
             // Plan gratuit → pas besoin de paiement
@@ -161,7 +204,7 @@ export class BillingService {
             body: JSON.stringify({
                 description: `Abonnement AfrikCSE/AfrikVoyage — Plan ${plan}`,
                 amount,
-                currency: { iso: currency },
+                currency: { iso: "XOF" },
                 callback_url: `${process.env.BACKEND_URL ?? process.env.FRONTEND_URL}/api/billing/webhook/fedapay`,
                 return_url: `${process.env.FRONTEND_URL}/companies/billing?status=success`,
                 cancel_url: `${process.env.FRONTEND_URL}/companies/billing?status=cancelled`,
@@ -178,11 +221,13 @@ export class BillingService {
         const txn = (await response.json()) as { v1: { transaction: FedapayCreateResponse } };
         const transaction = txn.v1?.transaction ?? (txn as unknown as FedapayCreateResponse);
 
-        // Stocker la référence en attente
+        // Stocker la référence en attente — même montant XOF plein que celui
+        // effectivement envoyé à FedaPay ci-dessus (aucune conversion à faire).
         await prisma.invoice.create({
             data: {
                 invoiceNumber: `PRE-${reference}`,
-                amount: amount / 100,
+                amount,
+                currency: "XOF",
                 description: `Abonnement ${plan} — FedaPay en attente`,
                 paymentMethod: "FEDAPAY",
                 paymentRef: String(transaction.id ?? reference),
@@ -256,11 +301,20 @@ export class BillingService {
             data: { status: "PAID", paidAt: new Date() },
         });
 
-        // Mettre à jour l'abonnement
-        await prisma.subscription.update({
-            where: { id: invoice.subscriptionId! },
-            data: { status: "ACTIVE" },
-        });
+        // Le plan acheté n'est connu qu'ici (la facture PENDING a été créée avant
+        // le paiement, cf. initiateFedapayPayment) — extrait de la description
+        // ("Abonnement {PLAN} — FedaPay en attente"), seule source disponible
+        // sans champ dédié sur Invoice. Avant ce correctif, le webhook ne faisait
+        // que réactiver l'abonnement SANS jamais appliquer le plan acheté.
+        const planMatch = invoice.description?.match(/Abonnement (STARTER|BUSINESS|ENTERPRISE)/);
+        if (planMatch) {
+            await this._upsertSubscription(invoice.organizationId, planMatch[1] as Plan);
+        } else {
+            await prisma.subscription.update({
+                where: { id: invoice.subscriptionId! },
+                data: { status: "ACTIVE" },
+            });
+        }
 
         return { processed: true };
     }
@@ -281,11 +335,14 @@ export class BillingService {
             throw new Error("Paiement carte non encore configuré en production — contactez le support");
         }
 
-        // Mode dev/test : simuler un paiement réussi
+        // Mode dev/test : simuler un paiement réussi, au vrai prix dynamique XOF
+        // (pas la constante USD statique — sinon la simulation ne reflète pas ce
+        // qu'un paiement KkiaPay/FedaPay réel facturerait pour cette org).
         const sub = await this._upsertSubscription(orgId, plan);
         const invoice = await this._createInvoice(orgId, {
             subscriptionId: sub.id,
-            amount: PLAN_PRICES_USD[plan],
+            amount: await this._resolvePlanPriceXOF(orgId, plan),
+            currency: "XOF",
             description: `Abonnement ${plan} — Carte (simulation)`,
             paymentMethod: "CARD",
             paymentRef: `CARD-SIM-${Date.now()}`,
@@ -347,22 +404,36 @@ export class BillingService {
         return response.json() as Promise<KkiapayVerifyResponse>;
     }
 
+    /**
+     * Écrit Subscription ET Organization.plan dans la même transaction — avant
+     * ce correctif, seule Subscription était mise à jour ici : le Dashboard
+     * (qui lit Organization.plan) continuait d'afficher l'ancien plan pour
+     * toujours après tout upgrade réel via KkiaPay/FedaPay/carte.
+     */
     private async _upsertSubscription(orgId: string, plan: Plan) {
         const now = new Date();
         const end = new Date(now);
         end.setMonth(end.getMonth() + 1);
 
-        return prisma.subscription.upsert({
-            where: { organizationId: orgId },
-            update: { plan, status: "ACTIVE", updatedAt: now, currentPeriodEnd: end },
-            create: {
-                organizationId: orgId,
-                plan,
-                status: "ACTIVE",
-                currentPeriodStart: now,
-                currentPeriodEnd: end,
-            },
-        });
+        const [sub] = await prisma.$transaction([
+            prisma.subscription.upsert({
+                where: { organizationId: orgId },
+                update: { plan, status: "ACTIVE", updatedAt: now, currentPeriodEnd: end },
+                create: {
+                    organizationId: orgId,
+                    plan,
+                    status: "ACTIVE",
+                    currentPeriodStart: now,
+                    currentPeriodEnd: end,
+                },
+            }),
+            prisma.organization.update({
+                where: { id: orgId },
+                data: { plan },
+            }),
+        ]);
+
+        return sub;
     }
 
     private async _getOrCreateSubscription(orgId: string) {
@@ -387,6 +458,7 @@ export class BillingService {
     private async _createInvoice(orgId: string, data: {
         subscriptionId: string;
         amount: number;
+        currency: string;
         description: string;
         paymentMethod: PaymentMethod;
         paymentRef?: string;
@@ -398,6 +470,7 @@ export class BillingService {
             data: {
                 invoiceNumber,
                 amount: data.amount,
+                currency: data.currency,
                 description: data.description,
                 paymentMethod: data.paymentMethod,
                 paymentRef: data.paymentRef,

@@ -45,6 +45,10 @@ export const voyageService = {
         const { data } = await api.patch(`/travels/${id}/payment`, payload);
         return data;
     },
+    async completeTravel(id: string, actualCost: number) {
+        const { data } = await api.patch(`/travels/${id}/complete`, { actualCost });
+        return data;
+    },
     async getExpenses(params?: Record<string, unknown>) {
         const { data } = await api.get("/travels/expenses", { params });
         return data;

@@ -1,0 +1,17 @@
+{
+  "name": "afrikvoyage-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Suite de tests End-to-End (Playwright) verrouillant les parcours critiques d'AfrikVoyage (voyages/frais, portail partenaire) — n'affecte pas les workspaces backend/ et frontend/, qui gardent chacun leur propre package.json.",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.10.0",
+    "dotenv": "^16.4.5",
+    "typescript": "^5.7.0"
+  }
+}

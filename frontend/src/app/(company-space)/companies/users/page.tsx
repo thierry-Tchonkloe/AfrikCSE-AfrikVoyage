@@ -10,6 +10,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { DEPARTMENTS } from "@/lib/departments";
 
 // ── Types ──────────────────────────────────────────────
 
@@ -47,11 +48,6 @@ const createSchema = z.object({
 });
 
 type CreateForm = z.infer<typeof createSchema>;
-
-const DEPARTMENTS = [
-    "Direction", "Ressources Humaines", "Finance & Comptabilité",
-    "Commercial", "Marketing", "Technologie", "Opérations", "Autre",
-];
 
 // ── Composant principal ────────────────────────────────
 

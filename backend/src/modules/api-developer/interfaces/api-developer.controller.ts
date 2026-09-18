@@ -7,6 +7,20 @@ import { IdParamString } from "../../../core/validators/param.validators";
 export const endpointIdParam = z.object({ endpointId: z.string().min(1) });
 export type EndpointIdParam = z.infer<typeof endpointIdParam>;
 
+export async function getSettings(req: Request, res: Response, next: NextFunction) {
+    try {
+        const orgId = req.user!.organizationId!;
+        res.json(await svc.getSettings(orgId));
+    } catch (e) { next(e); }
+}
+
+export async function updateSettings(req: Request, res: Response, next: NextFunction) {
+    try {
+        const orgId = req.user!.organizationId!;
+        res.json(await svc.updateSettings(orgId, req.body));
+    } catch (e) { next(e); }
+}
+
 export async function listClients(req: Request, res: Response, next: NextFunction) {
     try {
         const orgId = req.user!.organizationId!;

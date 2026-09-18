@@ -2,6 +2,7 @@ import { Router } from "express";
 import { BookingController } from "./booking.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
 import { authenticatePartner } from "../../partner-portal/interfaces/partner-auth.middleware";
+import { requireModule } from "../../../core/middlewares/requireModule.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import { ROLES } from "../../../shared/types";
@@ -20,11 +21,14 @@ router.patch("/partner/:id/reject",      authenticatePartner, validateParams(idP
 router.patch("/partner/:id/complete",    authenticatePartner, validateParams(idParamString), ctrl.completeBooking.bind(ctrl));
 
 // ── Employee bookings ─────────────────────────────────────────────────────────
-router.post("/",         authenticate, ctrl.create.bind(ctrl));
-router.get("/",          authenticate, ctrl.getMyBookings.bind(ctrl));
-router.get("/:id",       authenticate, validateParams(idParamString), ctrl.getById.bind(ctrl));
-router.delete("/:id",    authenticate, validateParams(idParamString), ctrl.cancelByUser.bind(ctrl));
-router.post("/:id/rate", authenticate, validateParams(idParamString), ctrl.rate.bind(ctrl));
+// requireModule ici uniquement — jamais sur les routes /partner/* (le partenaire
+// gère des réservations pour plusieurs organisations, non lié à UN module) ni
+// sur /admin/all (vue plateforme SUPER_ADMIN/PLATFORM_MANAGER).
+router.post("/",         authenticate, requireModule("VOYAGE"), ctrl.create.bind(ctrl));
+router.get("/",          authenticate, requireModule("VOYAGE"), ctrl.getMyBookings.bind(ctrl));
+router.get("/:id",       authenticate, requireModule("VOYAGE"), validateParams(idParamString), ctrl.getById.bind(ctrl));
+router.delete("/:id",    authenticate, requireModule("VOYAGE"), validateParams(idParamString), ctrl.cancelByUser.bind(ctrl));
+router.post("/:id/rate", authenticate, requireModule("VOYAGE"), validateParams(idParamString), ctrl.rate.bind(ctrl));
 
 // ── Admin overview ────────────────────────────────────────────────────────────
 router.get("/admin/all", authenticate, authorize(ROLES.SUPER_ADMIN, ROLES.PLATFORM_MANAGER), ctrl.getAllForAdmin.bind(ctrl));

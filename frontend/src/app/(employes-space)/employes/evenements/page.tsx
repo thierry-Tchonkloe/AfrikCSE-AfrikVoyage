@@ -198,13 +198,18 @@ export default function EvenementsPage() {
                 Découvrez et participez aux événements organisés par votre CSE
             </p>
             </div>
+            {/* POST /events est réservé à ADMIN/MANAGER/RH/SUPER_ADMIN côté backend
+                — masqué pour les autres rôles plutôt que de les laisser essuyer
+                un 403 après avoir rempli le formulaire. */}
+            {user && ["ADMIN", "MANAGER", "RH", "SUPER_ADMIN"].includes(user.role) && (
             <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium"
-            style={{ background: "#0f766e" }}
+                onClick={() => setShowCreate(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium"
+                style={{ background: "#0f766e" }}
             >
-            <Plus size={15} /> Créer un événement
+                <Plus size={15} /> Créer un événement
             </button>
+            )}
         </div>
 
         {/* Stats */}

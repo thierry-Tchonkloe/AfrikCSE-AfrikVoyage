@@ -47,6 +47,7 @@ export default function CompanySettingsPage() {
     const [saving, setSaving]   = useState(false);
     const [changed, setChanged] = useState(false);
     const logoInputRef = useRef<HTMLInputElement>(null);
+    const faviconInputRef = useRef<HTMLInputElement>(null);
 
     const [settings, setSettings] = useState<CompanySettings>({
         name:               "",
@@ -82,6 +83,7 @@ export default function CompanySettingsPage() {
                     industry:           org.industry           ?? prev.industry,
                     size:               org.size               ?? prev.size,
                     logoUrl:            org.logoUrl            ?? prev.logoUrl,
+                    faviconUrl:         org.faviconUrl          ?? prev.faviconUrl,
                     primaryColor:       org.primaryColor       ?? prev.primaryColor,
                     secondaryColor:     org.secondaryColor     ?? prev.secondaryColor,
                     accentColor:        org.accentColor        ?? prev.accentColor,
@@ -143,6 +145,20 @@ export default function CompanySettingsPage() {
             toast.success("Logo mis à jour");
         } catch (err) {
             toast.error(getErrorMessage(err, "Erreur lors de l'upload du logo"));
+        } finally {
+            e.target.value = "";
+        }
+    };
+
+    const handleFaviconChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const { faviconUrl } = await companyService.uploadFavicon(file);
+            setSettings((prev) => ({ ...prev, faviconUrl }));
+            toast.success("Favicon mis à jour");
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Erreur lors de l'upload du favicon"));
         } finally {
             e.target.value = "";
         }
@@ -303,12 +319,19 @@ export default function CompanySettingsPage() {
                         </div>
                     </div>
 
-                    {/* Favicon — non géré par cette section (hors périmètre) */}
+                    {/* Favicon — upload Cloudinary (mêmes contraintes que le logo) */}
                     <div>
                         <p className="text-xs font-medium text-gray-700 mb-2">Favicon</p>
+                        <input
+                            ref={faviconInputRef}
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/svg+xml,image/webp"
+                            className="hidden"
+                            onChange={handleFaviconChange}
+                        />
                         <div
                         className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-teal-300 transition-colors"
-                        onClick={() => toast.info("Upload d'image — à connecter à Cloudinary")}
+                        onClick={() => faviconInputRef.current?.click()}
                         >
                         {settings.faviconUrl ? (
                             <img src={settings.faviconUrl} alt="Favicon" className="max-h-12 mx-auto object-contain" />
@@ -353,16 +376,6 @@ export default function CompanySettingsPage() {
                     </div>
                     ))}
                 </div>
-
-                {/* Aperçu email */}
-                <div>
-                    <p className="text-xs font-medium text-gray-700 mb-2">Email Footer Text</p>
-                    <textarea
-                    rows={2}
-                    placeholder="Ce courriel a été envoyé par TechCorp International. Pour toute question, veuillez contacter support@techcorp.com"
-                    className={inp + " resize-none"}
-                    />
-                </div>
                 </Section>
             )}
 
@@ -375,7 +388,7 @@ export default function CompanySettingsPage() {
                     {
                         label: "AfrikVoyage – Travel Management",
                         desc: "Réservations de vols, hôtels, trains, voitures et gestion travel management",
-                        sub: "Actifs : 126 actifs",
+                        sub: user?.organization?.hasVoyage ? "Module actif pour votre organisation" : "Inactif · Contactez le support pour l'activer",
                         active: user?.organization?.hasVoyage,
                         color: "#f59e0b",
                         icon: "✈️",
@@ -383,7 +396,7 @@ export default function CompanySettingsPage() {
                     {
                         label: "AfrikCSE – Employee Benefits",
                         desc: "Manage employee benefits, avantages, and CSE programs",
-                        sub: "Actifs : 213 bénéficiaires",
+                        sub: user?.organization?.hasCSE ? "Module actif pour votre organisation" : "Inactif · Contactez le support pour l'activer",
                         active: user?.organization?.hasCSE,
                         color: "#0f766e",
                         icon: "🎁",

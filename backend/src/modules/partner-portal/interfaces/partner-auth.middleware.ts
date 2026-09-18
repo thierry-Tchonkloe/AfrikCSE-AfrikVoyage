@@ -32,10 +32,19 @@ export async function authenticatePartner(req: Request, res: Response, next: Nex
         // incrémente PartnerUser.tokenVersion, invalidant tous les tokens émis avant.
         const current = await prisma.partnerUser.findUnique({
             where: { id: payload.partnerUserId },
-            select: { tokenVersion: true, isActive: true },
+            select: { tokenVersion: true, isActive: true, partner: { select: { status: true } } },
         });
         if (!current || !current.isActive || current.tokenVersion !== payload.tokenVersion) {
             res.status(401).json({ message: "Session partenaire expirée, veuillez vous reconnecter" });
+            return;
+        }
+
+        // Une suspension du partenaire (par le Super Admin) doit couper NET tout
+        // accès, même pour une session déjà émise avant la suspension — sans ce
+        // contrôle, seul `login()` bloquait les nouvelles connexions, laissant un
+        // partenaire suspendu opérer jusqu'à 90 jours via son refresh token.
+        if (current.partner.status === "SUSPENDED") {
+            res.status(403).json({ message: "Ce compte partenaire a été suspendu" });
             return;
         }
 

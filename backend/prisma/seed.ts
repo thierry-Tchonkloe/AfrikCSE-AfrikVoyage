@@ -35,6 +35,22 @@ async function main() {
         });
         console.log(`✅ Organisation créée : ${waxeho.name} (${waxeho.id})`);
 
+        // Catégories de budget par défaut pour l'org hôte — c'est à ELLE que
+        // toute offre soumise par un partenaire est rattachée (cf.
+        // PartnerPortalService.getHostOrgId), donc sans ça le sélecteur de
+        // catégorie du partner-portal serait vide et aucune offre partenaire
+        // ne pourrait jamais être créée (la validation Zod rejette toute
+        // catégorie qui n'existe pas pour cette organisation).
+        await prisma.benefitCategory.createMany({
+            data: [
+                { name: "Chèques Cadeaux", description: "Bons d'achat et chèques cadeaux pour les employés", icon: null, annualBudget: 500_000, perEmployeeLimit: 50_000, currency: "XOF", organizationId: waxeho.id, eligibleServices: [] },
+                { name: "Activités Culturelles & Sportives", description: "Événements culturels, sportifs et de loisirs", icon: "culture", annualBudget: 500_000, perEmployeeLimit: 50_000, currency: "XOF", organizationId: waxeho.id, eligibleServices: [] },
+                { name: "Transport & Mobilité", description: "Prise en charge des frais de transport quotidien", icon: "transport", annualBudget: 500_000, perEmployeeLimit: 50_000, currency: "XOF", organizationId: waxeho.id, eligibleServices: [] },
+                { name: "Avantages Internes", description: "Avantages divers proposés directement par l'entreprise", icon: null, annualBudget: 500_000, perEmployeeLimit: 50_000, currency: "XOF", organizationId: waxeho.id, eligibleServices: [] },
+            ],
+        });
+        console.log(`✅ Catégories de budget par défaut créées pour ${waxeho.name}`);
+
         // ── 2. Organisation de test ──────────────────────────────────
         const company = await prisma.organization.upsert({
             where: { slug: "afrikvoyage" },

@@ -108,6 +108,16 @@ export type PartnerStatus = "DRAFT" | "ACTIVE" | "INACTIVE" | "SUSPENDED";
 export type PartnerScope  = "CSE" | "VOYAGE" | "BOTH";
 export type OfferType     = "VOUCHER" | "BOOKING" | "DISCOUNT_CODE";
 
+// Forme complète, réservée aux vues SUPER_ADMIN (`GET/PATCH /api/partners*`,
+// `findAll`/`findById` dans `partner.repository.ts`) : `apiKeyEncrypted` y est
+// déjà remplacé par `hasApiKey` (jamais le secret en clair), mais tous les
+// autres champs scalaires du modèle Prisma sont bien réellement présents ici.
+// `syncLogs` n'est renvoyé que par `findById` (détail), jamais par `findAll`
+// (liste) — d'où son caractère optionnel. Ne PAS utiliser ce type pour une
+// réponse du Portail Partenaire lui-même : voir `PartnerProfile` ci-dessous,
+// dont le `select` strict exclut délibérément `notes`/`warningCount`/
+// `flaggedAt`/les champs API — ce même `Partner` prêterait à tort à confusion
+// si réutilisé côté partenaire (propriétés qui n'existeraient pas à l'exécution).
 export interface Partner {
     id:               string;
     name:             string;
@@ -131,7 +141,30 @@ export interface Partner {
     currencyCode:     string;
     createdAt:        string;
     updatedAt:        string;
-    _count?: { offers: number };
+    _count?: { offers: number; syncLogs: number };
+    syncLogs?: PartnerSyncLog[];
+}
+
+// Forme réelle de `GET/PATCH /api/partner-portal/profile` — `select` Prisma
+// strict côté backend (`PARTNER_PROFILE_SELECT`) qui exclut délibérément
+// `notes` (réservé Super Admin), les secrets chiffrés API/paiement, et les
+// champs de modération (`warningCount`/`flaggedAt`). `locations` n'existe que
+// sur cette réponse (relation embarquée, pas de route GET /locations dédiée).
+export interface PartnerProfile {
+    id:            string;
+    name:          string;
+    sector:        string;
+    logoUrl?:      string | null;
+    description?:  string | null;
+    contactEmail?: string | null;
+    phone?:        string | null;
+    websiteUrl?:   string | null;
+    status:        PartnerStatus;
+    scopeType:     PartnerScope;
+    currencyCode:  string;
+    createdAt:     string;
+    updatedAt:     string;
+    locations?:    PartnerLocation[];
 }
 
 export type PartnerPaymentMethodType = "MOBILE_MONEY" | "BANK_TRANSFER" | "OTHER";
@@ -471,9 +504,12 @@ export interface CashbackTransaction {
 
 // ── Partner portal ────────────────────────────────────────────────────────────
 
+// `partnerId` retiré : ni `GET /partner-portal/staff` (`listStaff`) ni
+// `POST /partner-portal/staff` (`createUser`, `select` strict depuis la
+// correction de la fuite de `passwordHash`) ne le renvoient jamais — il
+// n'existait dans ce type que par erreur de recopie du modèle Prisma.
 export interface PartnerUser {
     id:          string;
-    partnerId:   string;
     email:       string;
     firstName:   string;
     lastName:    string;

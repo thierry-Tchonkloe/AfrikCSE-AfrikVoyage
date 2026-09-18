@@ -32,6 +32,9 @@ router.patch("/my", authorize(ROLES.ADMIN, ROLES.MANAGER), ctrl.updateMyOrg.bind
 // Upload du logo de l'organisation connectée — réservée ADMIN, MANAGER
 router.post("/my/logo", authorize(ROLES.ADMIN, ROLES.MANAGER), logoUpload.single("file"), ctrl.uploadLogo.bind(ctrl));
 
+// Upload du favicon de l'organisation connectée — réservée ADMIN, MANAGER
+router.post("/my/favicon", authorize(ROLES.ADMIN, ROLES.MANAGER), logoUpload.single("file"), ctrl.uploadFavicon.bind(ctrl));
+
 // Routes CRUD/Admin — réservées au SUPER_ADMIN
 router.get("/:id", requireSuper, ctrl.getById.bind(ctrl));
 router.patch("/:id/validate", requireSuper, ctrl.validate.bind(ctrl));

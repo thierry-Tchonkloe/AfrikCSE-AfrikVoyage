@@ -139,7 +139,7 @@ export default function NewCompanyPage() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto space-y-5">
+        <div className="max-w-6xl mx-auto space-y-5">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-500">
             <button onClick={() => router.push("/admin/companies")}

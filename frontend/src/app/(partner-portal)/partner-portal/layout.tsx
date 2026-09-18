@@ -4,13 +4,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useLayoutEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { LayoutDashboard, CalendarCheck, Layers, Users, MapPin, Building2, Settings, ChevronLeft, ChevronRight, LogOut, Menu,} from "lucide-react";
+import { LayoutDashboard, CalendarCheck, Layers, Users, MapPin, Building2, Settings, ChevronLeft, ChevronRight, LogOut, Menu, Wallet,} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePartnerAuth } from "@/hooks/usePartnerAuth";
 
 const NAV_ITEMS = [
     { href: "/partner-portal/dashboard",  label: "Tableau de bord",  icon: LayoutDashboard },
     { href: "/partner-portal/bookings",   label: "Réservations",     icon: CalendarCheck },
+    { href: "/partner-portal/finances",   label: "Finances",         icon: Wallet },
     { href: "/partner-portal/offers",     label: "Offres",           icon: Layers },
     { href: "/partner-portal/locations",  label: "Établissements",   icon: MapPin },
     { href: "/partner-portal/staff",      label: "Équipe",           icon: Users },

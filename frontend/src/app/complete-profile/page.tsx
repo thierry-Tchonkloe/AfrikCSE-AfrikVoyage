@@ -10,6 +10,7 @@ import { Loader2, ChevronRight, SkipForward } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { authService } from "@/services/auth.service";
 import { getErrorMessage } from "@/lib/errors";
+import { DEPARTMENTS } from "@/lib/departments";
 
 const schema = z.object({
     jobTitle: z.string().optional(),
@@ -19,12 +20,6 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
-
-const DEPARTMENTS = [
-    "Direction", "Ressources Humaines", "Finance & Comptabilité",
-    "Commercial & Ventes", "Marketing", "Technologie & IT",
-    "Opérations", "Juridique", "Communication", "Autre",
-];
 
 export default function CompleteProfilePage() {
     const router = useRouter();

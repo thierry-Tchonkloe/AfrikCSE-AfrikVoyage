@@ -351,7 +351,7 @@ export default function ParametresPage() {
         </div>
 
         {/* Sécurité — Mot de passe */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+        <div id="security" className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
             <div>
             <h3 className="font-semibold text-gray-900">Security Settings</h3>
             <h4 className="text-sm text-gray-600 mt-1">Password</h4>
@@ -490,7 +490,7 @@ export default function ParametresPage() {
         </div>
 
         {/* Notifications */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+        <div id="notifications" className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
             <h3 className="font-semibold text-gray-900">Notification Preferences</h3>
             {[
             { key: "email",         label: "Email Notifications",  desc: "Receive updates via email" },

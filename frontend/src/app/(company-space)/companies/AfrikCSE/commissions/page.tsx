@@ -6,6 +6,7 @@ import { commissionsService } from "@/services/companies/commissions.service";
 import { CommissionEntry, PartnerPayout, CommissionStatus } from "@/types";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import { formatCurrency } from "@/lib/currency";
 
 const STATUS_COLOR: Record<CommissionStatus, string> = {
     PENDING:   "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300",
@@ -43,9 +44,14 @@ export default function CompanyCommissionsPage() {
 
     useEffect(() => { loadTab(tab); }, [tab, loadTab]);
 
-    const totalNet = entries
+    // Regroupé par devise plutôt qu'additionné à l'aveugle : des entrées de
+    // devises différentes ne doivent jamais être sommées sous un seul total.
+    const netByCurrency = entries
         .filter((e) => e.status === "CONFIRMED")
-        .reduce((acc, e) => acc + parseFloat(e.netAmount), 0);
+        .reduce<Record<string, number>>((acc, e) => {
+            acc[e.currencyCode] = (acc[e.currencyCode] ?? 0) + parseFloat(e.netAmount);
+            return acc;
+        }, {});
 
     const TABS: { id: Tab; label: string }[] = [
         { id: "entries", label: "Entrées" },
@@ -62,10 +68,12 @@ export default function CompanyCommissionsPage() {
                 {tab === "entries" && totalEntries > 0 && (
                     <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl px-4 py-2 text-right">
                         <p className="text-xs text-green-600 dark:text-green-400 font-medium">Net confirmé</p>
-                        <p className="text-lg font-bold text-green-700 dark:text-green-300 tabular-nums flex items-center gap-1">
-                            <TrendingUp className="h-4 w-4" />
-                            {totalNet.toLocaleString("fr-FR")} XOF
-                        </p>
+                        {Object.entries(netByCurrency).map(([currency, amount]) => (
+                            <p key={currency} className="text-lg font-bold text-green-700 dark:text-green-300 tabular-nums flex items-center justify-end gap-1">
+                                <TrendingUp className="h-4 w-4" />
+                                {formatCurrency(amount, currency)}
+                            </p>
+                        ))}
                     </div>
                 )}
             </div>
@@ -109,9 +117,9 @@ export default function CompanyCommissionsPage() {
                                 {entries.map((e) => (
                                     <tr key={e.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                         <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{e.partner?.name ?? "—"}</td>
-                                        <td className="px-5 py-3 text-right tabular-nums text-gray-600">{parseFloat(e.grossAmount).toLocaleString("fr-FR")}</td>
-                                        <td className="px-5 py-3 text-right tabular-nums text-red-600">-{parseFloat(e.commissionAmount).toLocaleString("fr-FR")}</td>
-                                        <td className="px-5 py-3 text-right tabular-nums font-semibold text-green-600">{parseFloat(e.netAmount).toLocaleString("fr-FR")}</td>
+                                        <td className="px-5 py-3 text-right tabular-nums text-gray-600">{formatCurrency(e.grossAmount, e.currencyCode)}</td>
+                                        <td className="px-5 py-3 text-right tabular-nums text-red-600">-{formatCurrency(e.commissionAmount, e.currencyCode)}</td>
+                                        <td className="px-5 py-3 text-right tabular-nums font-semibold text-green-600">{formatCurrency(e.netAmount, e.currencyCode)}</td>
                                         <td className="px-5 py-3">
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[e.status]}`}>
                                                 {e.status}
@@ -142,7 +150,7 @@ export default function CompanyCommissionsPage() {
                                     <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                         <td className="px-5 py-3 font-medium text-gray-900 dark:text-gray-100">{p.partner?.name ?? "—"}</td>
                                         <td className="px-5 py-3 text-gray-500">{p.period}</td>
-                                        <td className="px-5 py-3 text-right font-bold text-green-600 tabular-nums">{parseFloat(p.netAmount).toLocaleString("fr-FR")} {p.currencyCode}</td>
+                                        <td className="px-5 py-3 text-right font-bold text-green-600 tabular-nums">{formatCurrency(p.netAmount, p.currencyCode)}</td>
                                         <td className="px-5 py-3">
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${p.status === "COMPLETED" ? "bg-green-100 text-green-700" : p.status === "PENDING" ? "bg-amber-100 text-amber-700" : p.status === "PROCESSING" ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>
                                                 {p.status}

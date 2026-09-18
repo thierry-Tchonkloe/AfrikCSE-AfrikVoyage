@@ -65,10 +65,13 @@ const diffDays = (endDate: string, startDate: string): number => {
 const toIsoMidnight = (dateStr: string): string => new Date(`${dateStr}T00:00:00`).toISOString();
 
 function PaymentMethodField({ value, onChange }: { value: PaymentMethod; onChange: (v: PaymentMethod) => void }) {
-    const OPTIONS: { id: PaymentMethod; label: string }[] = [
+    // Mobile Money / Carte bancaire ne débitent encore rien réellement côté
+    // serveur (aucune passerelle branchée) — désactivés ici le temps de coder
+    // l'intégration, plutôt que de laisser créer une réservation gratuite.
+    const OPTIONS: { id: PaymentMethod; label: string; disabled?: boolean }[] = [
         { id: "WALLET",       label: "Wallet" },
-        { id: "MOBILE_MONEY", label: "Mobile Money" },
-        { id: "CARD",         label: "Carte bancaire" },
+        { id: "MOBILE_MONEY", label: "Mobile Money", disabled: true },
+        { id: "CARD",         label: "Carte bancaire", disabled: true },
     ];
     return (
         <div>
@@ -76,11 +79,15 @@ function PaymentMethodField({ value, onChange }: { value: PaymentMethod; onChang
             <div className="grid grid-cols-3 gap-2">
                 {OPTIONS.map((o) => (
                     <button key={o.id} type="button" onClick={() => onChange(o.id)}
-                        className="px-2 py-2 rounded-lg text-xs font-medium border transition-colors"
-                        style={value === o.id
-                            ? { background: "#0f766e", color: "white", borderColor: "#0f766e" }
-                            : { borderColor: "#e5e7eb", color: "#6b7280" }}>
+                        disabled={o.disabled}
+                        className="px-2 py-2 rounded-lg text-xs font-medium border transition-colors disabled:cursor-not-allowed"
+                        style={o.disabled
+                            ? { borderColor: "#e5e7eb", color: "#9ca3af", background: "#f9fafb" }
+                            : value === o.id
+                                ? { background: "#0f766e", color: "white", borderColor: "#0f766e" }
+                                : { borderColor: "#e5e7eb", color: "#6b7280" }}>
                         {o.label}
+                        {o.disabled && <span className="block text-[10px] mt-0.5">Bientôt disponible</span>}
                     </button>
                 ))}
             </div>
@@ -144,6 +151,7 @@ function HotelsTab({ travelRequestId }: { travelRequestId?: string }) {
                 travelRequestId,
                 bookingDate:    toIsoMidnight(checkIn),
                 numberOfPersons: guests,
+                numberOfNights: nights,
                 notes: purpose || undefined,
                 idempotencyKey: crypto.randomUUID(),
                 paymentMethod,
@@ -528,6 +536,7 @@ function CarRentalTab({ travelRequestId }: { travelRequestId?: string }) {
                 travelRequestId,
                 bookingDate:    toIsoMidnight(pickupDate),
                 numberOfPersons: 1,
+                numberOfDays: days,
                 notes: purpose || undefined,
                 idempotencyKey: crypto.randomUUID(),
                 paymentMethod,

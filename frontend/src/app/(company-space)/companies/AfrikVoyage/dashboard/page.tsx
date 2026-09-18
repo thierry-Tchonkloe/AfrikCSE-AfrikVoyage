@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { voyageService } from "@/services/companies/voyage.service";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/currency";
 
 interface TravelStats {
     total: number;
@@ -103,7 +104,7 @@ export default function AfrikVoyageDashboard() {
     const STATS = [
         {
             label: "Dépenses totales voyages",
-            value: `${(travelStats?.totalCost ?? 0).toLocaleString()} XOF`,
+            value: formatCurrency(travelStats?.totalCost ?? 0),
             sub: `${travelStats?.total ?? 0} voyage(s) au total`,
             badge: `${travelStats?.approved ?? 0} approuvés`,
             badgeColor: "#10b981",
@@ -113,8 +114,8 @@ export default function AfrikVoyageDashboard() {
         },
         {
             label: "Notes de frais (30 jours)",
-            value: `${(expenseStats?.totalAmount ?? 0).toLocaleString()} XOF`,
-            sub: `Moyenne ${Math.round(expenseStats?.avgAmount ?? 0).toLocaleString()} XOF / note`,
+            value: formatCurrency(expenseStats?.totalAmount ?? 0),
+            sub: `Moyenne ${formatCurrency(Math.round(expenseStats?.avgAmount ?? 0))} / note`,
             badge: `${expenseStats?.totalCount ?? 0} notes`,
             badgeColor: "#f59e0b",
             icon: PieChart,
@@ -243,7 +244,7 @@ export default function AfrikVoyageDashboard() {
                         <div
                         className="w-full rounded-t-md transition-all"
                         style={{ height: `${h}px`, background: "#0f766e", opacity: 0.8 }}
-                        title={`${cat} : ${amount.toLocaleString()} XOF`}
+                        title={`${cat} : ${formatCurrency(amount)}`}
                         />
                         <span className="text-xs text-gray-400 text-center truncate w-full">{cat}</span>
                     </div>
@@ -274,7 +275,7 @@ export default function AfrikVoyageDashboard() {
                         <MapPin size={14} style={{ color: d.color }} />
                         <span className="text-sm text-gray-700">{d.city}</span>
                         </div>
-                        <span className="text-sm font-semibold text-gray-900">{d.amount.toLocaleString()} XOF</span>
+                        <span className="text-sm font-semibold text-gray-900">{formatCurrency(d.amount)}</span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-1.5">
                         <div
@@ -367,7 +368,7 @@ export default function AfrikVoyageDashboard() {
                         <p className="text-xs text-gray-400">{duration} jour{duration > 1 ? "s" : ""}</p>
                         </td>
                         <td className="px-5 py-3 text-sm font-semibold text-gray-900">
-                        {cost.toLocaleString()} XOF
+                        {formatCurrency(cost)}
                         </td>
                         <td className="px-5 py-3">
                         <span

@@ -31,6 +31,7 @@ interface Stats {
     departments: number;
     managers: number;
     suspended: number;
+    newThisMonth: number;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -113,10 +114,10 @@ export default function EmployesPage() {
         {stats && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-                { label: "Employés actifs",   value: stats.active,     icon: Users,     color: "#3b82f6", bg: "#eff6ff", sub: "+12%" },
+                { label: "Employés actifs",   value: stats.active,     icon: Users,     color: "#3b82f6", bg: "#eff6ff", sub: stats.newThisMonth > 0 ? `+${stats.newThisMonth} ce mois` : "Aucun nouveau ce mois" },
                 { label: "Départements",      value: stats.departments, icon: Building2, color: "#10b981", bg: "#f0fdf4", sub: "—" },
                 { label: "Managers",          value: stats.managers,    icon: Briefcase, color: "#f59e0b", bg: "#fffbeb", sub: "—" },
-                { label: "Comptes suspendus", value: stats.suspended,   icon: UserX,     color: "#ef4444", bg: "#fef2f2", sub: `-${stats.suspended > 0 ? 3 : 0}` },
+                { label: "Comptes suspendus", value: stats.suspended,   icon: UserX,     color: "#ef4444", bg: "#fef2f2", sub: "—" },
             ].map((s) => (
                 <div key={s.label}
                 className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { prisma } from "../../../core/config/prisma";
 
 // Param unique du segment `/locations/:locationId/...` (nom différent de "id" -> schéma local dédié)
 export const locationIdParamSchema = z.object({ locationId: z.string().min(1) });
@@ -16,6 +17,10 @@ export const createStaffSchema = z.object({
     lastName:  z.string().min(1),
 });
 
+// `notes` est délibérément absent : c'est une note interne réservée au Super
+// Admin (visible/éditable uniquement depuis /admin/partners), jamais un champ
+// que le partenaire — même PARTNER_ADMIN — doit pouvoir lire ou écraser via
+// son propre portail.
 export const updateProfileSchema = z.object({
     name:         z.string().min(1).optional(),
     sector:       z.string().min(1).optional(),
@@ -23,7 +28,6 @@ export const updateProfileSchema = z.object({
     contactEmail: z.string().email().optional(),
     phone:        z.string().optional(),
     websiteUrl:   z.string().url().optional(),
-    notes:        z.string().optional(),
     logoUrl:      z.string().url().optional(),
 });
 
@@ -55,7 +59,7 @@ export const setAvailabilitiesSchema = z.object({
     slots: z.array(availabilitySlotSchema),
 });
 
-export const createOfferSchema = z.object({
+const offerFields = {
     title:          z.string().min(1),
     description:    z.string().optional(),
     imageUrl:       z.string().url("Image requise"),
@@ -69,7 +73,31 @@ export const createOfferSchema = z.object({
     city:           z.string().optional(),
     region:         z.string().optional(),
     country:        z.string().optional(),
-});
+};
+
+/** Rejette toute catégorie qui ne correspond à aucune BenefitCategory active
+ *  de l'organisation hôte à laquelle les offres partenaires sont rattachées. */
+async function categoryExistsForOrg(category: string, orgId: string): Promise<boolean> {
+    const cat = await prisma.benefitCategory.findFirst({
+        where: { organizationId: orgId, name: category, isActive: true },
+        select: { id: true },
+    });
+    return !!cat;
+}
+
+export function createOfferSchema(orgId: string) {
+    return z.object(offerFields).refine(
+        (data) => categoryExistsForOrg(data.category, orgId),
+        { message: "Cette catégorie n'existe pas pour cette organisation", path: ["category"] }
+    );
+}
+
+export function updateOfferSchema(orgId: string) {
+    return z.object(offerFields).partial().refine(
+        (data) => data.category === undefined || categoryExistsForOrg(data.category, orgId),
+        { message: "Cette catégorie n'existe pas pour cette organisation", path: ["category"] }
+    );
+}
 
 // ── Paramètres ────────────────────────────────────────────────────────────
 
@@ -104,4 +132,8 @@ export const updatePaymentMethodSchema = z.object({
     label:    z.string().min(2).max(60).optional(),
     isActive: z.boolean().optional(),
     details:  z.record(z.string(), z.string().min(1).max(200)).optional(),
+});
+
+export const toggleOfferActiveSchema = z.object({
+    isActive: z.boolean(),
 });

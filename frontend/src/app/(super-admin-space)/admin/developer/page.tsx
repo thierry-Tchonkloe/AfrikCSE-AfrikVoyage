@@ -11,7 +11,7 @@ import {
 } from "@/services/admin/developer.service";
 
 const AVAILABLE_SCOPES = ["bookings:read","bookings:write","orders:read","wallet:read","commissions:read","reporting:read"];
-const AVAILABLE_EVENTS = ["booking.confirmed","booking.rejected","booking.completed","booking.cancelled","travel.approved","travel.rejected","order.confirmed","order.cancelled","wallet.credited"];
+const AVAILABLE_EVENTS = ["booking.confirmed","booking.rejected","booking.completed","booking.cancelled","travel.approved","travel.rejected","travel.completed","order.confirmed","order.cancelled","wallet.credited"];
 
 function CopyButton({ text }: { text: string }) {
     const [copied, setCopied] = useState(false);
@@ -309,6 +309,52 @@ function WebhooksTab() {
     );
 }
 
+function DeveloperApiToggle() {
+    const [enabled, setEnabled] = useState<boolean | null>(null);
+    const [saving, setSaving]   = useState(false);
+
+    useEffect(() => {
+        developerService.getSettings()
+            .then((s) => setEnabled(s.developerApiEnabled))
+            .catch(() => setEnabled(false));
+    }, []);
+
+    async function toggle() {
+        if (enabled === null || saving) return;
+        setSaving(true);
+        try {
+            const result = await developerService.updateSettings(!enabled);
+            setEnabled(result.developerApiEnabled);
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    if (enabled === null) return null;
+
+    return (
+        <div className="flex items-center gap-3 p-3 border rounded-lg bg-white">
+            <div>
+                <p className="text-sm font-medium text-gray-800">Accès API développeur</p>
+                <p className="text-xs text-gray-500">
+                    {enabled
+                        ? "Activé — les clés API de cette organisation peuvent authentifier des requêtes."
+                        : "Désactivé — même avec une clé valide, l'API publique refuse toute requête de cette organisation."}
+                </p>
+            </div>
+            <button
+                onClick={toggle}
+                disabled={saving}
+                className={`ml-auto shrink-0 text-xs px-3 py-1.5 rounded border disabled:opacity-50 ${
+                    enabled ? "text-orange-600 border-orange-200 hover:bg-orange-50" : "text-green-600 border-green-200 hover:bg-green-50"
+                }`}
+            >
+                {enabled ? "Désactiver" : "Activer"}
+            </button>
+        </div>
+    );
+}
+
 export default function DeveloperPage() {
     const [tab, setTab] = useState<"clients" | "webhooks">("clients");
 
@@ -320,6 +366,10 @@ export default function DeveloperPage() {
                     <h1 className="text-xl font-bold text-gray-900">API Développeur</h1>
                     <p className="text-sm text-gray-500">Clients API, webhooks et journal de livraison</p>
                 </div>
+            </div>
+
+            <div className="mb-6">
+                <DeveloperApiToggle />
             </div>
 
             <div className="flex gap-1 mb-6 border-b">

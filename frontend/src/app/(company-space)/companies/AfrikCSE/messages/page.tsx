@@ -142,11 +142,6 @@ export default function MessagesPage() {
         return colors[name.charCodeAt(0) % colors.length];
     };
 
-    const isOnline = (conv: Conversation): boolean => {
-        // Logique simplifiée — à remplacer par WebSocket
-        return conv.id === activeConv?.id;
-    };
-
     return (
         <div className="flex h-[calc(100vh-130px)] bg-white rounded-xl border border-gray-200 overflow-hidden">
         {/* ── Sidebar conversations ── */}
@@ -197,9 +192,6 @@ export default function MessagesPage() {
                     >
                         {getConvInitials(conv)}
                     </div>
-                    {isOnline(conv) && (
-                        <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-white" />
-                    )}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -249,7 +241,6 @@ export default function MessagesPage() {
                     <p className="font-semibold text-gray-900 text-sm">
                     {getConvName(activeConv)}
                     </p>
-                    <p className="text-xs text-green-500">● En ligne</p>
                 </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -301,27 +292,6 @@ export default function MessagesPage() {
                     </div>
                 );
                 })}
-
-                {/* Indicateur "en train d'écrire" simulé */}
-                {activeConv && (
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                    style={{ background: "#0f766e" }}
-                    >
-                    S
-                    </div>
-                    <span>Support est en train d&#39;écrire</span>
-                    <span className="flex gap-0.5">
-                    {[0, 1, 2].map((i) => (
-                        <span key={i}
-                        className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce"
-                        style={{ animationDelay: `${i * 150}ms` }}
-                        />
-                    ))}
-                    </span>
-                </div>
-                )}
 
                 <div ref={messagesEndRef} />
             </div>

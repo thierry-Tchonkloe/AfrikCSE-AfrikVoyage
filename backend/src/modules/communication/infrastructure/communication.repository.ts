@@ -2,7 +2,13 @@ import { prisma } from "../../../core/config/prisma";
 import { PostType } from "@prisma/client";
 
 export class CommunicationRepository {
-    async getPosts(orgId: string, page = 1, limit = 10) {
+    /**
+     * `userId` sert à réhydrater l'état "j'ai déjà liké / déjà voté" propre à
+     * l'appelant (`likes`/`pollOptions.votes` filtrés sur lui) — sans ça, le
+     * frontend n'a aucun moyen de savoir si CET utilisateur a déjà liké un
+     * post ou voté un sondage après un rechargement de page.
+     */
+    async getPosts(orgId: string, userId: string, page = 1, limit = 10) {
         const skip = (page - 1) * limit;
 
         const [posts, total] = await Promise.all([
@@ -12,7 +18,10 @@ export class CommunicationRepository {
             author: { select: { firstName: true, lastName: true, avatar: true, role: true, jobTitle: true } },
             _count: { select: { likes: true, comments: true } },
             pollOptions: {
-                include: { _count: { select: { votes: true } } },
+                include: {
+                _count: { select: { votes: true } },
+                votes: { where: { userId }, select: { id: true } },
+                },
             },
             likes: { select: { userId: true } },
             },

@@ -33,6 +33,7 @@ import app from "../../../app";
 import { prisma } from "../../../core/config/prisma";
 import { verifyAccessToken } from "../../../core/utils/jwt";
 import { TravelRepository } from "../../../modules/travels/infrastructure/travel.repository";
+import { AppError } from "../../../core/errors/app.error";
 import { mockAuthenticatedSession } from "../../session-helpers";
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
@@ -55,6 +56,8 @@ const rejectExpenseMock = TravelRepository.prototype.rejectExpense as jest.Mock;
 
 beforeEach(() => {
   mockReset(prismaMock);
+  // requireModule("VOYAGE") vérifie ce flag sur chaque route de ce routeur.
+  prismaMock.organization.findUnique.mockResolvedValue({ hasVoyage: true, hasCSE: true } as never);
 });
 
 function withSession(overrides: Parameters<typeof mockAuthenticatedSession>[2] = {}) {
@@ -312,23 +315,36 @@ describe("PATCH /api/travels/:id/partner", () => {
     const res = await request(app)
       .patch("/api/travels/travel-1/partner")
       .set("Cookie", cookie)
-      .send({ partnerName: "Agence Voyage Plus" });
+      .send({ partnerId: "partner-1" });
 
     expect(res.status).toBe(200);
     expect(res.body.partnerName).toBe("Agence Voyage Plus");
   });
 
-  it("400 — propage une erreur métier du repository", async () => {
+  it("400 — rejette un partnerId manquant sans jamais appeler le repository", async () => {
     const cookie = withSession();
-    assignPartnerMock.mockRejectedValueOnce(new Error("Voyage introuvable"));
 
     const res = await request(app)
-      .patch("/api/travels/travel-inconnu/partner")
+      .patch("/api/travels/travel-1/partner")
       .set("Cookie", cookie)
       .send({ partnerName: "X" });
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ message: "Voyage introuvable" });
+    expect(res.body).toEqual({ message: "partnerId requis" });
+    expect(assignPartnerMock).not.toHaveBeenCalled();
+  });
+
+  it("400 — propage une erreur métier du repository (ex: partenaire inactif/non autorisé)", async () => {
+    const cookie = withSession();
+    assignPartnerMock.mockRejectedValueOnce(new Error("Partenaire introuvable, inactif, ou non autorisé pour votre organisation"));
+
+    const res = await request(app)
+      .patch("/api/travels/travel-inconnu/partner")
+      .set("Cookie", cookie)
+      .send({ partnerId: "partner-suspendu" });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Partenaire introuvable, inactif, ou non autorisé pour votre organisation" });
   });
 });
 
@@ -352,6 +368,31 @@ describe("PATCH /api/travels/expenses/:id/approve", () => {
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ message: "Cette note de frais a déjà été traitée" });
+  });
+
+  it("404 — masque le message brut Prisma (P2025) au lieu de le renvoyer tel quel", async () => {
+    const cookie = withSession();
+    const prismaError: any = new Error(
+      "\nInvalid `prisma.expenseReport.update()` invocation in\nC:\\Users\\Thierry\\Documents\\WAXEHO\\AfrikCSE-AfrikVoyage\\backend\\src\\modules\\travels\\infrastructure\\travel.repository.ts:288:37\n\nAn operation failed because one or more records that were required but not found. No record was found for an update."
+    );
+    prismaError.code = "P2025";
+    approveExpenseMock.mockRejectedValueOnce(prismaError);
+
+    const res = await request(app).patch("/api/travels/expenses/exp-1/approve").set("Cookie", cookie);
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ message: "Ressource introuvable" });
+    expect(JSON.stringify(res.body)).not.toContain("travel.repository.ts");
+  });
+
+  it("422 — propage le refus pour solde de l'entreprise insuffisant sans stack trace", async () => {
+    const cookie = withSession();
+    approveExpenseMock.mockRejectedValueOnce(new AppError("Solde de l'entreprise insuffisant (disponible : 0 XOF, requis : 500 XOF)", 422));
+
+    const res = await request(app).patch("/api/travels/expenses/exp-1/approve").set("Cookie", cookie);
+
+    expect(res.status).toBe(422);
+    expect(res.body).toEqual({ message: "Solde de l'entreprise insuffisant (disponible : 0 XOF, requis : 500 XOF)" });
   });
 });
 

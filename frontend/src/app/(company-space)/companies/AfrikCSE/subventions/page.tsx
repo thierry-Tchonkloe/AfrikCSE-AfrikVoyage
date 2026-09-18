@@ -8,20 +8,21 @@ import {
     SubsidyRuleInput,
 } from "@/services/companies/subsidy-rules.service";
 import { toast } from "sonner";
+import { formatCurrency, DEFAULT_CURRENCY } from "@/lib/currency";
 
 const OFFER_TYPES = ["VOUCHER", "BOOKING", "DISCOUNT_CODE"] as const;
 
 const EMPTY_FORM: SubsidyRuleInput = {
     label: "", category: "", offerType: undefined,
     subsidyPct: undefined, subsidyAmount: undefined,
-    currencyCode: "XOF", maxPerEmployee: undefined,
+    currencyCode: DEFAULT_CURRENCY, maxPerEmployee: undefined,
     startsAt: "", endsAt: "",
     isActive: true, priority: 0,
 };
 
-function fmt(n: string | number | null | undefined, currency = "XOF") {
+function fmt(n: string | number | null | undefined, currency = DEFAULT_CURRENCY) {
     if (n == null) return "—";
-    return `${Number(n).toLocaleString("fr-FR")} ${currency}`;
+    return formatCurrency(n, currency);
 }
 
 export default function SubventionsPage() {

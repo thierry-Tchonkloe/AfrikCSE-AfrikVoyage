@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { EmployeeSpaceController } from "./employee-space.controller";
 import { authenticate } from "../../../core/middlewares/auth.middleware";
+import { requireModule } from "../../../core/middlewares/requireModule.middleware";
 import { receiptUpload, logoUpload } from "../../../core/middlewares/upload.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
@@ -15,9 +16,9 @@ router.use(authenticate);
 router.get("/dashboard",   ctrl.getDashboard.bind(ctrl));
 
 // ── Voyages ───────────────────────────────────────────────────────────────────
-router.get("/travels",     ctrl.getMyTravels.bind(ctrl));
-router.post("/travels",    ctrl.createTravel.bind(ctrl));
-router.get("/travels/:id", validateParams(idParamString), ctrl.getTravelById.bind(ctrl));
+router.get("/travels",     requireModule("VOYAGE"), ctrl.getMyTravels.bind(ctrl));
+router.post("/travels",    requireModule("VOYAGE"), ctrl.createTravel.bind(ctrl));
+router.get("/travels/:id", requireModule("VOYAGE"), validateParams(idParamString), ctrl.getTravelById.bind(ctrl));
 
 // ── Notes de frais ────────────────────────────────────────────────────────────
 router.get("/expenses",    ctrl.getMyExpenses.bind(ctrl));
@@ -25,11 +26,11 @@ router.post("/expenses",   ctrl.createExpense.bind(ctrl));
 router.post("/expenses/upload", receiptUpload.single("file"), ctrl.uploadReceipt.bind(ctrl));
 
 // ── Avantages CSE ─────────────────────────────────────────────────────────────
-router.get("/benefits/categories",           ctrl.getBenefitCategories.bind(ctrl));
-router.get("/benefits/balance",              ctrl.getBenefitBalance.bind(ctrl));
-router.get("/benefits/requests",             ctrl.getMyBenefitRequests.bind(ctrl));
-router.post("/benefits/requests",            ctrl.submitBenefitRequest.bind(ctrl));
-router.patch("/benefits/requests/:id/cancel", validateParams(idParamString), ctrl.cancelBenefitRequest.bind(ctrl));
+router.get("/benefits/categories",           requireModule("CSE"), ctrl.getBenefitCategories.bind(ctrl));
+router.get("/benefits/balance",              requireModule("CSE"), ctrl.getBenefitBalance.bind(ctrl));
+router.get("/benefits/requests",             requireModule("CSE"), ctrl.getMyBenefitRequests.bind(ctrl));
+router.post("/benefits/requests",            requireModule("CSE"), ctrl.submitBenefitRequest.bind(ctrl));
+router.patch("/benefits/requests/:id/cancel", requireModule("CSE"), validateParams(idParamString), ctrl.cancelBenefitRequest.bind(ctrl));
 
 // ── Carte de membre ───────────────────────────────────────────────────────────
 router.get("/member-card", ctrl.getMemberCard.bind(ctrl));

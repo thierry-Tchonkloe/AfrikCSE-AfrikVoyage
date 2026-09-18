@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Check, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, X, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { cseService } from "@/services/companies/cse.service";
 import { toast } from "sonner";
+import { formatCurrency, DEFAULT_CURRENCY } from "@/lib/currency";
 
 interface ApprovalStat {
     pending: number;
@@ -24,6 +25,12 @@ interface BenefitReq {
     category: { name: string; icon: string | null };
 }
 
+interface CategoryOption {
+    id: string;
+    name: string;
+    isActive: boolean;
+}
+
 const URGENCY_COLOR: Record<string, string> = {
     HIGH: "#ef4444", MEDIUM: "#f59e0b", LOW: "#10b981",
 };
@@ -32,9 +39,21 @@ const TYPE_ICON: Record<string, string> = {
     "Business Travel": "✈️", "Wellness Benefit": "🎁", "Expense Report": "📋",
 };
 
+// Seuils réalistes en XOF pour une demande d'avantage CSE (même logique de
+// recalibrage que les seuils de voyage — des tranches pensées en euros
+// n'auraient de sens ni pour l'utilisateur ni pour le filtre côté serveur).
+const AMOUNT_RANGES: { label: string; min?: number; max?: number }[] = [
+    { label: "Tous les montants" },
+    { label: `< 25 000 ${DEFAULT_CURRENCY}`, max: 25_000 },
+    { label: `25 000 – 100 000 ${DEFAULT_CURRENCY}`, min: 25_000, max: 100_000 },
+    { label: `> 100 000 ${DEFAULT_CURRENCY}`, min: 100_000 },
+];
+
 export default function AvantagesPage() {
     const [stats, setStats]       = useState<ApprovalStat | null>(null);
     const [requests, setRequests] = useState<BenefitReq[]>([]);
+    const [total, setTotal]       = useState(0);
+    const [categories, setCategories] = useState<CategoryOption[]>([]);
     const [loading, setLoading]   = useState(true);
     const [selected, setSelected] = useState<string[]>([]);
     const [page, setPage]         = useState(1);
@@ -42,21 +61,64 @@ export default function AvantagesPage() {
     const [rejectId, setRejectId] = useState<string | null>(null);
     const [rejectNote, setRejectNote] = useState("");
 
+    // Filtres
+    const [categoryId, setCategoryId]   = useState("");
+    const [amountRange, setAmountRange] = useState("0");
+    const [urgency, setUrgency]         = useState("");
+
     const load = useCallback(async () => {
         setLoading(true);
         try {
+        const range = AMOUNT_RANGES[Number(amountRange)] ?? AMOUNT_RANGES[0];
         const [statsRes, reqRes] = await Promise.all([
             cseService.getApprovalStats(),
-            cseService.getRequests({ status: "PENDING", page, limit: 10 }),
+            cseService.getRequests({
+            status: "PENDING", page, limit: 10,
+            categoryId: categoryId || undefined,
+            urgency: urgency || undefined,
+            minAmount: range.min,
+            maxAmount: range.max,
+            }),
         ]);
         setStats(statsRes);
         setRequests(reqRes.data);
+        setTotal(reqRes.total);
         setTotalPages(reqRes.totalPages);
         } catch { toast.error("Erreur chargement"); }
         finally { setLoading(false); }
-    }, [page]);
+    }, [page, categoryId, amountRange, urgency]);
 
     useEffect(() => { load(); }, [load]);
+    useEffect(() => { setPage(1); }, [categoryId, amountRange, urgency]);
+
+    useEffect(() => {
+        cseService.getCategories()
+        .then((data: CategoryOption[]) => setCategories(data.filter((c) => c.isActive)))
+        .catch(() => toast.error("Erreur chargement des catégories"));
+    }, []);
+
+    const handleExport = () => {
+        if (!requests.length) { toast.error("Aucune demande à exporter"); return; }
+        const rows = ["Employé;Email;Catégorie;Montant;Urgence;Soumis le"];
+        requests.forEach((r) => {
+        rows.push([
+            `${r.employee.user.firstName} ${r.employee.user.lastName}`,
+            r.employee.user.email,
+            r.category.name,
+            r.amount.toString(),
+            r.urgency,
+            new Date(r.createdAt).toLocaleDateString("fr-FR"),
+        ].join(";"));
+        });
+        const csv = "﻿" + rows.join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "demandes-avantages.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
     const handleApprove = async (id: string) => {
         try {
@@ -110,7 +172,7 @@ export default function AvantagesPage() {
             {[
                 { label: "Approbations en attente", value: stats.pending, color: "#f59e0b", icon: "⏳" },
                 { label: "Approuvé aujourd'hui",    value: stats.approvedToday, color: "#10b981", icon: "✅" },
-                { label: "Montant total",            value: `€${stats.totalAmount.toLocaleString()}`, color: "#3b82f6", icon: "€" },
+                { label: "Montant total",            value: formatCurrency(stats.totalAmount), color: "#3b82f6", icon: "💰" },
                 { label: "Temps de réponse moyen",  value: `${stats.avgResponseHours}h`, color: "#8b5cf6", icon: "⏱" },
             ].map((s) => (
                 <div key={s.label}
@@ -127,14 +189,18 @@ export default function AvantagesPage() {
 
         {/* Filtres + bulk */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3 items-center">
-            <select className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-gray-600">
-            <option>All Categories</option>
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-gray-600">
+            <option value="">Toutes les catégories</option>
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <select className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-gray-600">
-            <option>All Amounts</option>
+            <select value={amountRange} onChange={(e) => setAmountRange(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-gray-600">
+            {AMOUNT_RANGES.map((r, i) => <option key={r.label} value={i}>{r.label}</option>)}
             </select>
-            <select className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-gray-600">
-            <option>All Urgency</option>
+            <select value={urgency} onChange={(e) => setUrgency(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-gray-600">
+            <option value="">Toutes urgences</option>
             <option value="HIGH">High</option>
             <option value="MEDIUM">Medium</option>
             <option value="LOW">Low</option>
@@ -148,8 +214,9 @@ export default function AvantagesPage() {
             >
                 <Check size={14} /> Bulk Approve {selected.length > 0 && `(${selected.length})`}
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600">
-                ↓ Export
+            <button onClick={handleExport}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">
+                <Download size={14} /> Export
             </button>
             </div>
         </div>
@@ -222,7 +289,7 @@ export default function AvantagesPage() {
                         </div>
                         </td>
                         <td className="px-3 py-3 text-sm font-semibold text-gray-900">
-                        €{req.amount.toLocaleString()}
+                        {formatCurrency(req.amount)}
                         </td>
                         <td className="px-3 py-3">
                         <span className="text-xs font-medium"
@@ -260,7 +327,7 @@ export default function AvantagesPage() {
             {/* Pagination */}
             <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
             <p className="text-xs text-gray-500">
-                Showing {requests.length} of {requests.length * totalPages} requests
+                Affichage de {requests.length} sur {total} demande{total > 1 ? "s" : ""}
             </p>
             <div className="flex gap-1 items-center">
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}

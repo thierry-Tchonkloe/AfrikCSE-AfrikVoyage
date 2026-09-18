@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Euro, Plane, TrendingUp, Leaf, Eye, Download } from "lucide-react";
+import { Wallet, Receipt, TrendingUp, Leaf, Eye, Download, Check, X, PlusCircle } from "lucide-react";
 import { voyageService } from "@/services/companies/voyage.service";
+import { billingService } from "@/services/companies/billing.service";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
+import { formatCurrency } from "@/lib/currency";
+import { DEPARTMENTS } from "@/lib/departments";
 
 interface ExpenseStats {
     totalAmount: number;
@@ -19,8 +23,10 @@ interface Expense {
     amount: number;
     status: string;
     department: string | null;
+    category: string | null;
     co2Emissions: number | null;
     createdAt: string;
+    receipts: string[];
     employee: {
         user: { firstName: string; lastName: string; jobTitle: string | null };
     };
@@ -32,26 +38,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
     REJECTED: { label: "Rejected", color: "#ef4444" },
 };
 
-// Données chart mensuelles mock
-const MONTHLY_DATA = [
-    { month: "Jan", value: 38000 }, { month: "Fév", value: 42000 },
-    { month: "Mar", value: 35000 }, { month: "Avr", value: 48000 },
-    { month: "Mai", value: 44000 }, { month: "Jun", value: 51000 },
-    { month: "Jul", value: 46000 }, { month: "Aoû", value: 43000 },
-    { month: "Sep", value: 52000 }, { month: "Oct", value: 48000 },
-    { month: "Nov", value: 45000 }, { month: "Déc", value: 41000 },
-];
-
-const MAX_VAL = Math.max(...MONTHLY_DATA.map((m) => m.value));
-
-// Données pie chart mock (dépenses par département)
-const DEPT_DATA = [
-    { label: "Ventes",     pct: 40.9, color: "#1e3a5f" },
-    { label: "Marketing",  pct: 27.3, color: "#0f766e" },
-    { label: "Ingénierie", pct: 19.7, color: "#f59e0b" },
-    { label: "Opérations", pct: 7.1,  color: "#ef4444" },
-    { label: "Finance",    pct: 5.0,  color: "#8b5cf6" },
-];
+const PALETTE = ["#1e3a5f", "#0f766e", "#f59e0b", "#ef4444", "#8b5cf6", "#3b82f6"];
 
 function getPiePath(pct: number, offset: number): string {
     const r = 80;
@@ -66,40 +53,165 @@ function getPiePath(pct: number, offset: number): string {
     return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z`;
 }
 
-// Chemins SVG précalculés une seule fois (offsets cumulés via un accumulateur
-// immuable, pas de variable réassignée pendant le rendu).
-const DEPT_SLICES = DEPT_DATA.reduce<{ items: Array<(typeof DEPT_DATA)[number] & { path: string }>; offset: number }>(
-    (acc, d) => ({
-        items: [...acc.items, { ...d, path: getPiePath(d.pct, acc.offset) }],
-        offset: acc.offset + d.pct,
-    }),
-    { items: [], offset: 0 }
-).items;
+function monthKey(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthLabel(key: string): string {
+    const [y, m] = key.split("-").map(Number);
+    return new Date(y, m - 1).toLocaleDateString("fr-FR", { month: "short" });
+}
+
+function pctDelta(last: number, prev: number): string {
+    if (prev === 0) return last === 0 ? "Stable vs mois précédent" : "Nouveau ce mois-ci";
+    const pct = ((last - prev) / prev) * 100;
+    return `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% vs mois précédent`;
+}
 
 export default function FraisPage() {
-    const [stats, setStats]     = useState<ExpenseStats | null>(null);
-    const [expenses, setExpenses] = useState<Expense[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [stats, setStats]         = useState<ExpenseStats | null>(null);
+    const [expenses, setExpenses]   = useState<Expense[]>([]);
+    // Échantillon plus large, chargé uniquement pour les agrégations (tendance
+    // mensuelle, répartition département/CO2) — jamais affiché directement.
+    const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+    const [loading, setLoading]     = useState(true);
 
-    // Filtres
-    const [dateRange, setDateRange] = useState("Last 30 days");
-    const [dept, setDept]           = useState("All Departments");
-    const [status, setStatus]       = useState("All Status");
+    // Filtres — seuls ceux réellement supportés par l'API (department, status)
+    // sont exposés ; il n'existe pas de filtrage par plage de dates côté backend.
+    const [dept, setDept]     = useState("All Departments");
+    const [status, setStatus] = useState("All Status");
+
+    const [processing, setProcessing] = useState(false);
+    const [rejectItem, setRejectItem] = useState<Expense | null>(null);
+
+    const [wallet, setWallet] = useState<{ balance: number; currencyCode: string } | null>(null);
+    const [showTopup, setShowTopup] = useState(false);
+    const [toppingUp, setToppingUp] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-        const [statsRes, expRes] = await Promise.all([
+        const department = dept !== "All Departments" ? dept : undefined;
+        const [statsRes, expRes, allRes, walletRes] = await Promise.all([
             voyageService.getExpenseStats(),
-            voyageService.getExpenses({ status: status !== "All Status" ? status : undefined }),
+            voyageService.getExpenses({ status: status !== "All Status" ? status : undefined, department }),
+            voyageService.getExpenses({ department, limit: 200 }),
+            billingService.getWalletBalance(),
         ]);
         setStats(statsRes);
         setExpenses(expRes.data);
+        setAllExpenses(allRes.data);
+        setWallet(walletRes);
         } catch { toast.error("Erreur chargement"); }
         finally { setLoading(false); }
-    }, [status]);
+    }, [status, dept]);
 
     useEffect(() => { load(); }, [load]);
+
+    const handleTopup = async (amount: number) => {
+        setToppingUp(true);
+        try {
+        const res = await billingService.topUpWallet(amount);
+        setWallet(res);
+        toast.success("Portefeuille rechargé");
+        setShowTopup(false);
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Erreur lors du rechargement"));
+        } finally {
+        setToppingUp(false);
+        }
+    };
+
+    const handleApprove = async (id: string) => {
+        setProcessing(true);
+        try {
+        await voyageService.approveExpense(id);
+        toast.success("Note de frais approuvée — remboursement déclenché");
+        load();
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Erreur lors de l'approbation"));
+        } finally {
+        setProcessing(false);
+        }
+    };
+
+    const handleReject = async (item: Expense, note: string) => {
+        setProcessing(true);
+        try {
+        await voyageService.rejectExpense(item.id, note);
+        toast.success("Note de frais rejetée");
+        setRejectItem(null);
+        load();
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Erreur lors du rejet"));
+        } finally {
+        setProcessing(false);
+        }
+    };
+
+    const handleExport = () => {
+        if (!expenses.length) { toast.error("Aucun rapport à exporter"); return; }
+        const rows = ["Employé;Destination;Département;Montant;Statut;Date"];
+        expenses.forEach((exp) => {
+        rows.push([
+            `${exp.employee.user.firstName} ${exp.employee.user.lastName}`,
+            exp.destination ?? exp.title,
+            exp.department ?? "—",
+            exp.amount.toString(),
+            STATUS_CONFIG[exp.status]?.label ?? exp.status,
+            new Date(exp.createdAt).toLocaleDateString("fr-FR"),
+        ].join(";"));
+        });
+        const csv = "﻿" + rows.join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "notes-de-frais.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    // ── Agrégations réelles (calculées côté client sur allExpenses) ──────────
+
+    const monthlyBuckets = new Map<string, { amount: number }>();
+    allExpenses.forEach((e) => {
+        const key = monthKey(new Date(e.createdAt));
+        const b = monthlyBuckets.get(key) ?? { amount: 0 };
+        b.amount += e.amount;
+        monthlyBuckets.set(key, b);
+    });
+    const sortedMonthKeys = [...monthlyBuckets.keys()].sort();
+    const monthlyData = sortedMonthKeys.slice(-12).map((key) => ({ month: monthLabel(key), value: monthlyBuckets.get(key)!.amount }));
+    const maxMonthlyVal = Math.max(1, ...monthlyData.map((m) => m.value));
+    const lastMonthAmount = sortedMonthKeys.length ? monthlyBuckets.get(sortedMonthKeys[sortedMonthKeys.length - 1])!.amount : 0;
+    const prevMonthAmount = sortedMonthKeys.length > 1 ? monthlyBuckets.get(sortedMonthKeys[sortedMonthKeys.length - 2])!.amount : 0;
+
+    const deptTotals = new Map<string, number>();
+    allExpenses.forEach((e) => {
+        const d = e.department || "Non renseigné";
+        deptTotals.set(d, (deptTotals.get(d) ?? 0) + e.amount);
+    });
+    const totalDeptAmount = [...deptTotals.values()].reduce((a, b) => a + b, 0) || 1;
+    const deptBreakdown = [...deptTotals.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([label, amount], i) => ({ label, pct: (amount / totalDeptAmount) * 100, color: PALETTE[i % PALETTE.length] }));
+    const deptSlices = deptBreakdown.reduce<{ items: Array<(typeof deptBreakdown)[number] & { path: string }>; offset: number }>(
+        (acc, d) => ({
+            items: [...acc.items, { ...d, path: getPiePath(d.pct, acc.offset) }],
+            offset: acc.offset + d.pct,
+        }),
+        { items: [], offset: 0 },
+    ).items;
+
+    const co2ByCategory = new Map<string, number>();
+    allExpenses.forEach((e) => {
+        if (!e.co2Emissions) return;
+        const cat = e.category || "Autre";
+        co2ByCategory.set(cat, (co2ByCategory.get(cat) ?? 0) + e.co2Emissions);
+    });
+    const co2Breakdown = [...co2ByCategory.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
 
     return (
         <div className="space-y-5">
@@ -111,13 +223,11 @@ export default function FraisPage() {
             <div className="flex flex-wrap gap-2 items-center">
             <div className="flex flex-wrap gap-2 bg-white border border-gray-200 rounded-xl p-3">
                 <div>
-                <p className="text-xs text-gray-500 mb-1">Filters & Export</p>
+                <p className="text-xs text-gray-500 mb-1">Filtres & Export</p>
                 <div className="flex flex-wrap gap-2">
                     {[
-                    { label: "Date Range", value: dateRange, setter: setDateRange,
-                        options: ["Last 30 days", "Last 90 days", "This Year"] },
                     { label: "Department", value: dept, setter: setDept,
-                        options: ["All Departments", "Ventes", "Marketing", "Ingénierie"] },
+                        options: ["All Departments", ...DEPARTMENTS] },
                     { label: "Status", value: status, setter: setStatus,
                         options: ["All Status", "PENDING", "APPROVED", "REJECTED"] },
                     ].map((f) => (
@@ -127,12 +237,10 @@ export default function FraisPage() {
                         {f.options.map((o) => <option key={o}>{o}</option>)}
                     </select>
                     ))}
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-medium"
+                    <button onClick={handleExport}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-medium"
                     style={{ background: "#0f766e" }}>
-                    <Download size={13} /> Export PDF
-                    </button>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-medium bg-green-600">
-                    <Download size={13} /> Export Excel
+                    <Download size={13} /> Export CSV
                     </button>
                 </div>
                 </div>
@@ -140,25 +248,46 @@ export default function FraisPage() {
             </div>
         </div>
 
+        {/* Portefeuille entreprise (trésorerie de remboursement) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#eff6ff" }}>
+                <Wallet size={20} style={{ color: "#3b82f6" }} />
+            </div>
+            <div>
+                <p className="text-xs text-gray-500">Solde du portefeuille entreprise</p>
+                <p className="text-lg font-bold text-gray-900" data-testid="wallet-balance" data-balance={wallet?.balance ?? ""}>
+                {wallet ? formatCurrency(wallet.balance) : "—"}
+                </p>
+                <p className="text-xs text-gray-400">Utilisé pour rembourser les notes de frais approuvées</p>
+            </div>
+            </div>
+            <button onClick={() => setShowTopup(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-medium"
+            style={{ background: "#3b82f6" }}>
+            <PlusCircle size={14} /> Recharger le solde
+            </button>
+        </div>
+
         {/* Stats */}
         {stats && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
                 {
-                label: "Dépenses totales", value: `€${stats.totalAmount.toLocaleString()}`,
-                sub: "+12.5% from last month", icon: Euro, iconBg: "#eff6ff", iconColor: "#3b82f6",
+                label: "Dépenses totales", value: formatCurrency(stats.totalAmount),
+                sub: pctDelta(lastMonthAmount, prevMonthAmount), icon: Wallet, iconBg: "#eff6ff", iconColor: "#3b82f6",
                 },
                 {
-                label: "Nombre total de voyages", value: stats.totalCount.toString(),
-                sub: "+8.3% from last month", icon: Plane, iconBg: "#f0fdf4", iconColor: "#10b981",
+                label: "Nombre de notes de frais", value: stats.totalCount.toString(),
+                sub: `${allExpenses.length} sur les 200 dernières analysées`, icon: Receipt, iconBg: "#f0fdf4", iconColor: "#10b981",
                 },
                 {
-                label: "Coût moyen du voyage", value: `€${Math.round(stats.avgAmount)}`,
-                sub: "-2.1% from last month", icon: TrendingUp, iconBg: "#fffbeb", iconColor: "#f59e0b",
+                label: "Coût moyen par note", value: formatCurrency(Math.round(stats.avgAmount)),
+                sub: "Toutes notes confondues", icon: TrendingUp, iconBg: "#fffbeb", iconColor: "#f59e0b",
                 },
                 {
                 label: "Émissions de CO₂", value: `${stats.co2Emissions.toFixed(1)}t`,
-                sub: "+5.2% from last month", icon: Leaf, iconBg: "#fef2f2", iconColor: "#ef4444",
+                sub: "Cumul organisation", icon: Leaf, iconBg: "#fef2f2", iconColor: "#ef4444",
                 },
             ].map((s) => (
                 <div key={s.label}
@@ -182,106 +311,102 @@ export default function FraisPage() {
             {/* Line chart */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h3 className="font-semibold text-gray-900 mb-4">Tendances des dépenses mensuelles</h3>
-            <div className="relative h-40">
+            {monthlyData.length === 0 ? (
+                <div className="h-40 flex items-center justify-center text-sm text-gray-400">
+                Aucune donnée sur la période.
+                </div>
+            ) : (
+                <div className="relative h-40">
                 <svg viewBox="0 0 340 130" className="w-full h-full">
-                {[35000, 42000, 49000, 56000].map((v, i) => (
+                    {[0.25, 0.5, 0.75, 1].map((f, i) => (
                     <g key={i}>
-                    <line x1="0" y1={10 + i * 28} x2="340" y2={10 + i * 28}
+                        <line x1="0" y1={10 + i * 28} x2="340" y2={10 + i * 28}
                         stroke="#f3f4f6" strokeWidth="1" />
-                    <text x="0" y={14 + i * 28} fill="#9ca3af" fontSize="8">
-                        {(v / 1000).toFixed(0)}k
-                    </text>
+                        <text x="0" y={14 + i * 28} fill="#9ca3af" fontSize="8">
+                        {((maxMonthlyVal * (1 - f)) / 1000).toFixed(0)}k
+                        </text>
                     </g>
-                ))}
-                <defs>
+                    ))}
+                    <defs>
                     <linearGradient id="voyageGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0f766e" stopOpacity="0.15" />
-                    <stop offset="100%" stopColor="#0f766e" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#0f766e" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="#0f766e" stopOpacity="0" />
                     </linearGradient>
-                </defs>
-                <polygon
+                    </defs>
+                    <polygon
                     points={[
-                    ...MONTHLY_DATA.map((m, i) => {
-                        const x = 20 + (i / (MONTHLY_DATA.length - 1)) * 300;
-                        const y = 115 - ((m.value - 33000) / (MAX_VAL - 33000)) * 95;
+                        ...monthlyData.map((m, i) => {
+                        const x = monthlyData.length > 1 ? 20 + (i / (monthlyData.length - 1)) * 300 : 170;
+                        const y = 115 - (m.value / maxMonthlyVal) * 95;
                         return `${x},${y}`;
-                    }),
-                    "320,115", "20,115",
+                        }),
+                        "320,115", "20,115",
                     ].join(" ")}
                     fill="url(#voyageGrad)"
-                />
-                <polyline
-                    points={MONTHLY_DATA.map((m, i) => {
-                    const x = 20 + (i / (MONTHLY_DATA.length - 1)) * 300;
-                    const y = 115 - ((m.value - 33000) / (MAX_VAL - 33000)) * 95;
-                    return `${x},${y}`;
+                    />
+                    <polyline
+                    points={monthlyData.map((m, i) => {
+                        const x = monthlyData.length > 1 ? 20 + (i / (monthlyData.length - 1)) * 300 : 170;
+                        const y = 115 - (m.value / maxMonthlyVal) * 95;
+                        return `${x},${y}`;
                     }).join(" ")}
                     fill="none" stroke="#0f766e" strokeWidth="2"
                     strokeLinecap="round" strokeLinejoin="round"
-                />
+                    />
                 </svg>
                 <div className="flex justify-between mt-1 px-5">
-                {MONTHLY_DATA.filter((_, i) => i % 2 === 0).map((m) => (
-                    <span key={m.month} className="text-xs text-gray-400">{m.month}</span>
-                ))}
+                    {monthlyData.map((m, i) => (
+                    <span key={`${m.month}-${i}`} className="text-xs text-gray-400">{m.month}</span>
+                    ))}
                 </div>
-            </div>
+                </div>
+            )}
             </div>
 
             {/* Pie chart départements */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h3 className="font-semibold text-gray-900 mb-4">Dépenses par département</h3>
-            <div className="flex items-center gap-6">
+            {deptBreakdown.length === 0 ? (
+                <div className="h-40 flex items-center justify-center text-sm text-gray-400">
+                Aucune donnée sur la période.
+                </div>
+            ) : (
+                <div className="flex items-center gap-6">
                 <svg viewBox="0 0 200 200" className="w-40 h-40 shrink-0">
-                {DEPT_SLICES.map((d) => (
+                    {deptSlices.map((d) => (
                     <path key={d.label} d={d.path} fill={d.color} />
-                ))}
+                    ))}
                 </svg>
                 <div className="space-y-2">
-                {DEPT_DATA.map((d) => (
+                    {deptBreakdown.map((d) => (
                     <div key={d.label} className="flex items-center gap-2 text-xs">
-                    <span className="w-3 h-3 rounded-sm shrink-0"
+                        <span className="w-3 h-3 rounded-sm shrink-0"
                         style={{ background: d.color }} />
-                    <span className="text-gray-600">{d.label}</span>
-                    <span className="font-semibold text-gray-900 ml-auto pl-4">{d.pct}%</span>
+                        <span className="text-gray-600">{d.label}</span>
+                        <span className="font-semibold text-gray-900 ml-auto pl-4">{d.pct.toFixed(1)}%</span>
                     </div>
-                ))}
+                    ))}
                 </div>
-            </div>
+                </div>
+            )}
             </div>
         </div>
 
         {/* Impact CO₂ */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Impact environnemental</h3>
-            <span className="text-xs px-2 py-1 rounded-full font-medium"
-                style={{ background: "#f0fdf4", color: "#0f766e" }}>
-                🌱 Carbon Neutral Goal: 2025
-            </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-4">
-            {[
-                { label: "Flight Emissions",    value: "8.2t CO₂", icon: "✈️", color: "#ef4444" },
-                { label: "Ground Transport",    value: "2.8t CO₂", icon: "🚗", color: "#3b82f6" },
-                { label: "Accommodation",       value: "1.4t CO₂", icon: "🏨", color: "#10b981" },
-            ].map((s) => (
-                <div key={s.label} className="text-center">
-                <span className="text-3xl">{s.icon}</span>
-                <p className="text-lg font-bold mt-2" style={{ color: s.color }}>{s.value}</p>
-                <p className="text-xs text-gray-500">{s.label}</p>
+            <h3 className="font-semibold text-gray-900 mb-4">Impact environnemental</h3>
+            {co2Breakdown.length === 0 ? (
+            <p className="text-sm text-gray-400">Aucune émission de CO₂ renseignée sur les notes de frais analysées.</p>
+            ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {co2Breakdown.map(([category, tons], i) => (
+                <div key={category} className="text-center">
+                    <p className="text-lg font-bold" style={{ color: PALETTE[i % PALETTE.length] }}>{tons.toFixed(1)}t CO₂</p>
+                    <p className="text-xs text-gray-500">{category}</p>
                 </div>
-            ))}
+                ))}
             </div>
-            <div>
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
-                <span>Progrès en matière de compensation carbone</span>
-                <span className="font-medium text-green-600">65%</span>
-            </div>
-            <div className="w-full bg-gray-100 rounded-full h-2.5">
-                <div className="h-2.5 rounded-full" style={{ width: "65%", background: "#0f766e" }} />
-            </div>
-            </div>
+            )}
         </div>
 
         {/* Rapports récents */}
@@ -293,7 +418,7 @@ export default function FraisPage() {
             <table className="w-full">
                 <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                    {["Employee", "Trip Details", "Date", "Amount", "Status", "Actions"].map((h) => (
+                    {["Employee", "Trip Details", "Date", "Amount", "Status", "Justificatif", "Actions"].map((h) => (
                     <th key={h} className="text-left text-xs text-gray-500 font-medium px-5 py-3">{h}</th>
                     ))}
                 </tr>
@@ -302,14 +427,14 @@ export default function FraisPage() {
                 {loading ? (
                     [...Array(3)].map((_, i) => (
                     <tr key={i} className="border-b">
-                        <td colSpan={6} className="px-5 py-4">
+                        <td colSpan={7} className="px-5 py-4">
                         <div className="h-4 bg-gray-100 rounded animate-pulse" />
                         </td>
                     </tr>
                     ))
                 ) : expenses.length === 0 ? (
                     <tr>
-                    <td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-400">
+                    <td colSpan={7} className="px-5 py-8 text-center text-sm text-gray-400">
                         Aucun rapport trouvé
                     </td>
                     </tr>
@@ -317,7 +442,7 @@ export default function FraisPage() {
                     expenses.map((exp) => {
                     const st = STATUS_CONFIG[exp.status] ?? STATUS_CONFIG.PENDING;
                     return (
-                        <tr key={exp.id} className="border-b border-gray-50 hover:bg-gray-50">
+                        <tr key={exp.id} className="border-b border-gray-50 hover:bg-gray-50" data-testid="expense-row" data-expense-id={exp.id}>
                         <td className="px-5 py-3">
                             <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 text-xs font-bold">
@@ -340,10 +465,10 @@ export default function FraisPage() {
                             {new Date(exp.createdAt).toLocaleDateString("fr-FR")}
                         </td>
                         <td className="px-5 py-3 text-sm font-semibold text-gray-900">
-                            €{exp.amount.toLocaleString()}
+                            {formatCurrency(exp.amount)}
                         </td>
                         <td className="px-5 py-3">
-                            <span className="flex items-center gap-1.5 text-xs font-medium"
+                            <span className="flex items-center gap-1.5 text-xs font-medium" data-testid="expense-status"
                             style={{ color: st.color }}>
                             <span className="w-1.5 h-1.5 rounded-full"
                                 style={{ background: st.color }} />
@@ -351,9 +476,39 @@ export default function FraisPage() {
                             </span>
                         </td>
                         <td className="px-5 py-3">
-                            <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500">
-                            <Eye size={15} />
+                            {exp.receipts && exp.receipts.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                                {exp.receipts.map((url, i) => (
+                                <a key={url} href={url} target="_blank" rel="noopener noreferrer" data-testid="justificatif-link"
+                                    className="text-xs text-blue-600 hover:underline whitespace-nowrap">
+                                    📄 Justificatif{exp.receipts.length > 1 ? ` ${i + 1}` : ""}
+                                </a>
+                                ))}
+                            </div>
+                            ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                            )}
+                        </td>
+                        <td className="px-5 py-3">
+                            {exp.status === "PENDING" ? (
+                            <div className="flex gap-2">
+                                <button onClick={() => handleApprove(exp.id)} disabled={processing}
+                                title="Approuver"
+                                className="p-1.5 rounded-lg text-white disabled:opacity-50"
+                                style={{ background: "#10b981" }}>
+                                <Check size={14} />
+                                </button>
+                                <button onClick={() => setRejectItem(exp)} disabled={processing}
+                                title="Rejeter"
+                                className="p-1.5 rounded-lg text-white bg-red-500 disabled:opacity-50">
+                                <X size={14} />
+                                </button>
+                            </div>
+                            ) : (
+                            <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500" disabled>
+                                <Eye size={15} />
                             </button>
+                            )}
                         </td>
                         </tr>
                     );
@@ -361,6 +516,104 @@ export default function FraisPage() {
                 )}
                 </tbody>
             </table>
+            </div>
+        </div>
+
+        {rejectItem && (
+            <RejectExpenseModal
+            item={rejectItem}
+            processing={processing}
+            onClose={() => setRejectItem(null)}
+            onConfirm={(note) => handleReject(rejectItem, note)}
+            />
+        )}
+
+        {showTopup && (
+            <TopupModal
+            processing={toppingUp}
+            onClose={() => setShowTopup(false)}
+            onConfirm={handleTopup}
+            />
+        )}
+        </div>
+    );
+}
+
+// ── Modal Rechargement wallet ────────────────────────────
+
+function TopupModal({ processing, onClose, onConfirm }: {
+    processing: boolean;
+    onClose: () => void;
+    onConfirm: (amount: number) => void;
+}) {
+    const [amount, setAmount] = useState("");
+    const parsed = Number(amount);
+    const isValid = amount.trim() !== "" && Number.isFinite(parsed) && parsed > 0;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-gray-900">Recharger le portefeuille</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+            <p className="text-sm text-gray-500 mb-3">
+            Montant à créditer sur le portefeuille de l&apos;entreprise (XOF).
+            </p>
+            <input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)}
+            placeholder="Ex : 500000"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none" />
+            <div className="flex justify-end gap-2 mt-4">
+            <button onClick={onClose}
+                className="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600">
+                Annuler
+            </button>
+            <button disabled={processing || !isValid} onClick={() => onConfirm(parsed)}
+                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg text-white disabled:opacity-50"
+                style={{ background: "#3b82f6" }}>
+                {processing && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                Recharger
+            </button>
+            </div>
+        </div>
+        </div>
+    );
+}
+
+// ── Modal Rejet ────────────────────────────────────────
+
+function RejectExpenseModal({ item, processing, onClose, onConfirm }: {
+    item: Expense;
+    processing: boolean;
+    onClose: () => void;
+    onConfirm: (note: string) => void;
+}) {
+    const [note, setNote] = useState("");
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-gray-900">Rejeter — {item.destination ?? item.title}</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+            <p className="text-sm text-gray-500 mb-3">
+            Indiquez le motif du rejet pour {item.employee.user.firstName} {item.employee.user.lastName}.
+            </p>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3}
+            placeholder="Motif du rejet..."
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none resize-none" />
+            <div className="flex justify-end gap-2 mt-4">
+            <button onClick={onClose}
+                className="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600">
+                Annuler
+            </button>
+            <button disabled={processing || note.trim().length < 5} onClick={() => onConfirm(note.trim())}
+                className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg text-white disabled:opacity-50"
+                style={{ background: "#ef4444" }}>
+                {processing && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                Rejeter
+            </button>
             </div>
         </div>
         </div>

@@ -6,6 +6,7 @@ import { cashbackAdminService, CashbackRuleInput } from "@/services/companies/ca
 import { CashbackRule, CashbackType } from "@/types";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import { formatCurrency, DEFAULT_CURRENCY } from "@/lib/currency";
 
 const TYPE_LABELS: Record<CashbackType, string> = {
     MERCHANT:  "Marchand",
@@ -17,7 +18,7 @@ const TYPE_LABELS: Record<CashbackType, string> = {
 const EMPTY_FORM: CashbackRuleInput = {
     type:    "EMPLOYER",
     rate:    0,
-    currencyCode: "XOF",
+    currencyCode: DEFAULT_CURRENCY,
 };
 
 export default function AdminCashbackPage() {
@@ -159,14 +160,14 @@ export default function AdminCashbackPage() {
                                         {(parseFloat(rule.rate) * 100).toFixed(1)} %
                                         {rule.fixedAmount && (
                                             <span className="text-xs text-gray-400 ml-1">
-                                                (+{parseFloat(rule.fixedAmount).toLocaleString("fr-FR")} fixe)
+                                                (+{formatCurrency(rule.fixedAmount, rule.currencyCode)} fixe)
                                             </span>
                                         )}
                                     </td>
                                     <td className="px-5 py-3 text-gray-500">{rule.category ?? "—"}</td>
                                     <td className="px-5 py-3 text-gray-500 tabular-nums">
                                         {rule.maxPerEmployee
-                                            ? `${parseFloat(rule.maxPerEmployee).toLocaleString("fr-FR")} ${rule.currencyCode}`
+                                            ? formatCurrency(rule.maxPerEmployee, rule.currencyCode)
                                             : "—"}
                                     </td>
                                     <td className="px-5 py-3 text-gray-400 text-xs">

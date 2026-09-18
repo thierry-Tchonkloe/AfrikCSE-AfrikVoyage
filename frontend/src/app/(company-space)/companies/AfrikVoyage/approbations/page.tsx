@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Check, ChevronLeft, ChevronRight, Clock, CheckCircle2, Euro, Timer, Download } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Clock, CheckCircle2, Wallet, Timer, Download } from "lucide-react";
 import { voyageService } from "@/services/companies/voyage.service";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import { formatCurrency, DEFAULT_CURRENCY } from "@/lib/currency";
+import { DEPARTMENTS } from "@/lib/departments";
 
 // ── Types ──────────────────────────────────────────────
 
@@ -45,16 +47,15 @@ const URGENCY_CONFIG: Record<string, { label: string; color: string }> = {
     LOW:    { label: "Faible",  color: "#10b981" },
 };
 
-const DEPARTMENTS = [
-    "Direction", "Ressources Humaines", "Finance & Comptabilité",
-    "Commercial", "Marketing", "Technologie", "Opérations", "Autre",
-];
 
+// Seuils recalibrés en XOF (les valeurs d'origine, 1 000/5 000, étaient des
+// montants pensés en euros — sans conversion, ils ne filtraient quasiment
+// jamais rien sur des coûts de voyage réels exprimés en centaines de milliers).
 const AMOUNT_RANGES: { label: string; min?: number; max?: number }[] = [
     { label: "Tous les montants" },
-    { label: "< 1 000 €", max: 1000 },
-    { label: "1 000 € – 5 000 €", min: 1000, max: 5000 },
-    { label: "> 5 000 €", min: 5000 },
+    { label: `< 500 000 ${DEFAULT_CURRENCY}`, max: 500_000 },
+    { label: `500 000 – 2 000 000 ${DEFAULT_CURRENCY}`, min: 500_000, max: 2_000_000 },
+    { label: `> 2 000 000 ${DEFAULT_CURRENCY}`, min: 2_000_000 },
 ];
 
 // ── Page ───────────────────────────────────────────────
@@ -211,8 +212,8 @@ export default function ApprobationsPage() {
                 icon: Clock, iconBg: "#fffbeb", iconColor: "#f59e0b" },
                 { label: "Approuvé aujourd'hui", value: stats.approvedToday.toString(),
                 icon: CheckCircle2, iconBg: "#f0fdf4", iconColor: "#10b981" },
-                { label: "Montant total approuvé", value: `€${stats.totalAmount.toLocaleString()}`,
-                icon: Euro, iconBg: "#eff6ff", iconColor: "#3b82f6" },
+                { label: "Montant total approuvé", value: formatCurrency(stats.totalAmount),
+                icon: Wallet, iconBg: "#eff6ff", iconColor: "#3b82f6" },
                 { label: "Temps de réponse moyen", value: `${stats.avgResponseHours}h`,
                 icon: Timer, iconBg: "#f5f3ff", iconColor: "#8b5cf6" },
             ].map((s) => (
@@ -335,7 +336,7 @@ export default function ApprobationsPage() {
                             {r.department ?? r.requestedBy.department ?? "—"}
                         </td>
                         <td className="px-3 py-3 text-sm font-semibold text-gray-900">
-                            {r.estimatedCost != null ? `€${r.estimatedCost.toLocaleString()}` : "—"}
+                            {r.estimatedCost != null ? formatCurrency(r.estimatedCost) : "—"}
                         </td>
                         <td className="px-3 py-3">
                             <span className="text-xs font-medium" style={{ color: uc.color }}>

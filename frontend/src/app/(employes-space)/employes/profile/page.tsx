@@ -1,66 +1,73 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { employeeService } from "@/services/employes/employee.service";
-import { Save, Upload, Download, Trash2, Eye, EyeOff, Loader2, Shield } from "lucide-react";
+import { Save, Upload, Download, Trash2, Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/employes/UserAvatar";
+import { DEPARTMENTS } from "@/lib/departments";
 
 interface Document {
     id: string; name: string; url: string; size: string | null; createdAt: string;
 }
 
-const AIRLINES     = ["Air Peace", "Ark Air", "Ethiopian Airlines", "Air France", "Kenya Airways"];
-const SEAT_PREFS   = ["Aisle", "Window", "No Preference"];
-const HOTEL_CHAINS = ["Marriott", "Hilton", "Radisson", "Accor", "No Preference"];
-const ROOM_TYPES   = ["Single", "Double", "Suite", "No Preference"];
-const DEPARTMENTS  = ["Direction", "RH", "Finance", "Commercial", "Marketing", "Technologie", "Opérations"];
+const AIRLINES     = ["Aucune préférence", "Air Peace", "Ark Air", "Ethiopian Airlines", "Air France", "Kenya Airways"];
+const SEAT_PREFS   = ["No Preference", "Aisle", "Window"];
+const HOTEL_CHAINS = ["No Preference", "Marriott", "Hilton", "Radisson", "Accor"];
+const ROOM_TYPES   = ["No Preference", "Single", "Double", "Suite"];
+
+const EMPTY_FORM = {
+    firstName: "", lastName: "", email: "", phone: "",
+    employeeId: "", department: "", jobTitle: "",
+    // Adresse — aucun champ backend équivalent aujourd'hui : purement local,
+    // jamais envoyé par handleSave (voir updateProfile ci-dessous).
+    homeAddress: "", city: "", country: "",
+    emergencyContact: "", emergencyPhone: "",
+    // Préférences voyage — idem, purement local pour l'instant.
+    preferredAirline: AIRLINES[0], seatPref: SEAT_PREFS[0],
+    hotelChain: HOTEL_CHAINS[0], roomType: ROOM_TYPES[0], dietaryReqs: "",
+};
 
 export default function ProfilePage() {
     const { user, reload } = useAuth();
+    const router = useRouter();
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving]   = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const [docs, setDocs]       = useState<Document[]>([]);
-    const [show2FA, setShow2FA] = useState(true);
-    const [twoFA, setTwoFA]     = useState(true);
-    const [emailNotif, setEmailNotif] = useState(true);
-    const [activeTab, setActiveTab]   = useState<"info" | "security">("info");
 
-    const [form, setForm] = useState({
-        firstName:    user?.firstName ?? "",
-        lastName:     user?.lastName  ?? "",
-        email:        user?.email     ?? "",
-        phone:        "",
-        employeeId:   "EMP-2024-001",
-        department:   "Product Management",
-        jobTitle:     "Senior Product Manager",
-        // Adresse
-        homeAddress:  "15 Victoria Island, Lagos, Nigeria",
-        city:         "Lagos",
-        country:      "Nigeria",
-        emergencyContact: "Sarah Wilson (Wife)",
-        emergencyPhone:   "+234 801 234 5679",
-        // Préférences voyage
-        preferredAirline: "Air Peace",
-        seatPref:     "Aisle",
-        hotelChain:   "Marriott",
-        roomType:     "Single",
-        dietaryReqs:  "",
-    });
+    const [form, setForm] = useState(EMPTY_FORM);
 
     const upd = (k: keyof typeof form, v: string) =>
         setForm((prev) => ({ ...prev, [k]: v }));
 
     useEffect(() => {
+        setLoading(true);
+        employeeService.getProfile()
+        .then((p) => {
+            setForm((f) => ({
+                ...f,
+                firstName:  p.firstName  ?? "",
+                lastName:   p.lastName   ?? "",
+                email:      p.email      ?? "",
+                phone:      p.phone      ?? "",
+                employeeId: p.employee?.matricule ?? "",
+                department: p.department ?? "",
+                jobTitle:   p.jobTitle   ?? "",
+            }));
+        })
+        .catch(() => toast.error("Impossible de charger le profil"))
+        .finally(() => setLoading(false));
+
         employeeService.getDocuments()
         .then(setDocs)
-        .catch(() => setDocs([
-            { id: "d1", name: "Passport Copy",  url: "#", size: "2.4 MB", createdAt: new Date().toISOString() },
-            { id: "d2", name: "National ID",    url: "#", size: "1.8 MB", createdAt: new Date().toISOString() },
-            { id: "d3", name: "Visa Document",  url: "#", size: "3.2 MB", createdAt: new Date().toISOString() },
-        ]));
+        .catch(() => {
+            setDocs([]);
+            toast.error("Impossible de charger les documents");
+        });
     }, []);
 
     const handleSave = async () => {
@@ -131,22 +138,16 @@ export default function ProfilePage() {
                 <h1 className="text-lg font-bold text-gray-900">
                 {form.firstName} {form.lastName}
                 </h1>
-                <p className="text-sm text-gray-500">{form.jobTitle}</p>
+                <p className="text-sm text-gray-500">{form.jobTitle || "—"}</p>
                 <p className="text-xs text-gray-400">
-                🏢 {user?.organization?.name} · 📍 Lagos, Nigeria
+                🏢 {user?.organization?.name}
                 </p>
             </div>
             </div>
             <div className="flex gap-2">
             <button
-                onClick={() => toast.info("Export profil PDF")}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
-            >
-                <Download size={15} /> Export Profile
-            </button>
-            <button
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || loading}
                 className="flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-semibold disabled:opacity-70"
                 style={{ background: "#0f766e" }}
             >
@@ -154,24 +155,6 @@ export default function ProfilePage() {
                 Save Changes
             </button>
             </div>
-        </div>
-
-        {/* Onglets */}
-        <div className="flex border-b border-gray-200">
-            {[
-            { id: "info" as const,     label: "Profile Photos" },
-            { id: "security" as const, label: "Reviews" },
-            ].map((tab) => (
-            <button key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="px-5 py-3 text-sm font-medium border-b-2 transition-colors"
-                style={activeTab === tab.id
-                ? { borderColor: "#0f766e", color: "#0f766e" }
-                : { borderColor: "transparent", color: "#6b7280" }}
-            >
-                {tab.label}
-            </button>
-            ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -212,7 +195,9 @@ export default function ProfilePage() {
                     <label className="block text-xs font-medium text-gray-500 mb-1">Department</label>
                     <select value={form.department}
                     onChange={(e) => upd("department", e.target.value)}
+                    disabled={loading}
                     className={inp}>
+                    <option value="">{loading ? "Chargement..." : "Sélectionner..."}</option>
                     {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}
                     </select>
                 </div>
@@ -346,39 +331,17 @@ export default function ProfilePage() {
                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                 <Shield size={18} style={{ color: "#0f766e" }} /> Security
                 </h3>
-                {[
-                {
-                    label: "Two-Factor Authentication",
-                    desc: "Add an extra layer of security",
-                    checked: twoFA,
-                    setter: setTwoFA,
-                },
-                {
-                    label: "Email Notifications",
-                    desc: "Receive security alerts via email",
-                    checked: emailNotif,
-                    setter: setEmailNotif,
-                },
-                ].map((s) => (
-                <div key={s.label} className="flex items-center justify-between">
-                    <div>
-                    <p className="text-sm font-medium text-gray-900">{s.label}</p>
-                    <p className="text-xs text-gray-500">{s.desc}</p>
-                    </div>
-                    <button
-                    onClick={() => s.setter(!s.checked)}
-                    className="relative w-11 h-6 rounded-full transition-colors"
-                    style={{ background: s.checked ? "#0f766e" : "#d1d5db" }}
-                    >
-                    <span
-                        className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                        style={{ transform: s.checked ? "translateX(0px)" : "translateX(-20px)" }}
-                    />
-                    </button>
-                </div>
-                ))}
+                {/* Les préférences de notification réelles (persistées) vivent sur
+                    Paramètres — un toggle local ici serait un doublon non
+                    sauvegardé, en désaccord avec l'état réel au moindre reload. */}
                 <button
-                onClick={() => toast.info("Changement de mot de passe")}
+                onClick={() => router.push("/employes/parametres#notifications")}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+                >
+                🔔 Notification Preferences
+                </button>
+                <button
+                onClick={() => router.push("/employes/parametres#security")}
                 className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
                 >
                 🔑 Change Password

@@ -4,8 +4,28 @@ import { RequestStatus, TravelStatus, Urgency } from "@prisma/client";
 import { dispatchNotificationToUsers } from "../../notification/application/notification.service";
 import { IdParamString } from "../../../core/validators/param.validators";
 import { dispatchWebhook } from "../../../core/services/webhook.service";
+import { TravelRewardService } from "../../travel-rewards/application/travel-reward.service";
+import { AppError } from "../../../core/errors/app.error";
 
 const repo = new TravelRepository();
+const travelRewardService = new TravelRewardService();
+
+/**
+ * Traduit une erreur d'action cross-org (ex: update where:{id,organizationId}
+ * qui échoue avec P2025) en réponse neutre — le message brut de Prisma contient
+ * le chemin absolu du fichier source côté serveur et ne doit jamais atteindre le client.
+ */
+function respondToMutationError(res: Response, err: any): void {
+    if (err instanceof AppError) {
+        res.status(err.statusCode).json({ message: err.message });
+        return;
+    }
+    if (err?.code === "P2025") {
+        res.status(404).json({ message: "Ressource introuvable" });
+        return;
+    }
+    res.status(400).json({ message: err.message });
+}
 
 const TRAVEL_STATUSES: TravelStatus[] = [
     "PENDING", "APPROVED", "REJECTED", "CANCELLED", "IN_PROGRESS", "COMPLETED",
@@ -58,7 +78,7 @@ export class TravelController {
         }).catch(() => {});
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 
@@ -77,7 +97,7 @@ export class TravelController {
         }).catch(() => {});
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 
@@ -114,7 +134,7 @@ export class TravelController {
         }
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 
@@ -146,7 +166,7 @@ export class TravelController {
         }
         res.json({ count: result.count });
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 
@@ -160,12 +180,12 @@ export class TravelController {
         const result = await repo.assignPartner(req.params.id, req.user!.organizationId!, partnerId);
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 
-    async listPartners(_req: Request, res: Response): Promise<void> {
-        res.json(await repo.listActivePartners());
+    async listPartners(req: Request, res: Response): Promise<void> {
+        res.json(await repo.listActivePartners(req.user!.organizationId!));
     }
 
     async updatePayment(req: Request<IdParamString>, res: Response): Promise<void> {
@@ -174,7 +194,43 @@ export class TravelController {
         const result = await repo.updatePayment(req.params.id, req.user!.organizationId!, { paymentStatus, paymentLink });
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
+        }
+    }
+
+    async complete(req: Request<IdParamString>, res: Response): Promise<void> {
+        const { actualCost } = req.body as { actualCost?: unknown };
+        if (typeof actualCost !== "number" || !Number.isFinite(actualCost) || actualCost < 0) {
+        res.status(400).json({ message: "actualCost requis (nombre positif)" });
+        return;
+        }
+        try {
+        const result = await repo.complete(req.params.id, req.user!.organizationId!, actualCost);
+        if (!result) {
+            res.status(400).json({ message: "Voyage introuvable ou déjà clôturé" });
+            return;
+        }
+
+        // Récompense best-effort si le voyage s'est fait sous le budget estimé —
+        // ne bloque jamais la clôture elle-même en cas d'échec.
+        if (result.estimatedCost != null) {
+            travelRewardService.earn({
+            organizationId:  result.organizationId,
+            userId:          result.requestedById,
+            travelRequestId: result.id,
+            estimatedCost:   result.estimatedCost,
+            actualCost,
+            }).catch(() => {});
+        }
+
+        dispatchWebhook(result.organizationId, "travel.completed", {
+            travelRequestId: result.id, destination: result.destination,
+            requestedById: result.requestedById, actualCost,
+        }).catch(() => {});
+
+        res.json(result);
+        } catch (err: any) {
+        respondToMutationError(res, err);
         }
     }
 
@@ -205,7 +261,7 @@ export class TravelController {
         ).catch(() => {});
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 
@@ -220,7 +276,7 @@ export class TravelController {
         ).catch(() => {});
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 }

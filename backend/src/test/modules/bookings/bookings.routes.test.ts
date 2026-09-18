@@ -57,6 +57,8 @@ const getAllForAdminMock = BookingService.prototype.getAllForAdmin as jest.Mock;
 
 beforeEach(() => {
   mockReset(prismaMock);
+  // requireModule("VOYAGE") vérifie ce flag sur les routes employé de ce routeur.
+  prismaMock.organization.findUnique.mockResolvedValue({ hasVoyage: true, hasCSE: true } as never);
 });
 
 function withSession(overrides: Parameters<typeof mockAuthenticatedSession>[2] = {}) {
@@ -88,13 +90,13 @@ describe("POST /api/bookings", () => {
     expect(createMock).toHaveBeenCalledWith("user-1", "org-1", expect.objectContaining({ partnerId: validBookingBody.partnerId }));
   });
 
-  it("400 — rejette un utilisateur sans organisation rattachée", async () => {
+  it("403 — rejette un utilisateur sans organisation rattachée (bloqué par requireModule avant le contrôleur)", async () => {
     const cookie = withSession({ organizationId: null });
 
     const res = await request(app).post("/api/bookings").set("Cookie", cookie).send(validBookingBody);
 
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({ message: "Organisation requise" });
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ message: "Aucune organisation associée à ce compte" });
     expect(createMock).not.toHaveBeenCalled();
   });
 

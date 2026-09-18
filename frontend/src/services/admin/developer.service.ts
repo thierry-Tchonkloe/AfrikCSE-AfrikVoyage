@@ -51,6 +51,16 @@ export interface WebhookDelivery {
 }
 
 export const developerService = {
+    // Paramètres
+    async getSettings(): Promise<{ developerApiEnabled: boolean }> {
+        const r = await api.get(`/developer/settings`, cfg());
+        return r.data;
+    },
+    async updateSettings(developerApiEnabled: boolean): Promise<{ developerApiEnabled: boolean }> {
+        const r = await api.patch(`/developer/settings`, { developerApiEnabled }, cfg());
+        return r.data;
+    },
+
     // Clients
     async listClients(): Promise<ApiClientItem[]> {
         const r = await api.get(`/developer/clients`, cfg());

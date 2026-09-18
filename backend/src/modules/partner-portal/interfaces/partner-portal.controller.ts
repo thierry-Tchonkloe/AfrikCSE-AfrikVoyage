@@ -2,9 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import { PartnerPortalService } from "../application/partner-portal.service";
 import {
     loginSchema, createStaffSchema, updateProfileSchema,
-    locationSchema, setAvailabilitiesSchema, createOfferSchema,
+    locationSchema, setAvailabilitiesSchema, createOfferSchema, updateOfferSchema,
     updateCurrencySchema, updateApiIntegrationSchema,
-    paymentMethodSchema, updatePaymentMethodSchema,
+    paymentMethodSchema, updatePaymentMethodSchema, toggleOfferActiveSchema,
     LocationIdParam,
 } from "./partner-portal.validator";
 import { IdParamString } from "../../../core/validators/param.validators";
@@ -134,29 +134,46 @@ export class PartnerPortalController {
         } catch (err) { next(err); }
     }
 
+    async listOfferCategories(_req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            res.json(await service.listOfferCategories());
+        } catch (err) { next(err); }
+    }
+
     async createOffer(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { partnerId } = req.partnerUser!;
-            const parsed = createOfferSchema.safeParse(req.body);
+            const hostOrgId = await service.getHostOrgId();
+            const parsed = await createOfferSchema(hostOrgId).safeParseAsync(req.body);
             if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
             const data = {
                 ...parsed.data,
                 validUntil: parsed.data.validUntil ? new Date(parsed.data.validUntil) : undefined,
             };
-            res.status(201).json(await service.createOffer(partnerId, data));
+            res.status(201).json(await service.createOffer(partnerId, hostOrgId, data));
         } catch (err) { next(err); }
     }
 
     async updateOffer(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
         try {
             const { partnerId } = req.partnerUser!;
-            const parsed = createOfferSchema.partial().safeParse(req.body);
+            const hostOrgId = await service.getHostOrgId();
+            const parsed = await updateOfferSchema(hostOrgId).safeParseAsync(req.body);
             if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
             const data = {
                 ...parsed.data,
                 validUntil: parsed.data.validUntil ? new Date(parsed.data.validUntil) : undefined,
             };
             res.json(await service.updateOffer(req.params.id, partnerId, data));
+        } catch (err) { next(err); }
+    }
+
+    async toggleOfferActive(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { partnerId } = req.partnerUser!;
+            const parsed = toggleOfferActiveSchema.safeParse(req.body);
+            if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
+            res.json(await service.setOfferActive(req.params.id, partnerId, parsed.data.isActive));
         } catch (err) { next(err); }
     }
 
@@ -229,6 +246,23 @@ export class PartnerPortalController {
             const { partnerId } = req.partnerUser!;
             await service.deletePaymentMethod(req.params.id, partnerId);
             res.status(204).send();
+        } catch (err) { next(err); }
+    }
+
+    // ── Espace financier ──────────────────────────────────────────────────────
+
+    async getFinances(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const page  = parseInt(req.query.page  as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 20;
+            res.json(await service.getFinances(req.partnerUser!.partnerId, page, limit));
+        } catch (err) { next(err); }
+    }
+
+    async requestPayout(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { partnerId, partnerUserId } = req.partnerUser!;
+            res.status(201).json(await service.requestPayout(partnerId, partnerUserId));
         } catch (err) { next(err); }
     }
 }

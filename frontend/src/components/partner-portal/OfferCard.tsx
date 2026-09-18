@@ -5,9 +5,13 @@ import { motion } from "framer-motion";
 import { Pencil, Clock, CheckCircle2, XCircle, ImageOff } from "lucide-react";
 import type { PartnerOffer } from "@/services/partner/partner-portal.service";
 
+// "Active" retiré du libellé APPROVED : la visibilité réelle de l'offre
+// (isActive) est désormais un état séparé et bascule indépendamment — un
+// badge de revue disant "Active" alors que le partenaire vient de la masquer
+// via le toggle ci-dessous serait directement contradictoire.
 export const REVIEW_BADGE: Record<PartnerOffer["reviewStatus"], { label: string; className: string; icon: typeof Clock }> = {
     PENDING:  { label: "En attente de validation", className: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: Clock },
-    APPROVED: { label: "Active",                   className: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle2 },
+    APPROVED: { label: "Approuvée",                className: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle2 },
     REJECTED: { label: "Refusée",                   className: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",         icon: XCircle },
 };
 
@@ -18,9 +22,16 @@ export const offerCardVariants = {
     show:   { opacity: 1, y: 0 },
 };
 
-export function OfferCard({ offer, onEdit }: { offer: PartnerOffer; onEdit: (offer: PartnerOffer) => void }) {
+export function OfferCard({ offer, onEdit, onToggleActive }: {
+    offer: PartnerOffer;
+    onEdit: (offer: PartnerOffer) => void;
+    onToggleActive: (offer: PartnerOffer) => void;
+}) {
     const review = REVIEW_BADGE[offer.reviewStatus];
     const ReviewIcon = review.icon;
+    // Activer n'est permis que si l'offre est déjà approuvée (vérifié aussi
+    // côté serveur) ; désactiver reste toujours possible pour la masquer.
+    const canActivate = offer.reviewStatus === "APPROVED";
 
     return (
         <motion.div
@@ -78,6 +89,25 @@ export function OfferCard({ offer, onEdit }: { offer: PartnerOffer; onEdit: (off
                         {fmt(offer.employeePrice)} <span className="text-xs font-normal text-gray-400">XOF employé</span>
                         <span className="text-xs font-normal text-gray-400"> · {fmt(offer.companyPrice)} entreprise</span>
                     </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-1"
+                    title={!offer.isActive && !canActivate ? "Cette offre doit être approuvée par le Super Admin avant de pouvoir être activée" : undefined}>
+                    <span className="text-xs text-gray-500">
+                        {offer.isActive ? "Visible par les employés" : "Masquée"}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => (offer.isActive || canActivate) && onToggleActive(offer)}
+                        disabled={!offer.isActive && !canActivate}
+                        className="relative w-9 h-5 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{ background: offer.isActive ? "#16a34a" : "#d1d5db" }}
+                    >
+                        <span
+                            className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
+                            style={{ transform: offer.isActive ? "translateX(18px)" : "translateX(2px)" }}
+                        />
+                    </button>
                 </div>
             </div>
         </motion.div>

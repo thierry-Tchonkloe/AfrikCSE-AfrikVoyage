@@ -13,6 +13,8 @@ export interface CreateBookingPayload {
     carRentalVehicleId?: string;
     bookingDate:     string;
     numberOfPersons?: number;
+    numberOfNights?: number;
+    numberOfDays?:   number;
     notes?:          string;
     idempotencyKey:  string;
     paymentMethod:   "WALLET" | "MOBILE_MONEY" | "CARD";

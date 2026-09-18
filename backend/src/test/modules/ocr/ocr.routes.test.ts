@@ -48,6 +48,24 @@ describe("POST /api/ocr/upload", () => {
     expect(res.body).toEqual({ id: "scan-1", status: "DONE" });
   });
 
+  it("201 — l'extraction simulée transmise à ocrScan.update() est réaliste (montant 3000–15000 XOF, date du jour)", async () => {
+    const cookie = withSession();
+    prismaMock.ocrScan.create.mockResolvedValueOnce({ id: "scan-1", status: "PROCESSING" } as never);
+    prismaMock.ocrScan.update.mockResolvedValueOnce({ id: "scan-1", status: "DONE" } as never);
+
+    await request(app)
+      .post("/api/ocr/upload")
+      .set("Cookie", cookie)
+      .send({ fileUrl: "https://cdn.example.com/recu.pdf" });
+
+    const updateArg = prismaMock.ocrScan.update.mock.calls[0][0] as any;
+    const extracted = updateArg.data.extractedData;
+    expect(extracted.amount).toBeGreaterThanOrEqual(3000);
+    expect(extracted.amount).toBeLessThanOrEqual(15000);
+    expect(extracted.date).toBe(new Date().toISOString().slice(0, 10));
+    expect(extracted.confidence).toBeGreaterThan(0);
+  });
+
   it("400 — rejette un corps invalide (URL de fichier manquante)", async () => {
     const cookie = withSession();
 

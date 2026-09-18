@@ -8,14 +8,18 @@ import { getBookingLabel } from "@/lib/booking-label";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
-const STATUS_CONFIG: Record<BookingStatus, { label: string; color: string; icon: React.ElementType }> = {
+// NO_SHOW retiré : ce statut existe dans l'enum Prisma mais n'est jamais
+// positionné par aucun flux backend — son badge ne pouvait donc jamais
+// s'afficher qu'à tort. `Partial<...>` + repli générique ci-dessous plutôt
+// que de mentir avec une entrée pour un état qui n'arrive jamais en pratique.
+const STATUS_CONFIG: Partial<Record<BookingStatus, { label: string; color: string; icon: React.ElementType }>> = {
     PENDING:   { label: "En attente",    color: "text-amber-600 bg-amber-50",  icon: Clock },
     CONFIRMED: { label: "Confirmée",     color: "text-blue-600 bg-blue-50",    icon: CheckCircle2 },
     COMPLETED: { label: "Complétée",     color: "text-green-600 bg-green-50",  icon: CheckCircle2 },
     CANCELLED: { label: "Annulée",       color: "text-gray-500 bg-gray-50",    icon: XCircle },
     REJECTED:  { label: "Refusée",       color: "text-red-600 bg-red-50",      icon: XCircle },
-    NO_SHOW:   { label: "Non présenté",  color: "text-orange-600 bg-orange-50",icon: Flag },
 };
+const FALLBACK_STATUS_CONFIG = { label: "Statut inconnu", color: "text-gray-500 bg-gray-50", icon: Flag };
 
 type Filter = "ALL" | BookingStatus;
 
@@ -118,7 +122,7 @@ export default function PartnerBookingsPage() {
             ) : (
                 <div className="space-y-3">
                     {bookings.map((b) => {
-                        const sc = STATUS_CONFIG[b.status];
+                        const sc = STATUS_CONFIG[b.status] ?? FALLBACK_STATUS_CONFIG;
                         const Icon = sc.icon;
                         return (
                             <div key={b.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">

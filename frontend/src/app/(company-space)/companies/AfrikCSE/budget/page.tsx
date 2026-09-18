@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, MoreVertical, Loader2, Save, X } from "lucide-react";
+import { Plus, Loader2, X } from "lucide-react";
 import { cseService } from "@/services/companies/cse.service";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { formatCurrency, DEFAULT_CURRENCY } from "@/lib/currency";
 
 interface Category {
     id: string;
@@ -15,17 +16,12 @@ interface Category {
     icon: string | null;
     annualBudget: number;
     perEmployeeLimit: number;
+    currency: string;
     isActive: boolean;
     eligibleServices: string[];
     budgetUsed: number;
     _count: { requests: number };
 }
-
-const GLOBAL_RULES = [
-    { label: "Exercice fiscal",         key: "fiscal",    options: ["2024 (Jan - Dec)", "2025 (Jan - Dec)"] },
-    { label: "Approbation requise",     key: "approval",  options: ["Above €200", "Above €500", "Toujours"] },
-    { label: "Période de réinitialisation", key: "reset", options: ["Annual", "Quarterly", "Monthly"] },
-];
 
 const catSchema = z.object({
     name:             z.string().min(1, "Nom requis"),
@@ -43,12 +39,6 @@ export default function BudgetPage() {
     const [loading, setLoading]       = useState(true);
     const [showAdd, setShowAdd]       = useState(false);
     const [saving, setSaving]         = useState(false);
-    const [autoApprove, setAutoApprove] = useState(true);
-    const [globalRules, setGlobalRules] = useState<Record<string, string>>({
-        fiscal: "2024 (Jan - Dec)",
-        approval: "Above €200",
-        reset: "Annual",
-    });
 
     const { register, handleSubmit, reset, formState: { errors } } =
         useForm<CatForm>({ resolver: zodResolver(catSchema) });
@@ -110,9 +100,6 @@ export default function BudgetPage() {
             >
                 <Plus size={15} /> Add New Category
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">
-                Export Rules
-            </button>
             </div>
         </div>
 
@@ -143,40 +130,31 @@ export default function BudgetPage() {
                         <p className="text-xs text-gray-500">{cat.description}</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span
-                        className="text-xs font-medium px-2 py-0.5 rounded-full"
+                    <button
+                        onClick={() => toggleActive(cat)}
+                        title={cat.isActive ? "Cliquer pour désactiver" : "Cliquer pour activer"}
+                        className="text-xs font-medium px-2 py-0.5 rounded-full transition-opacity hover:opacity-80"
                         style={cat.isActive
-                            ? { color: "#0f766e", background: "#f0fdf4" }
-                            : { color: "#9ca3af", background: "#f9fafb" }}
-                        >
+                        ? { color: "#0f766e", background: "#f0fdf4" }
+                        : { color: "#9ca3af", background: "#f9fafb" }}
+                    >
                         {cat.isActive ? "Active" : "Inactive"}
-                        </span>
-                        <button className="text-gray-400 hover:text-gray-600">
-                        <MoreVertical size={16} />
-                        </button>
-                    </div>
+                    </button>
                     </div>
 
                     {/* Budget */}
                     <div className="grid grid-cols-2 gap-3">
                     <div>
                         <p className="text-xs text-gray-500 mb-1">Annual Budget</p>
-                        <div className="flex items-center gap-1">
                         <span className="text-sm font-semibold text-gray-900">
-                            €{cat.annualBudget.toLocaleString()}
+                        {formatCurrency(cat.annualBudget, cat.currency)}
                         </span>
-                        <span className="text-xs text-gray-400">EUR</span>
-                        </div>
                     </div>
                     <div>
                         <p className="text-xs text-gray-500 mb-1">Per Employee Limit</p>
-                        <div className="flex items-center gap-1">
                         <span className="text-sm font-semibold text-gray-900">
-                            €{cat.perEmployeeLimit.toLocaleString()}
+                        {formatCurrency(cat.perEmployeeLimit, cat.currency)}
                         </span>
-                        <span className="text-xs text-gray-400">EUR</span>
-                        </div>
                     </div>
                     </div>
 
@@ -203,7 +181,7 @@ export default function BudgetPage() {
                     <div className="flex justify-between text-xs mb-1">
                         <span className="text-gray-500">Budget Usage</span>
                         <span className="font-medium text-gray-700">
-                        €{cat.budgetUsed.toLocaleString()} / €{cat.annualBudget.toLocaleString()}
+                        {formatCurrency(cat.budgetUsed, cat.currency)} / {formatCurrency(cat.annualBudget, cat.currency)}
                         </span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-2">
@@ -216,64 +194,6 @@ export default function BudgetPage() {
             })}
             </div>
         )}
-
-        {/* Règles globales */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-            <h3 className="font-semibold text-gray-900 pb-2 border-b border-gray-100">
-            Règles et paramètres globaux
-            </h3>
-            <p className="text-xs text-gray-500">
-            Configurez les politiques de subvention à l&#39;échelle de l&#39;entreprise
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {GLOBAL_RULES.map((rule) => (
-                <div key={rule.key}>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    {rule.label}
-                </label>
-                <select
-                    value={globalRules[rule.key]}
-                    onChange={(e) => setGlobalRules({ ...globalRules, [rule.key]: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none"
-                >
-                    {rule.options.map((o) => <option key={o}>{o}</option>)}
-                </select>
-                </div>
-            ))}
-            </div>
-            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-            <div>
-                <p className="text-sm font-medium text-gray-900">
-                Approbation automatique des demandes inférieures au seuil
-                </p>
-                <p className="text-xs text-gray-500">
-                Approuver automatiquement les demandes inférieures au seuil défini
-                </p>
-            </div>
-            <button
-                onClick={() => setAutoApprove(!autoApprove)}
-                className="relative w-11 h-6 rounded-full transition-colors shrink-0"
-                style={{ background: autoApprove ? "#0f766e" : "#d1d5db" }}
-            >
-                <span
-                className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                style={{ transform: autoApprove ? "translateX(0px)" : "translateX(-20px)" }}
-                />
-            </button>
-            </div>
-            <div className="flex justify-end gap-2">
-            <button className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600">
-                Cancel
-            </button>
-            <button
-                onClick={() => toast.success("Paramètres enregistrés")}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium"
-                style={{ background: "#f59e0b" }}
-            >
-                <Save size={14} /> Save All Changes
-            </button>
-            </div>
-        </div>
 
         {/* Modal ajout catégorie */}
         {showAdd && (
@@ -297,12 +217,12 @@ export default function BudgetPage() {
                     <input {...register("description")} className={inp} placeholder="Description..." />
                     </div>
                     <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Budget annuel (€)</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Budget annuel ({DEFAULT_CURRENCY})</label>
                     <input {...register("annualBudget", { valueAsNumber: true })}
                         type="number" className={inp} placeholder="50000" />
                     </div>
                     <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Limite par employé (€)</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Limite par employé ({DEFAULT_CURRENCY})</label>
                     <input {...register("perEmployeeLimit", { valueAsNumber: true })}
                         type="number" className={inp} placeholder="500" />
                     </div>

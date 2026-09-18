@@ -3,11 +3,13 @@
 import { useEffect, useState, useCallback } from "react";
 import {
     Search, Eye, Check, X, ChevronLeft, ChevronRight, Plane, Clock,
-    CheckCircle2, Euro, ExternalLink, Building2, CreditCard,
+    CheckCircle2, Wallet, ExternalLink, Building2, CreditCard,
 } from "lucide-react";
 import { voyageService } from "@/services/companies/voyage.service";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import { formatCurrency } from "@/lib/currency";
+import { DEPARTMENTS } from "@/lib/departments";
 
 // ── Types ──────────────────────────────────────────────
 
@@ -69,10 +71,6 @@ const PAYMENT_CONFIG: Record<string, { label: string; color: string }> = {
     REFUNDED: { label: "Remboursé", color: "#6b7280" },
 };
 
-const DEPARTMENTS = [
-    "Direction", "Ressources Humaines", "Finance & Comptabilité",
-    "Commercial", "Marketing", "Technologie", "Opérations", "Autre",
-];
 
 // ── Page ───────────────────────────────────────────────
 
@@ -219,6 +217,20 @@ export default function ReservationsPage() {
         }
     };
 
+    const handleComplete = async (item: Reservation, actualCost: number) => {
+        setProcessing(true);
+        try {
+        await voyageService.completeTravel(item.id, actualCost);
+        toast.success("Voyage clôturé — coût réel enregistré");
+        setDetailItem(null);
+        load();
+        } catch (err) {
+        toast.error(getErrorMessage(err, "Erreur"));
+        } finally {
+        setProcessing(false);
+        }
+    };
+
     return (
         <div className="space-y-5">
         {/* En-tête */}
@@ -239,8 +251,8 @@ export default function ReservationsPage() {
                 icon: Clock, iconBg: "#fffbeb", iconColor: "#f59e0b" },
                 { label: "Approuvées", value: stats.approved.toString(),
                 icon: CheckCircle2, iconBg: "#f0fdf4", iconColor: "#10b981" },
-                { label: "Coût total", value: `€${stats.totalCost.toLocaleString()}`,
-                icon: Euro, iconBg: "#fef2f2", iconColor: "#ef4444" },
+                { label: "Coût total", value: formatCurrency(stats.totalCost),
+                icon: Wallet, iconBg: "#fef2f2", iconColor: "#ef4444" },
             ].map((s) => (
                 <div key={s.label}
                 className="bg-white rounded-xl border border-gray-200 p-4 flex items-start gap-3">
@@ -352,7 +364,7 @@ export default function ReservationsPage() {
                             {new Date(r.returnDate).toLocaleDateString("fr-FR")}
                         </td>
                         <td className="px-5 py-3 text-sm font-semibold text-gray-900">
-                            {r.estimatedCost != null ? `€${r.estimatedCost.toLocaleString()}` : "—"}
+                            {r.estimatedCost != null ? formatCurrency(r.estimatedCost) : "—"}
                         </td>
                         <td className="px-5 py-3">
                             <span className="flex items-center gap-1.5 text-xs font-medium"
@@ -421,6 +433,7 @@ export default function ReservationsPage() {
             onStatusChange={handleStatusChange}
             onAssignPartner={handleAssignPartner}
             onUpdatePayment={handleUpdatePayment}
+            onComplete={handleComplete}
             />
         )}
 
@@ -440,7 +453,7 @@ export default function ReservationsPage() {
 // ── Modal Détail ───────────────────────────────────────
 
 function DetailModal({
-    item, processing, onClose, onApprove, onReject, onStatusChange, onAssignPartner, onUpdatePayment,
+    item, processing, onClose, onApprove, onReject, onStatusChange, onAssignPartner, onUpdatePayment, onComplete,
 }: {
     item: Reservation;
     processing: boolean;
@@ -450,11 +463,14 @@ function DetailModal({
     onStatusChange: (item: Reservation, status: TravelStatus) => void;
     onAssignPartner: (item: Reservation, partnerId: string) => void;
     onUpdatePayment: (item: Reservation, payload: { paymentStatus?: string; paymentLink?: string }) => void;
+    onComplete: (item: Reservation, actualCost: number) => void;
 }) {
     const [partnerId, setPartnerId] = useState(item.partnerId ?? "");
     const [partners, setPartners] = useState<{ id: string; name: string; sector: string }[]>([]);
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatusT>(item.paymentStatus);
     const [paymentLink, setPaymentLink] = useState(item.paymentLink ?? "");
+    const [showCompleteInput, setShowCompleteInput] = useState(false);
+    const [actualCostInput, setActualCostInput] = useState(item.estimatedCost != null ? String(item.estimatedCost) : "");
 
     useEffect(() => { voyageService.getPartners().then(setPartners).catch(() => {}); }, []);
 
@@ -505,13 +521,13 @@ function DetailModal({
             <div>
                 <p className="text-xs text-gray-500">Coût estimé</p>
                 <p className="font-medium text-gray-900">
-                {item.estimatedCost != null ? `€${item.estimatedCost.toLocaleString()}` : "—"}
+                {item.estimatedCost != null ? formatCurrency(item.estimatedCost) : "—"}
                 </p>
             </div>
             <div>
                 <p className="text-xs text-gray-500">Coût réel</p>
                 <p className="font-medium text-gray-900">
-                {item.actualCost != null ? `€${item.actualCost.toLocaleString()}` : "—"}
+                {item.actualCost != null ? formatCurrency(item.actualCost) : "—"}
                 </p>
             </div>
             {item.purpose && (
@@ -553,12 +569,30 @@ function DetailModal({
                     <Plane size={13} /> Démarrer le voyage
                 </button>
                 )}
-                {item.status === "IN_PROGRESS" && (
-                <button disabled={processing} onClick={() => onStatusChange(item, "COMPLETED")}
+                {item.status === "IN_PROGRESS" && !showCompleteInput && (
+                <button disabled={processing} onClick={() => setShowCompleteInput(true)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-medium disabled:opacity-50"
                     style={{ background: "#10b981" }}>
-                    <CheckCircle2 size={13} /> Marquer comme terminé
+                    <CheckCircle2 size={13} /> Clôturer et saisir le coût réel
                 </button>
+                )}
+                {item.status === "IN_PROGRESS" && showCompleteInput && (
+                <div className="flex items-center gap-2 w-full">
+                    <input type="number" min={0} value={actualCostInput}
+                    onChange={(e) => setActualCostInput(e.target.value)}
+                    placeholder="Coût réel (XOF)"
+                    className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none" />
+                    <button disabled={processing || !actualCostInput || Number(actualCostInput) < 0}
+                    onClick={() => onComplete(item, Number(actualCostInput))}
+                    className="px-3 py-1.5 rounded-lg text-white text-xs font-medium disabled:opacity-50 shrink-0"
+                    style={{ background: "#10b981" }}>
+                    Confirmer la clôture
+                    </button>
+                    <button onClick={() => setShowCompleteInput(false)}
+                    className="px-2 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 shrink-0">
+                    Annuler
+                    </button>
+                </div>
                 )}
                 {(item.status === "PENDING" || item.status === "APPROVED" || item.status === "IN_PROGRESS") && (
                 <button disabled={processing} onClick={() => onStatusChange(item, "CANCELLED")}

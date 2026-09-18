@@ -90,9 +90,16 @@ app.use(cookieParser());
 app.use(csrfProtection);
 
 // ── Rate limiting global ─────────────────────────────────────────────────────
+// Plafond très haut en environnement de test : un seul fichier de test
+// (supertest, toutes requêtes depuis la même "IP" 127.0.0.1) peut légitimement
+// dépasser 100 requêtes vers la même app en mémoire — le plafond de production
+// n'a aucun sens ici. Le middleware reste actif (en-têtes RateLimit-* toujours
+// exposés, cf. src/test/app.test.ts) : seul le seuil change, pas sa présence.
 app.use(rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: process.env.RATELIMIT_MAX ? parseInt(process.env.RATELIMIT_MAX) : 100,
+    max: process.env.NODE_ENV === "test"
+        ? 100_000
+        : (process.env.RATELIMIT_MAX ? parseInt(process.env.RATELIMIT_MAX) : 100),
     message: { message: "Trop de requêtes, réessayez dans 15 minutes" },
 }));
 

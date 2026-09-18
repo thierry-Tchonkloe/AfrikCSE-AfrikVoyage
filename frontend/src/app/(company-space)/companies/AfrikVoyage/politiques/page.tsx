@@ -3,17 +3,33 @@
 import { useState, useEffect } from "react";
 import {
     ShieldCheck, Plus, Pencil, Trash2, X, Loader2, AlertCircle,
-    Star, StarOff, ToggleLeft, ToggleRight, ChevronDown, ChevronUp,
+    Star, ToggleLeft, ToggleRight, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { travelPoliciesService, TravelPolicyInput } from "@/services/employes/travel-policies.service";
 import { TravelPolicy } from "@/types";
+import { DEPARTMENTS } from "@/lib/departments";
+import { getErrorMessage } from "@/lib/errors";
 
-const FLIGHT_CLASS_LABELS: Record<string, string> = {
+type FlightClass = "ECONOMY" | "BUSINESS" | "FIRST";
+
+function isFlightClass(value: string | null | undefined): value is FlightClass {
+    return value === "ECONOMY" || value === "BUSINESS" || value === "FIRST";
+}
+
+const FLIGHT_CLASS_LABELS: Record<FlightClass, string> = {
     ECONOMY: "Économique",
     BUSINESS: "Affaires",
     FIRST: "Première",
 };
+
+type BudgetFieldKey = "maxFlightBudget" | "maxHotelBudgetPerNight" | "maxDailyAllowance";
+
+const BUDGET_FIELDS: { key: BudgetFieldKey; label: string }[] = [
+    { key: "maxFlightBudget",        label: "Vol / trajet" },
+    { key: "maxHotelBudgetPerNight", label: "Hôtel / nuit" },
+    { key: "maxDailyAllowance",      label: "Per diem / jour" },
+];
 
 const EMPTY_FORM: TravelPolicyInput = {
     name: "",
@@ -69,6 +85,39 @@ function TagInput({
     );
 }
 
+/**
+ * Sélection de départements par cases à cocher, sourcée sur la liste
+ * canonique — remplace un ancien TagInput texte libre où un admin pouvait
+ * taper "Technologie" alors que l'employé a "Technologie & IT" dans son
+ * profil, rendant la politique invisible pour lui (aucune correspondance
+ * exacte lors de la résolution de politique à la création d'une demande).
+ */
+function DepartmentMultiSelect({
+    label, value, onChange,
+}: { label: string; value: string[]; onChange: (v: string[]) => void }) {
+    const toggle = (dept: string) => {
+        onChange(value.includes(dept) ? value.filter(d => d !== dept) : [...value, dept]);
+    };
+    return (
+        <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">{label}</label>
+            <div className="flex flex-wrap gap-2">
+                {DEPARTMENTS.map(dept => (
+                    <label key={dept}
+                        className="flex items-center gap-1.5 px-2.5 py-1 border rounded-full text-xs cursor-pointer transition-colors"
+                        style={value.includes(dept)
+                            ? { borderColor: "#6366f1", background: "#eef2ff", color: "#4338ca" }
+                            : { borderColor: "#e5e7eb", color: "#6b7280" }}>
+                        <input type="checkbox" checked={value.includes(dept)}
+                            onChange={() => toggle(dept)} className="hidden" />
+                        {dept}
+                    </label>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function PolitiquesPage() {
     const [policies, setPolicies]       = useState<TravelPolicy[]>([]);
     const [loading, setLoading]         = useState(true);
@@ -99,7 +148,7 @@ export default function PolitiquesPage() {
             isActive:               p.isActive,
             currency:               p.currency,
             requiresApproval:       p.requiresApproval,
-            allowedFlightClass:     p.allowedFlightClass as any ?? null,
+            allowedFlightClass:     isFlightClass(p.allowedFlightClass) ? p.allowedFlightClass : null,
             maxFlightBudget:        p.maxFlightBudget ?? null,
             maxHotelBudgetPerNight: p.maxHotelBudgetPerNight ?? null,
             maxDailyAllowance:      p.maxDailyAllowance ?? null,
@@ -127,8 +176,8 @@ export default function PolitiquesPage() {
             }
             closeForm();
             load();
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? "Erreur lors de l'enregistrement");
+        } catch (err: unknown) {
+            toast.error(getErrorMessage(err, "Erreur lors de l'enregistrement"));
         } finally { setSubmitting(false); }
     };
 
@@ -148,8 +197,8 @@ export default function PolitiquesPage() {
             toast.success("Politique supprimée");
             setDeleteId(null);
             load();
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? "Suppression impossible");
+        } catch (err: unknown) {
+            toast.error(getErrorMessage(err, "Suppression impossible"));
         } finally { setDeleting(false); }
     };
 
@@ -208,15 +257,11 @@ export default function PolitiquesPage() {
                         <fieldset className="border border-gray-200 rounded-xl p-4 space-y-3">
                             <legend className="px-2 text-xs font-semibold text-gray-600">Plafonds budgétaires ({form.currency})</legend>
                             <div className="grid grid-cols-3 gap-3">
-                                {[
-                                    { key: "maxFlightBudget",        label: "Vol / trajet" },
-                                    { key: "maxHotelBudgetPerNight", label: "Hôtel / nuit" },
-                                    { key: "maxDailyAllowance",      label: "Per diem / jour" },
-                                ].map(({ key, label }) => (
+                                {BUDGET_FIELDS.map(({ key, label }) => (
                                     <div key={key}>
                                         <label className="block text-xs text-gray-500 mb-1">{label}</label>
                                         <input type="number" min={0}
-                                            value={(form as any)[key] ?? ""}
+                                            value={form[key] ?? ""}
                                             onChange={e => setForm(f => ({ ...f, [key]: e.target.value ? Number(e.target.value) : null }))}
                                             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none" />
                                     </div>
@@ -231,7 +276,7 @@ export default function PolitiquesPage() {
                                 <div>
                                     <label className="block text-xs text-gray-500 mb-1">Classe de vol autorisée</label>
                                     <select value={form.allowedFlightClass ?? ""}
-                                        onChange={e => setForm(f => ({ ...f, allowedFlightClass: e.target.value || null as any }))}
+                                        onChange={e => setForm(f => ({ ...f, allowedFlightClass: isFlightClass(e.target.value) ? e.target.value : null }))}
                                         className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg">
                                         <option value="">Sans restriction</option>
                                         <option value="ECONOMY">Économique</option>
@@ -240,14 +285,14 @@ export default function PolitiquesPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">Réservation min. à l'avance (jours)</label>
+                                    <label className="block text-xs text-gray-500 mb-1">Réservation min. à l&apos;avance (jours)</label>
                                     <input type="number" min={0}
                                         value={form.maxAdvanceBookingDays ?? ""}
                                         onChange={e => setForm(f => ({ ...f, maxAdvanceBookingDays: e.target.value ? Number(e.target.value) : null }))}
                                         className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">Seuil d'approbation auto ({form.currency})</label>
+                                    <label className="block text-xs text-gray-500 mb-1">Seuil d&apos;approbation auto ({form.currency})</label>
                                     <input type="number" min={0}
                                         value={form.approvalThreshold ?? ""}
                                         onChange={e => setForm(f => ({ ...f, approvalThreshold: e.target.value ? Number(e.target.value) : null }))}
@@ -274,7 +319,7 @@ export default function PolitiquesPage() {
                                 value={form.restrictedDestinations ?? []}
                                 onChange={v => setForm(f => ({ ...f, restrictedDestinations: v }))} />
                         </div>
-                        <TagInput label="Services / départements concernés (vide = tous)"
+                        <DepartmentMultiSelect label="Départements concernés (vide = tous)"
                             value={form.appliesToDepartments ?? []}
                             onChange={v => setForm(f => ({ ...f, appliesToDepartments: v }))} />
 
@@ -341,7 +386,7 @@ export default function PolitiquesPage() {
                                         <div className="flex items-center gap-4 mt-1.5 text-xs text-gray-400">
                                             {p.maxFlightBudget && <span>✈ {f(p.maxFlightBudget)} {p.currency}</span>}
                                             {p.maxHotelBudgetPerNight && <span>🏨 {f(p.maxHotelBudgetPerNight)}/nuit</span>}
-                                            {p.allowedFlightClass && <span>💺 {FLIGHT_CLASS_LABELS[p.allowedFlightClass]}</span>}
+                                            {isFlightClass(p.allowedFlightClass) && <span>💺 {FLIGHT_CLASS_LABELS[p.allowedFlightClass]}</span>}
                                             <span>{p._count?.travelRequests ?? 0} demande{(p._count?.travelRequests ?? 0) !== 1 ? "s" : ""}</span>
                                         </div>
                                     </div>

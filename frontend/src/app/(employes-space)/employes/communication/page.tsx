@@ -12,6 +12,9 @@ interface PollOption {
     id: string;
     label: string;
     _count: { votes: number };
+    // Vote(s) de L'UTILISATEUR COURANT uniquement pour cette option (filtré
+    // côté serveur) — présence d'une entrée = "j'ai déjà voté cette option".
+    votes: { id: string }[];
 }
 
 interface Post {
@@ -48,6 +51,20 @@ const ACTIVITY_CONFIG: Record<string, { label: string; color: string }> = {
     POLL:              { label: "a lancé un sondage",  color: "#3b82f6" },
     EVENT_ANNOUNCEMENT:{ label: "a annoncé un événement", color: "#f59e0b" },
 };
+
+/** Dérive l'état "j'ai déjà liké / déjà voté" de l'utilisateur courant depuis
+ *  le payload réel de l'API, au lieu de partir d'un état local vide qui
+ *  contredit la vérité serveur après un rechargement de page. */
+function deriveLikeVoteState(posts: Post[], userId: string | undefined) {
+    const liked: Record<string, boolean> = {};
+    const voted: Record<string, string> = {};
+    for (const post of posts) {
+        if (userId && post.likes.some((l) => l.userId === userId)) liked[post.id] = true;
+        const myOption = post.pollOptions.find((o) => o.votes.length > 0);
+        if (myOption) voted[post.id] = myOption.id;
+    }
+    return { liked, voted };
+}
 
 function formatTime(iso: string) {
     const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -91,12 +108,20 @@ export default function CommunicationPage() {
         setPage(postsRes.page ?? 1);
         setTotalPages(postsRes.totalPages ?? 1);
         setUpcomingEvents(eventsRes);
+
+        // Réhydrate l'état "j'ai déjà liké / déjà voté" depuis le payload réel
+        // — on REMPLACE ici (chargement initial), jamais sur une simple mise à
+        // jour locale de `posts` (ex: compteur de commentaires bumpé), pour ne
+        // pas écraser un like/vote optimiste pas encore reflété dans `posts`.
+        const { liked, voted } = deriveLikeVoteState(postsRes.posts, user?.id);
+        setLikedPosts(liked);
+        setVotedPolls(voted);
         } catch {
         toast.error("Erreur lors du chargement du fil d'actualité");
         } finally {
         setLoading(false);
         }
-    }, []);
+    }, [user]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -109,6 +134,12 @@ export default function CommunicationPage() {
         setPosts((prev) => [...prev, ...postsRes.posts]);
         setPage(postsRes.page ?? nextPage);
         setTotalPages(postsRes.totalPages ?? totalPages);
+
+        // Fusionne (n'écrase pas) l'état liké/voté des posts nouvellement
+        // chargés avec celui déjà en place pour les posts existants.
+        const { liked, voted } = deriveLikeVoteState(postsRes.posts, user?.id);
+        setLikedPosts((prev) => ({ ...prev, ...liked }));
+        setVotedPolls((prev) => ({ ...prev, ...voted }));
         } catch {
         toast.error("Erreur lors du chargement des publications");
         } finally {
@@ -137,16 +168,39 @@ export default function CommunicationPage() {
     };
 
     const handleLike = async (postId: string) => {
-        setLikedPosts((prev) => ({ ...prev, [postId]: !prev[postId] }));
-        try { await employeeService.toggleLike(postId); }
-        catch { setLikedPosts((prev) => ({ ...prev, [postId]: !prev[postId] })); }
+        const wasLiked = !!likedPosts[postId];
+        const nextLiked = !wasLiked;
+        setPosts((prev) => prev.map((p) =>
+            p.id === postId ? { ...p, _count: { ...p._count, likes: p._count.likes + (nextLiked ? 1 : -1) } } : p
+        ));
+        setLikedPosts((prev) => ({ ...prev, [postId]: nextLiked }));
+        try {
+            // Action explicite (like/unlike) plutôt qu'un bascule ambigu côté
+            // serveur — évite qu'un double-clic ou un retry réseau ne bascule
+            // deux fois et fausse le compteur.
+            await employeeService.toggleLike(postId, nextLiked ? "like" : "unlike");
+        } catch {
+            setPosts((prev) => prev.map((p) =>
+                p.id === postId ? { ...p, _count: { ...p._count, likes: p._count.likes + (nextLiked ? -1 : 1) } } : p
+            ));
+            setLikedPosts((prev) => ({ ...prev, [postId]: wasLiked }));
+            toast.error("Erreur lors du like");
+        }
     };
 
-    const handleVote = async (postId: string, optionId: string, totalVotes: number) => {
+    const handleVote = async (postId: string, optionId: string) => {
         if (votedPolls[postId]) return;
         setVotedPolls((prev) => ({ ...prev, [postId]: optionId }));
-        try { await employeeService.vote(optionId); }
-        catch { toast.error("Erreur vote"); }
+        try {
+            await employeeService.vote(optionId);
+        } catch {
+            setVotedPolls((prev) => {
+                const next = { ...prev };
+                delete next[postId];
+                return next;
+            });
+            toast.error("Erreur lors du vote");
+        }
     };
 
     const toggleComments = async (postId: string) => {
@@ -362,7 +416,7 @@ export default function CommunicationPage() {
                         return (
                             <button
                             key={option.id}
-                            onClick={() => handleVote(post.id, option.id, totalVotes)}
+                            onClick={() => handleVote(post.id, option.id)}
                             disabled={hasVoted}
                             className="w-full text-left px-3 py-2.5 rounded-lg border transition-all overflow-hidden relative"
                             style={{
@@ -405,7 +459,7 @@ export default function CommunicationPage() {
                         style={{ color: isLiked ? "#ef4444" : "#6b7280" }}
                     >
                         <Heart size={15} fill={isLiked ? "#ef4444" : "none"} />
-                        {post._count.likes + (isLiked ? 1 : 0)}
+                        {post._count.likes}
                     </button>
                     <button
                         onClick={() => toggleComments(post.id)}

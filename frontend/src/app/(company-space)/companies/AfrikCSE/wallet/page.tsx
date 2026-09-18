@@ -6,6 +6,7 @@ import { walletAdminService, AllocatePayload } from "@/services/companies/wallet
 import { WalletWithBalance } from "@/types";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import { formatCurrency, DEFAULT_CURRENCY } from "@/lib/currency";
 
 const EMPTY_FORM: AllocatePayload = {
     userIds:     [],
@@ -79,6 +80,8 @@ export default function AdminWalletPage() {
     };
 
     const totalBalance = wallets.reduce((sum, w) => sum + parseFloat(w.balance), 0);
+    // Les wallets d'une même organisation partagent tous la même devise en pratique.
+    const currency = wallets[0]?.currencyCode ?? DEFAULT_CURRENCY;
 
     return (
         <div className="p-6 space-y-6">
@@ -89,7 +92,7 @@ export default function AdminWalletPage() {
                     <p className="text-sm text-gray-500 mt-0.5">
                         {wallets.length} wallet{wallets.length !== 1 ? "s" : ""} · Total distribué :{" "}
                         <span className="font-semibold text-blue-600">
-                            {totalBalance.toLocaleString("fr-FR")} XOF
+                            {formatCurrency(totalBalance, currency)}
                         </span>
                     </p>
                 </div>
@@ -128,7 +131,7 @@ export default function AdminWalletPage() {
                                 <th className="text-left px-5 py-3 font-medium text-gray-500">Employé</th>
                                 <th className="text-left px-5 py-3 font-medium text-gray-500">Email</th>
                                 <th className="text-left px-5 py-3 font-medium text-gray-500">Département</th>
-                                <th className="text-right px-5 py-3 font-medium text-gray-500">Solde (XOF)</th>
+                                <th className="text-right px-5 py-3 font-medium text-gray-500">Solde ({currency})</th>
                                 <th className="text-right px-5 py-3 font-medium text-gray-500">Mouvements</th>
                             </tr>
                         </thead>
@@ -141,7 +144,7 @@ export default function AdminWalletPage() {
                                     <td className="px-5 py-3 text-gray-500">{w.user?.email ?? "—"}</td>
                                     <td className="px-5 py-3 text-gray-500">{w.user?.department ?? "—"}</td>
                                     <td className="px-5 py-3 text-right font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
-                                        {parseFloat(w.balance).toLocaleString("fr-FR", { minimumFractionDigits: 0 })}
+                                        {formatCurrency(parseFloat(w.balance), w.currencyCode)}
                                     </td>
                                     <td className="px-5 py-3 text-right text-gray-400">
                                         {w._count?.entries ?? 0}
@@ -171,7 +174,7 @@ export default function AdminWalletPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs font-medium text-gray-500 mb-1 block">Montant (XOF) *</label>
+                                <label className="text-xs font-medium text-gray-500 mb-1 block">Montant ({currency}) *</label>
                                 <input
                                     type="number"
                                     min={1}
@@ -239,7 +242,7 @@ export default function AdminWalletPage() {
                                             {w.user ? `${w.user.firstName} ${w.user.lastName}` : w.userId}
                                         </span>
                                         <span className="ml-auto text-xs text-gray-400 tabular-nums">
-                                            {parseFloat(w.balance).toLocaleString("fr-FR")} XOF
+                                            {formatCurrency(parseFloat(w.balance), w.currencyCode)}
                                         </span>
                                     </label>
                                 ))}

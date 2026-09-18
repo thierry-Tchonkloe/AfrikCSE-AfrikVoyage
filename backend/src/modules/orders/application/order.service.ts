@@ -38,8 +38,32 @@ export class OrderService {
             kkiapayTransactionId?: string;
         }
     ) {
-        const amount         = new Prisma.Decimal(data.amount);
-        const discountAmount = new Prisma.Decimal(data.discountAmount ?? 0);
+        // Le prix réel vient TOUJOURS du catalogue, jamais du client — sans ce
+        // recalcul, un client pouvait envoyer n'importe quel `amount` (ex: 1 XOF
+        // pour un article à 50 000 XOF) et payer ce montant falsifié, wallet ou
+        // mobile money confondus (la vérification KkiaPay ne compare le paiement
+        // qu'à `finalAmount`, lui-même dérivé de `data.amount`).
+        let amount: Prisma.Decimal;
+        if (data.offerId) {
+            const offer = await prisma.benefitCatalogItem.findFirst({
+                where:  { id: data.offerId, organizationId, isActive: true },
+                select: { employeePrice: true },
+            });
+            if (!offer) throw new AppError("Offre introuvable ou indisponible pour votre organisation", 404);
+            amount = new Prisma.Decimal(offer.employeePrice);
+        } else {
+            // Aucune offre catalogue à vérifier : pas de source de prix fiable
+            // côté serveur pour ce cas — comportement historique conservé, mais ce
+            // chemin n'a aujourd'hui aucun appelant frontend connu.
+            amount = new Prisma.Decimal(data.amount);
+        }
+
+        // `discountAmount` n'est adossé à aucune règle vérifiable (contrairement à
+        // `subsidyAmount`, validé ci-dessous contre les SubsidyRules actives) — le
+        // faire confiance au client permettrait de contourner le recalcul ci-dessus
+        // en le fixant juste sous `amount`. Aucun mécanisme de remise légitime
+        // n'existe dans le produit actuellement, donc il est neutralisé ici.
+        const discountAmount = new Prisma.Decimal(0);
 
         // Validation server-side du subsidyAmount contre les SubsidyRules actives
         const validatedSubsidy = await this._validateSubsidy(

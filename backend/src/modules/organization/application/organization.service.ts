@@ -12,9 +12,42 @@ import {
 } from "../../../core/mailer/email.templates";
 import { logger } from "../../../core/utils/logger";
 
+// Catégories de budget par défaut créées à la première activation du module
+// CSE — sans ça, une organisation démarre avec un budget/page.tsx totalement
+// vide et l'admin doit tout construire à la main avant de pouvoir approuver
+// la moindre demande d'avantage. `icon` reprend les clés déjà connues du
+// ICON_MAP frontend (culture, transport) ; les autres retombent sur 🎁 par défaut.
+const DEFAULT_BENEFIT_CATEGORIES: Array<{
+    name: string; description: string; icon: string | null;
+    annualBudget: number; perEmployeeLimit: number;
+}> = [
+    { name: "Chèques Cadeaux", description: "Bons d'achat et chèques cadeaux pour les employés", icon: null, annualBudget: 500_000, perEmployeeLimit: 50_000 },
+    { name: "Activités Culturelles & Sportives", description: "Événements culturels, sportifs et de loisirs", icon: "culture", annualBudget: 500_000, perEmployeeLimit: 50_000 },
+    { name: "Transport & Mobilité", description: "Prise en charge des frais de transport quotidien", icon: "transport", annualBudget: 500_000, perEmployeeLimit: 50_000 },
+    { name: "Avantages Internes", description: "Avantages divers proposés directement par l'entreprise", icon: null, annualBudget: 500_000, perEmployeeLimit: 50_000 },
+];
+
 export class OrganizationService {
     private repo = new OrganizationRepository();
     private settingsRepo = new SettingsRepository();
+
+    /**
+     * Idempotent : ne crée rien si l'organisation a déjà au moins une catégorie
+     * (évite les doublons si le module CSE est désactivé puis réactivé).
+     */
+    private async seedDefaultBenefitCategoriesIfNeeded(orgId: string): Promise<void> {
+        const existingCount = await prisma.benefitCategory.count({ where: { organizationId: orgId } });
+        if (existingCount > 0) return;
+
+        await prisma.benefitCategory.createMany({
+            data: DEFAULT_BENEFIT_CATEGORIES.map((c) => ({
+                ...c,
+                currency: "XOF",
+                organizationId: orgId,
+                eligibleServices: [],
+            })),
+        });
+    }
 
     /** Liste les organisations (filtre optionnel par statut) */
     async getAll(status?: OrgStatus) {
@@ -38,6 +71,8 @@ export class OrganizationService {
         }
 
         const updated = await this.repo.validate(id, superAdminId, dto.hasVoyage, dto.hasCSE);
+
+        if (dto.hasCSE) await this.seedDefaultBenefitCategoriesIfNeeded(id);
 
         // Email de confirmation à l'admin de l'organisation (si activé dans les réglages)
         const admin = org.users.find((u) => u.role === "ADMIN");
@@ -100,7 +135,9 @@ export class OrganizationService {
         throw new Error("L'organisation doit être active pour modifier ses modules");
         }
 
-        return this.repo.updateModules(id, dto.hasVoyage, dto.hasCSE);
+        const updated = await this.repo.updateModules(id, dto.hasVoyage, dto.hasCSE);
+        if (dto.hasCSE) await this.seedDefaultBenefitCategoriesIfNeeded(id);
+        return updated;
     }
 
     /** Suspend une organisation */
@@ -175,6 +212,8 @@ export class OrganizationService {
             dto.hasVoyage,
             dto.hasCSE
         );
+
+        if (dto.hasCSE) await this.seedDefaultBenefitCategoriesIfNeeded(id);
 
         const invitationLink =
             `${process.env.FRONTEND_URL}/activate?token=${result.invitationToken}`;

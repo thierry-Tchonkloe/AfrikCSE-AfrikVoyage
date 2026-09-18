@@ -14,11 +14,10 @@ const EMPTY_FORM: OfferInput = { title: "", category: "", employeePrice: 0, comp
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_SIZE = 3 * 1024 * 1024; // 3 Mo — doit rester cohérent avec offerImageUpload côté backend
 
-const CATEGORIES = ["Restauration", "Loisirs", "Sport", "Culture", "Bien-être", "Transport", "Éducation", "Autre"];
-
 export default function PartnerOffersPage() {
     const router = useRouter();
     const [offers, setOffers]     = useState<PartnerOffer[]>([]);
+    const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
     const [loading, setLoading]   = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing]   = useState<PartnerOffer | null>(null);
@@ -47,6 +46,12 @@ export default function PartnerOffersPage() {
     }, []);
 
     useEffect(() => { load(); }, [load]);
+
+    useEffect(() => {
+        partnerPortalService.listOfferCategories()
+            .then(setCategories)
+            .catch(() => toast.error("Erreur chargement des catégories"));
+    }, []);
 
     const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); resetImagePick(); setShowModal(true); };
     const openEdit   = (o: PartnerOffer) => {
@@ -101,6 +106,17 @@ export default function PartnerOffersPage() {
             toast.error(getErrorMessage(err, "Erreur lors de la sauvegarde"));
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleToggleActive = async (offer: PartnerOffer) => {
+        const nextActive = !offer.isActive;
+        try {
+            const updated = await partnerPortalService.toggleOfferActive(offer.id, nextActive);
+            setOffers((prev) => prev.map((o) => (o.id === offer.id ? updated : o)));
+            toast.success(nextActive ? "Offre visible par les employés" : "Offre masquée");
+        } catch (err) {
+            toast.error(getErrorMessage(err, "Erreur lors du changement de visibilité"));
         }
     };
 
@@ -163,7 +179,7 @@ export default function PartnerOffersPage() {
                     className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
                 >
                     {offers.map((o) => (
-                        <OfferCard key={o.id} offer={o} onEdit={openEdit} />
+                        <OfferCard key={o.id} offer={o} onEdit={openEdit} onToggleActive={handleToggleActive} />
                     ))}
                 </motion.div>
             )}
@@ -226,8 +242,11 @@ export default function PartnerOffersPage() {
                                 <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                                     className="input-field">
                                     <option value="">— Choisir —</option>
-                                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                                    {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                                 </select>
+                                {categories.length === 0 && (
+                                    <p className="text-xs text-amber-600">Aucune catégorie disponible actuellement.</p>
+                                )}
                             </Field>
                             <div className="grid grid-cols-2 gap-3">
                                 <Field label="Stock">

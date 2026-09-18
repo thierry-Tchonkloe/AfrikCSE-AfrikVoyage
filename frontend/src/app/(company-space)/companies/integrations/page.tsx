@@ -199,7 +199,7 @@ export default function IntegrationsPage() {
         setTesting(true);
         try {
             await integrationService.testConnection(selected.id);
-            toast.success(`Connexion réussie — ${selected.name} opérationnel`);
+            toast.success(`Configuration valide pour ${selected.name} (simulation — aucun appel au système externe)`);
         } catch (err) {
             toast.error(getErrorMessage(err, "Connexion échouée"));
         } finally {
@@ -216,7 +216,7 @@ export default function IntegrationsPage() {
             if (log.status === "SUCCESS") {
                 const updated = await integrationService.getById(selected.id);
                 updateSelected(updated);
-                toast.success("Synchronisation terminée avec succès");
+                toast.success("Synchronisation simulée enregistrée (aucun employé importé — voir le mode simulation ci-dessus)");
             } else {
                 toast.error("Synchronisation échouée — vérifiez la configuration de l'intégration");
             }
@@ -397,6 +397,15 @@ export default function IntegrationsPage() {
                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                 🔌 Statut de connexion
                 </h3>
+                <div className="flex items-start gap-2 text-xs text-amber-600 bg-amber-50 rounded-lg p-3">
+                <span>⚠️</span>
+                <span>
+                    Mode simulation — le test de connexion et la synchronisation vérifient
+                    uniquement votre configuration (clé API / webhook renseignée) mais n&#39;appellent
+                    aucun système RH externe réel. Aucun employé n&#39;est créé ou mis à jour
+                    automatiquement pour l&#39;instant.
+                </span>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-3 border border-gray-100 rounded-xl">
                     <p className="text-xs text-gray-500 mb-1">Outil connecté</p>

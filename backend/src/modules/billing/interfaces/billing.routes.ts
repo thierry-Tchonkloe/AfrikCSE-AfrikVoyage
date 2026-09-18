@@ -20,8 +20,12 @@ router.get("/plans",             ctrl.getPlans.bind(ctrl));
 router.use(authenticate, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.FINANCE));
 
 router.get("/",              ctrl.getSubscription.bind(ctrl));
-router.post("/upgrade",      ctrl.upgradePlan.bind(ctrl));
 router.get("/invoices",      ctrl.getInvoices.bind(ctrl));
+router.get("/plans/resolved", ctrl.getResolvedPlans.bind(ctrl));
+
+// Wallet entreprise (trésorerie de remboursement des notes de frais)
+router.get("/wallet",        ctrl.getWalletBalance.bind(ctrl));
+router.post("/wallet/topup", idempotency(), ctrl.topUpWallet.bind(ctrl));
 
 // Initiation de paiement
 router.post("/pay/kkiapay",  ctrl.payWithKkiapay.bind(ctrl));

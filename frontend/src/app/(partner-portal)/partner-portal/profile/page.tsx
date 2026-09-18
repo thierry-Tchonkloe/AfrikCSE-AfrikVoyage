@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Save, Loader2, Building2, Globe, Mail, Phone, ImagePlus } from "lucide-react";
+import { Save, Loader2, Building2, Globe, Mail, Phone, ImagePlus, ShieldAlert } from "lucide-react";
 import { partnerPortalService, ProfileInput } from "@/services/partner/partner-portal.service";
-import { Partner } from "@/types";
+import { PartnerProfile } from "@/types";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import { usePartnerAuth } from "@/hooks/usePartnerAuth";
 
 const EMPTY: ProfileInput = { name: "", sector: "", description: "", contactEmail: "", websiteUrl: "", phone: "" };
 
@@ -19,7 +20,9 @@ const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/svg+xml", "image/w
 const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2 Mo — doit rester cohérent avec logoUpload côté backend
 
 export default function PartnerProfilePage() {
-    const [partner, setPartner] = useState<Partner | null>(null);
+    const { user } = usePartnerAuth();
+    const isAdmin = user?.role === "PARTNER_ADMIN";
+    const [partner, setPartner] = useState<PartnerProfile | null>(null);
     const [form, setForm]       = useState<ProfileInput>(EMPTY);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving]   = useState(false);
@@ -124,7 +127,7 @@ export default function PartnerProfilePage() {
                     </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className={`space-y-4 ${!isAdmin ? "opacity-60 pointer-events-none" : ""}`}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Field label="Nom du partenaire *" icon={<Building2 size={14} />}>
                             <input value={form.name ?? ""} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -166,8 +169,15 @@ export default function PartnerProfilePage() {
                 </div>
             </div>
 
+            {!isAdmin && (
+                <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-xl px-4 py-3">
+                    <ShieldAlert size={15} className="shrink-0" />
+                    Seul l&apos;administrateur partenaire peut modifier les informations du profil.
+                </div>
+            )}
+
             <div className="flex justify-end">
-                <button onClick={handleSave} disabled={saving}
+                <button onClick={handleSave} disabled={saving || !isAdmin}
                     className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition">
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={15} />}
                     Enregistrer

@@ -3,8 +3,15 @@
 import { useEffect, useState, useCallback } from "react";
 import { Plus, Pencil, Trash2, History, X, Search } from "lucide-react";
 import { catalogService } from "@/services/employes/catalog.service";
+import { cseService } from "@/services/companies/cse.service";
 import { toast } from "sonner";
 import { CatalogItem } from "@/types";
+
+interface CategoryOption {
+    id: string;
+    name: string;
+    isActive: boolean;
+}
 
 interface AuditEntry {
     id: string;
@@ -25,6 +32,7 @@ const EMPTY_FORM = {
 
 export default function CataloguePage() {
     const [items, setItems]           = useState<CatalogItem[]>([]);
+    const [categories, setCategories] = useState<CategoryOption[]>([]);
     const [loading, setLoading]       = useState(true);
     const [search, setSearch]         = useState("");
     const [modal, setModal]           = useState<"create" | "edit" | null>(null);
@@ -46,6 +54,12 @@ export default function CataloguePage() {
     }, []);
 
     useEffect(() => { load(); }, [load]);
+
+    useEffect(() => {
+        cseService.getCategories()
+            .then((data: CategoryOption[]) => setCategories(data.filter((c) => c.isActive)))
+            .catch(() => toast.error("Erreur chargement des catégories"));
+    }, []);
 
     const openCreate = () => {
         setForm(EMPTY_FORM);
@@ -271,7 +285,24 @@ export default function CataloguePage() {
                         </div>
                         <div className="space-y-3">
                             {field("title", "Titre *")}
-                            {field("category", "Catégorie *")}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Catégorie *</label>
+                                <select
+                                    value={String(form.category ?? "")}
+                                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-teal-500 bg-white"
+                                >
+                                    <option value="">Sélectionner une catégorie…</option>
+                                    {categories.map((c) => (
+                                        <option key={c.id} value={c.name}>{c.name}</option>
+                                    ))}
+                                </select>
+                                {categories.length === 0 && (
+                                    <p className="text-xs text-amber-600 mt-1">
+                                        Aucune catégorie de budget configurée — créez-en d&#39;abord dans la page Budget.
+                                    </p>
+                                )}
+                            </div>
                             {field("description", "Description")}
                             {field("imageUrl", "URL image")}
                             <div className="grid grid-cols-2 gap-3">

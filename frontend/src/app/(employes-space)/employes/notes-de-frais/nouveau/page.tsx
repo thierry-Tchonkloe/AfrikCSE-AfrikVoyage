@@ -80,6 +80,23 @@ export default function NouvelleNotePage() {
         try {
         const res = await employeeService.uploadReceipt(file);
         setReceiptUrl(res.url);
+
+        // Scan OCR best-effort : ne bloque jamais la soumission si l'extraction
+        // échoue, ne pré-remplit que les champs encore vides (ne jamais écraser
+        // une saisie déjà faite par l'employé).
+        try {
+            const { extractedData } = await employeeService.scanReceipt(res.url);
+            setForm((prev) => ({
+            ...prev,
+            amount: prev.amount || (extractedData.amount != null ? String(extractedData.amount) : prev.amount),
+            date:   prev.date   || extractedData.date || prev.date,
+            }));
+            if (extractedData.amount != null) {
+            toast.success("Montant détecté automatiquement depuis le justificatif");
+            }
+        } catch {
+            // Scan OCR indisponible : l'employé complète le formulaire manuellement.
+        }
         } catch {
         toast.error("Erreur lors de l'envoi du justificatif");
         setUploadedFile(null);

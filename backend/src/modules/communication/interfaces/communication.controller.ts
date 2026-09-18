@@ -16,7 +16,7 @@ const POST_TYPE_LABELS: Record<PostType, string> = {
 export class CommunicationController {
     async getPosts(req: Request, res: Response): Promise<void> {
         const page = parseInt(req.query.page as string) || 1;
-        const data = await repo.getPosts(req.user!.organizationId!, page);
+        const data = await repo.getPosts(req.user!.organizationId!, req.user!.userId, page);
         res.json(data);
     }
 

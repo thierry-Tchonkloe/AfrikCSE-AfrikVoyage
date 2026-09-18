@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, RefreshCw, CheckCircle, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, CheckCircle, XCircle, Clock, FlaskConical } from "lucide-react";
 import { partnersService } from "@/services/admin/partners.service";
 import { Partner, PartnerSyncLog } from "@/types";
 import { toast } from "sonner";
@@ -143,11 +143,20 @@ export default function PartnerDetailPage() {
                     <p className="text-sm text-gray-500">{partner?.sector}</p>
                 </div>
                 {partner?.apiEnabled && (
-                    <button onClick={handleSync} disabled={syncing}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
-                        <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
-                        Synchroniser
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={handleSync} disabled={syncing}
+                            title="Simulation : n'appelle aucun GDS/API partenaire réel — enregistre un succès factice dans l'historique"
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
+                            <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+                            Synchroniser
+                        </button>
+                        <span
+                            title="Cette synchronisation est une simulation : aucun appel n'est fait à une API/GDS partenaire réelle pour le moment"
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 cursor-help">
+                            <FlaskConical size={12} />
+                            Simulation
+                        </span>
+                    </div>
                 )}
             </div>
 
@@ -282,8 +291,12 @@ export default function PartnerDetailPage() {
             {/* Historique de synchronisation */}
             {logs.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-100">
+                    <div className="px-5 py-4 border-b border-gray-100 space-y-2">
                         <h2 className="font-semibold text-gray-900 text-sm">Historique de synchronisation</h2>
+                        <p className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 w-fit">
+                            <FlaskConical size={12} className="shrink-0" />
+                            Fonctionnalité simulée — aucune de ces entrées ne provient d&apos;un appel réel à l&apos;API du partenaire.
+                        </p>
                     </div>
                     <div className="divide-y divide-gray-50">
                         {logs.map((log) => (
