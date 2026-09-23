@@ -1,19 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { notificationService } from "@/services/notification.service";
 import type { Notification } from "@/types";
-
-function formatTime(iso: string) {
-    const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-    if (diff < 60) return "À l'instant";
-    if (diff < 3600) return `il y a ${Math.round(diff / 60)} min`;
-    if (diff < 86400) return `il y a ${Math.round(diff / 3600)} h`;
-    return `il y a ${Math.round(diff / 86400)} j`;
-}
+import { useTranslations } from "next-intl";
+import { useRelativeTime } from "@/hooks/useRelativeTime";
 
 export function NotificationBell({
     darkMode = false,
@@ -23,6 +17,8 @@ export function NotificationBell({
     /** Page "Voir toutes les notifications" — adaptée à l'espace courant */
     notificationsHref: string;
 }) {
+    const t = useTranslations("shared.notificationBell");
+    const formatTime = useRelativeTime();
     const router = useRouter();
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -106,23 +102,23 @@ export function NotificationBell({
                 "flex items-center justify-between px-4 py-3 border-b",
                 darkMode ? "border-gray-700" : "border-gray-100"
             )}>
-                <p className="text-sm font-semibold">Notifications</p>
+                <p className="text-sm font-semibold">{t("notifications")}</p>
                 {unreadCount > 0 && (
                 <button
                     onClick={handleMarkAllRead}
                     className="text-xs hover:underline"
                     style={{ color: "var(--color-primary)" }}
                 >
-                    Tout marquer comme lu
+                    {t("markAllAsRead")}
                 </button>
                 )}
             </div>
 
             <div className="max-h-80 overflow-y-auto">
                 {loading ? (
-                <div className="p-4 text-center text-xs text-gray-400">Chargement...</div>
+                <div className="p-4 text-center text-xs text-gray-400">{t("loading")}</div>
                 ) : notifications.length === 0 ? (
-                <div className="p-6 text-center text-xs text-gray-400">Aucune notification.</div>
+                <div className="p-6 text-center text-xs text-gray-400">{t("noNotifications")}</div>
                 ) : (
                 notifications.map((n) => (
                     <button
@@ -156,7 +152,7 @@ export function NotificationBell({
                 )}
                 style={{ color: "var(--color-primary)" }}
             >
-                Voir toutes les notifications
+                {t("viewAllNotifications")}
             </button>
             </div>
         )}

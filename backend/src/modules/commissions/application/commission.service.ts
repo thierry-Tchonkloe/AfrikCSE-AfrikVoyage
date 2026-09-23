@@ -1,4 +1,4 @@
-import { CommissionType, Prisma } from "@prisma/client";
+import { CommissionStatus, CommissionType, Prisma } from "@prisma/client";
 import { CommissionRepository } from "../infrastructure/commission.repository";
 import { AppError } from "../../../core/errors/app.error";
 
@@ -76,6 +76,16 @@ export class CommissionService {
         });
     }
 
+    /**
+     * Fait passer une CommissionEntry de PENDING à CONFIRMED. Appelée par
+     * BookingService.complete() juste après la création de l'entrée : rien
+     * d'autre dans le code ne promeut jamais une entrée hors de PENDING, donc
+     * sans cet appel aucune commission ne devenait éligible à un Payout.
+     */
+    async confirmEntry(id: string) {
+        return repo.updateEntryStatus(id, CommissionStatus.CONFIRMED);
+    }
+
     // ── Payouts ───────────────────────────────────────────────────────────────
 
     /**
@@ -130,5 +140,22 @@ export class CommissionService {
 
     async markPayoutPaid(id: string) {
         return repo.updatePayoutStatus(id, "COMPLETED", new Date());
+    }
+
+    // ── Espace financier du partenaire (portail partenaire) ──────────────────
+
+    async getPartnerFinanceSummary(partnerId: string, page = 1, limit = 20) {
+        const [totalCommissions, netBalance, history] = await Promise.all([
+            repo.sumConfirmedCommissions(partnerId),
+            repo.sumUnclaimedNet(partnerId),
+            repo.listConfirmedEntriesForPartner(partnerId, page, limit),
+        ]);
+        return { totalCommissions, netBalance, history };
+    }
+
+    async requestPartnerPayout(partnerId: string, triggeredById: string) {
+        const payout = await repo.createPayoutOnDemand(partnerId, triggeredById);
+        if (!payout) throw new AppError("Aucun solde disponible pour un reversement", 400);
+        return payout;
     }
 }

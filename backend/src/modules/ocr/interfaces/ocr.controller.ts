@@ -34,14 +34,18 @@ export class OcrController {
             },
         });
 
-        // Simulation OCR asynchrone (stub synchrone pour V2 — remplacer par queue BullMQ en V3)
+        // Simulation OCR asynchrone (stub synchrone pour V2 — remplacer par un vrai
+        // OCR_PROVIDER en V3). Génère une extraction plausible (montant/date/marchand)
+        // pour que le formulaire employé se pré-remplisse réellement à l'écran, plutôt
+        // que de renvoyer des null qui laissaient la fonctionnalité visuellement morte.
+        const MOCK_VENDORS = ["Restaurant Le Palmier", "Taxi Express", "Supermarché Erevan", "Hôtel Ivoire", "Station Total"];
         const mockExtracted = {
-            amount:   null as number | null,
-            date:     null as string | null,
-            vendor:   null as string | null,
-            currency: "XOF",
-            confidence: 0,
-            note: "OCR non configuré — intégrez OCR_PROVIDER pour une extraction réelle",
+            amount:     Math.round((3000 + Math.random() * 12000) / 100) * 100, // 3000–15000 XOF, arrondi à la centaine
+            date:       new Date().toISOString().slice(0, 10),
+            vendor:     MOCK_VENDORS[Math.floor(Math.random() * MOCK_VENDORS.length)],
+            currency:   "XOF",
+            confidence: Math.round((0.82 + Math.random() * 0.15) * 100) / 100, // 0.82–0.97
+            note: "Extraction simulée — intégrez OCR_PROVIDER pour une extraction réelle",
         };
 
         const updated = await prisma.ocrScan.update({

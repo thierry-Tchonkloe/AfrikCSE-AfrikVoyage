@@ -66,6 +66,8 @@ const setAvailabilitiesMock = PartnerPortalService.prototype.setAvailabilities a
 const listOffersMock = PartnerPortalService.prototype.listOffers as jest.Mock;
 const createOfferMock = PartnerPortalService.prototype.createOffer as jest.Mock;
 const updateOfferMock = PartnerPortalService.prototype.updateOffer as jest.Mock;
+const setOfferActiveMock = PartnerPortalService.prototype.setOfferActive as jest.Mock;
+const getHostOrgIdMock = PartnerPortalService.prototype.getHostOrgId as jest.Mock;
 const listStaffMock = PartnerPortalService.prototype.listStaff as jest.Mock;
 const createStaffMock = PartnerPortalService.prototype.createStaff as jest.Mock;
 const deactivateStaffMock = PartnerPortalService.prototype.deactivateStaff as jest.Mock;
@@ -80,6 +82,10 @@ const deletePaymentMethodMock = PartnerPortalService.prototype.deletePaymentMeth
 
 beforeEach(() => {
   mockReset(prismaMock);
+  // createOffer/updateOffer résolvent l'org hôte puis vérifient que la
+  // catégorie soumise existe réellement pour elle (cf. partner-portal.validator.ts).
+  getHostOrgIdMock.mockResolvedValue("host-org-1");
+  prismaMock.benefitCategory.findFirst.mockResolvedValue({ id: "cat-1" } as never);
 });
 
 function withPartnerSession(overrides: Parameters<typeof mockAuthenticatedPartnerSession>[1] = {}) {
@@ -96,7 +102,9 @@ function foreignOrMissingResourceError() {
 }
 
 const validLoginBody = { email: "contact@partenaire.com", password: "SecretPass123" };
-const validProfileUpdateBody = { contactEmail: "contact@partenaire.com", notes: "RAS" };
+// `notes` n'est plus un champ modifiable ici (réservé au Super Admin, cf.
+// updateProfileSchema) — retiré de ce corps de requête valide.
+const validProfileUpdateBody = { contactEmail: "contact@partenaire.com" };
 const validLocationBody = { name: "Boutique Cocody", address: "Rue des Jardins", city: "Abidjan" };
 const validAvailabilitiesBody = { slots: [{ openTime: "08:00", closeTime: "18:00" }] };
 const validOfferBody = { title: "Réduction 20%", category: "Restauration", employeePrice: 5000, companyPrice: 6000, imageUrl: "https://res.cloudinary.com/afrikcse/offers/photo.jpg" };
@@ -305,10 +313,10 @@ describe("GET /api/partner-portal/profile", () => {
   });
 });
 
-// ── PATCH /profile ─────────────────────────────────────────────────────────
+// ── PATCH /profile — PARTNER_ADMIN uniquement (requirePartnerAdmin) ─────────
 describe("PATCH /api/partner-portal/profile", () => {
-  it("200 — met à jour le profil du partenaire authentifié", async () => {
-    const cookie = withPartnerSession();
+  it("200 — un PARTNER_ADMIN met à jour le profil de son partenaire", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
     updateProfileMock.mockResolvedValueOnce({ id: "partner-1", ...validProfileUpdateBody });
 
     const res = await request(app).patch("/api/partner-portal/profile").set("Cookie", cookie).send(validProfileUpdateBody);
@@ -318,7 +326,7 @@ describe("PATCH /api/partner-portal/profile", () => {
   });
 
   it("400 — rejette un corps invalide (URL de site web mal formée)", async () => {
-    const cookie = withPartnerSession();
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
 
     const res = await request(app)
       .patch("/api/partner-portal/profile")
@@ -330,6 +338,16 @@ describe("PATCH /api/partner-portal/profile", () => {
     expect(updateProfileMock).not.toHaveBeenCalled();
   });
 
+  it("403 — refuse l'accès à un PARTNER_STAFF (ne peut plus écraser les notes internes du Super Admin)", async () => {
+    const cookie = withPartnerSession({ role: "PARTNER_STAFF" });
+
+    const res = await request(app).patch("/api/partner-portal/profile").set("Cookie", cookie).send(validProfileUpdateBody);
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ message: "Accès réservé aux administrateurs partenaires" });
+    expect(updateProfileMock).not.toHaveBeenCalled();
+  });
+
   it("401 — rejette une requête sans cookie de session partenaire", async () => {
     const res = await request(app).patch("/api/partner-portal/profile").send(validProfileUpdateBody);
 
@@ -338,7 +356,7 @@ describe("PATCH /api/partner-portal/profile", () => {
   });
 
   it("500 — propage une erreur inattendue du service", async () => {
-    const cookie = withPartnerSession();
+    const cookie = withPartnerSession({ role: "PARTNER_ADMIN" });
     updateProfileMock.mockRejectedValueOnce(new Error("Panne base de données"));
 
     const res = await request(app).patch("/api/partner-portal/profile").set("Cookie", cookie).send(validProfileUpdateBody);
@@ -594,7 +612,7 @@ describe("POST /api/partner-portal/offers", () => {
     const res = await request(app).post("/api/partner-portal/offers").set("Cookie", cookie).send(validOfferBody);
 
     expect(res.status).toBe(201);
-    expect(createOfferMock).toHaveBeenCalledWith("partner-1", expect.objectContaining({ title: validOfferBody.title }));
+    expect(createOfferMock).toHaveBeenCalledWith("partner-1", "host-org-1", expect.objectContaining({ title: validOfferBody.title }));
   });
 
   it("400 — rejette un corps invalide (champs requis manquants)", async () => {
@@ -697,6 +715,86 @@ describe("PATCH /api/partner-portal/offers/:id", () => {
 
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ success: false, message: "Erreur interne du serveur" });
+  });
+});
+
+// ── PATCH /offers/:id/toggle-active ──────────────────────────────────────────
+describe("PATCH /api/partner-portal/offers/:id/toggle-active", () => {
+  it("200 — masque une offre (isActive: false toujours permis)", async () => {
+    const cookie = withPartnerSession();
+    setOfferActiveMock.mockResolvedValueOnce({ id: "offer-1", isActive: false });
+
+    const res = await request(app)
+      .patch("/api/partner-portal/offers/offer-1/toggle-active")
+      .set("Cookie", cookie)
+      .send({ isActive: false });
+
+    expect(res.status).toBe(200);
+    expect(setOfferActiveMock).toHaveBeenCalledWith("offer-1", "partner-1", false);
+  });
+
+  it("200 — réactive une offre déjà APPROVED", async () => {
+    const cookie = withPartnerSession();
+    setOfferActiveMock.mockResolvedValueOnce({ id: "offer-1", isActive: true, reviewStatus: "APPROVED" });
+
+    const res = await request(app)
+      .patch("/api/partner-portal/offers/offer-1/toggle-active")
+      .set("Cookie", cookie)
+      .send({ isActive: true });
+
+    expect(res.status).toBe(200);
+    expect(setOfferActiveMock).toHaveBeenCalledWith("offer-1", "partner-1", true);
+  });
+
+  it("400 — refuse d'activer une offre non APPROVED (PENDING ou REJECTED)", async () => {
+    const cookie = withPartnerSession();
+    setOfferActiveMock.mockRejectedValueOnce(
+      new AppError("Cette offre doit être approuvée par le Super Admin avant de pouvoir être réactivée", 400)
+    );
+
+    const res = await request(app)
+      .patch("/api/partner-portal/offers/offer-1/toggle-active")
+      .set("Cookie", cookie)
+      .send({ isActive: true });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      success: false,
+      message: "Cette offre doit être approuvée par le Super Admin avant de pouvoir être réactivée",
+    });
+  });
+
+  it("400 — rejette un corps invalide (isActive manquant)", async () => {
+    const cookie = withPartnerSession();
+
+    const res = await request(app)
+      .patch("/api/partner-portal/offers/offer-1/toggle-active")
+      .set("Cookie", cookie)
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors.fieldErrors.isActive).toBeDefined();
+    expect(setOfferActiveMock).not.toHaveBeenCalled();
+  });
+
+  it("401 — rejette une requête sans cookie de session partenaire", async () => {
+    const res = await request(app).patch("/api/partner-portal/offers/offer-1/toggle-active").send({ isActive: true });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ message: "Token partenaire manquant" });
+  });
+
+  it("404 — isolation multi-tenant : offre d'un AUTRE partenaire (anti-IDOR)", async () => {
+    const cookie = withPartnerSession();
+    setOfferActiveMock.mockRejectedValueOnce(foreignOrMissingResourceError());
+
+    const res = await request(app)
+      .patch("/api/partner-portal/offers/offre-dun-autre-partenaire/toggle-active")
+      .set("Cookie", cookie)
+      .send({ isActive: false });
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ success: false, message: "Ressource introuvable" });
   });
 });
 

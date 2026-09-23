@@ -23,13 +23,14 @@ import type { PrismaClient } from "@prisma/client";
 
 const mockBillingServiceMethods = {
   getSubscription: jest.fn(),
-  upgradePlan: jest.fn(),
   getInvoices: jest.fn(),
   processKkiapayPayment: jest.fn(),
   initiateFedapayPayment: jest.fn(),
   processCardPayment: jest.fn(),
   handleKkiapayWebhook: jest.fn(),
   handleFedapayWebhook: jest.fn(),
+  getWalletBalance: jest.fn(),
+  topUpWallet: jest.fn(),
 };
 
 jest.mock("../../../core/config/prisma");
@@ -151,38 +152,6 @@ describe("GET /api/billing", () => {
 
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ success: false, message: "Erreur interne du serveur" });
-  });
-});
-
-describe("POST /api/billing/upgrade", () => {
-  it("200 — change de plan sans paiement immédiat", async () => {
-    const cookie = withSession();
-    mockBillingServiceMethods.upgradePlan.mockResolvedValueOnce({ plan: "BUSINESS" });
-
-    const res = await request(app).post("/api/billing/upgrade").set("Cookie", cookie).send({ plan: "BUSINESS" });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ plan: "BUSINESS" });
-  });
-
-  it("400 — rejette un plan invalide (vérification manuelle, pas Zod)", async () => {
-    const cookie = withSession();
-
-    const res = await request(app).post("/api/billing/upgrade").set("Cookie", cookie).send({ plan: "PREMIUM" });
-
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({ message: "Plan invalide" });
-    expect(mockBillingServiceMethods.upgradePlan).not.toHaveBeenCalled();
-  });
-
-  it("400 — propage une erreur métier du service", async () => {
-    const cookie = withSession();
-    mockBillingServiceMethods.upgradePlan.mockRejectedValueOnce(new Error("Downgrade impossible avec des utilisateurs actifs excédentaires"));
-
-    const res = await request(app).post("/api/billing/upgrade").set("Cookie", cookie).send({ plan: "STARTER" });
-
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({ message: "Downgrade impossible avec des utilisateurs actifs excédentaires" });
   });
 });
 
@@ -313,5 +282,63 @@ describe("POST /api/billing/pay/card", () => {
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ message: "Carte refusée" });
+  });
+});
+
+describe("GET /api/billing/wallet", () => {
+  it("200 — retourne le solde du portefeuille entreprise", async () => {
+    const cookie = withSession();
+    mockBillingServiceMethods.getWalletBalance.mockResolvedValueOnce({ balance: 85000, currencyCode: "XOF" });
+
+    const res = await request(app).get("/api/billing/wallet").set("Cookie", cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ balance: 85000, currencyCode: "XOF" });
+  });
+
+  it("403 — refuse l'accès à un rôle non autorisé (EMPLOYE)", async () => {
+    const cookie = withSession({ role: "EMPLOYE" });
+
+    const res = await request(app).get("/api/billing/wallet").set("Cookie", cookie);
+
+    expect(res.status).toBe(403);
+    expect(mockBillingServiceMethods.getWalletBalance).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/billing/wallet/topup", () => {
+  it("201 — recharge le portefeuille entreprise", async () => {
+    const cookie = withSession({ role: "FINANCE" });
+    mockBillingServiceMethods.topUpWallet.mockResolvedValueOnce({
+      entry: { id: "entry-1" }, balance: 100000, currencyCode: "XOF",
+    });
+
+    const res = await request(app)
+      .post("/api/billing/wallet/topup")
+      .set("Cookie", cookie)
+      .send({ amount: 100000 });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ entry: { id: "entry-1" }, balance: 100000, currencyCode: "XOF" });
+    expect(mockBillingServiceMethods.topUpWallet).toHaveBeenCalledWith("org-1", 100000);
+  });
+
+  it("400 — rejette un montant manquant ou invalide", async () => {
+    const cookie = withSession();
+
+    const res = await request(app).post("/api/billing/wallet/topup").set("Cookie", cookie).send({ amount: -5 });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "amount requis (nombre positif)" });
+    expect(mockBillingServiceMethods.topUpWallet).not.toHaveBeenCalled();
+  });
+
+  it("403 — refuse l'accès à un rôle non autorisé (EMPLOYE)", async () => {
+    const cookie = withSession({ role: "EMPLOYE" });
+
+    const res = await request(app).post("/api/billing/wallet/topup").set("Cookie", cookie).send({ amount: 1000 });
+
+    expect(res.status).toBe(403);
+    expect(mockBillingServiceMethods.topUpWallet).not.toHaveBeenCalled();
   });
 });

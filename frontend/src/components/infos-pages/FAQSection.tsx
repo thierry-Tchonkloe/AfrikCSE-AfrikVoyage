@@ -1,7 +1,7 @@
 // /src/components/infos-pages/FAQSection.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChevronDown, 
@@ -31,6 +31,9 @@ import {
   Award
 } from "lucide-react";
 import { fadeInUp, scaleIn, slideInLeft, slideInRight } from "../styles/animations";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.faqSection">>;
 
 interface FAQItem {
   id: number;
@@ -41,94 +44,43 @@ interface FAQItem {
   popular?: boolean;
 }
 
-const FAQ_ITEMS: FAQItem[] = [
-  {
-    id: 1,
-    question: "Comment se passe l'intégration avec nos outils existants ?",
-    answer: "Notre équipe technique vous accompagne pour connecter votre ERP (SAP, Odoo, Salesforce) via notre API sécurisée. L'intégration se fait en moyenne en 2 semaines avec un support dédié.",
-    category: "Intégration",
-    icon: <ShieldCheck className="w-4 h-4" />,
-    popular: true
-  },
-  {
-    id: 2,
-    question: "Quels sont les délais de mise en place de la plateforme CSE ?",
-    answer: "La plateforme peut être opérationnelle en 48h pour les fonctionnalités de base. L'intégration complète avec vos politiques voyage et CSE prend généralement 1 à 2 semaines.",
-    category: "Déploiement",
-    icon: <Clock className="w-4 h-4" />,
-    popular: true
-  },
-  {
-    id: 3,
-    question: "Les données sont-elles hébergées en Afrique ?",
-    answer: "Oui, nous proposons un hébergement local en Afrique (région Ouest ou Est selon votre préférence) avec une conformité RGPD et aux réglementations locales.",
-    category: "Sécurité",
-    icon: <Globe className="w-4 h-4" />
-  },
-  {
-    id: 4,
-    question: "Comment gérez-vous la conformité fiscale multi-pays pour les voyages ?",
-    answer: "Notre moteur de règles intègre automatiquement les spécificités fiscales de chaque pays (TVA, taxes locales, seuils d'exonération). Les politiques sont mises à jour en temps réel.",
-    category: "Conformité",
-    icon: <FileText className="w-4 h-4" />
-  },
-  {
-    id: 5,
-    question: "Proposez-vous une application mobile pour les avantages CSE ?",
-    answer: "Oui, nos applications iOS et Android permettent aux employés de gérer leurs réservations, notes de frais et avantages CSE en mobilité complète.",
-    category: "Mobile",
-    icon: <Zap className="w-4 h-4" />,
-    popular: true
-  },
-  {
-    id: 6,
-    question: "Quel est le support inclus pour les voyages d'affaires ?",
-    answer: "Le support est inclus 24/7 par chat et email. Les clients Enterprise bénéficient d'un account manager dédié et d'un SLA de 99.9%.",
-    category: "Support",
-    icon: <Users className="w-4 h-4" />
-  },
-  {
-    id: 7,
-    question: "Pouvons-nous personnaliser les politiques de voyage et CSE ?",
-    answer: "Absolument. Notre plateforme permet de configurer des politiques par département, par région ou par type de collaborateur, avec des niveaux d'approbation personnalisables.",
-    category: "Personnalisation",
-    icon: <Check className="w-4 h-4" />
-  },
-  {
-    id: 8,
-    question: "Comment est gérée la confidentialité des données des salariés ?",
-    answer: "Nous appliquons le principe de minimisation des données avec un chiffrement AES-256 au repos et TLS 1.3 en transit. L'accès aux données est strictement contrôlé par des rôles et permissions.",
-    category: "Sécurité",
-    icon: <ShieldCheck className="w-4 h-4" />
-  },
-  {
-    id: 9,
-    question: "Quels types d'avantages CSE sont disponibles ?",
-    answer: "Nous proposons un catalogue complet : cartes cadeaux digitales, billetterie loisirs et culture, offres de réduction locales, chèques vacances, et bien plus encore.",
-    category: "CSE",
-    icon: <Gift className="w-4 h-4" />
-  },
-  {
-    id: 10,
-    question: "Comment gérer les réservations de voyages en groupe ?",
-    answer: "Notre plateforme permet de gérer facilement les voyages en groupe avec des fonctionnalités dédiées : réservations groupées, suivi des participants, gestion des budgets.",
-    category: "Voyages",
-    icon: <Plane className="w-4 h-4" />
-  }
-];
+const getFaqItems = (t: Translator): FAQItem[] => ([
+  { id: 1, question: t("faq1Question"), answer: t("faq1Answer"), category: "integration", icon: <ShieldCheck className="w-4 h-4" />, popular: true },
+  { id: 2, question: t("faq2Question"), answer: t("faq2Answer"), category: "deployment", icon: <Clock className="w-4 h-4" />, popular: true },
+  { id: 3, question: t("faq3Question"), answer: t("faq3Answer"), category: "security", icon: <Globe className="w-4 h-4" /> },
+  { id: 4, question: t("faq4Question"), answer: t("faq4Answer"), category: "compliance", icon: <FileText className="w-4 h-4" /> },
+  { id: 5, question: t("faq5Question"), answer: t("faq5Answer"), category: "mobile", icon: <Zap className="w-4 h-4" />, popular: true },
+  { id: 6, question: t("faq6Question"), answer: t("faq6Answer"), category: "support", icon: <Users className="w-4 h-4" /> },
+  { id: 7, question: t("faq7Question"), answer: t("faq7Answer"), category: "customization", icon: <Check className="w-4 h-4" /> },
+  { id: 8, question: t("faq8Question"), answer: t("faq8Answer"), category: "security", icon: <ShieldCheck className="w-4 h-4" /> },
+  { id: 9, question: t("faq9Question"), answer: t("faq9Answer"), category: "cse", icon: <Gift className="w-4 h-4" /> },
+  { id: 10, question: t("faq10Question"), answer: t("faq10Answer"), category: "travel", icon: <Plane className="w-4 h-4" /> },
+]);
 
-// Group FAQs par catégorie
-const groupedFAQs = FAQ_ITEMS.reduce((acc, item) => {
-  const category = item.category || "Autre";
-  if (!acc[category]) acc[category] = [];
-  acc[category].push(item);
-  return acc;
-}, {} as Record<string, FAQItem[]>);
-
-// Questions populaires
-const popularFAQs = FAQ_ITEMS.filter(item => item.popular);
+const getCategoryLabels = (t: Translator): Record<string, string> => ({
+  integration: t("categoryIntegration"),
+  deployment: t("categoryDeployment"),
+  security: t("categorySecurity"),
+  compliance: t("categoryCompliance"),
+  mobile: t("categoryMobile"),
+  support: t("categorySupport"),
+  customization: t("categoryCustomization"),
+  cse: t("categoryCse"),
+  travel: t("categoryTravel"),
+  other: t("categoryOther"),
+});
 
 export default function FAQSection() {
+  const tr = useTranslations("infos.faqSection");
+  const t = useTranslations("infos.faqSection");
+  const FAQ_ITEMS = useMemo(() => getFaqItems(t), [t]);
+  const CATEGORY_LABELS = useMemo(() => getCategoryLabels(t), [t]);
+  const groupedFAQs = useMemo(() => FAQ_ITEMS.reduce((acc, item) => {
+    const category = item.category || "other";
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(item);
+    return acc;
+  }, {} as Record<string, FAQItem[]>), [FAQ_ITEMS]);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [formStep, setFormStep] = useState(1);
@@ -143,7 +95,7 @@ export default function FAQSection() {
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const categories = ["Toutes", ...Object.keys(groupedFAQs)];
+  const categories = ["all", ...Object.keys(groupedFAQs)];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
@@ -171,7 +123,7 @@ export default function FAQSection() {
   const nextStep = () => setFormStep(Math.min(formStep + 1, 4));
   const prevStep = () => setFormStep(Math.max(formStep - 1, 1));
 
-  const filteredFAQs = activeCategory && activeCategory !== "Toutes"
+  const filteredFAQs = activeCategory && activeCategory !== "all"
     ? groupedFAQs[activeCategory] || []
     : FAQ_ITEMS;
 
@@ -187,7 +139,7 @@ export default function FAQSection() {
           >
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                Vous êtes ? <span className="text-red-500">*</span>
+                {t("who")} <span className="text-red-500">*</span>
               </label>
               <select
                 name="civilite"
@@ -196,22 +148,22 @@ export default function FAQSection() {
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition bg-white appearance-none"
                 required
               >
-                <option value="">Veuillez sélectionner</option>
-                <option value="entreprise">Entreprise</option>
-                <option value="salarie">Salarié</option>
-                <option value="rh">Responsable RH</option>
-                <option value="cse">Membre CSE</option>
+                <option value="">{t("pleaseSelect")}</option>
+                <option value="entreprise">{t("company")}</option>
+                <option value="salarie">{t("employee")}</option>
+                <option value="rh">{t("hrManager")}</option>
+                <option value="cse">{t("cseMember")}</option>
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Prénom <span className="text-red-500">*</span>
+                  {t("firstName")} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="firstName"
-                  placeholder="Votre prénom"
+                  placeholder={t("firstName2")}
                   value={formData.firstName}
                   onChange={handleChange}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition"
@@ -220,12 +172,12 @@ export default function FAQSection() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Nom <span className="text-red-500">*</span>
+                  {t("lastName")} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="lastName"
-                  placeholder="Votre nom"
+                  placeholder={t("lastName2")}
                   value={formData.lastName}
                   onChange={handleChange}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition"
@@ -245,12 +197,12 @@ export default function FAQSection() {
           >
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                E-mail <span className="text-red-500">*</span>
+                {t("email")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
                 name="email"
-                placeholder="votre@email.com"
+                placeholder={t("emailPlaceholder")}
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition"
@@ -259,7 +211,7 @@ export default function FAQSection() {
             </div>
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                Téléphone <span className="text-red-500">*</span>
+                {t("phone")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
@@ -273,12 +225,12 @@ export default function FAQSection() {
             </div>
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                Société
+                {t("company2")}
               </label>
               <input
                 type="text"
                 name="company"
-                placeholder="Nom de votre entreprise"
+                placeholder={t("companyName")}
                 value={formData.company}
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition"
@@ -296,11 +248,11 @@ export default function FAQSection() {
           >
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                Décrivez votre besoin <span className="text-red-500">*</span>
+                {t("describeNeeds")} <span className="text-red-500">*</span>
               </label>
               <textarea
                 name="besoin"
-                placeholder="Parlez-nous de votre projet CSE ou de voyages d'affaires..."
+                placeholder={t("tellUsAboutCse")}
                 rows={5}
                 value={formData.besoin}
                 onChange={handleChange}
@@ -320,14 +272,14 @@ export default function FAQSection() {
             <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
               <Check className="w-10 h-10 text-emerald-500" />
             </div>
-            <h3 className="text-2xl font-bold text-slate-800 mb-2">Vérification</h3>
-            <p className="text-slate-500 mb-6">Confirmez vos informations avant l'envoi</p>
+            <h3 className="text-2xl font-bold text-slate-800 mb-2">{t("verification")}</h3>
+            <p className="text-slate-500 mb-6">{t("confirmInformationBefore")}</p>
             <div className="text-left bg-slate-50 rounded-xl p-4 space-y-2 text-sm">
-              <p><span className="font-bold">Civilité :</span> {formData.civilite || "Non spécifié"}</p>
-              <p><span className="font-bold">Nom :</span> {formData.firstName} {formData.lastName}</p>
-              <p><span className="font-bold">Email :</span> {formData.email}</p>
-              <p><span className="font-bold">Téléphone :</span> {formData.phone}</p>
-              <p><span className="font-bold">Société :</span> {formData.company || "Non spécifié"}</p>
+              <p><span className="font-bold">{t("title")}</span> {formData.civilite || t("notSpecified")}</p>
+              <p><span className="font-bold">{t("name")}</span> {formData.firstName} {formData.lastName}</p>
+              <p><span className="font-bold">{t("email2")}</span> {formData.email}</p>
+              <p><span className="font-bold">{t("phone2")}</span> {formData.phone}</p>
+              <p><span className="font-bold">{t("company3")}</span> {formData.company || t("notSpecified")}</p>
             </div>
           </motion.div>
         );
@@ -357,18 +309,15 @@ export default function FAQSection() {
           >
             <HelpCircle className="w-4 h-4 text-indigo-500" />
             <span className="bg-gradient-to-r from-indigo-600 to-emerald-500 bg-clip-text text-transparent">
-              Assistance & Support
+              {t("assistanceSupport")}
             </span>
           </motion.span>
           
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[rgb(21,0,44)] tracking-tight mb-4 leading-[1.1]">
-            Une question sur l'offre
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-500 to-emerald-500">
-              Club Employés ?
-            </span>
+            {tr.rich("questionAboutClubEmployes", { span1: (chunks) => <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-500 to-emerald-500">{chunks}</span> })}
           </h2>
           <p className="text-slate-500 text-lg font-medium">
-            Trouvez rapidement une réponse ou contactez notre équipe dédiée
+            {t("quicklyFindAnswerContact")}
           </p>
         </motion.div>
 
@@ -383,15 +332,15 @@ export default function FAQSection() {
               {categories.map((category) => (
                 <button
                   key={category}
-                  onClick={() => setActiveCategory(category === "Toutes" ? null : category)}
+                  onClick={() => setActiveCategory(category === "all" ? null : category)}
                   className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 ${
-                    (activeCategory === null && category === "Toutes") || activeCategory === category
+                    (activeCategory === null && category === "all") || activeCategory === category
                       ? "bg-gradient-to-r from-indigo-600 to-emerald-500 text-white shadow-lg shadow-indigo-200/50"
                       : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
                   }`}
                 >
-                  {category === "Toutes" ? "📋 Toutes" : category}
-                  {category !== "Toutes" && (
+                  {category === "all" ? t("all") : CATEGORY_LABELS[category] ?? category}
+                  {category !== "all" && (
                     <span className="ml-1.5 text-[10px] opacity-70">
                       ({groupedFAQs[category]?.length || 0})
                     </span>
@@ -421,7 +370,7 @@ export default function FAQSection() {
                         <span>{item.question}</span>
                         {item.popular && (
                           <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
-                            POPULAIRE
+                            {t("popular")}
                           </span>
                         )}
                       </span>
@@ -453,7 +402,7 @@ export default function FAQSection() {
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-200 text-sm font-medium text-emerald-700"
               >
                 <MessageCircle className="w-5 h-5" />
-                WhatsApp
+                {t("whatsapp")}
               </a>
               <a
                 href="tel:+33773222108"
@@ -467,7 +416,7 @@ export default function FAQSection() {
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-200 text-sm font-medium text-slate-700"
               >
                 <Mail className="w-5 h-5" />
-                contact@club-employes.fr
+                {t("contactClubEmployesFr")}
               </a>
             </div>
           </motion.div>
@@ -482,13 +431,13 @@ export default function FAQSection() {
               <div className="text-center mb-6">
                 <div className="inline-flex items-center gap-2 bg-indigo-50 rounded-full px-3 py-1 text-xs font-bold text-indigo-600 mb-2">
                   <Mail className="w-3 h-3" />
-                  Contactez-nous
+                  {t("contactUs")}
                 </div>
                 <h3 className="text-xl font-bold text-slate-800">
-                  Parlons de votre projet
+                  {t("letSTalkAbout")}
                 </h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  Remplissez le formulaire, nous vous répondrons sous 24h
+                  {t("fillFormWillReply")}
                 </p>
               </div>
 
@@ -501,12 +450,12 @@ export default function FAQSection() {
                   <div className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-4">
                     <Check className="w-8 h-8" />
                   </div>
-                  <h4 className="text-xl font-bold text-emerald-600">Message envoyé !</h4>
+                  <h4 className="text-xl font-bold text-emerald-600">{t("messageSent")}</h4>
                   <p className="text-sm text-emerald-500/80 mt-1">
-                    Notre équipe vous répondra dans les meilleurs délais.
+                    {t("teamWillGetBack")}
                   </p>
                   <div className="mt-4 text-xs text-slate-400">
-                    📧 Un email de confirmation vous a été envoyé
+                    {t("confirmationEmailHasBeen")}
                   </div>
                 </motion.div>
               ) : (
@@ -534,7 +483,7 @@ export default function FAQSection() {
                           onClick={prevStep}
                           className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                         >
-                          Retour
+                          {t("back")}
                         </button>
                       )}
                       {formStep < 4 ? (
@@ -543,7 +492,7 @@ export default function FAQSection() {
                           onClick={nextStep}
                           className="px-6 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 text-white text-sm font-bold hover:scale-105 transition-all duration-300 shadow-lg shadow-indigo-200/50 flex items-center gap-2"
                         >
-                          Suivant
+                          {t("next")}
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       ) : (
@@ -552,7 +501,7 @@ export default function FAQSection() {
                           className="px-6 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 text-white text-sm font-bold hover:scale-105 transition-all duration-300 shadow-lg shadow-indigo-200/50 flex items-center gap-2"
                         >
                           <Send className="w-4 h-4" />
-                          Envoyer
+                          {t("send")}
                         </button>
                       )}
                     </div>
@@ -561,12 +510,11 @@ export default function FAQSection() {
                   {/* Mention légale */}
                   <div className="text-[10px] text-slate-400 text-center leading-relaxed">
                     <p>
-                      Pour répondre à votre demande, vos données sont traitées par Club Employés 
-                      et sont conservées 3 ans.
+                      {t("respondRequestDataProcessed")}
                     </p>
                     <p className="mt-0.5">
-                      Vos droits : <a href="mailto:dpo@club-employes.fr" className="text-indigo-500 hover:underline">dpo@club-employes.fr</a> · 
-                      <a href="#" className="text-indigo-500 hover:underline ml-1">Politique de confidentialité</a>
+                      {t("rights")} <a href="mailto:dpo@club-employes.fr" className="text-indigo-500 hover:underline">{t("dpoClubEmployesFr")}</a> · 
+                      <a href="#" className="text-indigo-500 hover:underline ml-1">{t("privacyPolicy")}</a>
                     </p>
                   </div>
                 </form>
@@ -581,10 +529,10 @@ export default function FAQSection() {
           className="mt-16 flex flex-wrap justify-center gap-6"
         >
           {[
-            { icon: <Headphones className="w-4 h-4" />, label: "Support 24/7" },
-            { icon: <Clock className="w-4 h-4" />, label: "Réponse sous 24h" },
-            { icon: <ShieldCheck className="w-4 h-4" />, label: "Données sécurisées" },
-            { icon: <Award className="w-4 h-4" />, label: "Expertise reconnue" }
+            { icon: <Headphones className="w-4 h-4" />, label: t("text247Support") },
+            { icon: <Clock className="w-4 h-4" />, label: t("replyWithin24h") },
+            { icon: <ShieldCheck className="w-4 h-4" />, label: t("secureData") },
+            { icon: <Award className="w-4 h-4" />, label: t("recognizedExpertise") }
           ].map((item, idx) => (
             <motion.div
               key={idx}

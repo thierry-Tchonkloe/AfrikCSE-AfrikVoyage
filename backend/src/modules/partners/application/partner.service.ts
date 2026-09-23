@@ -1,5 +1,8 @@
 import { PartnerRepository, PartnerFilters, PartnerInput } from "../infrastructure/partner.repository";
 import { AppError } from "../../../core/errors/app.error";
+import { sendMail } from "../../../core/services/email.service";
+import { partnerAccountActivationEmail } from "../../../core/mailer/email.templates";
+import { logger } from "../../../core/utils/logger";
 
 const repo = new PartnerRepository();
 
@@ -15,7 +18,34 @@ export class PartnerService {
     }
 
     async create(userId: string, data: PartnerInput) {
-        return repo.create(userId, data);
+        const partner = await repo.create(userId, data);
+
+        // Bootstrap du compte de connexion du partenaire — best-effort : n'échoue
+        // jamais la création du partenaire elle-même (ex: email déjà utilisé par
+        // un autre PartnerUser). Sans contactEmail, impossible de créer un
+        // compte (email de connexion requis) — le SA devra en ajouter un puis
+        // réessayer manuellement (pas encore d'action dédiée pour ça).
+        let activationLink: string | undefined;
+        if (data.contactEmail) {
+            try {
+                const { rawToken } = await repo.createBootstrapPartnerUser(partner.id, {
+                    email:     data.contactEmail,
+                    firstName: "Administrateur",
+                    lastName:  data.name,
+                });
+                activationLink = `${process.env.FRONTEND_URL}/activate?token=${rawToken}`;
+                const { subject, html } = partnerAccountActivationEmail({
+                    partnerName: data.name,
+                    activationLink,
+                });
+                await sendMail({ to: data.contactEmail, subject, html });
+            } catch (err) {
+                logger.warn(`Bootstrap du compte partenaire échoué pour ${partner.id} : ${err}`);
+                activationLink = undefined;
+            }
+        }
+
+        return { ...partner, activationLink };
     }
 
     async update(id: string, data: Partial<PartnerInput>) {

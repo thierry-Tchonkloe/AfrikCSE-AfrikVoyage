@@ -9,6 +9,13 @@ build/
 .next/
 out/
 
+# ─── Playwright (e2e/) ─────────────────────────────────
+e2e/.report/
+e2e/.test-results/
+e2e/.auth/
+playwright-report/
+test-results/
+
 # ─── Variables d'environnement ─────────────────────────
 # IMPORTANT : ne jamais committer les .env avec de vraies valeurs
 # (backend/.env.production et frontend/.env.production sont déjà suivis par

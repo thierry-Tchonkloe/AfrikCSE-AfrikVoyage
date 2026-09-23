@@ -65,6 +65,8 @@ const getMySavingsMock = SavingsRepository.prototype.getMySavings as jest.Mock;
 beforeEach(() => {
   mockReset(prismaMock);
   uploadStreamMock.mockReset();
+  // requireModule("VOYAGE"/"CSE") vérifie ce flag sur les routes /travels et /benefits.
+  prismaMock.organization.findUnique.mockResolvedValue({ hasVoyage: true, hasCSE: true } as never);
 });
 
 function withSession(overrides: Parameters<typeof mockAuthenticatedSession>[2] = {}) {

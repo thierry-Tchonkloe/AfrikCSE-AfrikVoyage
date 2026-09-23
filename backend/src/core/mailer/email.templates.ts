@@ -116,6 +116,22 @@ export function passwordResetEmail(params: {
     };
 }
 
+/** Email envoyé au contact d'un partenaire à la création de son compte portail */
+export function partnerAccountActivationEmail(params: {
+    partnerName:     string;
+    activationLink:  string;
+}): EmailContent {
+    const partnerName = escapeHtml(params.partnerName);
+    return {
+        subject: `${partnerName} — Activez votre accès au portail partenaire`,
+        html: layout("Compte partenaire créé", `
+            <p>Bonjour,</p>
+            <p>Un compte a été créé pour <strong>${partnerName}</strong> sur le portail partenaire. Définissez votre mot de passe pour y accéder — ce lien est valable 7 jours.</p>
+            ${button("Activer mon compte", params.activationLink)}
+        `),
+    };
+}
+
 /** Email envoyé à l'admin d'une organisation lorsqu'elle est validée */
 export function organizationApprovedEmail(params: {
     companyName: string;

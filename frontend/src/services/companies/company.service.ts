@@ -23,6 +23,16 @@ export const companyService = {
         return data as { logoUrl: string };
     },
 
+    // Upload du favicon de l'organisation (ADMIN/MANAGER uniquement)
+    async uploadFavicon(file: File) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const { data } = await api.post("/organizations/my/favicon", formData, {
+            headers: { "Content-Type": undefined },
+        });
+        return data as { faviconUrl: string };
+    },
+
     // Users de l'organisation (paginé)
     async getUsers(params?: { page?: number; limit?: number; search?: string; department?: string }) {
         const { data } = await api.get("/users", { params });

@@ -71,6 +71,7 @@ Ajoute/Modifie :
 | `NEXT_PUBLIC_API_URL` | `/api` | ⚠️ Relatif ! Utilise la rewrite |
 | `JWT_SECRET` | `[MÊME valeur que Backend JWT_SECRET]` | ⚠️ IMPORTANT : identique |
 | `NEXT_PUBLIC_APP_NAME` | `AfrikCSE & AfrikVoyage` | |
+| `NEXT_PUBLIC_SITE_URL` | `https://ton-domaine.com` | SEO : URL absolue des balises canonical/hreflang. Optionnelle sur Vercel (repli sur `VERCEL_PROJECT_PRODUCTION_URL`) ; **obligatoire** avec un domaine personnalisé ou Docker |
 
 ✅ **Redeploy** Vercel après avoir sauvegardé
 

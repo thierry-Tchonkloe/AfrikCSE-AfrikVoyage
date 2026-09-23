@@ -236,7 +236,7 @@ export class OrganizationController {
                 select: {
                 id: true, name: true, status: true, plan: true,
                 hasCSE: true, hasVoyage: true,
-                logoUrl: true,
+                logoUrl: true, faviconUrl: true,
                 primaryColor: true, secondaryColor: true, accentColor: true,
                 phone: true,
                 businessEmail: true,
@@ -379,6 +379,43 @@ export class OrganizationController {
             res.json({ logoUrl: org.logoUrl });
         } catch (err: any) {
             res.status(500).json({ message: err.message ?? "Échec de l'upload du logo" });
+        }
+    }
+
+    // Upload du favicon de l'organisation connectée (ADMIN/MANAGER)
+    async uploadFavicon(req: Request, res: Response): Promise<void> {
+        const orgId = req.user!.organizationId;
+        if (!orgId) {
+            res.status(400).json({ message: "Organisation introuvable" });
+            return;
+        }
+        if (!req.file) {
+            res.status(400).json({ message: "Aucun fichier fourni" });
+            return;
+        }
+
+        try {
+            const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: `afrikcse/favicons/${orgId}`,
+                        resource_type: "image",
+                    },
+                    (err, uploadResult) => {
+                        if (err || !uploadResult) reject(err ?? new Error("Échec de l'upload"));
+                        else resolve(uploadResult);
+                    }
+                );
+                stream.end(req.file!.buffer);
+            });
+
+            const org = await prisma.organization.update({
+                where: { id: orgId },
+                data: { faviconUrl: result.secure_url },
+            });
+            res.json({ faviconUrl: org.faviconUrl });
+        } catch (err: any) {
+            res.status(500).json({ message: err.message ?? "Échec de l'upload du favicon" });
         }
     }
 

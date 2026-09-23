@@ -8,8 +8,12 @@ import { AppError } from "../../../core/errors/app.error";
 import { hashToken } from "../../../core/utils/hash";
 import { encrypt } from "../../../core/utils/crypto";
 import { cloudinary } from "../../../core/config/cloudinary";
+import { BookingService } from "../../bookings/application/booking.service";
+import { CommissionService } from "../../commissions/application/commission.service";
 
 const repo = new PartnerPortalRepository();
+const bookingService    = new BookingService();
+const commissionService = new CommissionService();
 
 function uploadImageToCloudinary(buffer: Buffer, folder: string): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
@@ -62,13 +66,14 @@ function signPartnerRefreshToken(payload: PartnerTokenPayload): string {
 
 function toSessionUser(user: {
     id: string; email: string; firstName: string; lastName: string;
-    role: string; partnerId: string; partner: { name: string } | null;
+    role: string; partnerId: string; partner: { name: string; logoUrl?: string | null } | null;
 }) {
     return {
         id: user.id, email: user.email,
         firstName: user.firstName, lastName: user.lastName,
         role: user.role, partnerId: user.partnerId,
         partnerName: user.partner?.name ?? "",
+        partnerLogoUrl: user.partner?.logoUrl ?? null,
     };
 }
 
@@ -144,6 +149,23 @@ export class PartnerPortalService {
         await repo.revokeSessions(partnerUserId);
     }
 
+    /**
+     * Réinitialise/active le mot de passe d'un PartnerUser via son token
+     * (bootstrap à la création du partenaire, ou futur "mot de passe oublié").
+     * Délégué depuis AuthService.resetPassword() — même mécanisme que User, cf.
+     * AuthService.login() qui délègue déjà de la même façon. Retourne `false`
+     * (plutôt que de lever une erreur) quand aucun PartnerUser ne correspond au
+     * token, pour laisser l'appelant retomber sur son propre message générique
+     * "lien invalide" sans révéler quel système de compte a été essayé.
+     */
+    async resetPasswordByToken(token: string, password: string): Promise<boolean> {
+        const user = await repo.findUserByResetToken(hashToken(token));
+        if (!user) return false;
+        const hashedPassword = await bcrypt.hash(password, 12);
+        await repo.setPasswordFromToken(user.id, hashedPassword);
+        return true;
+    }
+
     /** Profil de session courant — utilisé par le frontend pour vérifier/afficher la session */
     async me(partnerUserId: string) {
         const user = await repo.findUserById(partnerUserId);
@@ -212,20 +234,39 @@ export class PartnerPortalService {
         return repo.listOffers(partnerId);
     }
 
-    async createOffer(partnerId: string, data: Parameters<typeof repo.createOffer>[2]) {
-        // Attach to a default platform-wide org (SA-owned org, nullable workaround)
-        // In production, offres partenaires sont liées à une org hôte
-        const hostOrg = await this._getHostOrgId();
-        return repo.createOffer(partnerId, hostOrg, data);
+    async createOffer(partnerId: string, hostOrgId: string, data: Parameters<typeof repo.createOffer>[2]) {
+        return repo.createOffer(partnerId, hostOrgId, data);
+    }
+
+    /** Catégories réelles disponibles pour le sélecteur du formulaire d'offre —
+     *  celles de l'organisation hôte, seule org à laquelle une offre partenaire
+     *  est jamais rattachée aujourd'hui (cf. getHostOrgId). */
+    async listOfferCategories() {
+        const hostOrgId = await this.getHostOrgId();
+        return prisma.benefitCategory.findMany({
+            where: { organizationId: hostOrgId, isActive: true },
+            select: { id: true, name: true },
+            orderBy: { name: "asc" },
+        });
     }
 
     async updateOffer(id: string, partnerId: string, data: Parameters<typeof repo.updateOffer>[2]) {
         return repo.updateOffer(id, partnerId, data);
     }
 
+    async setOfferActive(id: string, partnerId: string, isActive: boolean) {
+        return repo.setOfferActive(id, partnerId, isActive);
+    }
+
     async uploadOfferImage(partnerId: string, fileBuffer: Buffer) {
         const result = await uploadImageToCloudinary(fileBuffer, `afrikcse/offers/${partnerId}`);
         return { imageUrl: result.secure_url };
+    }
+
+    async uploadPartnerLogo(partnerId: string, fileBuffer: Buffer) {
+        const result = await uploadImageToCloudinary(fileBuffer, `afrikcse/logos/partners/${partnerId}`);
+        const partner = await repo.updatePartnerProfile(partnerId, { logoUrl: result.secure_url });
+        return { logoUrl: partner.logoUrl };
     }
 
     // ── Paramètres ────────────────────────────────────────────────────────────
@@ -291,9 +332,67 @@ export class PartnerPortalService {
         return repo.deletePaymentMethod(id, partnerId);
     }
 
-    private async _getHostOrgId(): Promise<string> {
+    /** Org hôte (SA-owned, isHost=true) à laquelle sont rattachées les offres
+     *  soumises par les partenaires — cf. commentaire sur createOffer.
+     *  (Workaround connu : en attendant un vrai ciblage multi-org, cf. audit.) */
+    async getHostOrgId(): Promise<string> {
         const org = await prisma.organization.findFirst({ where: { isHost: true }, select: { id: true } });
         if (!org) throw new AppError("Organisation hôte introuvable", 500);
         return org.id;
+    }
+
+    // ── Espace financier ──────────────────────────────────────────────────────
+
+    /**
+     * CA Brut : dérivé directement des réservations COMPLETED (indépendant de
+     * l'existence d'une règle de commission) — total cumulé, jamais réduit par
+     * un payout. Total des commissions : somme de TOUTES les CommissionEntry
+     * CONFIRMED, payées ou non — cumulé lui aussi. Solde net disponible : PAS
+     * une simple soustraction des deux précédents (voir commentaire détaillé
+     * sur `sumUnclaimedNet`) — calculé directement comme la somme des entrées
+     * pas encore réclamées par un payout, pour rester par construction toujours
+     * identique à ce qu'une demande de reversement pourrait réellement réclamer.
+     */
+    async getFinances(partnerId: string, page = 1, limit = 20) {
+        const [grossRevenue, settings, { totalCommissions, netBalance, history }] = await Promise.all([
+            bookingService.getCompletedGrossRevenueForPartner(partnerId),
+            repo.getSettingsPartner(partnerId),
+            commissionService.getPartnerFinanceSummary(partnerId, page, limit),
+        ]);
+
+        return {
+            grossRevenue,
+            totalCommissions: totalCommissions.toNumber(),
+            netBalance: netBalance.toNumber(),
+            currencyCode: settings?.currencyCode ?? "XOF",
+            history: {
+                entries: history.entries.map((e) => ({
+                    id:               e.id,
+                    bookingId:        e.bookingId,
+                    date:             e.createdAt,
+                    grossAmount:      e.grossAmount.toNumber(),
+                    commissionAmount: e.commissionAmount.toNumber(),
+                    netAmount:        e.netAmount.toNumber(),
+                    currencyCode:     e.currencyCode,
+                    payoutStatus:     e.payoutId ? "CLAIMED" : "AVAILABLE",
+                })),
+                total: history.total,
+                page: history.page,
+                totalPages: history.totalPages,
+            },
+        };
+    }
+
+    async requestPayout(partnerId: string, triggeredById: string) {
+        const payout = await commissionService.requestPartnerPayout(partnerId, triggeredById);
+        return {
+            id:              payout.id,
+            status:          payout.status,
+            totalGross:      payout.totalGross.toNumber(),
+            totalCommission: payout.totalCommission.toNumber(),
+            netAmount:       payout.netAmount.toNumber(),
+            currencyCode:    payout.currencyCode,
+            createdAt:       payout.createdAt,
+        };
     }
 }

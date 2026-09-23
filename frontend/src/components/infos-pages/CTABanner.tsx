@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Rocket, Star, Trophy, Globe } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface CTABannerProps {
     title?: string;
@@ -12,11 +13,12 @@ interface CTABannerProps {
 }
 
 export default function CTABanner({
-    title = "Commencez votre transformation digitale",
-    subtitle = "Rejoignez les centaines d'entreprises qui optimisent déjà leurs voyages d'affaires et avantages employés avec notre solution.",
-    primaryLabel = "Commencer maintenant",
+    title,
+    subtitle,
+    primaryLabel,
     primaryHref = "/auth/login",
 }: CTABannerProps) {
+    const t = useTranslations("infos.ctaBanner");
     return (
         <section className="relative w-full bg-[#0F172A] overflow-hidden py-24 sm:py-32 lg:py-40 border-t border-slate-800">
             
@@ -55,7 +57,7 @@ export default function CTABanner({
                 <div className="inline-flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-4 py-1.5 mb-8 transform hover:scale-105 transition-transform duration-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                     <span className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-300">
-                        Prêt pour le niveau supérieur ?
+                        {t("readyNextLevel")}
                     </span>
                 </div>
 
@@ -67,15 +69,27 @@ export default function CTABanner({
                     }}
                     className="text-white text-3xl sm:text-5xl lg:text-6xl tracking-tight max-w-4xl mx-auto leading-[1.15] mb-6"
                 >
-                    {title.split("digitale")[0]}
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400">
-                        digitale
-                    </span>
+                    {title !== undefined ? (
+                        <>
+                            {title.split("digitale")[0]}
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400">
+                                {t("digital")}
+                            </span>
+                        </>
+                    ) : (
+                        t.rich("defaultTitle", {
+                            gradient: (chunks) => (
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400">
+                                    {chunks}
+                                </span>
+                            ),
+                        })
+                    )}
                 </h2>
 
                 {/* Sous-titre aéré */}
                 <p className="text-slate-400 text-base sm:text-lg lg:text-xl max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
-                    {subtitle}
+                    {subtitle ?? t("defaultSubtitle")}
                 </p>
 
                 {/* Bouton unique unifié - Commencer maintenant */}
@@ -92,7 +106,7 @@ export default function CTABanner({
                         
                         <span className="relative flex items-center gap-3">
                             <Rocket className="w-5 h-5" />
-                            {primaryLabel}
+                            {primaryLabel ?? t("startNow")}
                             <svg className="w-5 h-5 transform group-hover:translate-x-1.5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                             </svg>
@@ -104,19 +118,19 @@ export default function CTABanner({
                 <div className="mt-16 flex flex-wrap justify-center items-center gap-x-8 gap-y-4 text-xs font-semibold text-slate-500 border-t border-slate-900 pt-8">
                     <span className="flex items-center gap-2 text-slate-400 hover:text-slate-300 transition-colors">
                         <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                        Démo personnalisée gratuite
+                        {t("freePersonalizedDemo")}
                     </span>
                     <span className="flex items-center gap-2 text-slate-400 hover:text-slate-300 transition-colors">
                         <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                        Mise en service en 48h
+                        {t("goLive48Hours")}
                     </span>
                     <span className="flex items-center gap-2 text-slate-400 hover:text-slate-300 transition-colors">
                         <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                        Conforme RGPD & Réglementations régionales
+                        {t("gdprRegionalRegulations")}
                     </span>
                     <span className="flex items-center gap-2 text-slate-400 hover:text-slate-300 transition-colors">
                         <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                        Support 24/7
+                        {t("text247Support")}
                     </span>
                 </div>
 
@@ -124,17 +138,17 @@ export default function CTABanner({
                 <div className="mt-6 flex flex-wrap justify-center items-center gap-4 text-xs text-slate-600">
                     <span className="flex items-center gap-1.5">
                         <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />
-                        <span>4.9/5 satisfaction client</span>
+                        <span>{t("text495Customer")}</span>
                     </span>
                     <span className="w-px h-3 bg-slate-800" />
                     <span className="flex items-center gap-1.5">
                         <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                        <span>500+ entreprises clientes</span>
+                        <span>{t("text500ClientCompanies")}</span>
                     </span>
                     <span className="w-px h-3 bg-slate-800" />
                     <span className="flex items-center gap-1.5">
                         <Globe className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>54 pays couverts</span>
+                        <span>{t("text54CountriesCovered")}</span>
                     </span>
                 </div>
             </div>

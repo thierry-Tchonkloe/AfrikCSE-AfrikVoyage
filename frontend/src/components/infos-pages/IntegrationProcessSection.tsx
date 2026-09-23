@@ -1,7 +1,7 @@
 // /src/components/infos-pages/IntegrationProcessSection.tsx
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Settings, 
@@ -22,6 +22,9 @@ import {
   Smartphone
 } from "lucide-react";
 import { fadeInUp, scaleIn, slideInLeft, slideInRight } from "../styles/animations";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.integrationProcessSection">>;
 
 interface Step {
   num: string;
@@ -35,74 +38,77 @@ interface Step {
   status?: "completed" | "in-progress" | "pending";
 }
 
-const steps: Step[] = [
+const getSteps = (t: Translator): Step[] => ([
   {
     num: "01",
-    title: "Configuration Intelligente",
-    description: "Analyse de votre politique voyage et paramétrage sur-mesure de votre espace de travail.",
-    tag: "Setup Express",
+    title: t("smartConfiguration"),
+    description: t("analysisTravelPolicyTailor"),
+    tag: t("setupExpress"),
     color: "from-teal-500 to-emerald-500",
     Icon: <Settings className="w-6 h-6" />,
-    duration: "2-3 jours",
+    duration: t("text23Days"),
     status: "completed",
     details: [
-      "Analyse des besoins et objectifs",
-      "Configuration des politiques de voyage",
-      "Paramétrage des plafonds budgétaires",
-      "Définition des workflows de validation"
+      t("needsObjectivesAnalysis"),
+      t("travelPolicyConfiguration"),
+      t("budgetCeilingSetup"),
+      t("approvalWorkflowDefinition")
     ]
   },
   {
     num: "02",
-    title: "Synchronisation ERP",
-    description: "Connexion API sécurisée à vos outils pour une donnée unique et éviter la double saisie.",
-    tag: "Intégration Native",
+    title: t("erpSynchronization"),
+    description: t("secureApiConnectionTools"),
+    tag: t("nativeIntegration"),
     color: "from-indigo-500 to-blue-600",
     Icon: <Link2 className="w-6 h-6" />,
-    duration: "3-5 jours",
+    duration: t("text35Days"),
     status: "in-progress",
     details: [
-      "Connexion à vos ERP (SAP, Odoo, Salesforce)",
-      "Migration des données existantes",
-      "Mise en place des webhooks",
-      "Tests de synchronisation"
+      t("connectionErpsSapOdoo"),
+      t("migrationExistingData"),
+      t("webhookSetup"),
+      t("synchronizationTests")
     ]
   },
   {
     num: "03",
-    title: "Déploiement Accompagné",
-    description: "Formation des administrateurs et activation de l'application mobile pour les voyageurs.",
-    tag: "Onboarding",
+    title: t("guidedDeployment"),
+    description: t("administratorTrainingMobile"),
+    tag: t("onboarding"),
     color: "from-purple-500 to-pink-600",
     Icon: <Rocket className="w-6 h-6" />,
-    duration: "1-2 semaines",
+    duration: t("text12Weeks"),
     status: "pending",
     details: [
-      "Formation des administrateurs",
-      "Activation des comptes utilisateurs",
-      "Déploiement de l'application mobile",
-      "Support pendant le démarrage"
+      t("administratorTraining"),
+      t("userAccountActivation"),
+      t("mobileAppDeployment"),
+      t("supportDuringStartup")
     ]
   },
   {
     num: "04",
-    title: "Optimisation Continue",
-    description: "Analyse des rapports de dépenses et ajustements stratégiques pour atteindre les -30% d'économies.",
-    tag: "Santé Système",
+    title: t("continuousOptimization"),
+    description: t("analysisExpenseReports"),
+    tag: t("systemHealth"),
     color: "from-amber-500 to-orange-600",
     Icon: <TrendingUp className="w-6 h-6" />,
-    duration: "En continu",
+    duration: t("ongoing"),
     status: "pending",
     details: [
-      "Analyse des rapports de dépenses",
-      "Identification des axes d'optimisation",
-      "Ajustements stratégiques",
-      "Reporting mensuel personnalisé"
+      t("expenseReportAnalysis"),
+      t("identificationOptimization"),
+      t("strategicAdjustments"),
+      t("personalizedMonthlyReporting")
     ]
   }
-];
+]);
 
 export default function IntegrationProcessSection() {
+  const tr = useTranslations("infos.integrationProcessSection");
+  const t = useTranslations("infos.integrationProcessSection");
+  const steps = useMemo(() => getSteps(t), [t]);
   const [activeStep, setActiveStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -153,16 +159,13 @@ export default function IntegrationProcessSection() {
         >
           <span className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-600 rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-[0.15em] mb-4">
             <Zap className="w-4 h-4" />
-            Processus d'intégration
+            {t("integrationProcess")}
           </span>
           <h2 className="text-4xl md:text-6xl font-bold text-[rgb(21,0,44)] tracking-tight mb-4 leading-[1.1]">
-            Comment ça
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-emerald-500">
-              fonctionne
-            </span>
+            {tr.rich("howWorks", { span1: (chunks) => <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-emerald-500">{chunks}</span> })}
           </h2>
           <p className="text-slate-500 text-lg font-medium max-w-2xl mx-auto">
-            Une intégration en 4 étapes clés pour une mise en place rapide et efficace
+            {t("text4KeyStepIntegration")}
           </p>
         </motion.div>
 
@@ -247,15 +250,15 @@ export default function IntegrationProcessSection() {
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-lg">
                 <div className="text-2xl font-black text-indigo-600">-30%</div>
-                <div className="text-xs font-medium text-slate-500">Économies</div>
+                <div className="text-xs font-medium text-slate-500">{t("savings")}</div>
               </div>
               <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-lg">
-                <div className="text-2xl font-black text-emerald-600">2 sem.</div>
-                <div className="text-xs font-medium text-slate-500">Mise en place</div>
+                <div className="text-2xl font-black text-emerald-600">{t("text2Wks")}</div>
+                <div className="text-xs font-medium text-slate-500">{t("setup")}</div>
               </div>
               <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center shadow-lg">
                 <div className="text-2xl font-black text-purple-600">99.9%</div>
-                <div className="text-xs font-medium text-slate-500">Disponibilité</div>
+                <div className="text-xs font-medium text-slate-500">{t("availability")}</div>
               </div>
             </div>
           </motion.div>
@@ -282,7 +285,7 @@ export default function IntegrationProcessSection() {
                         {currentStep.Icon}
                       </div>
                       <div>
-                        <span className="text-xs font-black text-slate-400 block">Étape {currentStep.num}</span>
+                        <span className="text-xs font-black text-slate-400 block">{t("step", { num: currentStep.num })}</span>
                         <h3 className="text-2xl font-bold text-slate-800">{currentStep.title}</h3>
                       </div>
                     </div>
@@ -297,7 +300,7 @@ export default function IntegrationProcessSection() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xs font-medium text-slate-400">Progression</div>
+                    <div className="text-xs font-medium text-slate-400">{t("progress")}</div>
                     <div className="text-sm font-black text-indigo-600">
                       {Math.round(((activeStep + 1) / steps.length) * 100)}%
                     </div>
@@ -312,7 +315,7 @@ export default function IntegrationProcessSection() {
                 {/* Détails */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">
-                    Étapes détaillées
+                    {t("detailedSteps")}
                   </h4>
                   <ul className="space-y-2">
                     {currentStep.details.map((detail, idx) => (
@@ -335,10 +338,10 @@ export default function IntegrationProcessSection() {
                 {/* Indicateur de progression */}
                 <div className="mt-6 pt-6 border-t border-slate-200">
                   <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>Étape {activeStep + 1}/{steps.length}</span>
+                    <span>{t("step2", { p1: activeStep + 1, length: steps.length })}</span>
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>En cours</span>
+                      <span>{t("progress2")}</span>
                     </div>
                   </div>
                   <div className="w-full h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden">
@@ -353,7 +356,7 @@ export default function IntegrationProcessSection() {
 
                 {/* Action button */}
                 <button className="mt-6 w-full py-3 bg-gradient-to-r from-indigo-600 to-emerald-500 text-white rounded-xl font-bold text-sm hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-indigo-200/50 flex items-center justify-center gap-2">
-                  En savoir plus
+                  {t("learnMore")}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </motion.div>

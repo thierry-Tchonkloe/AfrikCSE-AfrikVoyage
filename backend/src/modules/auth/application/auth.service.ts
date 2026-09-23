@@ -353,11 +353,18 @@ export class AuthService {
         }
     }
 
-    /** Réinitialise le mot de passe */
+    /**
+     * Réinitialise le mot de passe. Essaie d'abord `User`, puis délègue à
+     * `PartnerPortalService` si aucun `User` ne porte ce token — même mécanisme
+     * de délégation que `login()` : un même lien /activate?token=... sert donc
+     * indifféremment un compte User ou le bootstrap d'un compte Partenaire.
+     */
     async resetPassword(dto: ResetPasswordDto) {
         const user = await this.repo.findUserByResetToken(hashToken(dto.token));
 
         if (!user) {
+        const handledByPartner = await this.partnerPortalService.resetPasswordByToken(dto.token, dto.password);
+        if (handledByPartner) return;
         throw new Error("Lien invalide ou expiré");
         }
 

@@ -11,6 +11,10 @@ const router = Router();
 router.use(authenticate);
 router.use(authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN));
 
+// ── Paramètres ────────────────────────────────────────────────────────────────
+router.get(  "/settings", ctrl.getSettings);
+router.patch("/settings", ctrl.updateSettings);
+
 // ── API Clients ───────────────────────────────────────────────────────────────
 router.get(  "/clients",          ctrl.listClients);
 router.post( "/clients",          idempotency(), ctrl.createClient);

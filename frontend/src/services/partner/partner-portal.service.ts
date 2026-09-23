@@ -1,4 +1,4 @@
-import { PartnerUser, PartnerLocation, Partner, Booking, PartnerSessionUser, PartnerSettings, PartnerPaymentMethod, PartnerPaymentMethodType } from "@/types";
+import { PartnerUser, PartnerLocation, PartnerProfile, Booking, PartnerSessionUser, PartnerSettings, PartnerPaymentMethod, PartnerPaymentMethodType } from "@/types";
 import api from "@/lib/api";
 
 export interface OfferInput {
@@ -36,6 +36,32 @@ export interface PartnerOffer {
     createdAt:     string;
 }
 
+export interface FinanceEntry {
+    id:               string;
+    bookingId:        string;
+    date:             string;
+    grossAmount:      number;
+    commissionAmount: number;
+    netAmount:        number;
+    currencyCode:     string;
+    // "CLAIMED" = déjà rattachée à un payout (versé ou en attente de traitement) ;
+    // "AVAILABLE" = comptée dans le solde net disponible ci-dessous.
+    payoutStatus:     "AVAILABLE" | "CLAIMED";
+}
+
+export interface FinanceSummary {
+    grossRevenue:     number;
+    totalCommissions: number;
+    netBalance:       number;
+    currencyCode:     string;
+    history: {
+        entries:    FinanceEntry[];
+        total:      number;
+        page:       number;
+        totalPages: number;
+    };
+}
+
 export interface ProfileInput {
     name?:         string;
     sector?:       string;
@@ -43,6 +69,7 @@ export interface ProfileInput {
     contactEmail?: string;
     websiteUrl?:   string;
     phone?:        string;
+    logoUrl?:      string;
 }
 
 export interface AvailabilitySlot {
@@ -115,19 +142,30 @@ export const partnerPortalService = {
         await api.patch(`/partner-portal/staff/${id}/deactivate`);
     },
 
-    async getProfile(): Promise<Partner> {
-        const { data } = await api.get<Partner>(`/partner-portal/profile`);
+    async getProfile(): Promise<PartnerProfile> {
+        const { data } = await api.get<PartnerProfile>(`/partner-portal/profile`);
         return data;
     },
 
-    async updateProfile(payload: ProfileInput): Promise<Partner> {
-        const { data } = await api.patch<Partner>(`/partner-portal/profile`, payload);
+    async updateProfile(payload: ProfileInput): Promise<PartnerProfile> {
+        const { data } = await api.patch<PartnerProfile>(`/partner-portal/profile`, payload);
+        return data;
+    },
+
+    // Upload + persistance immédiate : le partenaire existe déjà (contrairement aux offres),
+    // pas besoin de round-trip séparé via updateProfile.
+    async uploadPartnerLogo(file: File): Promise<{ logoUrl: string }> {
+        const formData = new FormData();
+        formData.append("file", file);
+        const { data } = await api.post<{ logoUrl: string }>(`/partner-portal/profile/logo`, formData, {
+            headers: { "Content-Type": undefined },
+        });
         return data;
     },
 
     async listLocations(): Promise<PartnerLocation[]> {
         const partner = await partnerPortalService.getProfile();
-        return (partner as unknown as { locations?: PartnerLocation[] }).locations ?? [];
+        return partner.locations ?? [];
     },
 
     async createLocation(payload: LocationInput): Promise<PartnerLocation> {
@@ -153,6 +191,13 @@ export const partnerPortalService = {
         return data;
     },
 
+    // Catégories réelles de l'organisation hôte à laquelle les offres partenaires
+    // sont rattachées — remplace l'ancienne liste de catégories codée en dur.
+    async listOfferCategories(): Promise<{ id: string; name: string }[]> {
+        const { data } = await api.get<{ id: string; name: string }[]>(`/partner-portal/offers/categories`);
+        return data;
+    },
+
     async createOffer(payload: OfferInput): Promise<PartnerOffer> {
         const { data } = await api.post<PartnerOffer>(`/partner-portal/offers`, payload);
         return data;
@@ -160,6 +205,11 @@ export const partnerPortalService = {
 
     async updateOffer(id: string, payload: Partial<OfferInput>): Promise<PartnerOffer> {
         const { data } = await api.patch<PartnerOffer>(`/partner-portal/offers/${id}`, payload);
+        return data;
+    },
+
+    async toggleOfferActive(id: string, isActive: boolean): Promise<PartnerOffer> {
+        const { data } = await api.patch<PartnerOffer>(`/partner-portal/offers/${id}/toggle-active`, { isActive });
         return data;
     },
 
@@ -225,6 +275,16 @@ export const partnerPortalService = {
 
     async completeBooking(id: string): Promise<Booking> {
         const { data } = await api.patch(`/bookings/partner/${id}/complete`);
+        return data;
+    },
+
+    async getFinances(page = 1, limit = 20): Promise<FinanceSummary> {
+        const { data } = await api.get<FinanceSummary>(`/partner-portal/finances`, { params: { page, limit } });
+        return data;
+    },
+
+    async requestPayout(): Promise<{ id: string; netAmount: number; status: string }> {
+        const { data } = await api.post(`/partner-portal/finances/payout-requests`);
         return data;
     },
 };

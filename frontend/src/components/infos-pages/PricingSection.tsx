@@ -1,9 +1,9 @@
 // /src/components/infos-pages/PricingSection.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { 
   Check, 
   X, 
@@ -25,6 +25,9 @@ import {
   Clock
 } from "lucide-react";
 import { fadeInUp, scaleIn, staggerContainer } from "../styles/animations";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.pricingSection">>;
 
 // Types
 interface PricingPlan {
@@ -52,120 +55,121 @@ interface ComparisonItem {
 }
 
 // Données enrichies
-const PRICING_PLANS: PricingPlan[] = [
+const getPricingPlans = (t: Translator): PricingPlan[] => ([
   {
     id: 1,
-    name: "Startup",
+    name: t("startup"),
     price: "49€",
-    period: "/mois",
-    description: "Parfait pour les PME en croissance",
+    period: t("month"),
+    description: t("perfectGrowingSmes"),
     features: [
-      "Jusqu'à 25 utilisateurs",
-      "Réservations voyages illimitées",
-      "Gestion des notes de frais basique",
-      "Support email 5j/7",
-      "Dashboard analytics",
-      "Catalogue CSE essentiel"
+      t("up25Users"),
+      t("unlimitedTravelBookings"),
+      t("basicExpenseReportManagement"),
+      t("emailSupport5Days"),
+      t("analyticsDashboard"),
+      t("essentialCseCatalog")
     ],
-    buttonText: "Démarrer l'essai",
+    buttonText: t("startTrial"),
     buttonVariant: "outline",
     icon: <Rocket className="w-6 h-6" />,
-    savings: "Économisez 30%",
-    badge: "Idéal pour démarrer"
+    savings: t("save30"),
+    badge: t("idealGetStarted")
   },
   {
     id: 2,
-    name: "Business",
+    name: t("business"),
     price: "99€",
-    period: "/mois",
-    description: "La solution complète pour les ETI",
+    period: t("month"),
+    description: t("completeSolutionMidSized"),
     features: [
-      "Jusqu'à 150 utilisateurs",
-      "Toutes les fonctionnalités voyage",
-      "IA predictive + reporting avancé",
-      "Support prioritaire 7j/7",
-      "Intégrations ERP natives",
-      "Gestion CSE complète",
-      "API personnalisable"
+      t("up150Users"),
+      t("allTravelFeatures"),
+      t("predictiveAiAdvanced"),
+      t("prioritySupport7Days"),
+      t("nativeErpIntegrations"),
+      t("fullCseManagement"),
+      t("customizableApi")
     ],
-    buttonText: "Commencer maintenant",
+    buttonText: t("getStartedNow"),
     buttonVariant: "primary",
     popular: true,
     icon: <Building2 className="w-6 h-6" />,
-    savings: "Économisez 45%",
-    badge: "⭐ Recommandé",
+    savings: t("save45"),
+    badge: t("recommended"),
     highlight: true
   },
   {
     id: 3,
-    name: "Enterprise",
-    price: "Sur mesure",
+    name: t("enterprise"),
+    price: t("custom"),
     period: "",
-    description: "Pour les grands groupes",
+    description: t("largeGroups"),
     features: [
-      "Utilisateurs illimités",
-      "API dédiée et personnalisation",
-      "SLA garantie 99.9%",
-      "Account manager dédié",
-      "Formation sur site",
-      "Audit et optimisation RSE",
-      "Solutions sur mesure"
+      t("unlimitedUsers"),
+      t("dedicatedApiCustomization"),
+      t("guaranteed999Sla"),
+      t("dedicatedAccountManager"),
+      t("siteTraining"),
+      t("csrAuditOptimization"),
+      t("customSolutions")
     ],
-    buttonText: "Nous contacter",
+    buttonText: t("contactUs"),
     buttonVariant: "secondary",
     icon: <Landmark className="w-6 h-6" />,
-    savings: "Sur devis",
-    badge: "🏢 Entreprise"
+    savings: t("quote"),
+    badge: t("enterprise2")
   }
-];
+]);
 
-const COMPARISONS: ComparisonItem[] = [
+const getComparisons = (t: Translator): ComparisonItem[] => ([
   {
-    criterion: "Gestion des reçus & frais",
-    old: "Notes de frais papier perdues, saisie manuelle interminable",
-    new: "Scan IA instantané, rapprochement automatique en 2s",
+    criterion: t("receiptExpenseManagement"),
+    old: t("lostPaperExpenseReports"),
+    new: t("instantAiScanningAutomatic"),
     status: "good",
     icon: <Zap className="w-4 h-4" />
   },
   {
-    criterion: "Validation des dépenses",
-    old: "Chaîne d'e-mails interminable, blocages opérationnels",
-    new: "Workflows dynamiques et alertes Slack/WhatsApp",
+    criterion: t("expenseApproval"),
+    old: t("endlessEmailChains"),
+    new: t("dynamicWorkflowsSlack"),
     status: "good",
     icon: <Users className="w-4 h-4" />
   },
   {
-    criterion: "Réservation de voyages",
-    old: "Salariés avancent les frais sur des sites grand public",
-    new: "Inventaire centralisé sans avance de frais",
+    criterion: t("travelBooking"),
+    old: t("employeesPayUpfrontConsumer"),
+    new: t("centralizedInventoryNo"),
     status: "good",
     icon: <Plane className="w-4 h-4" />
   },
   {
-    criterion: "Avantages & Crédits CSE",
-    old: "Chèques cadeaux physiques périmés",
-    new: "Compte unique digitalisé utilisable instantanément",
+    criterion: t("cseBenefitsCredits"),
+    old: t("expiredPhysicalGiftVouchers"),
+    new: t("singleDigitalAccountUsable"),
     status: "better",
     icon: <Gift className="w-4 h-4" />
   },
   {
-    criterion: "Suivi carbone & RSE",
-    old: "Aucun suivi de l'impact environnemental",
-    new: "Budget carbone intégré et visualisation CO₂",
+    criterion: t("carbonTrackingCsr"),
+    old: t("noTrackingEnvironmental"),
+    new: t("builtCarbonBudgetCo"),
     status: "good",
     icon: <Shield className="w-4 h-4" />
   },
   {
-    criterion: "Gestion des imprévus",
-    old: "Stress et gestion manuelle, heures perdues",
-    new: "IA prédictive reprogramme automatiquement",
+    criterion: t("handlingDisruptions"),
+    old: t("stressManualHandlingHours"),
+    new: t("predictiveAiReschedules"),
     status: "better",
     icon: <Clock className="w-4 h-4" />
   }
-];
+]);
 
 // Composant pour les cartes de prix
 const PricingCard = ({ plan, index }: { plan: PricingPlan; index: number }) => {
+  const t = useTranslations("infos.pricingSection");
   const getButtonStyles = () => {
     const baseStyles = "block w-full text-center py-3.5 rounded-xl font-bold text-sm transition-all duration-300 active:scale-[0.97]";
     
@@ -197,7 +201,7 @@ const PricingCard = ({ plan, index }: { plan: PricingPlan; index: number }) => {
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-600 to-emerald-500 text-white text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-lg shadow-indigo-200/50 z-10 whitespace-nowrap">
           <span className="flex items-center gap-1.5">
             <Sparkles className="w-3 h-3" />
-            {plan.badge || "Le plus populaire"}
+            {plan.badge || t("mostPopular")}
           </span>
         </div>
       )}
@@ -267,7 +271,7 @@ const PricingCard = ({ plan, index }: { plan: PricingPlan; index: number }) => {
         {/* Petit texte sous le bouton */}
         {plan.popular && (
           <p className="text-center text-[10px] text-slate-400 mt-2.5">
-            ✅ Essai gratuit de 14 jours inclus
+            {t("text14DayFreeTrial")}
           </p>
         )}
       </div>
@@ -276,6 +280,10 @@ const PricingCard = ({ plan, index }: { plan: PricingPlan; index: number }) => {
 };
 
 export default function PricingSection() {
+  const tr = useTranslations("infos.pricingSection");
+  const t = useTranslations("infos.pricingSection");
+  const PRICING_PLANS = useMemo(() => getPricingPlans(t), [t]);
+  const COMPARISONS = useMemo(() => getComparisons(t), [t]);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [activeComparison, setActiveComparison] = useState<number | null>(null);
 
@@ -296,16 +304,13 @@ export default function PricingSection() {
         >
           <span className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-600 rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-[0.15em] mb-4">
             <Zap className="w-4 h-4" />
-            Tarifs flexibles
+            {t("flexiblePricing")}
           </span>
           <h2 className="text-4xl md:text-6xl font-bold text-[rgb(21,0,44)] tracking-tight mb-4 leading-[1.1]">
-            Des offres
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-emerald-500">
-              transparentes
-            </span>
+            {tr.rich("offersTransparent", { span1: (chunks) => <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-emerald-500">{chunks}</span> })}
           </h2>
           <p className="text-slate-500 text-lg font-medium">
-            Choisissez le plan adapté à votre structure. Sans engagement, évolutif à tout moment.
+            {t("choosePlanFitsOrganization")}
           </p>
 
           {/* Toggle cycle de facturation */}
@@ -318,7 +323,7 @@ export default function PricingSection() {
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              Mensuel
+              {t("monthly")}
             </button>
             <button
               onClick={() => setBillingCycle("annual")}
@@ -328,7 +333,7 @@ export default function PricingSection() {
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              Annuel
+              {t("yearly")}
               <span className="absolute -top-1.5 -right-1.5 text-[8px] font-black text-white bg-gradient-to-r from-indigo-600 to-emerald-500 px-1.5 py-0.5 rounded-full shadow-sm">
                 -20%
               </span>
@@ -356,13 +361,13 @@ export default function PricingSection() {
           <div className="text-center max-w-3xl mx-auto mb-12">
             <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full">
               <Shield className="w-4 h-4" />
-              Comparaison
+              {t("comparison")}
             </span>
             <h3 className="text-2xl md:text-3xl font-bold text-[rgb(21,0,44)] mt-4">
-              Pourquoi les leaders <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-emerald-500">changent de méthode</span>
+              {tr.rich("whyLeadersChangingTheir", { span1: (chunks) => <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-emerald-500">{chunks}</span> })}
             </h3>
             <p className="text-slate-500 text-sm mt-2">
-              Découvrez les avantages de notre solution face aux méthodes traditionnelles
+              {t("discoverAdvantagesSolution")}
             </p>
           </div>
 
@@ -371,16 +376,16 @@ export default function PricingSection() {
             <div className="grid grid-cols-1 md:grid-cols-3 bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 text-white p-5 text-sm font-bold border-b border-slate-800">
               <div className="hidden md:block flex items-center gap-2">
                 <span className="text-indigo-400">📊</span>
-                CRITÈRE
+                {t("criterion")}
               </div>
               <div className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-2">
                 <span className="text-amber-400 text-lg">✕</span>
-                <span className="opacity-80">MÉTHODES ANCIENNES</span>
+                <span className="opacity-80">{t("oldMethods")}</span>
               </div>
               <div className="flex items-center gap-3 bg-emerald-500/10 rounded-xl px-4 py-2 border border-emerald-400/20">
                 <span className="text-emerald-400 text-lg">✓</span>
                 <span className="flex items-center gap-2 text-emerald-300">
-                  SOLUTION AFRIK
+                  {t("afrikSolution")}
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 </span>
               </div>
@@ -407,7 +412,7 @@ export default function PricingSection() {
                     {item.criterion}
                     {activeComparison === idx && (
                       <span className="text-[9px] text-indigo-500 font-normal bg-indigo-50 px-2 py-0.5 rounded-full">
-                        détail
+                        {t("details")}
                       </span>
                     )}
                   </div>
@@ -440,7 +445,7 @@ export default function PricingSection() {
             <div className="bg-slate-50 border-t border-slate-200 p-4 text-center">
               <p className="text-xs text-slate-500 flex items-center justify-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Des résultats mesurables et concrets pour votre entreprise
+                {t("measurableConcreteResults")}
               </p>
             </div>
           </div>
@@ -453,19 +458,19 @@ export default function PricingSection() {
         >
           <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm">
             <Users className="w-4 h-4 text-indigo-500" />
-            <span>500+ entreprises clientes</span>
+            <span>{t("text500ClientCompanies")}</span>
           </div>
           <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm">
             <Shield className="w-4 h-4 text-emerald-500" />
-            <span>Garantie 100% satisfait</span>
+            <span>{t("text100SatisfactionGuarantee")}</span>
           </div>
           <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm">
             <CreditCard className="w-4 h-4 text-purple-500" />
-            <span>Paiement sécurisé</span>
+            <span>{t("securePayment")}</span>
           </div>
           <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm">
             <Clock className="w-4 h-4 text-amber-500" />
-            <span>Support 24/7 inclus</span>
+            <span>{t("support247Included")}</span>
           </div>
         </motion.div>
       </div>

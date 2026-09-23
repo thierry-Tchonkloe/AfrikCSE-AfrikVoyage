@@ -1,4 +1,4 @@
-import { NotificationType, NotificationChannel } from "@prisma/client";
+import { NotificationType, NotificationChannel, Role } from "@prisma/client";
 import { prisma } from "../../../core/config/prisma";
 import { sendMail } from "../../../core/services/email.service";
 import { sendSms }  from "../../../core/services/sms.service";
@@ -12,6 +12,9 @@ interface DispatchContext {
     email?:   string;
     phone?:   string;
     vars?:    Record<string, string>;
+    /** Lien de redirection de la notification in-app (ex: "/employes/voyages") — pas
+     *  géré par le template (admin-éditable), toujours fourni par l'appelant. */
+    link?:    string;
 }
 
 function interpolate(template: string, vars: Record<string, string>): string {
@@ -45,6 +48,7 @@ export async function dispatchNotification(
                     interpolate(template.inAppTitle, vars),
                     interpolate(template.inAppBody, vars),
                     event,
+                    ctx.link,
                 );
                 await _log({ userId: ctx.userId, email: ctx.email, event, channel, status: "SENT" });
 
@@ -98,4 +102,61 @@ async function _log(data: {
             sentAt:  data.status === "SENT" ? new Date() : undefined,
         },
     });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Helpers multi-destinataires                                                */
+/* -------------------------------------------------------------------------- */
+// `dispatchNotification` opère par destinataire unique (email/téléphone individuels
+// requis pour les canaux EMAIL/SMS). Ces helpers retrouvent les destinataires
+// (id + email) puis dispatchent un appel par utilisateur — remplace l'ancien
+// pattern `notificationRepo.createForUsers/createForOrg/createForRoles` qui
+// écrivait un titre/corps codés en dur au lieu de lire un NotificationTemplate.
+
+export async function dispatchNotificationToUsers(
+    event: NotificationType,
+    userIds: string[],
+    vars: Record<string, string> = {},
+    link?: string,
+): Promise<void> {
+    if (!userIds.length) return;
+    const users = await prisma.user.findMany({
+        where:  { id: { in: userIds } },
+        select: { id: true, email: true },
+    });
+    await Promise.all(users.map((u) => dispatchNotification(event, { userId: u.id, email: u.email, vars, link })));
+}
+
+/** Notifie tous les utilisateurs actifs d'une organisation (ex: nouvelle publication CSE). */
+export async function dispatchNotificationToOrg(
+    event: NotificationType,
+    orgId: string,
+    vars: Record<string, string> = {},
+    excludeUserId?: string,
+    link?: string,
+): Promise<void> {
+    const users = await prisma.user.findMany({
+        where: {
+            organizationId: orgId,
+            isActive: true,
+            ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
+        },
+        select: { id: true, email: true },
+    });
+    await Promise.all(users.map((u) => dispatchNotification(event, { userId: u.id, email: u.email, vars, link })));
+}
+
+/** Notifie les utilisateurs actifs d'une organisation occupant l'un des rôles donnés (ex: approbateurs). */
+export async function dispatchNotificationToRoles(
+    event: NotificationType,
+    orgId: string,
+    roles: Role[],
+    vars: Record<string, string> = {},
+    link?: string,
+): Promise<void> {
+    const users = await prisma.user.findMany({
+        where:  { organizationId: orgId, isActive: true, role: { in: roles } },
+        select: { id: true, email: true },
+    });
+    await Promise.all(users.map((u) => dispatchNotification(event, { userId: u.id, email: u.email, vars, link })));
 }

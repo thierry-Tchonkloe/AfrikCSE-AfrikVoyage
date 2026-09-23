@@ -157,4 +157,120 @@ export class WalletRepository {
             },
         });
     }
+
+    // ── Wallet de l'organisation (trésorerie) ────────────────────────────────
+    // Distinct des wallets individuels ci-dessus : un seul par organisation,
+    // non rattaché à un utilisateur. Voir le commentaire du modèle OrganizationWallet.
+
+    /** Retourne le wallet de l'organisation, le crée s'il n'existe pas (solde initial 0) */
+    async getOrCreateOrganizationWallet(organizationId: string) {
+        return prisma.organizationWallet.upsert({
+            where: { organizationId },
+            create: { organizationId, currencyCode: "XOF" },
+            update: {},
+        });
+    }
+
+    async getOrganizationBalance(organizationWalletId: string): Promise<Prisma.Decimal> {
+        const result = await prisma.organizationWalletEntry.aggregate({
+            where: { organizationWalletId },
+            _sum: { amount: true },
+        });
+        return result._sum.amount ?? new Prisma.Decimal(0);
+    }
+
+    /** Solde + devise du wallet de l'organisation, pour affichage (crée le wallet si absent). */
+    async getOrganizationWalletSummary(organizationId: string) {
+        const wallet  = await this.getOrCreateOrganizationWallet(organizationId);
+        const balance = await this.getOrganizationBalance(wallet.id);
+        return { balance, currencyCode: wallet.currencyCode };
+    }
+
+    /**
+     * Débite le wallet de l'organisation après vérification du solde, même garde-fou
+     * que debit() ci-dessus. Lève AppError 422 si le solde de l'entreprise est insuffisant.
+     */
+    async debitOrganizationWallet(
+        organizationId: string,
+        amount: Prisma.Decimal,
+        idempotencyKey: string,
+        opts?: { description?: string; referenceId?: string; referenceType?: string }
+    ) {
+        return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+            const existing = await tx.organizationWalletEntry.findUnique({ where: { idempotencyKey } });
+            if (existing) return existing;
+
+            const wallet = await tx.organizationWallet.upsert({
+                where: { organizationId },
+                create: { organizationId, currencyCode: "XOF" },
+                update: {},
+            });
+
+            const balanceAgg = await tx.organizationWalletEntry.aggregate({
+                where: { organizationWalletId: wallet.id },
+                _sum: { amount: true },
+            });
+            const balance = balanceAgg._sum.amount ?? new Prisma.Decimal(0);
+            if (balance.lessThan(amount)) {
+                throw new AppError(
+                    `Solde de l'entreprise insuffisant (disponible : ${balance} XOF, requis : ${amount} XOF)`,
+                    422
+                );
+            }
+            const debitAmount    = amount.negated();
+            const runningBalance = balance.add(debitAmount);
+
+            return tx.organizationWalletEntry.create({
+                data: {
+                    organizationWalletId: wallet.id,
+                    type:           WalletEntryType.DEBIT,
+                    amount:         debitAmount,
+                    runningBalance,
+                    idempotencyKey,
+                    description:    opts?.description,
+                    referenceId:    opts?.referenceId,
+                    referenceType:  opts?.referenceType,
+                },
+            });
+        });
+    }
+
+    /** Crédite le wallet de l'organisation (rechargement) — même garantie d'atomicité/idempotence que ci-dessus. */
+    async creditOrganizationWallet(
+        organizationId: string,
+        amount: Prisma.Decimal,
+        idempotencyKey: string,
+        opts?: { description?: string; referenceId?: string; referenceType?: string; type?: WalletEntryType }
+    ) {
+        return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+            const existing = await tx.organizationWalletEntry.findUnique({ where: { idempotencyKey } });
+            if (existing) return existing;
+
+            const wallet = await tx.organizationWallet.upsert({
+                where: { organizationId },
+                create: { organizationId, currencyCode: "XOF" },
+                update: {},
+            });
+
+            const balanceAgg = await tx.organizationWalletEntry.aggregate({
+                where: { organizationWalletId: wallet.id },
+                _sum: { amount: true },
+            });
+            const balance        = balanceAgg._sum.amount ?? new Prisma.Decimal(0);
+            const runningBalance = balance.add(amount);
+
+            return tx.organizationWalletEntry.create({
+                data: {
+                    organizationWalletId: wallet.id,
+                    type:           opts?.type ?? WalletEntryType.TOPUP,
+                    amount,
+                    runningBalance,
+                    idempotencyKey,
+                    description:    opts?.description,
+                    referenceId:    opts?.referenceId,
+                    referenceType:  opts?.referenceType,
+                },
+            });
+        });
+    }
 }

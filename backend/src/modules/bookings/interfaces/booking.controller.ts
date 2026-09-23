@@ -53,7 +53,11 @@ export class BookingController {
 
     async getPartnerBookings(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const partnerId = req.partnerUser?.partnerId ?? (req.query.partnerId as string);
+            // Toujours dérivé de la session partenaire authentifiée — jamais d'un
+            // query param client, qui aurait permis de lister les réservations
+            // d'un AUTRE partenaire en le passant explicitement dans l'URL si
+            // cette route était un jour montée sans authenticatePartner en amont.
+            const partnerId = req.partnerUser!.partnerId;
             const page  = parseInt(req.query.page  as string) || 1;
             const limit = parseInt(req.query.limit as string) || 20;
             res.json(await service.getPartnerBookings(partnerId, page, limit));

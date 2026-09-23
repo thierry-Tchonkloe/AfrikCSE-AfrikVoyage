@@ -1,98 +1,96 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslations } from "next-intl";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { Plane, Gift, Bot, ShieldCheck, Building2, Globe, Star, TrendingDown, BarChart2, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+
+type Translator = ReturnType<typeof useTranslations<"infos.navBar">>;
+
 // Structure enrichie pour le Méga-Menu
-const ALL_SOLUTIONS: { category: string; Icon: LucideIcon; color: string; href: string; items: { label: string; desc: string; tag: string | null; tagColor?: string; href: string }[] }[] = [
+const getAllSolutions = (tr: Translator): { category: string; Icon: LucideIcon; color: string; href: string; items: { label: string; desc: string; tag: string | null; tagColor?: string; href: string }[] }[] => ([
   {
-    category: "Gestion des voyages",
+    category: tr("travelManagement"),
     Icon: Plane,
     color: "indigo",
     href: "/infos/solutions#voyage",
     items: [
-      { label: "Réservation centralisée", desc: "Vols, hôtels, trains et visas", tag: "Nouveau", tagColor: "indigo", href: "/infos/solutions#voyage" },
-      { label: "Contrôle budgétaire", desc: "Politiques de voyage automatisées", tag: "Populaire", tagColor: "emerald", href: "/infos/solutions#voyage" },
-      { label: "Reporting & ROI", desc: "Analyses financières en temps réel", tag: null, href: "/infos/solutions#voyage" },
-      { label: "Gestion des notes de frais", desc: "Scan automatique par IA", tag: "IA", tagColor: "purple", href: "/infos/solutions#voyage" },
+      { label: tr("centralizedBooking"), desc: tr("flightsHotelsTrainsVisas"), tag: tr("new"), tagColor: "indigo", href: "/infos/solutions#voyage" },
+      { label: tr("budgetControl"), desc: tr("automatedTravelPolicies"), tag: tr("popular"), tagColor: "emerald", href: "/infos/solutions#voyage" },
+      { label: tr("reportingRoi"), desc: tr("realTimeFinancialAnalysis"), tag: null, href: "/infos/solutions#voyage" },
+      { label: tr("expenseReportManagement"), desc: tr("automaticAiScanning"), tag: tr("ai"), tagColor: "purple", href: "/infos/solutions#voyage" },
     ]
   },
   {
-    category: "Avantages collaborateurs",
+    category: tr("employeeBenefits"),
     Icon: Gift,
     color: "emerald",
     href: "/infos/solutions#cse",
     items: [
-      { label: "Service Gallery", desc: "Avantages et billetterie centralisés", tag: "Nouveau", tagColor: "emerald", href: "/infos/solutions#cse" },
-      { label: "Suivi de satisfaction", desc: "Sondages et feedbacks instantanés", tag: null, href: "/infos/solutions#cse" },
-      { label: "Gestion des subventions", desc: "Budgets alloués par bénéficiaire", tag: null, href: "/infos/solutions#cse" },
-      { label: "Programme de fidélité", desc: "Points cumulables", tag: "Gold", tagColor: "amber", href: "/infos/solutions#cse" },
+      { label: tr("serviceGallery"), desc: tr("centralizedBenefitsTicketing"), tag: tr("new"), tagColor: "emerald", href: "/infos/solutions#cse" },
+      { label: tr("satisfactionTracking"), desc: tr("instantSurveysFeedback"), tag: null, href: "/infos/solutions#cse" },
+      { label: tr("subsidyManagement"), desc: tr("budgetsAllocatedPer"), tag: null, href: "/infos/solutions#cse" },
+      { label: tr("loyaltyProgram"), desc: tr("accumulablePoints"), tag: tr("gold"), tagColor: "amber", href: "/infos/solutions#cse" },
     ]
   },
   {
-    category: "Intelligence & Support",
+    category: tr("intelligenceSupport"),
     Icon: Bot,
     color: "purple",
     href: "/infos/solutions#intelligence",
     items: [
-      { label: "IA prédictive", desc: "Anticipez les dépenses", tag: "Beta", tagColor: "purple", href: "/infos/solutions#intelligence" },
-      { label: "Assistant voyage 24/7", desc: "Support multicanal en temps réel", tag: null, href: "/infos/solutions#intelligence" },
-      { label: "Dashboard personnalisable", desc: "KPI sur mesure", tag: null, href: "/infos/solutions#intelligence" },
-      { label: "Intégrations API", desc: "Connectez votre ERP", tag: "Enterprise", tagColor: "indigo", href: "/infos/solutions#intelligence" },
+      { label: tr("predictiveAi"), desc: tr("anticipateExpenses"), tag: tr("beta"), tagColor: "purple", href: "/infos/solutions#intelligence" },
+      { label: tr("text247TravelAssistant"), desc: tr("realTimeMultichannelSupport"), tag: null, href: "/infos/solutions#intelligence" },
+      { label: tr("customizableDashboard"), desc: tr("customKpis"), tag: null, href: "/infos/solutions#intelligence" },
+      { label: tr("apiIntegrations"), desc: tr("connectErp"), tag: tr("enterprise"), tagColor: "indigo", href: "/infos/solutions#intelligence" },
     ]
   },
   {
-    category: "Sécurité & Conformité",
+    category: tr("securityCompliance"),
     Icon: ShieldCheck,
     color: "slate",
     href: "/infos/solutions#security",
     items: [
-      { label: "Alertes sécurité voyage", desc: "Notifications situations à risque", tag: "Live", tagColor: "red", href: "/infos/solutions#security" },
-      { label: "Conformité RGPD", desc: "Protection des données", tag: null, href: "/infos/solutions#security" },
-      { label: "Assurance voyage intégrée", desc: "Couverture automatique", tag: null, href: "/infos/solutions#security" },
-      { label: "Validation multi-niveaux", desc: "Workflow d'approbation", tag: null, href: "/infos/solutions#security" },
+      { label: tr("travelSecurityAlerts"), desc: tr("riskSituationNotifications"), tag: tr("live"), tagColor: "red", href: "/infos/solutions#security" },
+      { label: tr("gdprCompliance"), desc: tr("dataProtection"), tag: null, href: "/infos/solutions#security" },
+      { label: tr("builtTravelInsurance"), desc: tr("automaticCoverage"), tag: null, href: "/infos/solutions#security" },
+      { label: tr("multiLevelValidation"), desc: tr("approvalWorkflow"), tag: null, href: "/infos/solutions#security" },
     ]
   }
-];
+]);
 
-const PLATFORM_HIGHLIGHTS: { label: string; Icon: LucideIcon; value: string }[] = [
-  { label: "entreprises clientes", Icon: Building2, value: "500+" },
-  { label: "pays couverts", Icon: Globe, value: "54" },
+const getPlatformHighlights = (tr: Translator): { label: string; Icon: LucideIcon; value: string }[] => ([
+  { label: tr("clientCompanies"), Icon: Building2, value: "500+" },
+  { label: tr("countriesCovered"), Icon: Globe, value: "54" },
   { label: "satisfaction", Icon: Star, value: "95%" },
-  { label: "économies", Icon: TrendingDown, value: "-30%" },
-];
+  { label: tr("savings"), Icon: TrendingDown, value: "-30%" },
+]);
 
 // Liens de navigation avec breakpoints pour affichage conditionnel
 const NAV_LINKS = [
-  { label: "À propos", href: "/infos/about", showOn: "lg" },
-  { label: "Comment ça marche", href: "/infos/how-it-works", showOn: "xl" },
-  { label: "Tarifs", href: "/infos/pricing", showOn: "lg" },
-  { label: "Contact", href: "/infos/contact", showOn: "md" },
-  { label: "Rejoignez-nous", href: "/infos/join-us", showOn: "xl" }
-];
-
-// Traductions pour le sélecteur de langue
-const LANGUAGE_LABELS = {
-  FR: "Français",
-  EN: "English",
-};
+  { key: "about", href: "/infos/about", showOn: "lg" },
+  { key: "howItWorks", href: "/infos/how-it-works", showOn: "xl" },
+  { key: "pricing", href: "/infos/pricing", showOn: "lg" },
+  { key: "contact", href: "/infos/contact", showOn: "md" },
+  { key: "joinUs", href: "/infos/join-us", showOn: "xl" }
+] as const;
 
 export default function Navbar() {
+  const tr = useTranslations("infos.navBar");
+  const ALL_SOLUTIONS = useMemo(() => getAllSolutions(tr), [tr]);
+  const PLATFORM_HIGHLIGHTS = useMemo(() => getPlatformHighlights(tr), [tr]);
+  const t = useTranslations();
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
-  const [lang, setLang] = useState<"FR" | "EN">("FR");
-  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [hoverEffect, setHoverEffect] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const solutionsButtonRef = useRef<HTMLDivElement>(null);
   const megaMenuRef = useRef<HTMLDivElement>(null);
-  const langDropdownRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Gestion du scroll
@@ -116,18 +114,11 @@ export default function Navbar() {
       ) {
         setMegaMenuOpen(false);
       }
-      if (
-        langDropdownOpen &&
-        langDropdownRef.current &&
-        !langDropdownRef.current.contains(event.target as Node)
-      ) {
-        setLangDropdownOpen(false);
-      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [megaMenuOpen, langDropdownOpen]);
+  }, [megaMenuOpen]);
 
   // Gestion du méga-menu
   const handleMouseEnter = () => {
@@ -158,17 +149,6 @@ export default function Navbar() {
   const navigateToSolutions = (href: string) => {
     setMegaMenuOpen(false);
     router.push(href);
-  };
-
-  // Gestion du changement de langue
-  const handleLanguageChange = (newLang: "FR" | "EN") => {
-    setLang(newLang);
-    setLangDropdownOpen(false);
-    const message = newLang === "FR"
-      ? "Langue changée : Français"
-      : "Language changed: English";
-    setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const isSolutionsActive = pathname === "/infos/solutions";
@@ -220,15 +200,15 @@ export default function Navbar() {
                 </div>
                 <div className="hidden lg:flex flex-col">
                   <span className={`text-sm md:text-base font-bold tracking-tight leading-none mb-0.5 transition-colors whitespace-nowrap ${isScrolled ? "text-white" : "text-slate-900"}`}>
-                    Afrik<span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-500 to-emerald-400">Workspace</span>
+                    {tr.rich("afrikWorkspace", { span1: (chunks) => <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-500 to-emerald-400">{chunks}</span> })}
                   </span>
                   <span className={`text-[8px] md:text-[9px] font-black tracking-[0.12em] uppercase leading-none whitespace-nowrap ${isScrolled ? "text-slate-400" : "text-slate-500"}`}>
-                    SaaS Platform
+                    {tr("saasPlatform")}
                   </span>
                 </div>
                 <div className="hidden sm:flex lg:hidden flex-col">
                   <span className={`text-xs font-bold tracking-tight leading-none transition-colors ${isScrolled ? "text-white" : "text-slate-900"}`}>
-                    Afrik<span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-500 to-emerald-400">Workspace</span>
+                    {tr.rich("afrikWorkspace", { span1: (chunks) => <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-500 to-emerald-400">{chunks}</span> })}
                   </span>
                 </div>
               </Link>
@@ -250,7 +230,7 @@ export default function Navbar() {
                       isScrolled ? "text-slate-700 hover:text-slate-900" : "text-slate-700 hover:text-slate-900"
                     } ${megaMenuOpen ? "bg-slate-100" : ""} ${isSolutionsActive ? "text-indigo-600 bg-slate-100" : ""}`}
                   >
-                    <span>Solutions</span>
+                    <span>{t("publicNav.solutions")}</span>
                     <svg
                       className={`w-3 h-3 transition-transform duration-300 ${megaMenuOpen ? "rotate-180 text-indigo-500" : "text-slate-400"}`}
                       fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
@@ -315,7 +295,7 @@ export default function Navbar() {
                                 onClick={() => navigateToSolutions(category.href)}
                                 className="mt-1 text-[11px] font-semibold text-indigo-500 hover:text-indigo-600 transition flex items-center gap-1"
                               >
-                                Voir toute la catégorie
+                                {tr("seeWholeCategory")}
                                 <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>
@@ -329,7 +309,7 @@ export default function Navbar() {
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <BarChart2 className="w-3.5 h-3.5 text-slate-400" />
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">La plateforme en bref</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{tr("platformGlance")}</span>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             {PLATFORM_HIGHLIGHTS.map((highlight, idx) => (
@@ -347,14 +327,14 @@ export default function Navbar() {
                         <div className="mt-3 pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2">
                           <p className="inline-flex items-center gap-1 text-[9px] text-slate-500 text-center sm:text-left">
                             <Sparkles className="w-3 h-3 text-indigo-400 shrink-0" />
-                            Découvrez comment AfrikWorkspace transforme la gestion
+                            {tr("discoverHowAfrikworkspace")}
                           </p>
                           <Link
                             href="/infos/solutions"
                             className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition whitespace-nowrap"
                             onClick={() => setMegaMenuOpen(false)}
                           >
-                            Explorer →
+                            {tr("explore")}
                           </Link>
                         </div>
                       </div>
@@ -377,7 +357,7 @@ export default function Navbar() {
                           : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                       }`}
                     >
-                      {link.label}
+                      {t(`publicNav.${link.key}`)}
                       {isActive && (
                         <span className="absolute bottom-0 lg:bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-500" />
                       )}
@@ -390,60 +370,7 @@ export default function Navbar() {
             {/* ── ACTIONS DROITE ── */}
             <div className="hidden md:flex items-center gap-1 lg:gap-2 xl:gap-3 shrink-0">
               {/* ── SÉLECTEUR DE LANGUE ── */}
-              <div className="relative" ref={langDropdownRef}>
-                <button
-                  onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                  className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                    isScrolled
-                      ? "border-slate-700 text-slate-200 hover:bg-slate-800"
-                      : "border-slate-200 text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  <Globe className="w-4 h-4 shrink-0" />
-                  <span className="hidden sm:inline">{LANGUAGE_LABELS[lang]}</span>
-                  <span className="sm:hidden">{lang}</span>
-                  <svg
-                    className={`w-3 h-3 transition-transform duration-200 ${langDropdownOpen ? "rotate-180" : ""}`}
-                    fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </button>
-
-                {/* Dropdown langue */}
-                {langDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-36 rounded-xl border border-slate-200 bg-white py-1 shadow-xl z-50">
-                    <button
-                      onClick={() => handleLanguageChange("FR")}
-                      className={`flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold transition hover:bg-slate-50 ${
-                        lang === "FR" ? "text-indigo-600 bg-indigo-50" : "text-slate-700"
-                      }`}
-                    >
-                      <span>🇫🇷</span>
-                      Français
-                      {lang === "FR" && (
-                        <svg className="w-3 h-3 ml-auto text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleLanguageChange("EN")}
-                      className={`flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold transition hover:bg-slate-50 ${
-                        lang === "EN" ? "text-indigo-600 bg-indigo-50" : "text-slate-700"
-                      }`}
-                    >
-                      <span>🇬🇧</span>
-                      English
-                      {lang === "EN" && (
-                        <svg className="w-3 h-3 ml-auto text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
+              <LanguageSwitcher tone={isScrolled ? "dark" : "light"} />
 
               {/* ── BOUTON CONNEXION ── */}
               <Link
@@ -457,8 +384,8 @@ export default function Navbar() {
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                 </svg>
-                <span className="hidden sm:inline">Connexion</span>
-                <span className="sm:hidden">Se connecter</span>
+                <span className="hidden sm:inline">{t("auth.loginButton")}</span>
+                <span className="sm:hidden">{t("common.login")}</span>
               </Link>
 
               {/* ── BOUTON DÉMO ── */}
@@ -477,8 +404,8 @@ export default function Navbar() {
                   <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                 </span>
                 <span className="relative flex items-center gap-1">
-                  <span className="hidden xs:inline">Démo</span>
-                  <span className="xs:hidden">Essayer</span>
+                  <span className="hidden xs:inline">{t("publicNav.demo")}</span>
+                  <span className="xs:hidden">{t("publicNav.tryIt")}</span>
                   <svg className="w-2.5 h-2.5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
@@ -492,7 +419,7 @@ export default function Navbar() {
                 href="/login"
                 className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200"
               >
-                Connexion
+                {t("auth.loginButton")}
               </Link>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
@@ -517,11 +444,11 @@ export default function Navbar() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center">
                 <span className="text-white text-xs font-bold">AW</span>
               </div>
-              <span className="font-bold text-sm">AfrikWorkspace</span>
+              <span className="font-bold text-sm">{tr("afrikworkspace")}</span>
             </div>
 
             <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 px-2">Solutions</p>
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 px-2">{t("publicNav.solutions")}</p>
               {ALL_SOLUTIONS.flatMap(cat => cat.items).map((item, idx) => (
                 <Link
                   key={idx}
@@ -546,7 +473,7 @@ export default function Navbar() {
                 onClick={() => setMenuOpen(false)}
                 className="block py-2.5 px-3 rounded-xl text-sm font-medium hover:bg-slate-800/20 transition-colors"
               >
-                {link.label}
+                {t(`publicNav.${link.key}`)}
               </Link>
             ))}
 
@@ -554,29 +481,8 @@ export default function Navbar() {
 
             <div className="flex flex-col gap-2 pt-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400">Langue</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => { setLang("EN"); setMenuOpen(false); }}
-                    className={`px-3 py-1 rounded-lg text-sm font-semibold transition-all ${
-                      lang === "EN" 
-                        ? "bg-indigo-600 text-white" 
-                        : "bg-slate-800 text-slate-300"
-                    }`}
-                  >
-                    ENGLISH
-                  </button>
-                  <button
-                    onClick={() => { setLang("FR"); setMenuOpen(false); }}
-                    className={`px-3 py-1 rounded-lg text-sm font-semibold transition-all ${
-                      lang === "FR" 
-                        ? "bg-indigo-600 text-white" 
-                        : "bg-slate-800 text-slate-300"
-                    }`}
-                  >
-                    FRANÇAIS
-                  </button>
-                </div>
+                <span className="text-xs font-semibold text-slate-400">{t("language.label")}</span>
+                <LanguageSwitcher variant="pills" />
               </div>
               
               <Link
@@ -586,14 +492,14 @@ export default function Navbar() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                 </svg>
-                Connexion
+                {t("auth.loginButton")}
               </Link>
               <Link
                 href="/infos/demo"
                 className="block text-center text-sm font-bold py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 text-white"
                 onClick={() => setMenuOpen(false)}
               >
-                Demander une démo
+                {t("publicNav.requestDemo")}
               </Link>
             </div>
           </div>
@@ -636,13 +542,6 @@ export default function Navbar() {
           }
         `}</style>
       </header>
-
-      {/* ── TOAST DE CONFIRMATION DE LANGUE ── */}
-      {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-2xl text-sm font-semibold animate-slideIn border border-slate-700">
-          {toastMessage}
-        </div>
-      )}
     </>
   );
 }

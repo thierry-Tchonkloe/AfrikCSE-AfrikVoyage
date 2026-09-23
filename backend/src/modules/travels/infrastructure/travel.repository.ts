@@ -1,5 +1,10 @@
 import { prisma } from "../../../core/config/prisma";
-import { RequestStatus, TravelStatus, PaymentStatus, Urgency } from "@prisma/client";
+import { RequestStatus, TravelStatus, PaymentStatus, Urgency, WalletEntryType, Prisma } from "@prisma/client";
+import { WalletRepository } from "../../wallet/infrastructure/wallet.repository";
+import { AppError } from "../../../core/errors/app.error";
+import { createHash } from "crypto";
+
+const walletRepo = new WalletRepository();
 
 export class TravelRepository {
     async getAll(orgId: string, filters?: {
@@ -46,6 +51,7 @@ export class TravelRepository {
             where, skip, take: limit,
             include: {
             requestedBy: { select: { id: true, firstName: true, lastName: true, email: true, department: true, jobTitle: true } },
+            partner:     { select: { id: true, name: true, sector: true } },
             },
             orderBy: { createdAt: "desc" },
         }),
@@ -60,20 +66,28 @@ export class TravelRepository {
         where: { id, organizationId: orgId },
         include: {
             requestedBy: { select: { id: true, firstName: true, lastName: true, email: true, department: true, jobTitle: true } },
+            partner:     { select: { id: true, name: true, sector: true } },
             expenses: true,
+            bookings: true,
         },
         });
     }
 
     async getStats(orgId: string) {
-        const [total, pending, approved, totalCost, co2] = await Promise.all([
+        const [total, pending, approved, totalCostResult, co2] = await Promise.all([
         prisma.travelRequest.count({ where: { organizationId: orgId } }),
         prisma.travelRequest.count({ where: { organizationId: orgId, status: "PENDING" } }),
         prisma.travelRequest.count({ where: { organizationId: orgId, status: "APPROVED" } }),
-        prisma.travelRequest.aggregate({
-            where: { organizationId: orgId },
-            _sum: { actualCost: true, estimatedCost: true },
-        }),
+        // SUM(COALESCE(actualCost, estimatedCost)) PAR LIGNE — Prisma `aggregate`
+        // ne peut sommer qu'une colonne à la fois. Les deux _sum indépendants
+        // utilisés avant ce correctif faisaient basculer TOUT le total sur
+        // actualCost dès qu'UNE seule ligne de l'org en avait un, ignorant
+        // silencieusement l'estimatedCost de toutes les autres (encore PENDING).
+        prisma.$queryRaw<{ total: number | null }[]>`
+            SELECT SUM(COALESCE("actualCost", "estimatedCost", 0))::float AS total
+            FROM "travel_requests"
+            WHERE "organizationId" = ${orgId}
+        `,
         prisma.expenseReport.aggregate({
             where: { organizationId: orgId },
             _sum: { co2Emissions: true },
@@ -84,9 +98,21 @@ export class TravelRepository {
         total,
         pending,
         approved,
-        totalCost: totalCost._sum.actualCost ?? totalCost._sum.estimatedCost ?? 0,
+        totalCost: totalCostResult[0]?.total ?? 0,
         co2Emissions: co2._sum.co2Emissions ?? 0,
         };
+    }
+
+    /** Clôture un voyage et enregistre son coût réel — idempotent (renvoie
+     *  null si déjà COMPLETED, pour ne jamais déclencher une double récompense). */
+    async complete(id: string, organizationId: string, actualCost: number) {
+        const existing = await prisma.travelRequest.findFirst({ where: { id, organizationId } });
+        if (!existing || existing.status === "COMPLETED") return null;
+
+        return prisma.travelRequest.update({
+        where: { id },
+        data: { status: "COMPLETED", actualCost },
+        });
     }
 
     async approve(id: string, organizationId: string, approverId: string) {
@@ -159,10 +185,42 @@ export class TravelRepository {
         };
     }
 
-    async assignPartner(id: string, organizationId: string, partnerName: string) {
+    /**
+     * Revalide le partenaire côté serveur avant écriture — le filtre ACTIF du
+     * dropdown côté UI n'est qu'un confort d'affichage, pas une garantie : sans
+     * ce contrôle, une requête forgée pouvait attacher un partenaire suspendu
+     * ou réservé à une autre organisation à une demande de voyage.
+     */
+    async assignPartner(id: string, organizationId: string, partnerId: string) {
+        const partner = await prisma.partner.findFirst({
+        where: {
+            id: partnerId,
+            status: "ACTIVE",
+            OR: [{ isGlobal: true }, { organizationIds: { has: organizationId } }],
+        },
+        select: { id: true },
+        });
+        if (!partner) {
+        throw new Error("Partenaire introuvable, inactif, ou non autorisé pour votre organisation");
+        }
+
         return prisma.travelRequest.update({
         where: { id, organizationId },
-        data: { partnerName },
+        data: { partnerId },
+        include: { partner: { select: { id: true, name: true, sector: true } } },
+        });
+    }
+
+    /** Liste minimale (id + nom) pour le sélecteur d'assignation — pas de champs sensibles.
+     *  Restreinte aux partenaires réellement assignables à CETTE organisation. */
+    async listActivePartners(organizationId: string) {
+        return prisma.partner.findMany({
+        where: {
+            status: "ACTIVE",
+            OR: [{ isGlobal: true }, { organizationIds: { has: organizationId } }],
+        },
+        select: { id: true, name: true, sector: true },
+        orderBy: { name: "asc" },
         });
     }
 
@@ -231,9 +289,47 @@ export class TravelRepository {
         };
     }
 
+    /**
+     * Approuve une note de frais ET déclenche le remboursement réel :
+     * débit du wallet de l'organisation, puis crédit du wallet de l'employé.
+     * Séquentiel (pas une transaction unique multi-modèles), même précédent que
+     * booking.service.ts::create pour un paiement wallet — si le débit échoue
+     * (solde insuffisant), rien d'autre n'est exécuté et la note reste PENDING.
+     */
     async approveExpense(id: string, organizationId: string, approverId: string) {
+        const expense = await prisma.expenseReport.findFirst({
+        where: { id, organizationId, status: "PENDING" },
+        include: { employee: { select: { userId: true } } },
+        });
+        if (!expense) {
+        throw new AppError("Note de frais introuvable ou déjà traitée", 404);
+        }
+
+        const amount = new Prisma.Decimal(expense.amount);
+        const label  = `Remboursement note de frais ${id}`;
+
+        // 1) Débit atomique du wallet de l'organisation — lève 422 si solde insuffisant.
+        const debitKey = createHash("sha256").update(`expense-debit:${id}`).digest("hex").slice(0, 32);
+        await walletRepo.debitOrganizationWallet(organizationId, amount, debitKey, {
+        description:   label,
+        referenceId:   id,
+        referenceType: "EXPENSE_REIMBURSEMENT",
+        });
+
+        // 2) Crédit du wallet de l'employé — l'argent débité côté organisation doit
+        //    atterrir sur un wallet réellement dépensable.
+        const employeeWallet = await walletRepo.getOrCreate(expense.employee.userId, organizationId);
+        const creditKey = createHash("sha256").update(`expense-credit:${id}`).digest("hex").slice(0, 32);
+        await walletRepo.addEntry(employeeWallet.id, WalletEntryType.EXPENSE_REIMBURSEMENT, amount, creditKey, {
+        description:   label,
+        referenceId:   id,
+        referenceType: "EXPENSE_REIMBURSEMENT",
+        });
+
+        // 3) Bascule le statut — where étendu (id + organizationId + status PENDING)
+        //    anti-IDOR et anti double-traitement concurrent.
         return prisma.expenseReport.update({
-        where: { id, organizationId },
+        where: { id, organizationId, status: "PENDING" } as Prisma.ExpenseReportWhereUniqueInput,
         data: { status: "APPROVED", approvedById: approverId, approvedAt: new Date() },
         include: { employee: { select: { userId: true } } },
         });

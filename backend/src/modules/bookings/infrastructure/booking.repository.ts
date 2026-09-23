@@ -9,6 +9,11 @@ export class BookingRepository {
         offerId?:       string;
         locationId?:    string;
         orderId?:       string;
+        travelRequestId?:    string;
+        flightRouteId?:      string;
+        hotelRoomTypeId?:    string;
+        trainRouteId?:       string;
+        carRentalVehicleId?: string;
         bookingDate:    Date;
         numberOfPersons?: number;
         notes?:         string;
@@ -30,6 +35,11 @@ export class BookingRepository {
                 order:    { select: { id: true, finalAmount: true } },
                 rating:   true,
                 commissionEntry: { select: { id: true, commissionAmount: true, netAmount: true, status: true } },
+                travelRequest:    { select: { id: true, destination: true, status: true } },
+                flightRoute:      { select: { id: true, originCity: true, destinationCity: true, airlineCode: true } },
+                hotelRoomType:    { select: { id: true, name: true, hotel: { select: { id: true, name: true, city: true } } } },
+                trainRoute:       { select: { id: true, originCity: true, destinationCity: true } },
+                carRentalVehicle: { select: { id: true, brand: true, model: true, city: true } },
             },
         });
     }
@@ -43,6 +53,10 @@ export class BookingRepository {
                     partner: { select: { id: true, name: true, logoUrl: true } },
                     offer:   { select: { id: true, title: true, category: true, imageUrl: true } },
                     rating:  { select: { score: true, comment: true } },
+                    flightRoute:      { select: { id: true, originCity: true, destinationCity: true, airlineCode: true } },
+                    hotelRoomType:    { select: { id: true, name: true, hotel: { select: { id: true, name: true, city: true } } } },
+                    trainRoute:       { select: { id: true, originCity: true, destinationCity: true } },
+                    carRentalVehicle: { select: { id: true, brand: true, model: true, city: true } },
                 },
                 orderBy: { createdAt: "desc" },
                 skip, take: limit,
@@ -62,6 +76,10 @@ export class BookingRepository {
                     offer:  { select: { id: true, title: true, category: true } },
                     location: { select: { id: true, name: true } },
                     rating: { select: { score: true } },
+                    flightRoute:      { select: { id: true, originCity: true, destinationCity: true, airlineCode: true } },
+                    hotelRoomType:    { select: { id: true, name: true, hotel: { select: { id: true, name: true, city: true } } } },
+                    trainRoute:       { select: { id: true, originCity: true, destinationCity: true } },
+                    carRentalVehicle: { select: { id: true, brand: true, model: true, city: true } },
                 },
                 orderBy: { createdAt: "desc" },
                 skip, take: limit,
@@ -142,5 +160,26 @@ export class BookingRepository {
             create: { bookingId, userId, score, comment },
             update: { score, comment },
         });
+    }
+
+    /**
+     * Chiffre d'affaires brut d'un partenaire : somme des montants des
+     * réservations COMPLETED. Comme pour `_resolveBookingGrossAmount` côté
+     * service, aucun montant n'est stocké directement sur `Booking` — dérivé
+     * soit d'une commande liée (rare), soit de l'entrée wallet de débit créée
+     * à la réservation (flux réel). SUM(COALESCE(...)) en SQL brut pour la
+     * même raison que `TravelRepository.getStats()` : Prisma `aggregate` ne
+     * peut pas exprimer un COALESCE par ligne entre deux tables jointes.
+     */
+    async getCompletedGrossRevenueForPartner(partnerId: string): Promise<number> {
+        const result = await prisma.$queryRaw<{ total: number | null }[]>`
+            SELECT SUM(COALESCE(o."finalAmount", -we."amount", 0))::float AS total
+            FROM "bookings" b
+            LEFT JOIN "orders" o ON o.id = b."orderId"
+            LEFT JOIN "wallet_entries" we ON we."referenceId" = b.id
+                AND we."referenceType" = 'BOOKING' AND we."amount" < 0
+            WHERE b."partnerId" = ${partnerId} AND b."status" = 'COMPLETED'
+        `;
+        return result[0]?.total ?? 0;
     }
 }

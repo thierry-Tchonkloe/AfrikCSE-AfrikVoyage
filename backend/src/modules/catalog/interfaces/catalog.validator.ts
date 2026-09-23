@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { prisma } from "../../../core/config/prisma";
 
-export const createCatalogItemSchema = z.object({
+const catalogItemFields = {
     title:               z.string().min(2, "Titre requis"),
     description:         z.string().optional(),
     imageUrl:            z.string().url().optional(),
@@ -31,9 +32,33 @@ export const createCatalogItemSchema = z.object({
     unpublishedAt:       z.coerce.date().optional(),
     validFrom:           z.coerce.date().optional(),
     stock:               z.number().int().min(0).optional(),
-});
+};
 
-export const updateCatalogItemSchema = createCatalogItemSchema.partial();
+/** Rejette toute catégorie qui ne correspond à aucune BenefitCategory active
+ *  de CETTE organisation — la liste réelle vient du même sélecteur que le
+ *  frontend (GET /benefits/categories), donc un texte libre ne peut plus
+ *  jamais désynchroniser catalogue et budget. */
+async function categoryExistsForOrg(category: string, orgId: string): Promise<boolean> {
+    const cat = await prisma.benefitCategory.findFirst({
+        where: { organizationId: orgId, name: category, isActive: true },
+        select: { id: true },
+    });
+    return !!cat;
+}
+
+export function createCatalogItemSchema(orgId: string) {
+    return z.object(catalogItemFields).refine(
+        (data) => categoryExistsForOrg(data.category, orgId),
+        { message: "Cette catégorie n'existe pas pour votre organisation", path: ["category"] }
+    );
+}
+
+export function updateCatalogItemSchema(orgId: string) {
+    return z.object(catalogItemFields).partial().refine(
+        (data) => data.category === undefined || categoryExistsForOrg(data.category, orgId),
+        { message: "Cette catégorie n'existe pas pour votre organisation", path: ["category"] }
+    );
+}
 
 export const filterCatalogSchema = z.object({
     category:   z.string().optional(),

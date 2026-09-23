@@ -1,48 +1,55 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState, useMemo } from "react";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Plane, Users, Smile, ChartBar } from "lucide-react";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.heroSection">>;
 
 // ─── CARROUSEL D'UNIVERS POUR LE TRAPÈZE EN ARRIÈRE-PLAN ─────────────────
-const HERO_UNIVERSES = [
+const getHeroUniverses = (t: Translator) => ([
   {
     src: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1400&q=80",
-    label: "Voyages d'affaires",
+    label: t("businessTravel"),
     icon: <Plane size={16} className="text-blue-400" />,
   },
   {
     src: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=1400&q=80",
-    label: "Gestion RH & Avantages",
+    label: t("hrBenefitsManagement"),
     icon: <Users size={16} className="text-emerald-400" />,
   },
   {
     src: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1400&q=80",
-    label: "Bien-être & CSE",
+    label: t("wellBeingCse"),
     icon: <Smile size={16} className="text-amber-400" />,
   },
   {
     src: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1400&q=80",
-    label: "Performance & Subventions",
+    label: t("performanceSubsidies"),
     icon: <ChartBar size={16} className="text-purple-400" />,
   },
-];
+]);
 
 // ─── LOGOS PARTENAIRES (Taille agrandie) ─────────────────────────────────
-const PARTNER_LOGOS = [
+const getPartnerLogos = (t: Translator) => ([
   { name: "ORANGE", color: "text-orange-500" },
   { name: "TOTALENERGIES", color: "text-red-500" },
   { name: "ECOBANK", color: "text-emerald-600" },
   { name: "BRIDGECORP", color: "text-blue-600" },
   { name: "MTN", color: "text-yellow-500" },
-  { name: "BOLLORÉ", color: "text-slate-700" },
+  { name: t("bollore"), color: "text-slate-700" },
   { name: "SUNU", color: "text-amber-600" },
   { name: "BICICI", color: "text-indigo-600" },
-];
+]);
 
 export default function HeroSection() {
+  const tr = useTranslations("infos.heroSection");
+  const t = useTranslations("infos.heroSection");
+  const HERO_UNIVERSES = useMemo(() => getHeroUniverses(t), [t]);
+  const PARTNER_LOGOS = useMemo(() => getPartnerLogos(t), [t]);
   const [currentIdx, setCurrentIdx] = useState(0);
 
   useEffect(() => {
@@ -173,17 +180,17 @@ export default function HeroSection() {
               {/* Badge supérieur */}
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-blue-100">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                AfrikVoyage × AfrikCSE
+                {t("afrikvoyageAfrikcse")}
               </div>
 
               {/* Titre Principal */}
               <h1 className="text-3xl sm:text-4xl lg:text-[2.85rem] font-black tracking-tight leading-[1.16] text-white">
-                La plateforme qui simplifie, valorise et réinvente vos <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-emerald-300">avantages & voyages</span>.
+                {tr.rich("platformSimplifiesEmpowers", { span1: (chunks) => <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-emerald-300">{chunks}</span> })}
               </h1>
 
               {/* Description */}
               <p className="text-blue-100/90 text-sm sm:text-base lg:text-lg leading-relaxed font-normal">
-                Avec AfrikCSE & AfrikVoyage, centralisez la gestion de vos déplacements d'affaires et offrez plus de pouvoir d'achat à vos salariés grâce à une interface unique et intuitive.
+                {t("afrikcseAfrikvoyage")}
               </p>
 
               {/* Bouton CTA Pilule */}
@@ -192,7 +199,7 @@ export default function HeroSection() {
                   href="/infos/demo"
                   className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-400 text-white font-bold text-sm sm:text-base px-8 py-4 rounded-full transition-all duration-200 shadow-lg shadow-blue-600/40 hover:scale-105"
                 >
-                  Découvrir la billetterie CSE
+                  {t("discoverCseTicketing")}
                   <span className="w-2.5 h-2.5 rounded-full bg-white inline-block ml-1" />
                 </Link>
 
@@ -200,7 +207,7 @@ export default function HeroSection() {
                   href="/infos/solutions"
                   className="inline-flex items-center text-xs sm:text-sm font-semibold text-blue-200 hover:text-white underline underline-offset-4"
                 >
-                  Voir nos solutions
+                  {t("seeSolutions")}
                 </Link>
               </div>
 
@@ -222,7 +229,7 @@ export default function HeroSection() {
                 <div className="relative rounded-2xl overflow-hidden border-4 border-slate-900 bg-slate-900 shadow-2xl">
                   <Image
                     src="https://www.invoicesimple.com/wp-content/uploads/2025/01/A3-Icon-overlay-on-man-at-laptop_.jpg"
-                    alt="Aperçu Ordinateur Laptop"
+                    alt={t("laptopPreview")}
                     width={950}
                     height={590}
                     className="object-cover w-full h-auto"
@@ -240,7 +247,7 @@ export default function HeroSection() {
                 <div className="relative rounded-[18px] overflow-hidden border-[3px] border-slate-900 bg-slate-900 shadow-2xl">
                   <Image
                     src="https://f.hellowork.com/bdmtools/2023/08/hellocse-4.jpg"
-                    alt="Application Mobile HelloCSE"
+                    alt={t("hellocseMobileApp")}
                     width={461}
                     height={900}
                     className="object-cover w-full h-auto"
@@ -258,7 +265,7 @@ export default function HeroSection() {
       {/* ─── 5. BANDEAU PREUVE SOCIALE AVEC LOGOS AGRANDIS ─── */}
       <div className="relative z-20 mt-12 pt-6 pb-2 border-t border-slate-200/60 bg-white/80 backdrop-blur-md">
         <p className="text-center text-xs sm:text-sm font-bold text-slate-800 mb-4 tracking-wide">
-          Plus de <span className="text-blue-600 font-extrabold">1 million de salariés</span> utilisent nos solutions au quotidien.
+          {tr.rich("moreThan1Million", { span1: (chunks) => <span className="text-blue-600 font-extrabold">{chunks}</span> })}
         </p>
         
         {/* Défilé continu avec logos plus grands et espacés */}

@@ -20,9 +20,18 @@ const router = Router();
 const ctrl = new AuthController();
 
 // ── Limiteur strict anti-bruteforce sur les endpoints sensibles ─────────
+// Même pattern que le limiteur global (app.ts) : NODE_ENV==="test" couvre Jest
+// (chaque fichier de test réutilise la même app en mémoire, un seuil de
+// production n'a aucun sens ici) ; RATELIMIT_MAX reste disponible pour élever
+// le plafond ailleurs (ex: exécutions répétées de la suite E2E Playwright,
+// qui tourne le vrai serveur de dev — voir playwright.config.ts) sans avoir à
+// désactiver NODE_ENV=production/development ni, avec lui, la protection CSRF
+// (elle-même court-circuitée quand NODE_ENV==="test").
 const strictAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10,
+    max: process.env.NODE_ENV === "test"
+        ? 100_000
+        : (process.env.RATELIMIT_MAX ? parseInt(process.env.RATELIMIT_MAX) : 5),
     message: { message: "Trop de tentatives, réessayez dans 15 minutes" },
     standardHeaders: true,
     legacyHeaders: false,

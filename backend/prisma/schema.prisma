@@ -76,6 +76,7 @@ model Organization {
   eventPhotos            EventPhoto[]
   faqEntries             FaqEntry[]
   wallets                Wallet[]
+  organizationWallet     OrganizationWallet?
   cashbackRules          CashbackRule[]
   orders                 Order[]
   bookings               Booking[]
@@ -431,7 +432,7 @@ model BenefitCategory {
   icon             String?
   annualBudget     Float        @default(0)
   perEmployeeLimit Float        @default(0)
-  currency         String       @default("EUR")
+  currency         String       @default("XOF")
   isActive         Boolean      @default(true)
   organizationId   String
   organization     Organization @relation(fields: [organizationId], references: [id])
@@ -557,7 +558,8 @@ model TravelRequest {
   status             TravelStatus  @default(PENDING)
   urgency            Urgency       @default(LOW)
   rejectionNote      String?
-  partnerName        String?
+  partnerId          String?
+  partner            Partner?      @relation(fields: [partnerId], references: [id])
   paymentStatus      PaymentStatus @default(PENDING)
   paymentLink        String?
   organizationId     String
@@ -579,7 +581,9 @@ model TravelRequest {
   reward        TravelReward? @relation("TravelRequestReward")
 
   expenses ExpenseReport[]
+  bookings Booking[]
 
+  @@index([partnerId])
   @@map("travel_requests")
 }
 
@@ -666,7 +670,7 @@ model Invoice {
   id             String         @id @default(cuid())
   invoiceNumber  String         @unique // INV-2025-001
   amount         Float
-  currency       String         @default("EUR")
+  currency       String         @default("XOF")
   status         PaymentStatus  @default(PENDING)
   paymentMethod  PaymentMethod?
   paymentRef     String?        @unique // Référence transaction externe — backstop anti-rejeu (KkiaPay/FedaPay)
@@ -1075,6 +1079,7 @@ model Partner {
   hotelProperties   HotelProperty[]
   trainRoutes       TrainRoute[]
   carRentalVehicles CarRentalVehicle[]
+  travelRequests    TravelRequest[]
 
   @@map("partners")
 }
@@ -1216,6 +1221,10 @@ model TravelPolicy {
   maxAdvanceBookingDays  Int?
   requiresApproval       Boolean      @default(true)
   approvalThreshold      Decimal?     @db.Decimal(10, 2)
+  // Garde-fou anti-fraude global : au-delà de ce montant, une note de frais est
+  // rejetée à la soumission quelle que soit sa catégorie (indépendant de
+  // approvalThreshold, qui ne concerne que l'auto-approbation des voyages).
+  maxExpenseAmount       Decimal?     @db.Decimal(10, 2)
   allowedDestinations    String[]     @default([])
   restrictedDestinations String[]     @default([])
   appliesToDepartments   String[]     @default([])
@@ -1431,6 +1440,8 @@ enum WalletEntryType {
   REFUND
   EXPIRY
   REWARD_CREDIT
+  EXPENSE_REIMBURSEMENT
+  TOPUP
 }
 
 model Wallet {
@@ -1446,6 +1457,41 @@ model Wallet {
   entries WalletEntry[]
 
   @@map("wallets")
+}
+
+// Trésorerie de l'organisation, distincte des wallets individuels des employés
+// (Wallet.userId est unique par utilisateur — aucun wallet ne peut appartenir à
+// l'organisation elle-même). Alimentée séparément (hors périmètre de ce sprint) ;
+// débitée lors du remboursement d'une note de frais approuvée.
+model OrganizationWallet {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  currencyCode   String       @default("XOF")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  entries OrganizationWalletEntry[]
+
+  @@map("organization_wallets")
+}
+
+model OrganizationWalletEntry {
+  id                   String             @id @default(cuid())
+  organizationWalletId String
+  organizationWallet   OrganizationWallet @relation(fields: [organizationWalletId], references: [id])
+  type                 WalletEntryType
+  // positif = crédit, négatif = débit — jamais modifié après insertion
+  amount               Decimal            @db.Decimal(14, 2)
+  // snapshot du solde après cette entrée (dénormalisation pour perf)
+  runningBalance       Decimal            @db.Decimal(14, 2)
+  description          String?
+  referenceId          String?
+  referenceType        String? // EXPENSE_REIMBURSEMENT | TOPUP
+  idempotencyKey       String             @unique
+  createdAt            DateTime           @default(now())
+
+  @@map("organization_wallet_entries")
 }
 
 model WalletEntry {
@@ -1629,21 +1675,26 @@ enum PayoutStatus {
 // ─── Portail partenaire ──────────────────────────────────────────────────────
 
 model PartnerUser {
-  id           String    @id @default(cuid())
-  partnerId    String
-  partner      Partner   @relation(fields: [partnerId], references: [id])
-  email        String    @unique
-  passwordHash String
-  firstName    String
-  lastName     String
-  role         Role      @default(PARTNER_ADMIN)
-  isActive     Boolean   @default(true)
-  refreshToken String? // hash du refresh token courant (rotation, cookie partnerRefreshToken dédié)
-  tokenVersion Int       @default(0) // incrémenté au logout → révoque tous les tokens émis avant
-  lastLoginAt  DateTime?
-  invitedById  String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                     String    @id @default(cuid())
+  partnerId              String
+  partner                Partner   @relation(fields: [partnerId], references: [id])
+  email                  String    @unique
+  passwordHash           String
+  firstName              String
+  lastName               String
+  role                   Role      @default(PARTNER_ADMIN)
+  isActive               Boolean   @default(true)
+  refreshToken           String? // hash du refresh token courant (rotation, cookie partnerRefreshToken dédié)
+  tokenVersion           Int       @default(0) // incrémenté au logout → révoque tous les tokens émis avant
+  lastLoginAt            DateTime?
+  invitedById            String?
+  // Bootstrap du 1er compte à la création du partenaire par le Super Admin (ou
+  // reset "mot de passe oublié" futur) — même mécanisme que User.resetPasswordToken,
+  // délégué depuis AuthService.resetPassword() pour réutiliser la page /activate.
+  resetPasswordToken     String?   @unique
+  resetPasswordExpiresAt DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   @@map("partner_users")
 }
@@ -1702,6 +1753,26 @@ model Booking {
   orderId        String?             @unique
   order          Order?              @relation(fields: [orderId], references: [id])
 
+  // ─── Lien optionnel vers une demande de voyage d'affaires approuvée ───────
+  // Un TravelRequest peut porter plusieurs Booking (vol + hôtel + voiture d'un
+  // même voyage). Rempli uniquement quand la réservation est faite depuis le
+  // contexte d'un voyage approuvé (cf. /employes/reserver?travelRequestId=...).
+  travelRequestId String?
+  travelRequest   TravelRequest? @relation(fields: [travelRequestId], references: [id])
+
+  // ─── Cible précise dans le catalogue voyage — exclusive avec offerId ──────
+  // Au plus un seul de ces 4 champs (+ offerId) est renseigné par réservation ;
+  // contrainte vérifiée applicativement (Zod, cf. booking.validator.ts) plutôt
+  // qu'en base : Prisma ne modélise pas nativement les FK polymorphes/exclusives.
+  flightRouteId      String?
+  flightRoute        FlightRoute?      @relation(fields: [flightRouteId], references: [id])
+  hotelRoomTypeId    String?
+  hotelRoomType      HotelRoomType?    @relation(fields: [hotelRoomTypeId], references: [id])
+  trainRouteId       String?
+  trainRoute         TrainRoute?       @relation(fields: [trainRouteId], references: [id])
+  carRentalVehicleId String?
+  carRentalVehicle   CarRentalVehicle? @relation(fields: [carRentalVehicleId], references: [id])
+
   status          BookingStatus @default(PENDING)
   bookingDate     DateTime
   numberOfPersons Int           @default(1)
@@ -1720,6 +1791,11 @@ model Booking {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([travelRequestId])
+  @@index([flightRouteId])
+  @@index([hotelRoomTypeId])
+  @@index([trainRouteId])
+  @@index([carRentalVehicleId])
   @@map("bookings")
 }
 
@@ -1767,6 +1843,8 @@ model FlightRoute {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  bookings Booking[]
+
   @@index([originIata, destinationIata])
   @@map("flight_routes")
 }
@@ -1803,6 +1881,8 @@ model HotelRoomType {
   isActive      Boolean       @default(true)
   createdAt     DateTime      @default(now())
 
+  bookings Booking[]
+
   @@map("hotel_room_types")
 }
 
@@ -1823,6 +1903,8 @@ model TrainRoute {
   isActive           Boolean  @default(true)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+
+  bookings Booking[]
 
   @@index([originCity, destinationCity])
   @@map("train_routes")
@@ -1845,6 +1927,8 @@ model CarRentalVehicle {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  bookings Booking[]
 
   @@index([city])
   @@map("car_rental_vehicles")
@@ -1924,22 +2008,22 @@ model PartnerPayout {
 // backend/src/core/middlewares/idempotency.middleware.ts.
 
 model IdempotencyRecord {
-  id             String   @id @default(cuid())
-  key            String   @db.VarChar(255)
-  route          String   @db.VarChar(255)
-  organizationId String   @db.VarChar(100)
-  requestHash    String   @db.Char(64)
-  status         String   @default("PENDING") @db.VarChar(16) // PENDING | DONE
-  lease               String   @db.VarChar(36)
+  id                  String    @id @default(cuid())
+  key                 String    @db.VarChar(255)
+  route               String    @db.VarChar(255)
+  organizationId      String    @db.VarChar(100)
+  requestHash         String    @db.Char(64)
+  status              String    @default("PENDING") @db.VarChar(16) // PENDING | DONE
+  lease               String    @db.VarChar(36)
   leaseExpiresAt      DateTime
-  responseStatus Int?
-  responseEncoding    String?  @db.VarChar(8)
-  responseBody   Json?
-  responseText        String?  @db.Text
-  responseContentType String?  @db.VarChar(255)
-  expiresAt      DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  responseStatus      Int?
+  responseEncoding    String?   @db.VarChar(8)
+  responseBody        Json?
+  responseText        String?   @db.Text
+  responseContentType String?   @db.VarChar(255)
+  expiresAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@unique([route, organizationId, key])
   @@index([expiresAt])

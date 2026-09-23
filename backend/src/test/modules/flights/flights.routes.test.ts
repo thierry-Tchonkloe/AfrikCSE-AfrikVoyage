@@ -51,6 +51,8 @@ const adminDeleteAirportMock = flightService.adminDeleteAirport as jest.Mock;
 
 beforeEach(() => {
   mockReset(prismaMock);
+  // requireModule("VOYAGE") vérifie ce flag sur la route /search.
+  prismaMock.organization.findUnique.mockResolvedValue({ hasVoyage: true, hasCSE: true } as never);
 });
 
 function withSession(overrides: Parameters<typeof mockAuthenticatedSession>[2] = {}) {

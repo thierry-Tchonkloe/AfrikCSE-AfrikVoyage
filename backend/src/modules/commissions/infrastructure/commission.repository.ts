@@ -187,6 +187,103 @@ export class CommissionRepository {
         return { payouts: scopedPayouts, total, page, limit };
     }
 
+    // ── Espace financier du partenaire (portail partenaire) ──────────────────
+
+    async sumConfirmedCommissions(partnerId: string): Promise<Prisma.Decimal> {
+        const result = await prisma.commissionEntry.aggregate({
+            where: { partnerId, status: CommissionStatus.CONFIRMED },
+            _sum:  { commissionAmount: true },
+        });
+        return result._sum.commissionAmount ?? new Prisma.Decimal(0);
+    }
+
+    /**
+     * Solde net réellement disponible pour une NOUVELLE demande de reversement :
+     * somme des `netAmount` des entrées CONFIRMED pas encore rattachées à un
+     * payout (`payoutId: null`). Volontairement PAS "CA Brut - Commissions -
+     * Payouts COMPLETED" : dès qu'un payout est demandé (statut PENDING, pas
+     * encore payé), ses entrées sont réclamées (`payoutId` posé) mais ce
+     * payout n'est pas "COMPLETED" — cette formule alternative afficherait donc
+     * un solde "disponible" qu'une 2e demande immédiate rejetterait aussitôt.
+     * Ce calcul reste par construction toujours identique à ce qu'une demande
+     * de payout réclamerait réellement (`createPayoutOnDemand` filtre sur les
+     * mêmes conditions), aucun risque de dérive entre affichage et réalité.
+     */
+    async sumUnclaimedNet(partnerId: string): Promise<Prisma.Decimal> {
+        const result = await prisma.commissionEntry.aggregate({
+            where: { partnerId, status: CommissionStatus.CONFIRMED, payoutId: null },
+            _sum:  { netAmount: true },
+        });
+        return result._sum.netAmount ?? new Prisma.Decimal(0);
+    }
+
+    async listConfirmedEntriesForPartner(partnerId: string, page = 1, limit = 20) {
+        const skip = (page - 1) * limit;
+        const where: Prisma.CommissionEntryWhereInput = { partnerId, status: CommissionStatus.CONFIRMED };
+        const [entries, total] = await Promise.all([
+            prisma.commissionEntry.findMany({
+                where,
+                select: {
+                    id: true, bookingId: true, grossAmount: true, commissionAmount: true,
+                    netAmount: true, currencyCode: true, createdAt: true, payoutId: true,
+                },
+                orderBy: { createdAt: "desc" },
+                skip, take: limit,
+            }),
+            prisma.commissionEntry.count({ where }),
+        ]);
+        return { entries, total, page, totalPages: Math.ceil(total / limit) };
+    }
+
+    /**
+     * Payout déclenché par le PARTENAIRE lui-même (contrairement à
+     * `createPayoutForPeriod`, déclenché par le Super Admin pour un mois
+     * calendaire précis) : réclame TOUTES les CommissionEntry CONFIRMED pas
+     * encore rattachées à un payout, quelle que soit leur date de création —
+     * une demande partenaire doit pouvoir récupérer un solde ancien jamais
+     * réclamé, pas seulement le mois en cours. Même pattern d'atomicité
+     * (create → claim via updateMany WHERE payoutId IS NULL → recalcul des
+     * totaux depuis les entrées réellement capturées) que `createPayoutForPeriod`.
+     * `period` est un identifiant unique par appel (pas un "YYYY-MM") pour ne
+     * jamais entrer en collision avec `@@unique([partnerId, period])`, y
+     * compris avec un payout mensuel déclenché par un admin.
+     * Retourne `null` si aucune commission n'était disponible.
+     */
+    async createPayoutOnDemand(partnerId: string, triggeredById: string) {
+        return prisma.$transaction(async (tx) => {
+            const payout = await tx.partnerPayout.create({
+                data: {
+                    partnerId,
+                    period: `ON-DEMAND-${Date.now()}`,
+                    totalGross:      new Prisma.Decimal(0),
+                    totalCommission: new Prisma.Decimal(0),
+                    netAmount:       new Prisma.Decimal(0),
+                    triggeredById,
+                },
+            });
+
+            const { count } = await tx.commissionEntry.updateMany({
+                where: { partnerId, status: CommissionStatus.CONFIRMED, payoutId: null },
+                data:  { payoutId: payout.id },
+            });
+
+            if (count === 0) {
+                await tx.partnerPayout.delete({ where: { id: payout.id } });
+                return null;
+            }
+
+            const claimed = await tx.commissionEntry.findMany({ where: { payoutId: payout.id } });
+            const totalGross      = claimed.reduce((s, e) => s.add(e.grossAmount),      new Prisma.Decimal(0));
+            const totalCommission = claimed.reduce((s, e) => s.add(e.commissionAmount), new Prisma.Decimal(0));
+            const netAmount       = totalGross.sub(totalCommission);
+
+            return tx.partnerPayout.update({
+                where: { id: payout.id },
+                data:  { totalGross, totalCommission, netAmount },
+            });
+        });
+    }
+
     async listEntries(partnerId?: string, organizationId?: string, page = 1, limit = 50) {
         const skip = (page - 1) * limit;
         const where: Prisma.CommissionEntryWhereInput = {

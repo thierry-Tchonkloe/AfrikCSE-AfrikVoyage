@@ -66,6 +66,7 @@
 
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import { splitLocalePath } from "@/i18n/locale-path";
 
 /**
  * Axios instance — tokens gérés uniquement via cookies HTTP-only.
@@ -153,7 +154,7 @@ api.interceptors.response.use(
         } catch {
             // Refresh échoué → déconnexion, chacune vers sa propre page de login
             if (typeof window !== "undefined") {
-            const path = window.location.pathname;
+            const { path } = splitLocalePath(window.location.pathname);
 
             if (path.startsWith("/partner-portal")) {
                 if (path !== "/partner-portal/login") {

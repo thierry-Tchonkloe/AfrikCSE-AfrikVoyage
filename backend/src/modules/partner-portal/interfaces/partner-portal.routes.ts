@@ -6,7 +6,7 @@ import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
 import { locationIdParamSchema } from "./partner-portal.validator";
-import { offerImageUpload } from "../../../core/middlewares/upload.middleware";
+import { offerImageUpload, logoUpload } from "../../../core/middlewares/upload.middleware";
 
 const router = Router();
 const ctrl   = new PartnerPortalController();
@@ -30,9 +30,12 @@ router.use(authenticatePartner);
 router.post("/logout", ctrl.logout.bind(ctrl));
 router.get("/me",      ctrl.me.bind(ctrl));
 
-// Profile
+// Profile — lecture ouverte au staff, modification réservée à PARTNER_ADMIN
+// (le profil inclut des champs d'identité/contact publics du partenaire ;
+// seul l'admin doit pouvoir les changer).
 router.get("/profile",  ctrl.getProfile.bind(ctrl));
-router.patch("/profile", ctrl.updateProfile.bind(ctrl));
+router.patch("/profile", requirePartnerAdmin, ctrl.updateProfile.bind(ctrl));
+router.post("/profile/logo", logoUpload.single("file"), ctrl.uploadPartnerLogo.bind(ctrl));
 
 // Locations
 router.post("/locations",                  idempotency(), ctrl.createLocation.bind(ctrl));
@@ -42,8 +45,10 @@ router.put("/locations/:locationId/availabilities", validateParams(locationIdPar
 
 // Offers
 router.get("/offers",    ctrl.listOffers.bind(ctrl));
+router.get("/offers/categories", ctrl.listOfferCategories.bind(ctrl));
 router.post("/offers",   idempotency(), ctrl.createOffer.bind(ctrl));
 router.patch("/offers/:id", validateParams(idParamString), ctrl.updateOffer.bind(ctrl));
+router.patch("/offers/:id/toggle-active", validateParams(idParamString), ctrl.toggleOfferActive.bind(ctrl));
 // Upload indépendant de l'offre (nécessaire pour rendre l'image obligatoire dès la création :
 // on l'upload d'abord pour obtenir l'URL, puis on la fournit à POST/PATCH /offers).
 router.post("/offers/image", offerImageUpload.single("file"), ctrl.uploadOfferImage.bind(ctrl));
@@ -63,5 +68,10 @@ router.get("/settings/payment-methods",     requirePartnerAdmin, ctrl.listPaymen
 router.post("/settings/payment-methods",    requirePartnerAdmin, idempotency(), ctrl.createPaymentMethod.bind(ctrl));
 router.patch("/settings/payment-methods/:id", requirePartnerAdmin, validateParams(idParamString), ctrl.updatePaymentMethod.bind(ctrl));
 router.delete("/settings/payment-methods/:id", requirePartnerAdmin, validateParams(idParamString), ctrl.deletePaymentMethod.bind(ctrl));
+
+// Espace financier — lecture ouverte au staff, demande de reversement réservée
+// à PARTNER_ADMIN (même logique que les moyens de paiement : décision financière).
+router.get("/finances", ctrl.getFinances.bind(ctrl));
+router.post("/finances/payout-requests", requirePartnerAdmin, idempotency(), ctrl.requestPayout.bind(ctrl));
 
 export default router;

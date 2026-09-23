@@ -89,9 +89,9 @@ export class MessagingController {
     }
 
     /**
-     * Ouvre ou récupère la conversation support de l'organisation (unique par org).
-     * Utilisée par les admins entreprise ET les employés ; l'appelant est
-     * ajouté comme participant s'il ne l'est pas déjà.
+     * Ouvre ou récupère LA conversation support DE L'APPELANT (unique par
+     * utilisateur, jamais partagée avec le reste de l'organisation).
+     * Utilisée par les admins entreprise ET les employés.
      */
     async getOrCreateSupport(req: Request, res: Response): Promise<void> {
         const { organizationId, userId } = req.user!;

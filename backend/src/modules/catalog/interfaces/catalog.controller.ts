@@ -56,7 +56,7 @@ export class CatalogController {
     }
 
     async create(req: Request, res: Response): Promise<void> {
-        const parsed = createCatalogItemSchema.safeParse(req.body);
+        const parsed = await createCatalogItemSchema(req.user!.organizationId!).safeParseAsync(req.body);
         if (!parsed.success) {
             res.status(400).json({ errors: parsed.error.flatten() });
             return;
@@ -74,7 +74,7 @@ export class CatalogController {
     }
 
     async update(req: Request<IdParamString>, res: Response): Promise<void> {
-        const parsed = updateCatalogItemSchema.safeParse(req.body);
+        const parsed = await updateCatalogItemSchema(req.user!.organizationId!).safeParseAsync(req.body);
         if (!parsed.success) {
             res.status(400).json({ errors: parsed.error.flatten() });
             return;

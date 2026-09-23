@@ -1,69 +1,74 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { motion, useAnimation, useInView } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.demoPage">>;
 
 // ─── SCHÉMA DE VALIDATION ──────────────────────────────────────────────────────
 
-const schema = z.object({
+const getSchema = (t: Translator) => (z.object({
     interest: z.enum(["voyage", "cse", "both"]),
-    fullName: z.string().min(2, "Nom complet requis"),
-    email: z.string().email("Email invalide"),
-    company: z.string().min(2, "Nom de l'entreprise requis"),
-    role: z.string().min(1, "Rôle requis"),
+    fullName: z.string().min(2, t("fullNameRequired")),
+    email: z.string().email(t("invalidEmail")),
+    company: z.string().min(2, t("companyNameRequired")),
+    role: z.string().min(1, t("roleRequired")),
     phone: z.string().optional(),
     preferredTime: z.string().optional(),
     message: z.string().optional(),
-});
+}));
 
-type FormData = z.infer<typeof schema>;
+type FormData = z.infer<ReturnType<typeof getSchema>>;
 
 // ─── DONNÉES ──────────────────────────────────────────────────────────────────
 
-const ROLES = [
-    { value: "rh", label: "Ressources Humaines", icon: "👥" },
-    { value: "cfo", label: "Finances / CFO", icon: "📊" },
-    { value: "travel", label: "Gestion voyages", icon: "✈️" },
-    { value: "manager", label: "Direction / Manager", icon: "🎯" },
-    { value: "other", label: "Autre", icon: "💼" },
-];
+const getRoles = (t: Translator) => ([
+    { value: "rh", label: t("humanResources"), icon: "👥" },
+    { value: "cfo", label: t("financeCfo"), icon: "📊" },
+    { value: "travel", label: t("travelManagement"), icon: "✈️" },
+    { value: "manager", label: t("managementManager"), icon: "🎯" },
+    { value: "other", label: t("other"), icon: "💼" },
+]);
 
-const TIME_SLOTS = [
-    "Matin (9h-12h)",
-    "Après-midi (14h-17h)",
-    "Fin de journée (17h-19h)",
-    "Je ne sais pas encore"
-];
+const getTimeSlots = (t: Translator) => ([
+    t("morning9am12pm"),
+    t("afternoon2pm5pm"),
+    t("lateDay5pm7pm"),
+    t("iDonTKnow")
+]);
 
 // Images pour le carrousel de fond
-const BACKGROUND_IMAGES = [
+const getBackgroundImages = (t: Translator) => ([
     {
         src: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format",
-        alt: "Avion dans le ciel",
+        alt: t("airplaneSky"),
     },
     {
         src: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format",
-        alt: "Équipe en réunion",
+        alt: t("teamMeeting"),
     },
     {
         src: "https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=2074&auto=format",
-        alt: "Employé au travail",
+        alt: t("employeeWork"),
     },
     {
         src: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=2074&auto=format",
-        alt: "Avantages sociaux",
+        alt: t("employeeBenefits"),
     }
-];
+]);
 
 // ─── COMPOSANT CARROUSSEL D'IMAGES ─────────────────────────────────────────────
 
 function BackgroundCarousel() {
+    const t = useTranslations("infos.demoPage");
+    const BACKGROUND_IMAGES = useMemo(() => getBackgroundImages(t), [t]);
     const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
@@ -99,6 +104,8 @@ function BackgroundCarousel() {
 // ─── SECTION HERO ─────────────────────────────────────────────────────────────
 
 function HeroSection() {
+    const tr = useTranslations("infos.demoPage");
+    const t = useTranslations("infos.demoPage");
     return (
         <section className="relative overflow-hidden min-h-[85vh] flex items-center">
             <BackgroundCarousel />
@@ -112,34 +119,29 @@ function HeroSection() {
                     >
                         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/20 backdrop-blur-sm border border-indigo-500/30 mb-6">
                             <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-                            <span className="text-xs font-semibold text-indigo-200">Démo personnalisée</span>
+                            <span className="text-xs font-semibold text-indigo-200">{t("personalizedDemo")}</span>
                         </div>
                         
                         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
-                            Découvrez le futur de votre{" "}
-                            <span className="bg-linear-to-r from-indigo-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">
-                                gestion d'entreprise
-                            </span>
-                            <br />
-                            en 15 minutes
+                            {tr.rich("discoverFutureBusiness", { p1: t("text15Minutes"), span1: (chunks) => <span className="bg-linear-to-r from-indigo-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">{chunks}</span>, br: () => <br /> })}
                         </h1>
                         
                         <p className="mt-4 text-lg text-slate-200 leading-relaxed">
-                            Rejoignez les <span className="font-bold text-emerald-400">500+ entreprises</span> qui ont déjà réduit leurs coûts de voyage de 30% tout en boostant l'engagement de leurs équipes.
+                            {tr.rich("join500CompaniesHave", { span1: (chunks) => <span className="font-bold text-emerald-400">{chunks}</span> })}
                         </p>
 
                         <div className="flex flex-wrap gap-3 mt-6">
                             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
                                 <span className="text-emerald-400 text-sm">✓</span>
-                                <span className="text-xs text-white/80">-30% de coûts</span>
+                                <span className="text-xs text-white/80">{t("text30Costs")}</span>
                             </div>
                             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
                                 <span className="text-indigo-400 text-sm">✓</span>
-                                <span className="text-xs text-white/80">95% d'adoption</span>
+                                <span className="text-xs text-white/80">{t("text95Adoption")}</span>
                             </div>
                             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
                                 <span className="text-emerald-400 text-sm">✓</span>
-                                <span className="text-xs text-white/80">54 pays couverts</span>
+                                <span className="text-xs text-white/80">{t("text54CountriesCovered")}</span>
                             </div>
                         </div>
                     </motion.div>
@@ -152,6 +154,11 @@ function HeroSection() {
 // ─── FORMULAIRE DE DEMO ───────────────────────────────────────────────────────
 
 function DemoForm() {
+    const tr = useTranslations("infos.demoPage");
+    const t = useTranslations("infos.demoPage");
+    const schema = useMemo(() => getSchema(t), [t]);
+    const ROLES = useMemo(() => getRoles(t), [t]);
+    const TIME_SLOTS = useMemo(() => getTimeSlots(t), [t]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     
@@ -176,12 +183,12 @@ function DemoForm() {
         try {
             await new Promise(resolve => setTimeout(resolve, 1500));
             console.log("Form data:", data);
-            toast.success("Demande envoyée ! Un expert vous contacte sous 24h.");
+            toast.success(t("requestSentExpertWill"));
             setSubmitted(true);
             reset();
             setTimeout(() => setSubmitted(false), 3000);
         } catch {
-            toast.error("Erreur, veuillez réessayer");
+            toast.error(t("errorPleaseTryAgain"));
         } finally {
             setIsSubmitting(false);
         }
@@ -196,16 +203,13 @@ function DemoForm() {
                     <div>
                         <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold mb-4">
                             <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                            Demande personnalisée
+                            {t("personalizedRequest")}
                         </span>
                         <h2 className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight">
-                            Une démo{" "}
-                            <span className="bg-linear-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
-                                sur-mesure
-                            </span>
+                            {tr.rich("tailorMadeDemo", { span1: (chunks) => <span className="bg-linear-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">{chunks}</span> })}
                         </h2>
                         <p className="mt-3 text-slate-500 leading-relaxed">
-                            Remplissez le formulaire et un expert vous contactera pour organiser une démo personnalisée de 15 minutes, adaptée à vos enjeux.
+                            {t("fillFormExpertWill")}
                         </p>
                         
                         <div className="mt-6 space-y-3">
@@ -213,37 +217,37 @@ function DemoForm() {
                                 <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
                                     <span className="text-emerald-600 text-sm">✓</span>
                                 </div>
-                                <span className="text-sm text-slate-600">Réponse sous 24h</span>
+                                <span className="text-sm text-slate-600">{t("replyWithin24h")}</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
                                     <span className="text-emerald-600 text-sm">✓</span>
                                 </div>
-                                <span className="text-sm text-slate-600">Démo personnalisée à vos besoins</span>
+                                <span className="text-sm text-slate-600">{t("demoTailoredNeeds")}</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
                                     <span className="text-emerald-600 text-sm">✓</span>
                                 </div>
-                                <span className="text-sm text-slate-600">Accès test 14 jours après la démo</span>
+                                <span className="text-sm text-slate-600">{t("text14DayTestAccess")}</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="bg-linear-to-br from-indigo-600 to-indigo-800 rounded-3xl p-8 shadow-2xl">
-                        <h3 className="text-xl font-bold text-white mb-4">Réservez votre démo</h3>
+                        <h3 className="text-xl font-bold text-white mb-4">{t("bookDemo")}</h3>
                         
                         {submitted ? (
                             <div className="bg-white/10 backdrop-blur rounded-xl p-6 text-center">
                                 <div className="text-4xl mb-3">🎉</div>
-                                <p className="text-white font-semibold">Demande envoyée !</p>
-                                <p className="text-indigo-200 text-sm mt-2">Un expert vous contacte sous 24h.</p>
+                                <p className="text-white font-semibold">{t("requestSent")}</p>
+                                <p className="text-indigo-200 text-sm mt-2">{t("expertWillContactWithin")}</p>
                             </div>
                         ) : (
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-semibold text-indigo-200 mb-2 uppercase tracking-wider">
-                                        Je m'intéresse principalement à
+                                        {t("iAmMainlyInterested")}
                                     </label>
                                     <div className="grid grid-cols-3 gap-2">
                                         <button
@@ -255,7 +259,7 @@ function DemoForm() {
                                                     : "bg-white/10 text-indigo-200 hover:bg-white/20"
                                             }`}
                                         >
-                                            ✈️ Voyages
+                                            {t("travel")}
                                         </button>
                                         <button
                                             type="button"
@@ -266,7 +270,7 @@ function DemoForm() {
                                                     : "bg-white/10 text-indigo-200 hover:bg-white/20"
                                             }`}
                                         >
-                                            🎁 Avantages
+                                            {t("benefits")}
                                         </button>
                                         <button
                                             type="button"
@@ -277,7 +281,7 @@ function DemoForm() {
                                                     : "bg-white/10 text-indigo-200 hover:bg-white/20"
                                             }`}
                                         >
-                                            🔄 Les deux
+                                            {t("both")}
                                         </button>
                                     </div>
                                 </div>
@@ -286,7 +290,7 @@ function DemoForm() {
                                     <input
                                         {...register("fullName")}
                                         type="text"
-                                        placeholder="Nom complet"
+                                        placeholder={t("fullName")}
                                         className={inputGlass}
                                     />
                                     {errors.fullName && (
@@ -298,7 +302,7 @@ function DemoForm() {
                                     <input
                                         {...register("email")}
                                         type="email"
-                                        placeholder="Email professionnel"
+                                        placeholder={t("businessEmail")}
                                         className={inputGlass}
                                     />
                                     {errors.email && (
@@ -310,7 +314,7 @@ function DemoForm() {
                                     <input
                                         {...register("company")}
                                         type="text"
-                                        placeholder="Nom de l'entreprise"
+                                        placeholder={t("companyName")}
                                         className={inputGlass}
                                     />
                                     {errors.company && (
@@ -323,7 +327,7 @@ function DemoForm() {
                                         {...register("role")}
                                         className={`${inputGlass} appearance-none`}
                                     >
-                                        <option value="" className="text-slate-800">Votre rôle</option>
+                                        <option value="" className="text-slate-800">{t("role")}</option>
                                         {ROLES.map((role) => (
                                             <option key={role.value} value={role.value} className="text-slate-800">
                                                 {role.icon} {role.label}
@@ -339,7 +343,7 @@ function DemoForm() {
                                     <input
                                         {...register("phone")}
                                         type="tel"
-                                        placeholder="Téléphone (optionnel)"
+                                        placeholder={t("phoneOptional")}
                                         className={inputGlass}
                                     />
                                 </div>
@@ -349,7 +353,7 @@ function DemoForm() {
                                         {...register("preferredTime")}
                                         className={`${inputGlass} appearance-none`}
                                     >
-                                        <option value="">Préférence de rappel</option>
+                                        <option value="">{t("callbackPreference")}</option>
                                         {TIME_SLOTS.map((slot) => (
                                             <option key={slot} value={slot} className="text-slate-800">{slot}</option>
                                         ))}
@@ -360,7 +364,7 @@ function DemoForm() {
                                     <textarea
                                         {...register("message")}
                                         rows={3}
-                                        placeholder="Message ou besoins spécifiques (optionnel)"
+                                        placeholder={t("messageSpecificNeedsOptional")}
                                         className={`${inputGlass} resize-none`}
                                     />
                                 </div>
@@ -376,11 +380,11 @@ function DemoForm() {
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                                             </svg>
-                                            Envoi en cours...
+                                            {t("sending")}
                                         </>
                                     ) : (
                                         <>
-                                            Planifier ma démo
+                                            {t("scheduleMyDemo")}
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                             </svg>
@@ -389,7 +393,7 @@ function DemoForm() {
                                 </button>
                                 
                                 <p className="text-center text-[10px] text-indigo-300 mt-3">
-                                    Sans engagement · Réponse sous 24h
+                                    {t("noCommitmentReplyWithin")}
                                 </p>
                             </form>
                         )}
@@ -402,6 +406,8 @@ function DemoForm() {
 
 // Section "Pourquoi une démo ?"
 function WhyDemoSection() {
+    const tr = useTranslations("infos.demoPage");
+    const t = useTranslations("infos.demoPage");
     const controls = useAnimation();
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.1 });
@@ -413,24 +419,24 @@ function WhyDemoSection() {
     const cards = [
         {
             icon: "🤖",
-            title: "IA Sam",
-            description: "Découvrez notre moteur IA capable de reprogrammer automatiquement vos vols en cas de perturbation.",
+            title: t("samAi"),
+            description: t("discoverAiEngineCapable"),
             color: "indigo",
-            badge: "IA active"
+            badge: t("aiActive")
         },
         {
             icon: "📉",
-            title: "ROI immédiat",
-            description: "Visualisez comment notre contrôle budgétaire en temps réel stoppe les dérives financières.",
+            title: t("immediateRoi"),
+            description: t("seeHowRealTime"),
             color: "emerald",
-            badge: "-30% d'économies"
+            badge: t("text30Savings")
         },
         {
             icon: "🎯",
-            title: "Bien-être & RSE",
-            description: "Explorez notre Service Gallery style Netflix et nos indicateurs de score carbone pour 2026.",
+            title: t("wellBeingCsr"),
+            description: t("exploreNetflixStyleService"),
             color: "purple",
-            badge: "RSE intégrée"
+            badge: t("integratedCsr")
         }
     ];
 
@@ -449,10 +455,10 @@ function WhyDemoSection() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
                     <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold mb-4">
-                        Ce que vous allez découvrir
+                        {t("whatWillDiscover")}
                     </span>
                     <h2 className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight">
-                        Pourquoi <span className="text-indigo-600">cette démo</span> change la donne
+                        {tr.rich("whyDemoChangesEverything", { span1: (chunks) => <span className="text-indigo-600">{chunks}</span> })}
                     </h2>
                 </div>
 
@@ -482,6 +488,7 @@ function WhyDemoSection() {
 
 // Section Certifications
 function TrustSection() {
+    const t = useTranslations("infos.demoPage");
     const controls = useAnimation();
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.1 });
@@ -506,15 +513,15 @@ function TrustSection() {
                             </div>
                         </div>
                         <p className="text-slate-600 text-lg italic">
-                            "AfrikWorkspace nous a permis de réduire nos coûts de voyage de 30% tout en augmentant la satisfaction de nos équipes."
+                            {t("afrikworkspaceAllowedUs")}
                         </p>
                         <div className="mt-4">
-                            <p className="font-bold text-slate-800">Marie Dubois</p>
-                            <p className="text-sm text-slate-500">Directrice RH, TechAfrik</p>
+                            <p className="font-bold text-slate-800">{t("marieDubois")}</p>
+                            <p className="text-sm text-slate-500">{t("hrDirectorTechafrik")}</p>
                         </div>
                         <div className="mt-4 inline-flex items-center gap-2 bg-emerald-100 rounded-full px-3 py-1">
                             <span className="text-emerald-600 font-bold text-sm">-30%</span>
-                            <span className="text-xs text-emerald-700">de coûts de voyage</span>
+                            <span className="text-xs text-emerald-700">{t("travelCosts")}</span>
                         </div>
                     </div>
                 </div>
@@ -523,15 +530,15 @@ function TrustSection() {
                 <div className="flex flex-wrap justify-center gap-6">
                     <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100">
                         <span className="text-green-600 text-lg">🔒</span>
-                        <span className="text-sm font-medium text-slate-700">RGPD compliant</span>
+                        <span className="text-sm font-medium text-slate-700">{t("gdprCompliant")}</span>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100">
                         <span className="text-indigo-600 text-lg">📄</span>
-                        <span className="text-sm font-medium text-slate-700">Zéro papier · Valeur probante</span>
+                        <span className="text-sm font-medium text-slate-700">{t("zeroPaperEvidentiaryValue")}</span>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100">
                         <span className="text-emerald-600 text-lg">🛡️</span>
-                        <span className="text-sm font-medium text-slate-700">Sécurité AES-256</span>
+                        <span className="text-sm font-medium text-slate-700">{t("aes256Security")}</span>
                     </div>
                 </div>
             </div>
@@ -541,6 +548,9 @@ function TrustSection() {
 
 // Section Processus améliorée
 function ProcessSection() {
+    const tt = useTranslations("infos.demoPage");
+    const tr = useTranslations("infos.demoPage");
+    const t = useTranslations("infos.demoPage");
     const controls = useAnimation();
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.1 });
@@ -552,26 +562,26 @@ function ProcessSection() {
     const steps = [
         { 
             number: "01", 
-            title: "Échange de 15 min", 
-            description: "Un expert analyse vos besoins spécifiques et identifie vos enjeux prioritaires.",
+            title: t("text15MinuteExchange"), 
+            description: t("expertAnalyzesSpecificNeeds"),
             icon: "🎯",
             duration: "15 min",
             color: "indigo"
         },
         { 
             number: "02", 
-            title: "Démo personnalisée", 
-            description: "Nous vous montrons la plateforme configurée pour votre secteur d'activité.",
+            title: t("personalizedDemo"), 
+            description: t("showPlatformConfigured"),
             icon: "✨",
             duration: "30 min",
             color: "emerald"
         },
         { 
             number: "03", 
-            title: "Accès Test", 
-            description: "Vous recevez vos accès pour tester l'interface en autonomie pendant 14 jours.",
+            title: t("testAccess"), 
+            description: t("receiveCredentialsTest"),
             icon: "🔓",
-            duration: "14 jours",
+            duration: tt("text14Days"),
             color: "purple"
         }
     ];
@@ -613,17 +623,14 @@ function ProcessSection() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                         </span>
-                        Processus simplifié
+                        {t("simplifiedProcess")}
                     </div>
                     <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-800 tracking-tight">
-                        Ce qui se passe{" "}
-                        <span className="bg-linear-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-                            ensuite
-                        </span>
+                        {tr.rich("whatHappensNext", { span1: (chunks) => <span className="bg-linear-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">{chunks}</span> })}
                     </h2>
                     <div className="w-24 h-1 bg-linear-to-r from-emerald-500 to-teal-500 rounded-full mx-auto mt-4" />
                     <p className="mt-5 text-slate-500 text-lg max-w-2xl mx-auto">
-                        En 3 étapes simples, découvrez comment AfrikWorkspace peut transformer votre gestion
+                        {t("text3SimpleStepsDiscover")}
                     </p>
                 </div>
 
@@ -695,11 +702,11 @@ function ProcessSection() {
                                 <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white text-xs font-bold border-2 border-white">KA</div>
                             </div>
                             <p className="text-sm text-slate-600">
-                                <span className="font-bold text-slate-800">+50 experts</span> à votre écoute
+                                {tr.rich("text50ExpertsReadyListen", { span1: (chunks) => <span className="font-bold text-slate-800">{chunks}</span> })}
                             </p>
                             <div className="w-px h-6 bg-slate-200" />
                             <p className="text-sm text-emerald-600 font-semibold">
-                                Satisfaction client : 96%
+                                {t("customerSatisfaction96")}
                             </p>
                         </div>
                     </div>

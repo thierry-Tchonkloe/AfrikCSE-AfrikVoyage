@@ -56,11 +56,13 @@ export class BenefitController {
 
     // ── Demandes ──
     async getRequests(req: Request, res: Response): Promise<void> {
-        const { status, categoryId, urgency, page, limit } = req.query;
+        const { status, categoryId, urgency, minAmount, maxAmount, page, limit } = req.query;
         const data = await service.getRequests(req.user!.organizationId!, {
         status: status as string,
         categoryId: categoryId as string,
         urgency: urgency as string,
+        minAmount: minAmount !== undefined ? parseFloat(minAmount as string) : undefined,
+        maxAmount: maxAmount !== undefined ? parseFloat(maxAmount as string) : undefined,
         page: parseInt(page as string) || 1,
         limit: parseInt(limit as string) || 10,
         });

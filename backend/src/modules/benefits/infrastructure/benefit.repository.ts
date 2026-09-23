@@ -52,16 +52,23 @@ export class BenefitRepository {
         status?: RequestStatus;
         categoryId?: string;
         urgency?: Urgency;
+        minAmount?: number;
+        maxAmount?: number;
         page?: number;
         limit?: number;
     }) {
-        const { status, categoryId, urgency, page = 1, limit = 10 } = filters ?? {};
+        const { status, categoryId, urgency, minAmount, maxAmount, page = 1, limit = 10 } = filters ?? {};
         const skip = (page - 1) * limit;
 
         const where: any = { organizationId: orgId };
         if (status)     where.status     = status;
         if (categoryId) where.categoryId = categoryId;
         if (urgency)    where.urgency    = urgency;
+        if (minAmount != null || maxAmount != null) {
+        where.amount = {};
+        if (minAmount != null) where.amount.gte = minAmount;
+        if (maxAmount != null) where.amount.lte = maxAmount;
+        }
 
         const [data, total] = await Promise.all([
         prisma.benefitRequest.findMany({

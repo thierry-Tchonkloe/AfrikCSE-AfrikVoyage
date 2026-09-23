@@ -274,24 +274,26 @@ export class MessagingRepository {
     }
 
     /**
-     * Crée ou récupère la conversation support d'une organisation
-     * Une org n'a qu'une seule conversation support
+     * Crée ou récupère LA conversation support d'UN utilisateur donné.
+     * Scopée par organizationId ET userId : chaque appelant (employé ou admin
+     * entreprise) a sa propre conversation privée avec les Super Admins,
+     * jamais partagée avec le reste de l'organisation. Avant ce correctif, la
+     * recherche ne filtrait que par organizationId : le premier appelant de
+     * l'org créait LA conversation, et tout appelant suivant (n'importe quel
+     * autre employé ou admin) y était silencieusement ajouté comme participant
+     * — donnant accès à l'historique de messages potentiellement sensibles
+     * d'un collègue.
      */
     async getOrCreateSupportConversation(orgId: string, userId: string) {
-        // Cherche une conversation existante pour cette org
+        // Cherche la conversation support existante DE CET UTILISATEUR précis.
         const existing = await prisma.conversation.findFirst({
-        where: { organizationId: orgId },
+        where: { organizationId: orgId, participants: { some: { userId } } },
         include: { participants: true },
         });
 
         if (existing) {
-        // La conversation support est unique par org : tout nouvel appelant
-        // (admin ou employé) doit y être ajouté s'il n'y est pas déjà, sinon
-        // il se voit refuser l'accès aux messages (anti-IDOR sur isParticipant).
-        const alreadyParticipant = existing.participants.some((p) => p.userId === userId);
-        if (!alreadyParticipant) {
-            await prisma.conversationParticipant.create({ data: { conversationId: existing.id, userId } });
-        }
+        // `userId` est garanti déjà participant par le filtre de la requête
+        // ci-dessus — rien à ajouter.
         return prisma.conversation.findUniqueOrThrow({
             where: { id: existing.id },
             include: {

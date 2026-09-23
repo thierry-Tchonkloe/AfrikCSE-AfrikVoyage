@@ -13,7 +13,11 @@ export const employeeService = {
         return data;
     },
     async createTravel(payload: Record<string, unknown>) {
-        const { data } = await api.post("/employee/travels", payload);
+        const { data } = await api.post("/employee/travels", { ...payload, idempotencyKey: crypto.randomUUID() });
+        return data;
+    },
+    async getTravelById(id: string) {
+        const { data } = await api.get(`/employee/travels/${id}`);
         return data;
     },
 
@@ -23,7 +27,7 @@ export const employeeService = {
         return data;
     },
     async createExpense(payload: Record<string, unknown>) {
-        const { data } = await api.post("/employee/expenses", payload);
+        const { data } = await api.post("/employee/expenses", { ...payload, idempotencyKey: crypto.randomUUID() });
         return data;
     },
     async uploadReceipt(file: File) {
@@ -37,6 +41,12 @@ export const employeeService = {
             headers: { "Content-Type": undefined },
         });
         return data as { url: string; name: string; size: string };
+    },
+    // Lance l'extraction OCR sur un justificatif déjà uploadé (fileUrl retourné
+    // par uploadReceipt) — permet de pré-remplir le formulaire de note de frais.
+    async scanReceipt(fileUrl: string) {
+        const { data } = await api.post("/ocr/upload", { fileUrl });
+        return data as { extractedData: { amount: number | null; date: string | null; vendor: string | null; currency: string; confidence: number } };
     },
 
     // ── Avantages CSE ─────────────────────────────────────────────────────────
@@ -59,7 +69,7 @@ export const employeeService = {
         urgency?: "LOW" | "MEDIUM" | "HIGH";
         receipts?: string[];
     }) {
-        const { data } = await api.post("/employee/benefits/requests", payload);
+        const { data } = await api.post("/employee/benefits/requests", { ...payload, idempotencyKey: crypto.randomUUID() });
         return data;
     },
     async cancelBenefitRequest(id: string) {
@@ -155,11 +165,11 @@ export const employeeService = {
         return data;
     },
     async createPost(payload: Record<string, unknown>) {
-        const { data } = await api.post("/communication/posts", payload);
+        const { data } = await api.post("/communication/posts", { ...payload, idempotencyKey: crypto.randomUUID() });
         return data;
     },
-    async toggleLike(postId: string) {
-        const { data } = await api.post(`/communication/posts/${postId}/like`);
+    async toggleLike(postId: string, action?: "like" | "unlike") {
+        const { data } = await api.post(`/communication/posts/${postId}/like`, action ? { action } : undefined);
         return data;
     },
     async vote(optionId: string) {
