@@ -1,0 +1,14 @@
+{
+  // Compile uniquement le seed Prisma vers dist/prisma/seed.js.
+  // Séparé de tsconfig.json car celui-ci a rootDir "./src" (sortie dist/server.js).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist",
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false
+  },
+  "include": ["prisma/seed.ts"],
+  "exclude": []
+}
