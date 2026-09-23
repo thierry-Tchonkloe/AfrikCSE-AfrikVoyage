@@ -73,9 +73,17 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import createIntlMiddleware from "next-intl/middleware";
 import { SUPER_ADMIN_ROLES, COMPANY_ADMIN_ROLES, getDefaultRoute } from "@/lib/roles";
+import { routing } from "@/i18n/routing";
+import { splitLocalePath } from "@/i18n/locale-path";
+
+// Routage par langue : détection (cookie NEXT_LOCALE, sinon Accept-Language) et
+// redirection des URL sans préfixe vers /{locale}/...
+const handleI18nRouting = createIntlMiddleware(routing);
 
 // ── Routes publiques ───────────────────────────────────────
+// Comparées au chemin SANS préfixe de langue (/fr/login → /login).
 const PUBLIC_PREFIXES = [
   "/login",
   "/register",
@@ -121,7 +129,15 @@ async function verifyToken(token: string): Promise<TokenPayload | null> {
 
 // ── Middleware ─────────────────────────────────────────────
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { locale, path: pathname } = splitLocalePath(request.nextUrl.pathname);
+
+  // 0. Pas de préfixe de langue → next-intl choisit la langue et redirige vers /{locale}/...
+  if (!locale) return handleI18nRouting(request);
+
+  // Réponse next-intl : porte la langue lue par les Server Components.
+  // À renvoyer chaque fois que la requête est autorisée à passer.
+  const i18nResponse = handleI18nRouting(request);
+  const localizedUrl = (to: string) => new URL(`/${locale}${to === "/" ? "" : to}`, request.url);
 
   // 1. Routes publiques → laisse passer
   const isPublicRoute = PUBLIC_PREFIXES.some(
@@ -131,13 +147,13 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith(prefix + "?")
   );
 
-  if (isPublicRoute) return NextResponse.next();
+  if (isPublicRoute) return i18nResponse;
 
   // 2. Token — on regarde d'abord le cookie `session` (court, lisible)
   const token = request.cookies.get("session")?.value || request.cookies.get("accessToken")?.value;
 
   if (!token) {
-    const url = new URL("/login", request.url);
+    const url = localizedUrl("/login");
     url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
@@ -146,7 +162,7 @@ export async function middleware(request: NextRequest) {
   const payload = await verifyToken(token);
 
   if (!payload) {
-    const res = NextResponse.redirect(new URL("/login", request.url));
+    const res = NextResponse.redirect(localizedUrl("/login"));
     res.cookies.delete("accessToken");
     res.cookies.delete("session");
     return res;
@@ -156,42 +172,36 @@ export async function middleware(request: NextRequest) {
 
   // 4. "/" → redirige vers l'espace approprié
   if (pathname === "/") {
-    return NextResponse.redirect(
-      new URL(getDefaultRoute(role, isHost), request.url)
-    );
+    return NextResponse.redirect(localizedUrl(getDefaultRoute(role, isHost)));
   }
 
   // 5. /admin/* → isHost + rôle élevé
   if (pathname.startsWith("/admin")) {
     if (!isHost || !SUPER_ADMIN_ROLES.includes(role)) {
-      return NextResponse.redirect(
-        new URL(getDefaultRoute(role, isHost), request.url)
-      );
+      return NextResponse.redirect(localizedUrl(getDefaultRoute(role, isHost)));
     }
-    return NextResponse.next();
+    return i18nResponse;
   }
 
   // 6. /companies/* → admins/managers/rh/finance
   if (pathname.startsWith("/companies")) {
     if (!COMPANY_ADMIN_ROLES.includes(role)) {
-      return NextResponse.redirect(
-        new URL("/employes/dashboard", request.url)
-      );
+      return NextResponse.redirect(localizedUrl("/employes/dashboard"));
     }
-    return NextResponse.next();
+    return i18nResponse;
   }
 
   // 7. /employes/* → tout utilisateur connecté
   if (pathname.startsWith("/employes")) {
-    return NextResponse.next();
+    return i18nResponse;
   }
 
   // 8. Autres → laisse passer
-  return NextResponse.next();
+  return i18nResponse;
 }
 
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon\\.ico|.*\\.png|.*\\.jpg|.*\\.svg|.*\\.ico).*)",
-  ],
+  // Exclut l'API, les internes Next/Vercel, la page hors-ligne de la PWA et tout
+  // chemin avec extension (sw.js, manifest.webmanifest, images, vidéos, polices…).
+  matcher: ["/((?!api|_next|_vercel|~offline|.*\\..*).*)"],
 };

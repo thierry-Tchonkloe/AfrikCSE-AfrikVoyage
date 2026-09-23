@@ -60,12 +60,15 @@ export interface FakePartnerSessionPayload {
 /**
  * Signe un vrai JWT partenaire (avec process.env.JWT_SECRET) et fait répondre
  * `prismaMock.partnerUser.findUnique` (utilisé par `authenticatePartner`) avec
- * un compte partenaire actif dont le tokenVersion correspond.
+ * un compte partenaire actif dont le tokenVersion correspond, rattaché à un
+ * `Partner` dont le statut est `partnerStatus` (par défaut "ACTIVE" — passer
+ * "SUSPENDED" pour tester l'expulsion en temps réel des partenaires suspendus).
  * Retourne le header Cookie à utiliser avec `.set("Cookie", ...)`.
  */
 export function mockAuthenticatedPartnerSession(
   prismaMock: DeepMockProxy<PrismaClient>,
-  overrides: Partial<FakePartnerSessionPayload> = {}
+  overrides: Partial<FakePartnerSessionPayload> = {},
+  partnerStatus: string = "ACTIVE"
 ): string[] {
   const payload: FakePartnerSessionPayload = {
     partnerUserId: "partner-user-1",
@@ -82,6 +85,7 @@ export function mockAuthenticatedPartnerSession(
   prismaMock.partnerUser.findUnique.mockResolvedValueOnce({
     tokenVersion: payload.tokenVersion,
     isActive: true,
+    partner: { status: partnerStatus },
   } as never);
 
   return [`partnerAccessToken=${token}`];

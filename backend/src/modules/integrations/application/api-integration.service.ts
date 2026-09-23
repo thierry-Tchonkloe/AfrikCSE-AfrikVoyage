@@ -33,15 +33,27 @@ export class ApiIntegrationService {
         return this.repo.getSyncLogs(id, organizationId);
     }
 
+    /**
+     * SIMULATION : vérifie seulement qu'une clé API ou une URL de webhook est
+     * configurée — n'appelle aucun système RH externe réel (aucun connecteur
+     * SIRH n'est implémenté à ce jour). CRUD/config/logs sont réels ; c'est
+     * uniquement l'appel réseau vers le système tiers qui est un stub.
+     */
     async testConnection(organizationId: string, id: string) {
         const integration = await this.repo.getById(id, organizationId);
         if (!integration) throw new Error("Intégration introuvable");
         if (!integration.apiKey && !integration.webhookUrl) {
             throw new Error("Aucune clé API ou URL de webhook configurée pour cette intégration");
         }
-        return { connected: true, name: integration.name, type: integration.type };
+        return { connected: true, simulated: true, name: integration.name, type: integration.type };
     }
 
+    /**
+     * SIMULATION : ne récupère ni ne crée/met à jour aucun employé auprès d'un
+     * système RH externe (toujours employeesCreated=0/employeesUpdated=0) —
+     * seul le SyncLog et lastSyncAt sont réellement écrits. À remplacer par un
+     * vrai connecteur SIRH quand un système cible sera choisi.
+     */
     async sync(organizationId: string, id: string, type: "AUTOMATIC" | "MANUAL" = "MANUAL") {
         const integration = await this.repo.getById(id, organizationId);
         if (!integration) throw new Error("Intégration introuvable");

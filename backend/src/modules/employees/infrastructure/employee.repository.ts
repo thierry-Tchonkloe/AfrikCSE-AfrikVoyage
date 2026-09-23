@@ -55,11 +55,19 @@ export class EmployeeRepository {
     }
 
     async getStats(orgId: string) {
-        const [active, total, managers, suspended] = await Promise.all([
+        // Début du mois civil en cours — sert de comparatif réel ("+N ce mois")
+        // à la place d'un delta inventé, faute de tout autre historique stocké
+        // sur User (pas de snapshot quotidien ni de date de suspension).
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const [active, total, managers, suspended, newThisMonth] = await Promise.all([
         prisma.user.count({ where: { organizationId: orgId, isActive: true } }),
         prisma.user.count({ where: { organizationId: orgId } }),
         prisma.user.count({ where: { organizationId: orgId, role: "MANAGER" } }),
         prisma.user.count({ where: { organizationId: orgId, isActive: false } }),
+        prisma.user.count({ where: { organizationId: orgId, createdAt: { gte: startOfMonth } } }),
         ]);
 
         // Nombre de départements distincts
@@ -74,6 +82,7 @@ export class EmployeeRepository {
         managers,
         suspended,
         departments: deptResult.length,
+        newThisMonth,
         };
     }
 

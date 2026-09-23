@@ -17,6 +17,18 @@ const createWebhookSchema = z.object({
     apiClientId: z.string().optional(),
 });
 
+export async function getSettings(orgId: string) {
+    const org = await repo.getSettings(orgId);
+    if (!org) throw new AppError("Organisation introuvable", 404);
+    return org;
+}
+
+export async function updateSettings(orgId: string, body: unknown) {
+    const parsed = z.object({ developerApiEnabled: z.boolean() }).safeParse(body);
+    if (!parsed.success) throw new AppError(parsed.error.flatten().fieldErrors as never, 422);
+    return repo.setDeveloperApiEnabled(orgId, parsed.data.developerApiEnabled);
+}
+
 export async function listClients(orgId: string) {
     return repo.listClients(orgId);
 }

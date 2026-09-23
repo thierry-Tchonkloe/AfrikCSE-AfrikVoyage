@@ -6,6 +6,23 @@ function hashKey(rawKey: string): string {
 }
 
 export class ApiDeveloperRepository {
+    // ── Paramètres API Développeur ────────────────────────────────────────────
+
+    async getSettings(orgId: string) {
+        return prisma.organization.findUnique({
+            where: { id: orgId },
+            select: { developerApiEnabled: true },
+        });
+    }
+
+    async setDeveloperApiEnabled(orgId: string, enabled: boolean) {
+        return prisma.organization.update({
+            where: { id: orgId },
+            data: { developerApiEnabled: enabled },
+            select: { developerApiEnabled: true },
+        });
+    }
+
     // ── API Clients ───────────────────────────────────────────────────────────
 
     async listClients(orgId: string) {

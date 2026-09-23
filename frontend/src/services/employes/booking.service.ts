@@ -6,8 +6,15 @@ export interface CreateBookingPayload {
     partnerId:       string;
     offerId?:        string;
     locationId?:     string;
+    travelRequestId?:    string;
+    flightRouteId?:      string;
+    hotelRoomTypeId?:    string;
+    trainRouteId?:       string;
+    carRentalVehicleId?: string;
     bookingDate:     string;
     numberOfPersons?: number;
+    numberOfNights?: number;
+    numberOfDays?:   number;
     notes?:          string;
     idempotencyKey:  string;
     paymentMethod:   "WALLET" | "MOBILE_MONEY" | "CARD";

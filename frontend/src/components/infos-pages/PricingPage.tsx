@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import Link from "next/link";
+import { useEffect, useState, useRef, useMemo } from "react";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { motion, useAnimation, useInView } from "framer-motion";
 import { plansService, PublicPlan } from "@/services/admin/plans.service";
@@ -9,6 +9,9 @@ import {
     Rocket, Building2, Landmark, Check, ChevronDown,
     DollarSign, Lock, Smartphone, ShieldCheck, Leaf, Trophy
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.pricingPage">>;
 
 // Types
 interface PlanDetails {
@@ -35,113 +38,113 @@ interface FAQItem {
 
 // ─── DONNÉES DES TARIFS HARMONISÉES AVEC LA PAGE D'ACCUEIL ──────────────────
 
-const PLANS_DATA: PlanDetails[] = [
+const getPlansData = (t: Translator): PlanDetails[] => ([
     {
         id: 1,
-        name: "Startup",
-        label: "Startup",
+        name: t("startup"),
+        label: t("startup"),
         price: "..",
-        period: "/mois",
+        period: t("month"),
         maxUsers: 25,
         features: [
-            "Jusqu'à 25 utilisateurs",
-            "Réservations voyages illimitées",
-            "Gestion des notes de frais basique",
-            "Support email 5j/7",
-            "Dashboard analytics"
+            t("up25Users"),
+            t("unlimitedTravelBookings"),
+            t("basicExpenseReportManagement"),
+            t("emailSupport5Days"),
+            t("analyticsDashboard")
         ],
         hasVoyage: true,
         hasCSE: false,
         icon: "rocket",
         color: "indigo",
-        buttonText: "Commencer",
+        buttonText: t("getStarted"),
         buttonVariant: "outline"
     },
     {
         id: 2,
-        name: "Business",
-        label: "Business",
+        name: t("business"),
+        label: t("business"),
         price: "..",
-        period: "/mois",
+        period: t("month"),
         maxUsers: 150,
         features: [
-            "Jusqu'à 150 utilisateurs",
-            "Toutes les fonctionnalités voyage",
-            "IA predictive + reporting avancé",
-            "Support prioritaire 7j/7",
-            "Intégrations ERP natives",
-            "Gestion CSE complète"
+            t("up150Users"),
+            t("allTravelFeatures"),
+            t("predictiveAiAdvanced"),
+            t("prioritySupport7Days"),
+            t("nativeErpIntegrations"),
+            t("fullCseManagement")
         ],
         hasVoyage: true,
         hasCSE: true,
         popular: true,
         icon: "building",
         color: "emerald",
-        buttonText: "Commencer",
+        buttonText: t("getStarted"),
         buttonVariant: "primary"
     },
     {
         id: 3,
-        name: "Enterprise",
-        label: "Enterprise",
-        price: "Sur mesure",
+        name: t("enterprise"),
+        label: t("enterprise"),
+        price: t("custom"),
         period: "",
         maxUsers: undefined,
         features: [
-            "Utilisateurs illimités",
-            "API dédiée et personnalisation",
-            "SLA garantie 99.9%",
-            "Account manager dédié",
-            "Formation sur site",
-            "Audit et optimisation RSE"
+            t("unlimitedUsers"),
+            t("dedicatedApiCustomization"),
+            t("guaranteed999Sla"),
+            t("dedicatedAccountManager"),
+            t("siteTraining"),
+            t("csrAuditOptimization")
         ],
         hasVoyage: true,
         hasCSE: true,
         icon: "landmark",
         color: "purple",
-        buttonText: "Nous contacter",
+        buttonText: t("contactUs"),
         buttonVariant: "outline"
     }
-];
+]);
 
-const FAQ_ITEMS: FAQItem[] = [
+const getFaqItems = (t: Translator): FAQItem[] => ([
     {
-        question: "Comment l'IA réduit-elle réellement mes coûts ?",
-        answer: "Notre IA prédictive analyse vos historiques de voyages pour recommander les meilleurs tarifs et itinéraires. Elle bloque automatiquement les réservations hors politique budgétaire, réduisant les dépassements jusqu'à 34%."
+        question: t("howDoesAiActually"),
+        answer: t("predictiveAiAnalyzesTravel")
     },
     {
-        question: "Est-ce compatible avec mon logiciel comptable ?",
-        answer: "Oui, notre API permet une intégration native avec les principaux ERP (SAP, Oracle, Odoo, Sage) et logiciels comptables. Les flux sont automatiques et sécurisés."
+        question: t("compatibleMyAccounting"),
+        answer: t("yesApiEnablesNative")
     },
     {
-        question: "Quid du bien-être des voyageurs ?",
-        answer: "Le bien-être voyageur est devenu un KPI central de notre plateforme. Nous suivons la satisfaction en temps réel, proposons des itinéraires optimisés, et une assistance 24/7 pour gérer les imprévus."
+        question: t("whatAboutTravelerWell"),
+        answer: t("travelerWellBeingHas")
     },
     {
-        question: "Quels sont les délais de mise en place ?",
-        answer: "L'activation est possible en moins de 48h pour les fonctionnalités de base. L'intégration complète avec vos politiques voyage et ERP prend généralement 1 à 2 semaines."
+        question: t("whatSetupTimes"),
+        answer: t("activationPossibleUnder48")
     },
     {
-        question: "Proposez-vous un essai gratuit ?",
-        answer: "Oui, nous proposons un essai gratuit de 14 jours sans carte bancaire. Notre équipe vous accompagne pendant toute la période pour maximiser votre retour sur investissement."
+        question: t("doOfferFreeTrial"),
+        answer: t("yesOffer14Day")
     }
-];
+]);
 
-const PARTNERS = [
-    { name: "Orange", logo: "OR", color: "orange" },
-    { name: "TotalEnergies", logo: "TT", color: "blue" },
-    { name: "Ecobank", logo: "EC", color: "green" },
-    { name: "Air France", logo: "AF", color: "blue" },
-    { name: "Booking.com", logo: "BK", color: "blue" },
+const getPartners = (t: Translator) => ([
+    { name: t("orange"), logo: "OR", color: "orange" },
+    { name: t("totalenergies"), logo: "TT", color: "blue" },
+    { name: t("ecobank"), logo: "EC", color: "green" },
+    { name: t("airFrance"), logo: "AF", color: "blue" },
+    { name: t("bookingCom"), logo: "BK", color: "blue" },
     { name: "SNCF", logo: "SN", color: "red" }
-];
+]);
 
-const CERTIFICATIONS = [
-    { name: "SOC 2 Type II", Icon: ShieldCheck, description: "Sécurité des données" },
-    { name: "ISO 27001", Icon: Check, description: "Management de la sécurité" },
-    { name: "RGPD", Icon: Lock, description: "Conformité européenne" },
-    { name: "EcoVadis", Icon: Leaf, description: "Performance RSE" }
-];
+const getCertifications = (t: Translator) => ([
+    { name: t("soc2TypeIi"), Icon: ShieldCheck, description: t("dataSecurity") },
+    { name: "ISO 27001", Icon: Check, description: t("securityManagement") },
+    { name: "RGPD", Icon: Lock, description: t("europeanCompliance") },
+    { name: t("ecovadis"), Icon: Leaf, description: t("csrPerformance") }
+]);
 
 // ─── COMPOSANTS INTERNES ───────────────────────────────────────────────────
 
@@ -153,6 +156,7 @@ function getPlanIcon(icon: string) {
 }
 
 function PlanCard({ plan, isAnnual }: { plan: PlanDetails; isAnnual: boolean }) {
+    const t = useTranslations("infos.pricingPage");
     return (
         <div className={`relative rounded-2xl border p-6 flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
             plan.popular
@@ -161,7 +165,7 @@ function PlanCard({ plan, isAnnual }: { plan: PlanDetails; isAnnual: boolean }) 
         }`}>
             {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-linear-to-r from-indigo-600 to-emerald-500 text-white text-[10px] font-black uppercase tracking-wider shadow-md whitespace-nowrap">
-                    Le plus populaire
+                    {t("mostPopular")}
                 </div>
             )}
 
@@ -172,13 +176,13 @@ function PlanCard({ plan, isAnnual }: { plan: PlanDetails; isAnnual: boolean }) 
                 <div>
                     <h3 className="text-lg font-black text-slate-800">{plan.label}</h3>
                     {plan.maxUsers && (
-                        <p className="text-xs text-slate-400">Jusqu&#39;à {plan.maxUsers} utilisateurs</p>
+                        <p className="text-xs text-slate-400">{t("upUsers", { maxUsers: plan.maxUsers })}</p>
                     )}
                 </div>
             </div>
 
             <div className="mb-4">
-                {plan.price !== "Sur mesure" ? (
+                {plan.price !== t("custom") ? (
                     <>
                         <div className="flex items-baseline gap-1">
                             <span className="text-3xl font-black text-indigo-600">
@@ -187,11 +191,11 @@ function PlanCard({ plan, isAnnual }: { plan: PlanDetails; isAnnual: boolean }) 
                             <span className="text-sm text-slate-400">{plan.period}</span>
                         </div>
                         {isAnnual && (
-                            <p className="text-xs text-emerald-600 mt-1">+2 mois offerts</p>
+                            <p className="text-xs text-emerald-600 mt-1">{t("text2MonthsFree")}</p>
                         )}
                     </>
                 ) : (
-                    <span className="text-xl font-black text-indigo-600">Sur mesure</span>
+                    <span className="text-xl font-black text-indigo-600">{t("custom")}</span>
                 )}
             </div>
 
@@ -252,6 +256,12 @@ function PricingBlob({ color, position, size }: { color: string; position: strin
 // ─── COMPOSANT PRINCIPAL ─────────────────────────────────────────────────────
 
 export default function PricingPage() {
+    const tr = useTranslations("infos.pricingPage");
+    const t = useTranslations("infos.pricingPage");
+    const PLANS_DATA = useMemo(() => getPlansData(t), [t]);
+    const FAQ_ITEMS = useMemo(() => getFaqItems(t), [t]);
+    const PARTNERS = useMemo(() => getPartners(t), [t]);
+    const CERTIFICATIONS = useMemo(() => getCertifications(t), [t]);
     const [plans, setPlans] = useState<PublicPlan[] | null>(null);
     const [error, setError] = useState(false);
     const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
@@ -299,7 +309,7 @@ export default function PricingPage() {
                 <div className="absolute inset-0 z-0 overflow-hidden">
                     <Image
                         src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&h=1080&fit=crop&q=80"
-                        alt="Espaces d'affaires modernes et finance d'entreprise"
+                        alt={t("modernBusinessSpaces")}
                         fill
                         className="object-cover transition-transform duration-700 ease-out group-hover/hero:scale-[1.02]"
                         priority
@@ -315,17 +325,13 @@ export default function PricingPage() {
                 
                 <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
                     <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-indigo-100 shadow-sm">
-                        Tarification transparente
+                        {t("transparentPricing")}
                     </span>
                     <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl md:text-6xl leading-[1.1]">
-                        Une plateforme qui{" "}
-                        <span className="text-emerald-600">s&#39;autofinance</span>
-                        <br />
-                        par vos économies
+                        {tr.rich("platformPaysItself", { p1: t("paidSavings"), span1: (chunks) => <span className="text-emerald-600">{chunks}</span>, br: () => <br /> })}
                     </h1>
                     <p className="mt-4 text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto bg-white/70 backdrop-blur-sm px-6 py-3 rounded-2xl inline-block border border-slate-100/50 shadow-sm">
-                        Investissez dans la performance. Nos clients constatent en moyenne
-                        une réduction de <span className="font-bold text-emerald-600">-30%</span> de leurs coûts de voyage dès la première année.
+                        {t("investPerformanceAverage")} <span className="font-bold text-emerald-600">-30%</span> {t("theirTravelCostsFrom")}
                     </p>
 
                     <div className="mt-8 flex flex-wrap justify-center gap-4">
@@ -333,13 +339,13 @@ export default function PricingPage() {
                             href="#pricing"
                             className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg hover:bg-indigo-700 transition-all hover:scale-105"
                         >
-                            Voir les tarifs
+                            {t("viewPricing")}
                         </Link>
                         <Link
                             href="/infos/contact"
                             className="inline-flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border-2 border-slate-200 px-6 py-3 text-sm font-bold text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 transition-all"
                         >
-                            Demander une démo
+                            {t("requestDemo")}
                         </Link>
                     </div>
 
@@ -353,7 +359,7 @@ export default function PricingPage() {
                                     : "text-slate-500 hover:text-slate-700"
                             }`}
                         >
-                            Pack Unifié
+                            {t("unifiedPack")}
                         </button>
                         <button
                             onClick={() => setActiveTab("voyage")}
@@ -363,7 +369,7 @@ export default function PricingPage() {
                                     : "text-slate-500 hover:text-slate-700"
                             }`}
                         >
-                            AfrikVoyage
+                            {t("afrikvoyage")}
                         </button>
                         <button
                             onClick={() => setActiveTab("cse")}
@@ -373,14 +379,14 @@ export default function PricingPage() {
                                     : "text-slate-500 hover:text-slate-700"
                             }`}
                         >
-                            AfrikCSE
+                            {t("afrikcse")}
                         </button>
                     </div>
 
                     {activeTab === "all" && (
                         <div className="mt-4 inline-flex items-center gap-2 bg-emerald-100/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-emerald-200">
                             <Trophy className="w-4 h-4 text-emerald-600" />
-                            <span className="text-xs font-semibold text-emerald-700">Pack unifié : -15% sur l&#39;ensemble</span>
+                            <span className="text-xs font-semibold text-emerald-700">{t("unifiedPack15Everything")}</span>
                         </div>
                     )}
                 </div>
@@ -394,7 +400,7 @@ export default function PricingPage() {
                 <div className="mx-auto max-w-7xl px-4">
                     <div className="flex items-center justify-center gap-4 text-sm text-slate-400">
                         <span className="w-12 h-px bg-linear-to-r from-transparent to-slate-300" />
-                        <span className="font-medium text-slate-500">Choisissez votre offre</span>
+                        <span className="font-medium text-slate-500">{t("choosePlan")}</span>
                         <span className="w-12 h-px bg-linear-to-l from-transparent to-slate-300" />
                     </div>
                 </div>
@@ -434,7 +440,7 @@ export default function PricingPage() {
                                         : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                                 }`}
                             >
-                                Mensuel
+                                {t("monthly")}
                             </button>
                             <button
                                 onClick={() => setBillingCycle("yearly")}
@@ -444,7 +450,7 @@ export default function PricingPage() {
                                         : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                                 }`}
                             >
-                                Annuel <span className="text-emerald-400 text-[10px]">-10%</span>
+                                {t("yearly")} <span className="text-emerald-400 text-[10px]">-10%</span>
                             </button>
                         </div>
                     </motion.div>
@@ -470,8 +476,8 @@ export default function PricingPage() {
                 
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl font-black text-slate-800">Ce qui est <span className="text-indigo-600">toujours inclus</span></h2>
-                        <p className="text-slate-500 mt-2">Aucun frais caché, aucune mauvaise surprise</p>
+                        <h2 className="text-3xl font-black text-slate-800">{tr.rich("whatAlwaysIncluded", { span1: (chunks) => <span className="text-indigo-600">{chunks}</span> })}</h2>
+                        <p className="text-slate-500 mt-2">{t("noHiddenFeesNo")}</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -479,22 +485,22 @@ export default function PricingPage() {
                             <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
                                 <DollarSign className="w-6 h-6 text-emerald-600" />
                             </div>
-                            <h3 className="font-bold text-slate-800 mb-1">Zéro commission</h3>
-                            <p className="text-sm text-slate-500">Pas de frais cachés sur vos réservations</p>
+                            <h3 className="font-bold text-slate-800 mb-1">{t("zeroCommission")}</h3>
+                            <p className="text-sm text-slate-500">{t("noHiddenFeesBookings")}</p>
                         </div>
                         <div className="bg-white rounded-xl p-6 text-center border border-slate-200 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
                             <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-3">
                                 <Lock className="w-6 h-6 text-indigo-600" />
                             </div>
-                            <h3 className="font-bold text-slate-800 mb-1">Conformité automatisée</h3>
-                            <p className="text-sm text-slate-500">RGPD & régulations locales africaines</p>
+                            <h3 className="font-bold text-slate-800 mb-1">{t("automatedCompliance")}</h3>
+                            <p className="text-sm text-slate-500">{t("gdprLocalAfricanRegulations")}</p>
                         </div>
                         <div className="bg-white rounded-xl p-6 text-center border border-slate-200 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
                             <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-3">
                                 <Smartphone className="w-6 h-6 text-purple-600" />
                             </div>
-                            <h3 className="font-bold text-slate-800 mb-1">Application mobile</h3>
-                            <p className="text-sm text-slate-500">Pour tous vos collaborateurs</p>
+                            <h3 className="font-bold text-slate-800 mb-1">{t("mobileApp")}</h3>
+                            <p className="text-sm text-slate-500">{t("allEmployees")}</p>
                         </div>
                     </div>
                 </div>
@@ -506,8 +512,8 @@ export default function PricingPage() {
                 
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-10">
-                        <h2 className="text-2xl font-black text-slate-800">Ils nous font confiance</h2>
-                        <p className="text-slate-500">+500 entreprises africaines et internationales</p>
+                        <h2 className="text-2xl font-black text-slate-800">{t("theyTrustUs")}</h2>
+                        <p className="text-slate-500">{t("text500AfricanInternational")}</p>
                     </div>
 
                     <div className="flex flex-wrap justify-center gap-8 mb-12">
@@ -539,8 +545,8 @@ export default function PricingPage() {
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
                             </span>
-                            <span className="text-sm font-semibold text-indigo-700">Assistance d&#39;un expert 24/7</span>
-                            <span className="text-xs text-indigo-500">— L&#39;IA ne remplace pas l&#39;humain</span>
+                            <span className="text-sm font-semibold text-indigo-700">{t("text247ExpertAssistance")}</span>
+                            <span className="text-xs text-indigo-500">{t("aiDoesNotReplace")}</span>
                         </div>
                     </div>
                 </div>
@@ -552,8 +558,8 @@ export default function PricingPage() {
                 
                 <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-10">
-                        <h2 className="text-3xl font-black text-slate-800">Questions <span className="text-indigo-600">fréquentes</span></h2>
-                        <p className="text-slate-500 mt-2">Tout ce qu&#39;il faut savoir</p>
+                        <h2 className="text-3xl font-black text-slate-800">{tr.rich("frequentlyAskedQuestions", { span1: (chunks) => <span className="text-indigo-600">{chunks}</span> })}</h2>
+                        <p className="text-slate-500 mt-2">{t("everythingNeedKnow")}</p>
                     </div>
                     <div className="space-y-3">
                         {FAQ_ITEMS.map((faq, idx) => (

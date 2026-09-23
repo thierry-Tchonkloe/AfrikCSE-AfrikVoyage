@@ -1,123 +1,97 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+import { Link } from "@/i18n/navigation";
+import { useState, useMemo } from "react";
 import { Lock, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 
-const COOKIE_CATEGORIES = [
+type Translator = ReturnType<typeof useTranslations<"infos.privacyPage">>;
+
+const getCookieCategories = (t: Translator) => ([
   {
     id: "necessary",
-    title: "Strictement nécessaires",
+    title: t("strictlyNecessary"),
     description:
-      "Assurent le fonctionnement du Workspace Switcher, l’authentification sécurisée et la mémorisation de vos consentements. Ils ne peuvent être désactivés.",
+      t("ensureWorkspaceSwitcherWorks"),
     required: true,
   },
   {
     id: "performance",
-    title: "Cookies de performance",
+    title: t("performanceCookies"),
     description:
-      "Nous aident à analyser l’utilisation anonyme de la plateforme (ex : pages visitées, ROI des administrateurs) pour améliorer nos services.",
+      t("helpUsAnalyzeAnonymous"),
     required: false,
   },
   {
     id: "personalization",
-    title: "Cookies de personnalisation",
+    title: t("personalizationCookies"),
     description:
-      "Adaptent automatiquement la Service Gallery et les avantages suggérés à vos préférences pour une expérience plus pertinente.",
+      t("automaticallyAdaptService"),
     required: false,
   },
-];
+]);
 
-const FAQ = [
+const getFaq = (t: Translator) => ([
   {
-    q: "AfrikVoyage et AfrikCSE sont-ils responsables conjoints du traitement de mes données ?",
-    a: "Oui. AfrikVoyage et AfrikCSE agissent en tant que co‑responsables de traitement pour les finalités communes (ex. optimisation des dépenses, bien‑être des collaborateurs). Chaque entité reste responsable de ses traitements spécifiques.",
+    q: t("afrikvoyageAfrikcseJoint"),
+    a: t("yesAfrikvoyageAfrikcseAct"),
   },
   {
-    q: "Où sont hébergées mes données ? Puis‑je choisir la localisation ?",
-    a: "Vous avez le choix entre des datacenters souverains en Afrique (région Ouest/Afrique du Sud) ou en Europe (France). Ce choix est configurable lors de l’onboarding.",
+    q: t("whereMyDataHosted"),
+    a: t("canChooseBetweenSovereign"),
   },
   {
-    q: "Les justificatifs scannés par l’IA ont‑ils une valeur légale ?",
-    a: "Oui. Notre archivage numérique respecte les normes eIDAS et la législation fiscale locale. Le justificatif scanné par l’IA a la même valeur probante que l’original papier.",
+    q: t("doReceiptsScannedAi"),
+    a: t("yesDigitalArchivingComplies"),
   },
   {
-    q: "Puis‑je refuser le partage de mes données avec des partenaires (compagnies, Netflix, etc.) ?",
-    a: "Le partage minimal est nécessaire à la fourniture des services (réservation, activation des avantages). Vous pouvez cependant vous opposer à tout partage à des fins marketing via votre dashboard de conformité.",
+    q: t("canIRefuseHave"),
+    a: t("minimalSharingNecessary"),
   },
-];
+]);
 
-const SECTIONS = [
+const getSections = (t: Translator) => ([
   {
-    title: "1. Collecte et nature des données",
-    body: `Chez AfrikVoyage & AfrikCSE, nous collectons uniquement les données nécessaires à l’excellence de nos services, segmentées selon votre utilisation.
-
-• AfrikVoyage : identité (nom, prénom, email, poste, département), préférences de voyage, passeports/visas, données de paiement, tickets de frais scannés par IA (OCR).
-• AfrikCSE : choix d’avantages (ex. chèques resto, abonnements sportifs), utilisation de la billetterie, réponses aux sondages de satisfaction.
-• Données de performance : calcul d’empreinte carbone, KPI de conformité RSE, analyse des flux budgétaires.
-
-Nous ne collectons jamais de données sensibles sans consentement explicite (ex. santé sauf pour assurance voyage spécifique).`,
+    title: t("text1DataCollectionNature"),
+    body: t("afrikvoyageAfrikcseOnly"),
   },
   {
-    title: "2. Finalités : comment vos données alimentent l’intelligence de la plateforme",
-    body: `Vos données sont le carburant de nos algorithmes, toujours dans votre intérêt :
-
-• Moteur IA « Sam » : anticipe les perturbations de vols, reprogramme automatiquement itinéraires et hôtels, et met à jour vos agendas.
-• Gestion des dépenses : automatisation du flux de données vers votre ERP (SAP, Oracle, Odoo) pour un reporting financier en temps réel.
-• Bien-être & RSE : suivi des indicateurs de santé des voyageurs (alertes anonymisées) et réduction de l’empreinte carbone via des recommandations d’itinéraires sobres.
-• Sécurité : analyse comportementale pour détecter et bloquer les accès anormaux.`,
+    title: t("text2PurposesHowData"),
+    body: t("dataFuelAlgorithmsAlways"),
   },
   {
-    title: "3. Base légale et transparence",
-    body: `Nous traitons vos données sur les bases suivantes :
-• Exécution du contrat entre votre organisation et AfrikVoyage/AfrikCSE (obligatoire pour fournir le service).
-• Intérêt légitime : assurer la sécurité, améliorer nos algorithmes (avec minimisation), et prévenir la fraude.
-• Consentement pour les cookies de personnalisation, le partage marketing, ou l’activation de fonctionnalités beta.
-• Obligations légales (conservation des justificatifs fiscaux, etc.).`,
+    title: t("text3LegalBasisTransparency"),
+    body: t("processDataFollowingBases"),
   },
   {
-    title: "4. Durée de conservation",
-    body: `• Données de compte actif : toute la durée de la relation contractuelle + 3 mois (pré‑archivage).
-• Justificatifs de frais (scannés) : 10 ans fiscaux (conformément aux législations locales).
-• Données anonymisées ou pseudonymisées : conservées indéfiniment à des fins statistiques.
-• Cookies : 13 mois maximum (sauf nécessaires, supprimés en fin de session).`,
+    title: t("text4RetentionPeriod"),
+    body: t("activeAccountDataEntire"),
   },
   {
-    title: "5. Partage et transfert – Votre écosystème maîtrisé",
-    body: `Nous ne vendons jamais vos données personnelles. Les seuls partages sont :
-• Avec les fournisseurs de voyages (compagnies aériennes, hôtels, GDS) pour effectuer vos réservations.
-• Avec les plateformes d’avantages (Netflix, Amazon, Sodexo) pour activer vos crédits CSE.
-• Avec vos administrateurs internes (accès restreint sur le principe du need‑to‑know).
-• Transferts hors UE encadrés par des Clauses Contractuelles Types (SCC) et une analyse de protection des données.
-
-Tout partage est chiffré de bout en bout et soumis à un accord de confidentialité.`,
+    title: t("text5SharingTransferControlled"),
+    body: t("neverSellPersonalData"),
   },
   {
-    title: "6. Sécurité et conformité – Le socle de confiance absolue",
-    body: `• Certifications : RGPD (conformité intégrée) et SOC 2 Type II (audit annuel indépendant).
-• Hébergement souverain au choix : OVHcloud (France) ou Africa Data Centres (Johannesburg, Casablanca).
-• Chiffrement : AES‑256 au repos, TLS 1.3 en transit. Clés gérées par un HSM (Hardware Security Module).
-• Contrôle d’accès : zéro accès humain par défaut. Les données sensibles (passeports) ne sont visibles que par des algorithmes, sauf support client avec authentification forte et session dédiée.
-• Archivage probant : nos justificatifs numériques sont horodatés et signés électroniquement, conformément à la loi n° 2000‑230 du 13 mars 2000 (France) et aux législations UEMOA.`,
+    title: t("text6SecurityCompliance"),
+    body: t("certificationsGdprBuilt"),
   },
   {
-    title: "7. Gestion des cookies et consentement",
-    body: `Vous maîtrisez totalement vos préférences via notre bannière de consentement (accessible à tout moment en bas de page). Les catégories sont détaillées ci‑contre. Vous pouvez retirer votre consentement à tout moment.`,
+    title: t("text7CookieManagementConsent"),
+    body: t("haveFullControlOver"),
     isCookieSection: true,
   },
   {
-    title: "8. Vos droits – Accès, contrôle et portabilité",
-    body: `Vous disposez des droits suivants, que vous pouvez exercer directement depuis votre tableau de bord ou en nous contactant :
-• Droit d’accès et de rectification : visualisez et corrigez vos données en temps réel.
-• Droit à l’effacement : demandez la suppression de vos données après la relation contractuelle.
-• Droit à la limitation : suspendez certains traitements (ex. cookies de personnalisation).
-• Droit à la portabilité : récupérez une copie structurée de vos données (JSON/CSV).
-• Droit d’opposition : refusez le partage marketing ou l’utilisation à des fins d’IA prédictive (sans impact sur le service de base).
-• Droit de ne pas faire l’objet d’une décision automatisée : vous pouvez demander une révision humaine pour toute réservation annulée automatiquement.`,
+    title: t("text8RightsAccessControl"),
+    body: t("haveFollowingRightsWhich"),
   },
-];
+]);
 
 export default function PrivacyPage() {
+  const tr = useTranslations("infos.privacyPage");
+  const t = useTranslations("infos.privacyPage");
+  const COOKIE_CATEGORIES = useMemo(() => getCookieCategories(t), [t]);
+  const FAQ = useMemo(() => getFaq(t), [t]);
+  const SECTIONS = useMemo(() => getSections(t), [t]);
   const [cookieSettings, setCookieSettings] = useState({
     necessary: true,
     performance: false,
@@ -144,31 +118,28 @@ export default function PrivacyPage() {
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50/80 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-indigo-600 backdrop-blur-sm">
             <Lock className="w-3.5 h-3.5" />
-            Confiance absolue
+            {t("absoluteTrust")}
           </div>
           <h1 className="mt-6 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-            Politique de confidentialité
+            {t("privacyPolicy")}
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600">
-            AfrikVoyage & AfrikCSE : La protection de vos données n’est pas une
-            contrainte, c’est le socle de notre plateforme d’excellence.
+            {t("afrikvoyageAfrikcse")}
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm">
             <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> RGPD
-              compliant
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {t("gdprCompliant")}
             </span>
             <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> SOC 2
-              Type II
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {t("soc2TypeIi")}
             </span>
             <span className="flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />{" "}
-              Hébergement souverain
+              {t("sovereignHosting")}
             </span>
           </div>
           <p className="mt-5 text-xs text-slate-400">
-            Dernière mise à jour : 15 juin 2026
+            {t("lastUpdatedJune15")}
           </p>
         </div>
       </section>
@@ -214,7 +185,7 @@ export default function PrivacyPage() {
                   {section.isCookieSection && (
                     <div className="mt-6">
                       <h3 className="mb-3 text-sm font-bold text-indigo-600">
-                        Catégories de cookies
+                        {t("cookieCategories")}
                       </h3>
                       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {COOKIE_CATEGORIES.map((cat) => (
@@ -228,7 +199,7 @@ export default function PrivacyPage() {
                               </span>
                               {cat.required ? (
                                 <span className="rounded-full bg-slate-200 px-1.5 py-0.5 text-[9px] font-bold text-slate-600">
-                                  Obligatoire
+                                  {t("required")}
                                 </span>
                               ) : (
                                 <label className="relative inline-flex cursor-pointer items-center">
@@ -259,15 +230,15 @@ export default function PrivacyPage() {
                           onClick={saveCookiePreferences}
                           className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700"
                         >
-                          Enregistrer mes préférences
+                          {t("saveMyPreferences")}
                         </button>
                       </div>
                       <p className="mt-3 text-center text-[10px] text-slate-400">
-                        Vous pouvez également exercer votre droit{" "}
+                        {t("canAlsoExerciseRight")}{" "}
                         <button className="text-indigo-500 underline">
-                          « Do Not Sell »
+                          {t("doNotSell")}
                         </button>{" "}
-                        pour refuser tout partage commercial.
+                        {t("refuseAnyCommercialSharing")}
                       </p>
                     </div>
                   )}
@@ -285,47 +256,42 @@ export default function PrivacyPage() {
             <div>
               <h3 className="flex items-center gap-2 text-lg font-bold text-indigo-600">
                 <Sparkles className="w-5 h-5 shrink-0" />
-                Tableau de bord de conformité
+                {t("complianceDashboard")}
               </h3>
               <p className="text-sm text-slate-600">
-                Visualisez et contrôlez l’état de vos données en temps réel.
+                {t("viewControlStatusData")}
               </p>
             </div>
             <Link
               href="/infos/privacy/dashboard"
               className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-indigo-700"
             >
-              Accéder à mon dashboard
+              {t("goMyDashboard")}
             </Link>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3 text-center text-xs sm:grid-cols-4">
             <div className="rounded-lg bg-white p-2 shadow-sm">
               <span className="block font-black text-emerald-600">12</span>
-              <span className="text-slate-500">demandes traitées</span>
+              <span className="text-slate-500">{t("requestsProcessed")}</span>
             </div>
             <div className="rounded-lg bg-white p-2 shadow-sm">
               <span className="block font-black text-emerald-600">48h</span>
-              <span className="text-slate-500">délai moyen de réponse</span>
+              <span className="text-slate-500">{t("averageResponseTime")}</span>
             </div>
             <div className="rounded-lg bg-white p-2 shadow-sm">
               <span className="block font-black text-emerald-600">100%</span>
-              <span className="text-slate-500">des demandes abouties</span>
+              <span className="text-slate-500">{t("successfulRequests")}</span>
             </div>
             <div className="rounded-lg bg-white p-2 shadow-sm">
               <span className="block font-black text-amber-600">AES-256</span>
-              <span className="text-slate-500">chiffrement de bout en bout</span>
+              <span className="text-slate-500">{t("endEndEncryption")}</span>
             </div>
           </div>
           <p className="mt-4 text-center text-[10px] text-slate-400">
-            Vous pouvez également exercer vos droits (accès, rectification,
-            effacement, portabilité) par email à{" "}
-            <a
+            {tr.rich("canAlsoExerciseRights", { a1: (chunks) => <a
               href="mailto:dpo@afrikworkspace.com"
               className="text-indigo-500 underline"
-            >
-              dpo@afrikworkspace.com
-            </a>{" "}
-            ou via le formulaire de contact.
+            >{chunks}</a> })}
           </p>
         </div>
       </section>
@@ -333,7 +299,7 @@ export default function PrivacyPage() {
       {/* ── FAQ ADDITIONNELLE (DIVULGATION PROGRESSIVE) ── */}
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
         <h2 className="mb-6 text-2xl font-bold text-slate-900">
-          Questions fréquentes sur la confidentialité
+          {t("frequentlyAskedQuestions")}
         </h2>
         <div className="space-y-3">
           {FAQ.map((item, idx) => (
@@ -373,14 +339,12 @@ export default function PrivacyPage() {
       {showCookieBanner && (
         <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur-sm sm:right-auto">
           <p className="text-xs text-slate-600">
-            Nous utilisons des cookies essentiels au fonctionnement de la plateforme
-            (authentification, Workspace Switcher) et, avec votre accord, des cookies
-            analytiques et de personnalisation.{" "}
+            {t("useCookiesEssentialPlatform")}{" "}
             <button
               onClick={() => setShowCookieBanner(false)}
               className="text-indigo-500 underline"
             >
-              Personnaliser
+              {t("customize")}
             </button>
           </p>
           <div className="mt-3 flex justify-end gap-2">
@@ -391,7 +355,7 @@ export default function PrivacyPage() {
               }}
               className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
             >
-              Refuser tout
+              {t("refuseAll")}
             </button>
             <button
               onClick={() => {
@@ -400,7 +364,7 @@ export default function PrivacyPage() {
               }}
               className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white"
             >
-              Accepter tout
+              {t("acceptAll")}
             </button>
           </div>
         </div>

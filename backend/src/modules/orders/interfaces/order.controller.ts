@@ -64,6 +64,12 @@ export class OrderController {
         } catch (err) { next(err); }
     }
 
+    async refundAsAdmin(req: Request<IdParamString>, res: Response, next: NextFunction): Promise<void> {
+        try {
+            res.json(await service.refundOrderAsAdmin(req.params.id));
+        } catch (err) { next(err); }
+    }
+
     // ── Webhooks ──────────────────────────────────────────────────────────────
 
     async webhookKkiapay(req: Request, res: Response): Promise<void> {

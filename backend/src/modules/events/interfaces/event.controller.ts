@@ -1,13 +1,12 @@
 import { Request, Response } from "express";
 import { EventRepository } from "../infrastructure/event.repository";
-import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { dispatchNotificationToOrg } from "../../notification/application/notification.service";
 import { sendMail } from "../../../core/services/email.service";
 import { eventRegistrationConfirmationEmail } from "../../../core/mailer/email.templates";
 import { createEventSchema } from "./event.validator";
 import { IdParamString } from "../../../core/validators/param.validators";
 
 const repo = new EventRepository();
-const notificationRepo = new NotificationRepository();
 
 export class EventController {
     async getAll(req: Request, res: Response): Promise<void> {
@@ -47,8 +46,14 @@ export class EventController {
 
         if (["ADMIN", "MANAGER", "RH"].includes(req.user!.role)) {
             const dateLabel = event.startDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
-            const body = event.description || `Un nouvel événement est prévu le ${dateLabel}.`;
-            await notificationRepo.createForOrg(req.user!.organizationId!, `Nouvel événement : ${event.title}`, body, "NEW_EVENT", req.user!.userId, "/employes/evenements");
+            const eventDescription = event.description || `Un nouvel événement est prévu le ${dateLabel}.`;
+            dispatchNotificationToOrg(
+                "NEW_EVENT",
+                req.user!.organizationId!,
+                { eventTitle: event.title, eventDate: dateLabel, eventDescription },
+                req.user!.userId,
+                "/employes/evenements"
+            ).catch(() => {});
         }
 
         res.status(201).json(event);

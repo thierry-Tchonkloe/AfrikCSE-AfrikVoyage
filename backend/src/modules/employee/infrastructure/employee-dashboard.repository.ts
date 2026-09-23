@@ -108,6 +108,14 @@ export class EmployeeDashboardRepository {
         });
     }
 
+    /** Scoped à son propriétaire — un employé ne doit jamais lire le voyage d'un collègue par id deviné. */
+    async getTravelById(id: string, userId: string) {
+        return prisma.travelRequest.findFirst({
+            where: { id, requestedById: userId },
+            include: { partner: { select: { id: true, name: true } } },
+        });
+    }
+
     async createTravelRequest(userId: string, orgId: string, data: {
         destination: string;
         purpose?: string;
@@ -118,17 +126,44 @@ export class EmployeeDashboardRepository {
         idempotencyKey: string;
     }) {
         const existing = await prisma.travelRequest.findUnique({ where: { idempotencyKey: data.idempotencyKey } });
-        if (existing) return { request: existing, created: false };
+        if (existing) return { request: existing, created: false, autoApproved: false };
+
+        // Politique applicable : d'abord une politique active scopée sur le
+        // département réel de l'employé (pas celui, éventuellement différent,
+        // saisi en texte libre sur la demande), sinon la politique par défaut
+        // de l'organisation.
+        const requester = await prisma.user.findUnique({ where: { id: userId }, select: { department: true } });
+
+        let policy = requester?.department
+            ? await prisma.travelPolicy.findFirst({
+                where: { organizationId: orgId, isActive: true, appliesToDepartments: { has: requester.department } },
+                orderBy: { createdAt: "desc" },
+            })
+            : null;
+        if (!policy) {
+            policy = await prisma.travelPolicy.findFirst({
+                where: { organizationId: orgId, isActive: true, isDefault: true },
+                orderBy: { createdAt: "desc" },
+            });
+        }
+
+        // Sous le seuil d'approbation de la politique → auto-approbation ;
+        // sinon (ou si aucune politique n'est configurée), reste en attente
+        // d'approbation managériale — comportement identique à avant ce changement.
+        const threshold = policy?.approvalThreshold != null ? Number(policy.approvalThreshold) : null;
+        const autoApproved = threshold != null && data.estimatedCost != null && data.estimatedCost < threshold;
 
         const request = await prisma.travelRequest.create({
             data: {
                 ...data,
                 organizationId: orgId,
                 requestedById: userId,
-                status: "PENDING",
+                policyId: policy?.id,
+                status: autoApproved ? "APPROVED" : "PENDING",
+                ...(autoApproved ? { approvedAt: new Date() } : {}),
             },
         });
-        return { request, created: true };
+        return { request, created: true, autoApproved };
     }
 
     // ── Notes de frais ────────────────────────────────────────────────────────
@@ -162,6 +197,49 @@ export class EmployeeDashboardRepository {
 
         const emp = await prisma.employee.findUnique({ where: { userId } });
         if (!emp) throw new Error("Profil employé introuvable");
+
+        // Politique applicable : même résolution que createTravelRequest (département
+        // réel de l'employé en priorité, sinon la politique par défaut de l'organisation).
+        // Absence de politique configurée = pas de plafond appliqué (comportement
+        // identique à createTravelRequest, pas une erreur en soi).
+        const requester = await prisma.user.findUnique({ where: { id: userId }, select: { department: true } });
+        let policy = requester?.department
+            ? await prisma.travelPolicy.findFirst({
+                where: { organizationId: orgId, isActive: true, appliesToDepartments: { has: requester.department } },
+                orderBy: { createdAt: "desc" },
+            })
+            : null;
+        if (!policy) {
+            policy = await prisma.travelPolicy.findFirst({
+                where: { organizationId: orgId, isActive: true, isDefault: true },
+                orderBy: { createdAt: "desc" },
+            });
+        }
+
+        if (policy) {
+            // Plafond par catégorie : les 3 champs existants de TravelPolicy sont
+            // réutilisés tels quels (pas de champ par catégorie dédié dans le schéma).
+            let categoryCap: number | null = null;
+            if (data.category === "Transport" && policy.maxFlightBudget != null) {
+                categoryCap = Number(policy.maxFlightBudget);
+            } else if (data.category === "Hébergement" && policy.maxHotelBudgetPerNight != null) {
+                categoryCap = Number(policy.maxHotelBudgetPerNight);
+            } else if (data.category === "Restauration" && policy.maxDailyAllowance != null) {
+                categoryCap = Number(policy.maxDailyAllowance);
+            }
+            if (categoryCap != null && data.amount > categoryCap) {
+                throw new Error(
+                    `Montant supérieur au plafond autorisé pour la catégorie « ${data.category} » (${categoryCap} ${policy.currency})`
+                );
+            }
+
+            // Garde-fou global anti-fraude, indépendant de la catégorie.
+            if (policy.maxExpenseAmount != null && data.amount > Number(policy.maxExpenseAmount)) {
+                throw new Error(
+                    `Montant supérieur au plafond de sécurité de l'entreprise (${Number(policy.maxExpenseAmount)} ${policy.currency})`
+                );
+            }
+        }
 
         let travel: { destination: string; department: string | null; departureDate: Date; returnDate: Date } | null = null;
         if (data.travelId) {

@@ -27,7 +27,7 @@ export const partnersService = {
         return data;
     },
 
-    async create(payload: Record<string, unknown>): Promise<Partner> {
+    async create(payload: Record<string, unknown>): Promise<Partner & { activationLink?: string }> {
         const { data } = await api.post("/partners", payload);
         return data;
     },

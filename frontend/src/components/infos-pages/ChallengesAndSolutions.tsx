@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import Link from "next/link";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { motion, useAnimation, useInView, AnimatePresence } from "framer-motion";
 import { 
@@ -23,6 +23,9 @@ import {
   Luggage,
   Sparkle
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.challengesAndSolutions">>;
 
 // ─── 1. DONNÉES DES FONCTIONNALITÉS ──────────────────────────────────────────
 type FeatureCategory = "cse" | "travel";
@@ -40,41 +43,41 @@ interface FeatureItem {
   icon: React.ElementType;
 }
 
-const FEATURES_DATA: FeatureItem[] = [
+const getFeaturesData = (t: Translator): FeatureItem[] => ([
   // --- FONCTIONNALITÉS CSE ---
   {
     id: "billetterie-subventions",
     category: "cse",
-    categoryLabel: "Espace CSE",
-    title: "Billetterie & Subventions Salariés",
-    description: "Accès à des milliers d'offres négociées (cinéma, parcs, spectacles) et attribution automatisée des budgets vacances & culture.",
-    btnText: "Explorer le module CSE",
+    categoryLabel: t("cseSpace"),
+    title: t("ticketingEmployeeSubsidies"),
+    description: t("accessThousandsNegotiated"),
+    btnText: t("exploreCseModule"),
     href: "/cse/billetterie",
-    badge: "Réductions & Avantages",
+    badge: t("discountsBenefits"),
     image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80",
     icon: Ticket,
   },
   {
     id: "cartes-cadeaux",
     category: "cse",
-    categoryLabel: "Espace CSE",
-    title: "Cartes Cadeaux & Événements URSSAF",
-    description: "Émission instantanée de chèques cadeaux dématérialisés conformes aux plafonds et événements de la réglementation URSSAF.",
-    btnText: "Cartes Cadeaux CSE",
+    categoryLabel: t("cseSpace"),
+    title: t("giftCardsUrssafEvents"),
+    description: t("instantIssuanceDigitalGift"),
+    btnText: t("cseGiftCards"),
     href: "/cse/cartes-cadeaux",
-    badge: "Conformité 100% URSSAF",
+    badge: t("text100UrssafCompliance"),
     image: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80",
     icon: Gift,
   },
   {
     id: "communication-espace",
     category: "cse",
-    categoryLabel: "Espace CSE",
-    title: "Portail Salarié & Info CSE",
-    description: "Espace unifié pour diffuser les procès-verbaux, sondages et actualités du comité auprès de l'ensemble des collaborateurs.",
-    btnText: "Portail Communication",
+    categoryLabel: t("cseSpace"),
+    title: t("employeePortalCseInfo"),
+    description: t("unifiedSpaceShareMinutes"),
+    btnText: t("communicationPortal"),
     href: "/cse/communication",
-    badge: "Lien & Engagement",
+    badge: t("connectionEngagement"),
     image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80",
     icon: Megaphone,
   },
@@ -83,57 +86,60 @@ const FEATURES_DATA: FeatureItem[] = [
   {
     id: "deplacements-pro",
     category: "travel",
-    categoryLabel: "Voyages d'Affaires",
-    title: "Réservation Vols, Trains & Hôtels",
-    description: "Outil complet de réservation pour les déplacements pro avec tarifs négociés d'entreprise et gestion des ordres de mission.",
-    btnText: "Réserver un déplacement",
+    categoryLabel: t("businessTravelCategory"),
+    title: t("flightTrainHotelBooking"),
+    description: t("completeBookingToolBusiness"),
+    btnText: t("bookTrip"),
     href: "/voyages/reservation",
-    badge: "Corporate Travel",
+    badge: t("corporateTravel"),
     image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80",
     icon: Plane,
   },
   {
     id: "politiques-voyage",
     category: "travel",
-    categoryLabel: "Voyages d'Affaires",
-    title: "Politiques de Voyage & Plafonds",
-    description: "Paramétrage des règles d'approbation automatique (Travel Policy), plafonds nuitées et contrôle préalable des dépenses.",
-    btnText: "Gérer la Travel Policy",
+    categoryLabel: t("businessTravelCategory"),
+    title: t("travelPoliciesCeilings"),
+    description: t("setupAutomaticApprovalRules"),
+    btnText: t("manageTravelPolicy"),
     href: "/voyages/politique",
-    badge: "Gouvernance & Contrôle",
+    badge: t("governanceControl"),
     image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80",
     icon: ShieldCheck,
   },
   {
     id: "notes-frais",
     category: "travel",
-    categoryLabel: "Voyages d'Affaires",
-    title: "Notes de Frais & Remboursements",
-    description: "Digitalisation des reçus de déplacement, validation RH/Comptabilité accélérée et intégration avec votre logiciel de paie.",
-    btnText: "Gestion des remboursements",
+    categoryLabel: t("businessTravelCategory"),
+    title: t("expenseReportsReimbursements"),
+    description: t("digitizationTravelReceipts"),
+    btnText: t("reimbursementManagement"),
     href: "/voyages/frais",
-    badge: "Gestion Dématérialisée",
+    badge: t("paperlessManagement"),
     image: "https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=800&q=80",
     icon: Receipt,
   },
-];
+]);
 
 // ─── 2. DASHBOARD CLAIR COMPACT ──────────────────────────────────────────────
-const METRICS_LIGHT = [
-  { label: "Budget CSE Distribué", value: "248 500 €", change: "+14.2%", icon: DollarSign, color: "text-blue-600", bg: "bg-blue-50" },
-  { label: "Économies sur Voyages Pro", value: "34 200 €", change: "-18% coût", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
-  { label: "Taux d'Adoption Salariés", value: "95.8%", change: "+6.1%", icon: Users, color: "text-indigo-600", bg: "bg-indigo-50" },
-  { label: "Réservations Conformes", value: "99.4%", change: "100% OK", icon: ShieldCheck, color: "text-amber-600", bg: "bg-amber-50" },
-];
+const getMetricsLight = (t: Translator) => ([
+  { label: t("cseBudgetDistributed"), value: "248 500 €", change: "+14.2%", icon: DollarSign, color: "text-blue-600", bg: "bg-blue-50" },
+  { label: t("businessTravelSavings"), value: "34 200 €", change: t("text18Cost"), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
+  { label: t("employeeAdoptionRate"), value: "95.8%", change: "+6.1%", icon: Users, color: "text-indigo-600", bg: "bg-indigo-50" },
+  { label: t("compliantBookings"), value: "99.4%", change: "100% OK", icon: ShieldCheck, color: "text-amber-600", bg: "bg-amber-50" },
+]);
 
-const RECENT_ACTIVITIES = [
-  { id: "ACT-01", name: "Marc Vance", detail: "Billet Avion Paris ➔ Cotonou", type: "Voyage", date: "Il y a 10 min", amount: "840 €", status: "Validé (Policy OK)", isTravel: true },
-  { id: "ACT-02", name: "Claire Dupont", detail: "Subvention Chèque Cadeau Noël", type: "CSE", date: "Il y a 32 min", amount: "170 €", status: "Accordé", isTravel: false },
-  { id: "ACT-03", name: "Ablam Mensah", detail: "Hôtel Novotel Dakar (2 Nuits)", type: "Voyage", date: "Il y a 1h", amount: "310 €", status: "En attente RH", isTravel: true },
-  { id: "ACT-04", name: "Sophie Martin", detail: "Remboursement Facture Rentrée", type: "CSE", date: "Il y a 2h", amount: "150 €", status: "Remboursé", isTravel: false },
-];
+const getRecentActivities = (t: Translator) => ([
+  { id: "ACT-01", name: t("marcVance"), detail: t("planeTicketParisCotonou"), type: t("travel"), date: t("text10MinAgo"), amount: "840 €", status: t("approvedPolicyOk"), isTravel: true },
+  { id: "ACT-02", name: t("claireDupont"), detail: t("christmasGiftVoucherSubsidy"), type: "CSE", date: t("text32MinAgo"), amount: "170 €", status: t("granted"), isTravel: false },
+  { id: "ACT-03", name: t("ablamMensah"), detail: t("hotelNovotelDakar2"), type: t("travel"), date: t("text1HAgo"), amount: "310 €", status: t("pendingHr"), isTravel: true },
+  { id: "ACT-04", name: t("sophieMartin"), detail: t("backSchoolInvoice"), type: "CSE", date: t("text2HAgo"), amount: "150 €", status: t("reimbursed"), isTravel: false },
+]);
 
 const LightCockpitDashboard = () => {
+  const t = useTranslations("infos.challengesAndSolutions");
+  const METRICS_LIGHT = useMemo(() => getMetricsLight(t), [t]);
+  const RECENT_ACTIVITIES = useMemo(() => getRecentActivities(t), [t]);
   const [tab, setTab] = useState<"analytics" | "operations">("analytics");
 
   return (
@@ -146,7 +152,7 @@ const LightCockpitDashboard = () => {
             <span className="w-3 h-3 rounded-full bg-emerald-400" />
           </div>
           <span className="text-xs font-mono font-bold text-slate-700 uppercase tracking-wider pl-2 border-l border-slate-200">
-            Console de Pilotage // AfrikCSE & AfrikVoyage
+            {t("controlConsoleAfrikcse")}
           </span>
         </div>
 
@@ -160,7 +166,7 @@ const LightCockpitDashboard = () => {
             }`}
           >
             <BarChart3 size={14} className="text-blue-600" />
-            Vue d'ensemble Budgets
+            {t("budgetOverview")}
           </button>
           <button
             onClick={() => setTab("operations")}
@@ -171,7 +177,7 @@ const LightCockpitDashboard = () => {
             }`}
           >
             <Clock size={14} className="text-emerald-600" />
-            Flux d'Activité
+            {t("activityFeed")}
           </button>
         </div>
       </div>
@@ -202,21 +208,21 @@ const LightCockpitDashboard = () => {
                   <div>
                     <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <Compass size={16} className="text-blue-600" />
-                      Consommation des Budgets CSE vs Voyages Pro
+                      {t("cseVsBusinessTravel")}
                     </h4>
-                    <p className="text-xs text-slate-500">Mois en cours - Rapprochement automatique</p>
+                    <p className="text-xs text-slate-500">{t("currentMonthAutomatic")}</p>
                   </div>
                   <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
-                    Temps réel
+                    {t("realTime")}
                   </span>
                 </div>
 
                 <div className="space-y-4">
                   {[
-                    { title: "Billetterie & Avantages Salariés (CSE)", pct: 45, color: "bg-blue-600" },
-                    { title: "Billets d'Avion & Hôtels (Voyages Pro)", pct: 30, color: "bg-emerald-600" },
-                    { title: "Cartes Cadeaux URSSAF (CSE)", pct: 15, color: "bg-indigo-600" },
-                    { title: "Frais de déplacement & Reçus", pct: 10, color: "bg-amber-500" },
+                    { title: t("ticketingEmployeeBenefitsCse"), pct: 45, color: "bg-blue-600" },
+                    { title: t("planeTicketsHotelsBusiness"), pct: 30, color: "bg-emerald-600" },
+                    { title: t("urssafGiftCardsCse"), pct: 15, color: "bg-indigo-600" },
+                    { title: t("travelExpensesReceipts"), pct: 10, color: "bg-amber-500" },
                   ].map((row, i) => (
                     <div key={i} className="space-y-1.5">
                       <div className="flex justify-between items-center text-xs">
@@ -238,22 +244,22 @@ const LightCockpitDashboard = () => {
                 <div>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white font-mono text-[10px] font-bold uppercase tracking-wider mb-3">
                     <Sparkles size={12} />
-                    Contrôle Automatisé
+                    {t("automatedControl")}
                   </span>
-                  <h4 className="text-lg font-bold">Plafonds & Travel Policy Intégrés</h4>
+                  <h4 className="text-lg font-bold">{t("integratedCeilingsTravel")}</h4>
                   <p className="text-xs text-blue-100 mt-2 leading-relaxed">
-                    Les règles CSE et les politiques de voyages pro sont vérifiées automatiquement avant validation.
+                    {t("cseRulesBusinessTravel")}
                   </p>
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-md rounded-xl p-3.5 border border-white/20 space-y-2">
                   <div className="flex justify-between text-xs">
-                    <span className="text-blue-100">Validations automatiques</span>
+                    <span className="text-blue-100">{t("automaticApprovals")}</span>
                     <span className="font-mono font-bold text-white">92%</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-blue-100">Gain de temps RH / Élus</span>
-                    <span className="font-mono font-bold text-emerald-300">-12h / semaine</span>
+                    <span className="text-blue-100">{t("hrRepresentativesTimeSaved")}</span>
+                    <span className="font-mono font-bold text-emerald-300">{t("text12hWeek")}</span>
                   </div>
                 </div>
               </div>
@@ -261,17 +267,17 @@ const LightCockpitDashboard = () => {
           </>
         ) : (
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
-            <h4 className="text-sm font-bold text-slate-900">Dernières transactions enregistrées</h4>
+            <h4 className="text-sm font-bold text-slate-900">{t("latestRecordedTransactions")}</h4>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-mono text-slate-400 uppercase tracking-wider border-b border-slate-200">
-                    <th className="pb-3 pr-4 font-bold">Secteur</th>
-                    <th className="pb-3 pr-4 font-bold">Collaborateur</th>
-                    <th className="pb-3 pr-4 font-bold">Description</th>
-                    <th className="pb-3 pr-4 font-bold">Délai</th>
-                    <th className="pb-3 pr-4 font-bold">Montant</th>
-                    <th className="pb-3 font-bold">Statut</th>
+                    <th className="pb-3 pr-4 font-bold">{t("sector")}</th>
+                    <th className="pb-3 pr-4 font-bold">{t("employee")}</th>
+                    <th className="pb-3 pr-4 font-bold">{t("description")}</th>
+                    <th className="pb-3 pr-4 font-bold">{t("delay")}</th>
+                    <th className="pb-3 pr-4 font-bold">{t("amount")}</th>
+                    <th className="pb-3 font-bold">{t("status")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -308,6 +314,9 @@ const LightCockpitDashboard = () => {
 
 // ─── COMPOSANT PRINCIPAL ─────────────────────────────────────────────────────
 export default function FeaturesCSEAndTravelLight() {
+  const tr = useTranslations("infos.challengesAndSolutions");
+  const t = useTranslations("infos.challengesAndSolutions");
+  const FEATURES_DATA = useMemo(() => getFeaturesData(t), [t]);
   const [filter, setFilter] = useState<"all" | "cse" | "travel">("all");
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.1 });
@@ -361,15 +370,15 @@ export default function FeaturesCSEAndTravelLight() {
           <motion.div variants={itemVariants} className="text-center max-w-3xl mx-auto space-y-4">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900 text-white font-bold text-xs tracking-wider uppercase shadow-md">
               <Sparkle size={14} className="text-amber-400" />
-              Plateforme Unifiée AfrikCSE & AfrikVoyage
+              {t("unifiedPlatformAfrikcse")}
             </span>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.15]">
-              Toutes les fonctionnalités pour vos <span className="text-blue-600 underline decoration-blue-200 underline-offset-8">Avantages CSE</span> et vos <span className="text-emerald-600 underline decoration-emerald-200 underline-offset-8">Voyages Pro</span>
+              {tr.rich("allFeaturesCseBenefits", { span1: (chunks) => <span className="text-blue-600 underline decoration-blue-200 underline-offset-8">{chunks}</span>, span2: (chunks) => <span className="text-emerald-600 underline decoration-emerald-200 underline-offset-8">{chunks}</span> })}
             </h2>
 
             <p className="text-slate-600 text-base sm:text-lg font-normal leading-relaxed">
-              Une solution claire et intuitive conçue pour maximiser le pouvoir d'achat de vos collaborateurs tout en optimisant le budget de vos déplacements d'affaires.
+              {t("clearIntuitiveSolution")}
             </p>
 
             {/* BARRE DE FILTRAGE PAR CATEGORIE (CSE vs VOYAGES) */}
@@ -382,7 +391,7 @@ export default function FeaturesCSEAndTravelLight() {
                     : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
                 }`}
               >
-                Toutes les fonctionnalités
+                {t("allFeatures")}
               </button>
               
               <button
@@ -394,7 +403,7 @@ export default function FeaturesCSEAndTravelLight() {
                 }`}
               >
                 <Building2 size={14} />
-                Services CSE ({FEATURES_DATA.filter(f => f.category === "cse").length})
+                {t("cseServices")}{FEATURES_DATA.filter(f => f.category === "cse").length})
               </button>
 
               <button
@@ -406,7 +415,7 @@ export default function FeaturesCSEAndTravelLight() {
                 }`}
               >
                 <Luggage size={14} />
-                Voyages d'Affaires ({FEATURES_DATA.filter(f => f.category === "travel").length})
+                {t("businessTravel")}{FEATURES_DATA.filter(f => f.category === "travel").length})
               </button>
             </div>
           </motion.div>
@@ -481,7 +490,7 @@ export default function FeaturesCSEAndTravelLight() {
                           <span className={`text-[11px] font-bold uppercase tracking-wider ${
                             isCSE ? "text-blue-600" : "text-emerald-600"
                           }`}>
-                            {isCSE ? "Avantage Comité" : "Déplacement Pro"}
+                            {isCSE ? t("committeeBenefit") : t("businessTrip")}
                           </span>
                         </div>
 
@@ -522,13 +531,13 @@ export default function FeaturesCSEAndTravelLight() {
           <motion.div variants={itemVariants} className="pt-8">
             <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
               <span className="text-xs font-mono font-bold text-blue-600 uppercase tracking-widest">
-                Cockpit de Gestion
+                {t("managementCockpit")}
               </span>
               <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Une vue 360° pour vos élus et vos gestionnaires travel
+                {t("text360ViewRepresentativesTravel")}
               </h3>
               <p className="text-slate-500 text-sm">
-                Pilotez vos enveloppes budgétaires, validez les réservations et analysez le taux de satisfaction des collaborateurs.
+                {t("manageBudgetEnvelopesApprove")}
               </p>
             </div>
 
@@ -541,7 +550,7 @@ export default function FeaturesCSEAndTravelLight() {
               href="/demo"
               className="inline-flex items-center gap-3 bg-slate-900 hover:bg-blue-600 text-white font-bold text-base px-9 py-4 rounded-full transition-all duration-300 shadow-xl shadow-slate-900/10 hover:shadow-blue-500/25 hover:scale-[1.02]"
             >
-              Demander une démonstration interactive
+              {t("requestInteractiveDemo")}
               <ArrowRight size={18} />
             </Link>
           </motion.div>

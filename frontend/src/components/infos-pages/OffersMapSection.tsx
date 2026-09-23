@@ -1,7 +1,7 @@
 // /src/components/infos-pages/OffersMapSection.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
@@ -23,6 +23,9 @@ import {
   Briefcase,
 } from "lucide-react";
 import { fadeInUp, scaleIn, slideInRight } from "../styles/animations";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.offersMapSection">>;
 
 // ============================================================================
 // DONNÉES DES RÉGIONS
@@ -50,173 +53,173 @@ interface Region {
   }[];
 }
 
-const regions: Region[] = [
+const getRegions = (t: Translator): Region[] => ([
   {
     id: "north",
-    name: "Afrique du Nord",
-    country: "Maroc, Algérie, Tunisie, Libye, Égypte",
-    cities: ["Casablanca", "Alger", "Tunis", "Le Caire", "Marrakech"],
+    name: t("northAfrica"),
+    country: t("moroccoAlgeriaTunisiaLibya"),
+    cities: ["Casablanca", t("algiers"), "Tunis", t("cairo"), "Marrakech"],
     x: 42.9,
     y: 23.5,
     color: "#F97316",
     glow: "rgba(249,115,22,0.45)",
     icon: <Building2 className="w-4 h-4" />,
-    description: "Un carrefour culturel et économique entre l'Europe et l'Afrique",
+    description: t("culturalEconomicCrossroads"),
     stats: [
-      { label: "Offres", value: "120K+" },
-      { label: "Villes", value: "45+" },
-      { label: "Partenaires", value: "850+" },
+      { label: t("offers"), value: "120K+" },
+      { label: t("cities"), value: "45+" },
+      { label: t("partners"), value: "850+" },
     ],
     offers: [
       {
-        category: "Culture & Patrimoine",
+        category: t("cultureHeritage"),
         icon: <Camera className="w-4 h-4" />,
-        items: ["Musée du Bardo - Tunis", "Pyramides de Gizeh", "Médina de Fès", "Théâtre antique de Carthage"],
+        items: [t("bardoMuseumTunis"), t("pyramidsGiza"), t("fezMedina"), t("ancientTheatreCarthage")],
       },
       {
-        category: "Loisirs & Détente",
+        category: t("leisureRelaxation"),
         icon: <Waves className="w-4 h-4" />,
-        items: ["Station balnéaire de Hammamet", "Parcs aquatiques", "Spa & thalassothérapie", "Croisières en Méditerranée"],
+        items: [t("hammametSeasideResort"), t("waterParks"), t("spaThalassotherapy"), t("mediterraneanCruises")],
       },
       {
-        category: "Gastronomie",
+        category: t("gastronomy"),
         icon: <Utensils className="w-4 h-4" />,
-        items: ["Couscous royal", "Tajine marocain", "Brik tunisien", "Dégustation de vins"],
+        items: [t("royalCouscous"), t("moroccanTagine"), t("tunisianBrik"), t("wineTasting")],
       },
     ],
   },
   {
     id: "west",
-    name: "Afrique de l'Ouest",
-    country: "Sénégal, Côte d'Ivoire, Ghana, Nigéria, Bénin",
+    name: t("westAfrica"),
+    country: t("senegalIvoryCoastGhana"),
     cities: ["Dakar", "Abidjan", "Accra", "Lagos", "Cotonou"],
     x: 30.6,
     y: 37.8,
     color: "#F97316",
     glow: "rgba(249,115,22,0.45)",
     icon: <MapPin className="w-4 h-4" />,
-    description: "Le dynamisme économique et culturel de l'Afrique de l'Ouest",
+    description: t("economicCulturalDynamismWest"),
     stats: [
-      { label: "Offres", value: "150K+" },
-      { label: "Villes", value: "60+" },
-      { label: "Partenaires", value: "1200+" },
+      { label: t("offers"), value: "150K+" },
+      { label: t("cities"), value: "60+" },
+      { label: t("partners"), value: "1200+" },
     ],
     offers: [
       {
-        category: "Culture & Festivals",
+        category: t("cultureFestivals"),
         icon: <Music className="w-4 h-4" />,
-        items: ["Festival de Jazz de Dakar", "Fêtes des Masques", "Musée des Civilisations", "Artisanat local"],
+        items: [t("dakarJazzFestival"), t("maskFestivals"), t("museumCivilizations"), t("localCrafts")],
       },
       {
-        category: "Shopping & Marchés",
+        category: t("shoppingMarkets"),
         icon: <ShoppingBag className="w-4 h-4" />,
-        items: ["Marché de Koumbi Saleh", "Centres commerciaux", "Boutiques d'artisans", "Marchés nocturnes"],
+        items: [t("koumbiSalehMarket"), t("shoppingMalls"), t("artisanShops"), t("nightMarkets")],
       },
       {
-        category: "Nature & Aventure",
+        category: t("natureAdventure"),
         icon: <TreePine className="w-4 h-4" />,
-        items: ["Parc National du Niokolo-Koba", "Réserve de Taï", "Plages de la Côte d'Or"],
+        items: [t("niokoloKobaNationalPark"), t("taiReserve"), t("goldCoastBeaches")],
       },
     ],
   },
   {
     id: "central",
-    name: "Afrique Centrale",
-    country: "Cameroun, Gabon, RDC, RCA, Guinée Équatoriale",
-    cities: ["Yaoundé", "Libreville", "Kinshasa", "Bangui", "Malabo"],
+    name: t("centralAfrica"),
+    country: t("cameroonGabonDrcCar"),
+    cities: [t("yaounde"), "Libreville", "Kinshasa", "Bangui", "Malabo"],
     x: 53.1,
     y: 48.0,
     color: "#F97316",
     glow: "rgba(249,115,22,0.45)",
     icon: <Mountain className="w-4 h-4" />,
-    description: "Le cœur vert de l'Afrique, entre forêts équatoriales et montagnes",
+    description: t("greenHeartAfricaBetween"),
     stats: [
-      { label: "Offres", value: "80K+" },
-      { label: "Villes", value: "35+" },
-      { label: "Partenaires", value: "600+" },
+      { label: t("offers"), value: "80K+" },
+      { label: t("cities"), value: "35+" },
+      { label: t("partners"), value: "600+" },
     ],
     offers: [
       {
-        category: "Écotourisme & Nature",
+        category: t("ecotourismNature"),
         icon: <TreePine className="w-4 h-4" />,
-        items: ["Parc National de la Salonga", "Forêt du Bassin du Congo", "Gorilles des montagnes", "Randonnées"],
+        items: [t("salongaNationalPark"), t("congoBasinForest"), t("mountainGorillas"), t("hiking")],
       },
       {
-        category: "Culture & Traditions",
+        category: t("cultureTraditions"),
         icon: <Camera className="w-4 h-4" />,
-        items: ["Musée National de Yaoundé", "Art pygmée", "Festivals traditionnels"],
+        items: [t("yaoundeNationalMuseum"), t("pygmyArt"), t("traditionalFestivals")],
       },
     ],
   },
   {
     id: "east",
-    name: "Afrique de l'Est",
-    country: "Kenya, Tanzanie, Rwanda, Ouganda, Éthiopie",
-    cities: ["Nairobi", "Dar es Salaam", "Kigali", "Kampala", "Addis Abeba"],
+    name: t("eastAfrica"),
+    country: t("kenyaTanzaniaRwandaUganda"),
+    cities: ["Nairobi", "Dar es Salaam", "Kigali", "Kampala", t("addisAbaba")],
     x: 71.4,
     y: 42.9,
     color: "#F97316",
     glow: "rgba(249,115,22,0.45)",
     icon: <Plane className="w-4 h-4" />,
-    description: "Le berceau du safari et des paysages à couper le souffle",
+    description: t("cradleSafariBreathtaking"),
     stats: [
-      { label: "Offres", value: "110K+" },
-      { label: "Villes", value: "50+" },
-      { label: "Partenaires", value: "900+" },
+      { label: t("offers"), value: "110K+" },
+      { label: t("cities"), value: "50+" },
+      { label: t("partners"), value: "900+" },
     ],
     offers: [
       {
-        category: "Safari & Aventure",
+        category: t("safariAdventure"),
         icon: <Bus className="w-4 h-4" />,
-        items: ["Parc National du Serengeti", "Masai Mara", "Gorilles du Rwanda", "Kilimandjaro"],
+        items: [t("serengetiNationalPark"), "Masai Mara", t("rwandaGorillas"), t("kilimanjaro")],
       },
       {
-        category: "Culture & Histoire",
+        category: t("cultureHistory"),
         icon: <Camera className="w-4 h-4" />,
-        items: ["Musée de Nairobi", "Villages Massaï", "Églises rupestres de Lalibela"],
+        items: [t("nairobiMuseum"), t("maasaiVillages"), t("rockHewnChurchesLalibela")],
       },
       {
-        category: "Plages & Détente",
+        category: t("beachesRelaxation"),
         icon: <Waves className="w-4 h-4" />,
-        items: ["Zanzibar", "Plages de Mombasa", "Îles de la Réunion"],
+        items: ["Zanzibar", t("mombasaBeaches"), t("reunionIsland")],
       },
     ],
   },
   {
     id: "south",
-    name: "Afrique Australe",
-    country: "Afrique du Sud, Namibie, Botswana, Zambie, Zimbabwe",
-    cities: ["Le Cap", "Johannesburg", "Windhoek", "Gaborone", "Lusaka"],
+    name: t("southernAfrica"),
+    country: t("southAfricaNamibiaBotswana"),
+    cities: [t("capeTown"), "Johannesburg", "Windhoek", "Gaborone", "Lusaka"],
     x: 57.1,
     y: 69.4,
     color: "#F97316",
     glow: "rgba(249,115,22,0.45)",
     icon: <Hotel className="w-4 h-4" />,
-    description: "Où les paysages spectaculaires rencontrent une culture vibrante",
+    description: t("whereSpectacularLandscapes"),
     stats: [
-      { label: "Offres", value: "130K+" },
-      { label: "Villes", value: "55+" },
-      { label: "Partenaires", value: "1100+" },
+      { label: t("offers"), value: "130K+" },
+      { label: t("cities"), value: "55+" },
+      { label: t("partners"), value: "1100+" },
     ],
     offers: [
       {
-        category: "Voyages & Découverte",
+        category: t("travelDiscovery"),
         icon: <Plane className="w-4 h-4" />,
-        items: ["Le Cap et Table Mountain", "Désert du Namib", "Chutes Victoria", "Route des jardins"],
+        items: [t("capeTownTableMountain"), t("namibDesert"), t("victoriaFalls"), t("gardenRoute")],
       },
       {
-        category: "Loisirs & Divertissement",
+        category: t("leisureEntertainment"),
         icon: <Ticket className="w-4 h-4" />,
-        items: ["Parcs d'attractions", "Safari photo", "Dégustation de vins", "Sports nautiques"],
+        items: [t("themeParks"), t("photoSafari"), t("wineTasting"), t("waterSports")],
       },
       {
-        category: "Culture & Art",
+        category: t("cultureArt"),
         icon: <Briefcase className="w-4 h-4" />,
-        items: ["Musée de l'Apartheid", "Art rupestre", "Festivals musicaux"],
+        items: [t("apartheidMuseum"), t("rockArt"), t("musicFestivals")],
       },
     ],
   },
-];
+]);
 
 const categoryColors: Record<string, string> = {
   "Culture & Patrimoine": "bg-indigo-50 text-indigo-600",
@@ -244,11 +247,13 @@ const categoryColors: Record<string, string> = {
 // ============================================================================
 const AFRICA_IMAGE_SRC = "/images/africa-3d-map.jpg";
 
-const AfricaMapImage = () => (
+const AfricaMapImage = () => {
+  const t = useTranslations("infos.offersMapSection");
+  return (
   <div className="relative w-full h-full">
     <img
       src={AFRICA_IMAGE_SRC}
-      alt="Carte 3D de l'Afrique"
+      alt={t("text3dMapAfrica")}
       className="w-full h-full object-cover select-none pointer-events-none"
       draggable={false}
       onError={(e) => {
@@ -259,6 +264,7 @@ const AfricaMapImage = () => (
     />
   </div>
 );
+};
 
 // Hexagone décoratif réutilisable
 const Hexagon = ({ className, fill = "#3D5AFE" }: { className?: string; fill?: string }) => (
@@ -268,6 +274,10 @@ const Hexagon = ({ className, fill = "#3D5AFE" }: { className?: string; fill?: s
 );
 
 export default function OffersMapSection() {
+  const tt = useTranslations("infos.offersMapSection");
+  const tr = useTranslations("infos.offersMapSection");
+  const t = useTranslations("infos.offersMapSection");
+  const regions = useMemo(() => getRegions(t), [t]);
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
 
@@ -298,16 +308,13 @@ export default function OffersMapSection() {
         <motion.div variants={fadeInUp} className="text-center max-w-3xl mx-auto mb-16">
           <span className="inline-flex items-center gap-2 bg-white/10 text-orange-400 rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-[0.15em] mb-4 border border-white/10">
             <Sparkles className="w-4 h-4" />
-            Offres CSE locales
+            {t("localCseOffers")}
           </span>
           <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight mb-4 leading-[1.1]">
-            Des offres partout
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">
-              en Afrique
-            </span>
+            {tr.rich("offersEverywhereAfrica", { span1: (chunks) => <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">{chunks}</span> })}
           </h2>
           <p className="text-slate-300 text-lg font-medium">
-            Plus de 500 000 offres à prix attractifs dans toute l&apos;Afrique
+            {t("moreThan500000")}
           </p>
         </motion.div>
 
@@ -341,7 +348,7 @@ export default function OffersMapSection() {
                     onMouseEnter={() => setHoveredRegion(region.id)}
                     onMouseLeave={() => setHoveredRegion(null)}
                     onClick={() => setSelectedRegion(region)}
-                    aria-label={`Voir les offres pour ${region.name}`}
+                    aria-label={tt("seeOffers", { name: region.name })}
                   >
                     {/* Halo pulsé, uniquement pour l'état actif/survolé */}
                     {(isActive || isHovered) && (
@@ -373,7 +380,7 @@ export default function OffersMapSection() {
                         >
                           {region.name}
                           <span className="text-slate-400 font-medium text-[10px] ml-1.5">
-                            {region.cities.length} villes
+                            {t("cities2", { length: region.cities.length })}
                           </span>
                         </motion.div>
                       )}
@@ -425,7 +432,7 @@ export default function OffersMapSection() {
                     <button
                       onClick={() => setSelectedRegion(null)}
                       className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors shrink-0"
-                      aria-label="Fermer"
+                      aria-label={t("close")}
                     >
                       <X className="w-4 h-4 text-slate-500" />
                     </button>
@@ -445,7 +452,7 @@ export default function OffersMapSection() {
                   </div>
 
                   <span className="inline-block text-xs font-bold text-orange-500 uppercase tracking-wide mb-3">
-                    Notre sélection de premier choix
+                    {t("topChoiceSelection")}
                   </span>
 
                   <div className="space-y-5">
@@ -478,7 +485,7 @@ export default function OffersMapSection() {
                   <div className="mt-6 pt-6 border-t border-slate-200">
                     <div className="flex items-center gap-2 text-xs text-slate-500">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      Plus de 500 000 offres disponibles
+                      {t("moreThan5000002")}
                     </div>
                   </div>
                 </motion.div>
@@ -497,9 +504,9 @@ export default function OffersMapSection() {
                   >
                     <MapPin className="w-12 h-12 text-orange-400" />
                   </motion.div>
-                  <h3 className="text-2xl font-bold text-[rgb(21,0,44)] mb-3">Explorez les offres</h3>
+                  <h3 className="text-2xl font-bold text-[rgb(21,0,44)] mb-3">{t("exploreOffers")}</h3>
                   <p className="text-sm text-slate-500 max-w-xs mb-6">
-                    Cliquez sur une région pour découvrir les avantages disponibles localement
+                    {t("clickRegionDiscoverBenefits")}
                   </p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {regions.map((r) => (

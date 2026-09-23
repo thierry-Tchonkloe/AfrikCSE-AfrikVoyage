@@ -1,11 +1,31 @@
 import { Request, Response } from "express";
 import { TravelRepository } from "../infrastructure/travel.repository";
 import { RequestStatus, TravelStatus, Urgency } from "@prisma/client";
-import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { dispatchNotificationToUsers } from "../../notification/application/notification.service";
 import { IdParamString } from "../../../core/validators/param.validators";
+import { dispatchWebhook } from "../../../core/services/webhook.service";
+import { TravelRewardService } from "../../travel-rewards/application/travel-reward.service";
+import { AppError } from "../../../core/errors/app.error";
 
 const repo = new TravelRepository();
-const notificationRepo = new NotificationRepository();
+const travelRewardService = new TravelRewardService();
+
+/**
+ * Traduit une erreur d'action cross-org (ex: update where:{id,organizationId}
+ * qui échoue avec P2025) en réponse neutre — le message brut de Prisma contient
+ * le chemin absolu du fichier source côté serveur et ne doit jamais atteindre le client.
+ */
+function respondToMutationError(res: Response, err: any): void {
+    if (err instanceof AppError) {
+        res.status(err.statusCode).json({ message: err.message });
+        return;
+    }
+    if (err?.code === "P2025") {
+        res.status(404).json({ message: "Ressource introuvable" });
+        return;
+    }
+    res.status(400).json({ message: err.message });
+}
 
 const TRAVEL_STATUSES: TravelStatus[] = [
     "PENDING", "APPROVED", "REJECTED", "CANCELLED", "IN_PROGRESS", "COMPLETED",
@@ -46,32 +66,38 @@ export class TravelController {
     async approve(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
         const result = await repo.approve(req.params.id, req.user!.organizationId!, req.user!.userId);
-        await notificationRepo.createForUsers(
-            [result.requestedById],
-            "Voyage approuvé",
-            `Votre demande de voyage pour ${result.destination} a été approuvée.`,
+        dispatchNotificationToUsers(
             "REQUEST_APPROVED",
+            [result.requestedById],
+            { requestType: "voyage", subject: result.destination },
             "/employes/voyages"
-        );
+        ).catch(() => {});
+        dispatchWebhook(result.organizationId, "travel.approved", {
+            travelRequestId: result.id, destination: result.destination,
+            requestedById: result.requestedById, approvedAt: result.approvedAt,
+        }).catch(() => {});
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 
     async reject(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
         const result = await repo.reject(req.params.id, req.user!.organizationId!, req.body.note);
-        await notificationRepo.createForUsers(
-            [result.requestedById],
-            "Voyage rejeté",
-            `Votre demande de voyage pour ${result.destination} a été rejetée. Motif : ${result.rejectionNote}`,
+        dispatchNotificationToUsers(
             "REQUEST_REJECTED",
+            [result.requestedById],
+            { requestType: "voyage", subject: result.destination, reason: result.rejectionNote ?? "" },
             "/employes/voyages"
-        );
+        ).catch(() => {});
+        dispatchWebhook(result.organizationId, "travel.rejected", {
+            travelRequestId: result.id, destination: result.destination,
+            requestedById: result.requestedById, rejectionNote: result.rejectionNote,
+        }).catch(() => {});
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 
@@ -84,25 +110,31 @@ export class TravelController {
         try {
         const result = await repo.updateStatus(req.params.id, req.user!.organizationId!, status, req.user!.userId);
         if (status === "APPROVED") {
-            await notificationRepo.createForUsers(
-            [result.requestedById],
-            "Voyage approuvé",
-            `Votre demande de voyage pour ${result.destination} a été approuvée.`,
+            dispatchNotificationToUsers(
             "REQUEST_APPROVED",
-            "/employes/voyages"
-            );
-        } else if (status === "REJECTED") {
-            await notificationRepo.createForUsers(
             [result.requestedById],
-            "Voyage rejeté",
-            `Votre demande de voyage pour ${result.destination} a été rejetée.`,
-            "REQUEST_REJECTED",
+            { requestType: "voyage", subject: result.destination },
             "/employes/voyages"
-            );
+            ).catch(() => {});
+            dispatchWebhook(result.organizationId, "travel.approved", {
+            travelRequestId: result.id, destination: result.destination,
+            requestedById: result.requestedById, approvedAt: result.approvedAt,
+            }).catch(() => {});
+        } else if (status === "REJECTED") {
+            dispatchNotificationToUsers(
+            "REQUEST_REJECTED",
+            [result.requestedById],
+            { requestType: "voyage", subject: result.destination, reason: result.rejectionNote ?? "" },
+            "/employes/voyages"
+            ).catch(() => {});
+            dispatchWebhook(result.organizationId, "travel.rejected", {
+            travelRequestId: result.id, destination: result.destination,
+            requestedById: result.requestedById, rejectionNote: result.rejectionNote,
+            }).catch(() => {});
         }
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 
@@ -118,29 +150,42 @@ export class TravelController {
         return;
         }
         try {
-        const result = await repo.bulkApprove(req.user!.organizationId!, ids, req.user!.userId);
+        const orgId = req.user!.organizationId!;
+        const result = await repo.bulkApprove(orgId, ids, req.user!.userId);
         for (const request of result.requests) {
-            await notificationRepo.createForUsers(
-            [request.requestedById],
-            "Voyage approuvé",
-            `Votre demande de voyage pour ${request.destination} a été approuvée.`,
+            dispatchNotificationToUsers(
             "REQUEST_APPROVED",
+            [request.requestedById],
+            { requestType: "voyage", subject: request.destination },
             "/employes/voyages"
-            );
+            ).catch(() => {});
+            dispatchWebhook(orgId, "travel.approved", {
+            travelRequestId: request.id, destination: request.destination,
+            requestedById: request.requestedById,
+            }).catch(() => {});
         }
         res.json({ count: result.count });
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 
     async assignPartner(req: Request<IdParamString>, res: Response): Promise<void> {
+        const { partnerId } = req.body as { partnerId?: string };
+        if (!partnerId || typeof partnerId !== "string") {
+        res.status(400).json({ message: "partnerId requis" });
+        return;
+        }
         try {
-        const result = await repo.assignPartner(req.params.id, req.user!.organizationId!, req.body.partnerName);
+        const result = await repo.assignPartner(req.params.id, req.user!.organizationId!, partnerId);
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
+    }
+
+    async listPartners(req: Request, res: Response): Promise<void> {
+        res.json(await repo.listActivePartners(req.user!.organizationId!));
     }
 
     async updatePayment(req: Request<IdParamString>, res: Response): Promise<void> {
@@ -149,7 +194,43 @@ export class TravelController {
         const result = await repo.updatePayment(req.params.id, req.user!.organizationId!, { paymentStatus, paymentLink });
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
+        }
+    }
+
+    async complete(req: Request<IdParamString>, res: Response): Promise<void> {
+        const { actualCost } = req.body as { actualCost?: unknown };
+        if (typeof actualCost !== "number" || !Number.isFinite(actualCost) || actualCost < 0) {
+        res.status(400).json({ message: "actualCost requis (nombre positif)" });
+        return;
+        }
+        try {
+        const result = await repo.complete(req.params.id, req.user!.organizationId!, actualCost);
+        if (!result) {
+            res.status(400).json({ message: "Voyage introuvable ou déjà clôturé" });
+            return;
+        }
+
+        // Récompense best-effort si le voyage s'est fait sous le budget estimé —
+        // ne bloque jamais la clôture elle-même en cas d'échec.
+        if (result.estimatedCost != null) {
+            travelRewardService.earn({
+            organizationId:  result.organizationId,
+            userId:          result.requestedById,
+            travelRequestId: result.id,
+            estimatedCost:   result.estimatedCost,
+            actualCost,
+            }).catch(() => {});
+        }
+
+        dispatchWebhook(result.organizationId, "travel.completed", {
+            travelRequestId: result.id, destination: result.destination,
+            requestedById: result.requestedById, actualCost,
+        }).catch(() => {});
+
+        res.json(result);
+        } catch (err: any) {
+        respondToMutationError(res, err);
         }
     }
 
@@ -172,32 +253,30 @@ export class TravelController {
     async approveExpense(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
         const result = await repo.approveExpense(req.params.id, req.user!.organizationId!, req.user!.userId);
-        await notificationRepo.createForUsers(
-            [result.employee.userId],
-            "Note de frais approuvée",
-            `Votre note de frais « ${result.title} » a été approuvée.`,
+        dispatchNotificationToUsers(
             "REQUEST_APPROVED",
+            [result.employee.userId],
+            { requestType: "note de frais", subject: result.title },
             "/employes/notes-de-frais"
-        );
+        ).catch(() => {});
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 
     async rejectExpense(req: Request<IdParamString>, res: Response): Promise<void> {
         try {
         const result = await repo.rejectExpense(req.params.id, req.user!.organizationId!, req.body.note);
-        await notificationRepo.createForUsers(
-            [result.employee.userId],
-            "Note de frais rejetée",
-            `Votre note de frais « ${result.title} » a été rejetée. Motif : ${result.rejectionNote}`,
+        dispatchNotificationToUsers(
             "REQUEST_REJECTED",
+            [result.employee.userId],
+            { requestType: "note de frais", subject: result.title, reason: result.rejectionNote ?? "" },
             "/employes/notes-de-frais"
-        );
+        ).catch(() => {});
         res.json(result);
         } catch (err: any) {
-        res.status(400).json({ message: err.message });
+        respondToMutationError(res, err);
         }
     }
 }

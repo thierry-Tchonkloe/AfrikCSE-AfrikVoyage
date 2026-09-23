@@ -49,6 +49,8 @@ const getComplianceReportMock = BenefitService.prototype.getComplianceReport as 
 
 beforeEach(() => {
   mockReset(prismaMock);
+  // requireModule("CSE") vérifie ce flag sur chaque route de ce routeur.
+  prismaMock.organization.findUnique.mockResolvedValue({ hasVoyage: true, hasCSE: true } as never);
 });
 
 function withSession(overrides: Parameters<typeof mockAuthenticatedSession>[2] = {}) {

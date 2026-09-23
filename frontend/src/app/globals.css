@@ -4,6 +4,13 @@
    via applyDarkMode), au lieu de la préférence système par défaut de Tailwind v4. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Polices chargées via next/font/google dans app/layout.tsx (variables posées sur <html>) :
+   Inter pour le texte de labeur, Raleway pour les titres (classe utilitaire `font-display`). */
+@theme inline {
+  --font-sans: var(--font-inter), sans-serif;
+  --font-display: var(--font-raleway), sans-serif;
+}
+
 :root {
   /* --- COULEURS ACTUELLES (Conservées) --- */
   --color-primary: #0f766e;
@@ -50,7 +57,7 @@ body {
   @apply bg-slate-50 text-slate-900;
   background-color: var(--ui-light-gray);
   color: var(--deep-slate);
-  font-family: 'Inter', 'Montserrat', sans-serif; /* Polices optimisées SaaS [1] */
+  font-family: var(--font-sans); /* Polices optimisées SaaS [1] */
 }
 
 /* Exemple de classe pour la section Hero immersive */

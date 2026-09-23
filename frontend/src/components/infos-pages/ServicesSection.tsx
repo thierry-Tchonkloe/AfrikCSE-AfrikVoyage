@@ -1,7 +1,7 @@
 // /src/components/infos-pages/ServicesSection.tsx
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { 
   Plane, 
@@ -49,6 +49,9 @@ import {
   Rocket
 } from "lucide-react";
 import { fadeInUp, scaleIn, staggerContainer } from "../styles/animations";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.servicesSection">>;
 
 interface Service {
   id: number;
@@ -64,225 +67,229 @@ interface Service {
   stats: { label: string; value: string }[];
 }
 
-const services: Service[] = [
+const getServices = (t: Translator): Service[] => ([
   {
     id: 1,
     icon: <Plane className="w-6 h-6" />,
-    title: "Voyages d'affaires",
-    description: "Gérez tous vos déplacements professionnels en une seule plateforme, sans avance de frais.",
-    longDescription: "Une solution complète pour optimiser la gestion des voyages d'affaires de votre entreprise, de la réservation à la note de frais.",
+    title: t("businessTravel"),
+    description: t("manageAllBusinessTrips"),
+    longDescription: t("completeSolutionOptimize"),
     features: [
-      "Réservation de vols et hôtels",
-      "Gestion des transports locaux",
-      "Suivi des dépenses en temps réel",
-      "Politiques de voyage personnalisées",
-      "Gestion des imprévus 24/7"
+      t("flightHotelBooking"),
+      t("localTransportManagement"),
+      t("realTimeExpenseTracking"),
+      t("customizedTravelPolicies"),
+      t("text247DisruptionHandling")
     ],
     benefits: [
-      "Réduction des coûts jusqu'à 30%",
-      "Gain de temps administratif",
-      "Visibilité complète des dépenses"
+      t("costReductionUp30"),
+      t("administrativeTimeSavings"),
+      t("fullExpenseVisibility")
     ],
     color: "from-indigo-500 to-blue-600",
-    tag: "Voyages",
+    tag: t("travel"),
     category: "voyage",
     stats: [
-      { label: "Économies", value: "-30%" },
-      { label: "Villes couvertes", value: "200+" }
+      { label: t("savings"), value: "-30%" },
+      { label: t("citiesCovered"), value: "200+" }
     ]
   },
   {
     id: 2,
     icon: <Gift className="w-6 h-6" />,
-    title: "Avantages CSE Premium",
-    description: "Offrez à vos collaborateurs un catalogue d'avantages exclusifs et personnalisés.",
-    longDescription: "Une gamme complète d'avantages CSE pour fidéliser vos équipes et améliorer leur pouvoir d'achat.",
+    title: t("premiumCseBenefits"),
+    description: t("offerEmployeesCatalog"),
+    longDescription: t("fullRangeCseBenefits"),
     features: [
-      "Cartes cadeaux digitales",
-      "Billetterie loisirs et culture",
-      "Offres de réduction locales",
-      "Gestion des crédits CSE",
-      "Catalogue personnalisé"
+      t("digitalGiftCards"),
+      t("leisureCultureTicketing"),
+      t("localDiscountOffers"),
+      t("cseCreditManagement"),
+      t("personalizedCatalog")
     ],
     benefits: [
-      "Augmentation de la satisfaction employés",
-      "Fidélisation des talents",
-      "Image employeur renforcée"
+      t("increasedEmployee"),
+      t("talentRetention"),
+      t("strengthenedEmployerBrand")
     ],
     color: "from-emerald-500 to-teal-600",
-    tag: "CSE",
+    tag: t("cse"),
     category: "cse",
     stats: [
-      { label: "Offres", value: "500K+" },
-      { label: "Satisfaction", value: "98%" }
+      { label: t("offers"), value: "500K+" },
+      { label: t("satisfaction"), value: "98%" }
     ]
   },
   {
     id: 3,
     icon: <Hotel className="w-6 h-6" />,
-    title: "Hébergement & Séjours",
-    description: "Un large choix d'hébergements pour tous les budgets et tous les besoins.",
-    longDescription: "Des solutions d'hébergement adaptées à tous les profils : voyages d'affaires, séminaires, ou escapades personnelles.",
+    title: t("accommodationStays"),
+    description: t("wideChoiceAccommodationEvery"),
+    longDescription: t("accommodationSolutionsSuited"),
     features: [
-      "Hôtels 1 à 5 étoiles",
-      "Appartements et résidences",
-      "Séjours longue durée",
-      "Offres corporate exclusives",
-      "Réservation instantanée"
+      t("text15StarHotels"),
+      t("apartmentsResidences"),
+      t("longStayAccommodation"),
+      t("exclusiveCorporateOffers"),
+      t("instantBooking")
     ],
     benefits: [
-      "Meilleurs tarifs négociés",
-      "Large choix d'hébergements",
-      "Réservation flexible"
+      t("bestNegotiatedRates"),
+      t("wideChoiceAccommodation"),
+      t("flexibleBooking")
     ],
     color: "from-purple-500 to-pink-600",
-    tag: "Hébergement",
+    tag: t("accommodation"),
     category: "both",
     stats: [
-      { label: "Hôtels", value: "50K+" },
-      { label: "Destinations", value: "300+" }
+      { label: t("hotels"), value: "50K+" },
+      { label: t("destinations"), value: "300+" }
     ]
   },
   {
     id: 4,
     icon: <Ticket className="w-6 h-6" />,
-    title: "Loisirs & Divertissement",
-    description: "Accédez à des milliers d'activités de loisirs à prix réduits.",
-    longDescription: "Un catalogue exceptionnel d'activités pour tous les goûts : culture, sport, détente et découverte.",
+    title: t("leisureEntertainment"),
+    description: t("accessThousandsDiscounted"),
+    longDescription: t("exceptionalCatalogActivities"),
     features: [
-      "Cinéma et spectacles",
-      "Parcs d'attractions",
-      "Événements sportifs",
-      "Activités culturelles",
-      "Bons plans exclusifs"
+      t("cinemaShows"),
+      t("themeParks"),
+      t("sportingEvents"),
+      t("culturalActivities"),
+      t("exclusiveDeals")
     ],
     benefits: [
-      "Économies jusqu'à 50%",
-      "Activités pour toute la famille",
-      "Découvertes culturelles"
+      t("savingsUp50"),
+      t("activitiesWholeFamily"),
+      t("culturalDiscoveries")
     ],
     color: "from-amber-500 to-orange-600",
-    tag: "Loisirs",
+    tag: t("leisure"),
     category: "cse",
     stats: [
-      { label: "Activités", value: "10K+" },
-      { label: "Économies", value: "50%" }
+      { label: t("activities"), value: "10K+" },
+      { label: t("savings"), value: "50%" }
     ]
   },
   {
     id: 5,
     icon: <Shield className="w-6 h-6" />,
-    title: "Assistance & Sécurité",
-    description: "Une assistance 24/7 pour vos voyageurs et une gestion sécurisée des données.",
-    longDescription: "Une tranquillité d'esprit totale pour vos collaborateurs avec une assistance dédiée et une sécurité renforcée.",
+    title: t("assistanceSecurity"),
+    description: t("text247AssistanceTravelers"),
+    longDescription: t("totalPeaceMindEmployees"),
     features: [
-      "Assistance voyage 24/7",
-      "Gestion des imprévus",
-      "Sécurité des données",
-      "Conformité RGPD",
-      "Support multicanal"
+      t("text247TravelAssistance"),
+      t("disruptionHandling"),
+      t("dataSecurity"),
+      t("gdprCompliance"),
+      t("multichannelSupport")
     ],
     benefits: [
-      "Sérénité pour les voyageurs",
-      "Réactivité en cas d'urgence",
-      "Conformité totale"
+      t("peaceMindTravelers"),
+      t("responsivenessEmergencies"),
+      t("fullCompliance")
     ],
     color: "from-rose-500 to-red-600",
-    tag: "Sécurité",
+    tag: t("security"),
     category: "both",
     stats: [
-      { label: "Disponibilité", value: "24/7" },
-      { label: "SLA", value: "99.9%" }
+      { label: t("availability"), value: "24/7" },
+      { label: t("sla"), value: "99.9%" }
     ]
   },
   {
     id: 6,
     icon: <Smartphone className="w-6 h-6" />,
-    title: "Application Mobile",
-    description: "Gérez tous vos avantages et réservations depuis votre smartphone.",
-    longDescription: "Une expérience mobile fluide pour accéder à tous vos avantages et services en un clic.",
+    title: t("mobileApp"),
+    description: t("manageAllBenefitsBookings"),
+    longDescription: t("smoothMobileExperienceAccess"),
     features: [
-      "Application iOS et Android",
-      "Scan de reçus en temps réel",
-      "Notifications push",
-      "Offres géolocalisées",
-      "Paiement mobile"
+      t("iosAndroidApp"),
+      t("realTimeReceiptScanning"),
+      t("pushNotifications"),
+      t("geolocatedOffers"),
+      t("mobilePayment")
     ],
     benefits: [
-      "Expérience utilisateur optimale",
-      "Gestion en mobilité",
-      "Accès instantané"
+      t("optimalUserExperience"),
+      t("mobilityManagement"),
+      t("instantAccess")
     ],
     color: "from-cyan-500 to-blue-600",
-    tag: "Digital",
+    tag: t("digital"),
     category: "both",
     stats: [
-      { label: "Téléchargements", value: "50K+" },
-      { label: "Note", value: "4.8★" }
+      { label: t("downloads"), value: "50K+" },
+      { label: t("rating"), value: "4.8★" }
     ]
   },
   {
     id: 7,
     icon: <Users className="w-6 h-6" />,
-    title: "Événements & Séminaires",
-    description: "Organisez vos événements d'entreprise et séminaires en toute simplicité.",
-    longDescription: "Une solution clé en main pour l'organisation de vos événements professionnels, du team building aux conférences.",
+    title: t("eventsSeminars"),
+    description: t("organizeCompanyEvents"),
+    longDescription: t("turnkeySolutionOrganizing"),
     features: [
-      "Organisation de séminaires",
-      "Team building",
-      "Conférences et formations",
-      "Gestion des participants",
-      "Logistique événementielle"
+      t("seminarOrganization"),
+      t("teamBuilding"),
+      t("conferencesTraining"),
+      t("participantManagement"),
+      t("eventLogistics")
     ],
     benefits: [
-      "Gain de temps organisationnel",
-      "Expériences mémorables",
-      "Cohésion d'équipe renforcée"
+      t("organizationalTimeSavings"),
+      t("memorableExperiences"),
+      t("strengthenedTeamCohesion")
     ],
     color: "from-violet-500 to-purple-600",
-    tag: "Événements",
+    tag: t("events"),
     category: "both",
     stats: [
-      { label: "Événements", value: "1K+" },
-      { label: "Participants", value: "50K+" }
+      { label: t("events"), value: "1K+" },
+      { label: t("participants"), value: "50K+" }
     ]
   },
   {
     id: 8,
     icon: <TrendingUp className="w-6 h-6" />,
-    title: "Analytics & Reporting",
-    description: "Des rapports détaillés pour piloter votre budget voyage et CSE.",
-    longDescription: "Des données précises et des analyses approfondies pour optimiser vos décisions stratégiques.",
+    title: t("analyticsReporting"),
+    description: t("detailedReportsManageTravel"),
+    longDescription: t("preciseDataDepthAnalyses"),
     features: [
-      "Tableaux de bord personnalisés",
-      "Analyse des dépenses",
-      "KPI voyage et CSE",
-      "Rapports automatisés",
-      "Prévisions budgétaires"
+      t("customDashboards"),
+      t("expenseAnalysis"),
+      t("travelCseKpis"),
+      t("automatedReports"),
+      t("budgetForecasts")
     ],
     benefits: [
-      "Décisions éclairées",
-      "Optimisation budgétaire",
-      "Visibilité complète"
+      t("informedDecisions"),
+      t("budgetOptimization"),
+      t("fullVisibility")
     ],
     color: "from-emerald-500 to-teal-600",
-    tag: "Analytics",
+    tag: t("analytics"),
     category: "both",
     stats: [
-      { label: "KPI", value: "50+" },
-      { label: "Précision", value: "98%" }
+      { label: t("kpis"), value: "50+" },
+      { label: t("accuracy"), value: "98%" }
     ]
   }
-];
+]);
 
-const categories = [
-  { id: "all", label: "Tous les services", icon: <Sparkles className="w-4 h-4" /> },
-  { id: "voyage", label: "Voyages", icon: <Plane className="w-4 h-4" /> },
-  { id: "cse", label: "CSE", icon: <Gift className="w-4 h-4" /> },
-  { id: "both", label: "Voyages & CSE", icon: <Globe className="w-4 h-4" /> }
-];
+const getCategories = (t: Translator) => ([
+  { id: "all", label: t("allServices"), icon: <Sparkles className="w-4 h-4" /> },
+  { id: "voyage", label: t("travel"), icon: <Plane className="w-4 h-4" /> },
+  { id: "cse", label: t("cse"), icon: <Gift className="w-4 h-4" /> },
+  { id: "both", label: t("travelCse"), icon: <Globe className="w-4 h-4" /> }
+]);
 
 export default function ServicesSection() {
+  const tr = useTranslations("infos.servicesSection");
+  const t = useTranslations("infos.servicesSection");
+  const services = useMemo(() => getServices(t), [t]);
+  const categories = useMemo(() => getCategories(t), [t]);
   const [activeService, setActiveService] = useState<number | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
@@ -369,28 +376,25 @@ export default function ServicesSection() {
           >
             <Sparkles className="w-4 h-4 text-indigo-500" />
             <span className="text-xs font-black uppercase tracking-[0.15em] bg-gradient-to-r from-indigo-600 to-emerald-500 bg-clip-text text-transparent">
-              Découvrez notre écosystème
+              {t("discoverEcosystem")}
             </span>
           </motion.div>
           
           <h2 className="text-4xl md:text-6xl font-bold text-[rgb(21,0,44)] tracking-tight mb-4 leading-[1.1]">
-            Des services uniques pour
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-500 to-emerald-500">
-              Voyages & CSE
-            </span>
+            {tr.rich("uniqueServicesTravelCse", { span1: (chunks) => <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-500 to-emerald-500">{chunks}</span> })}
           </h2>
           
           <p className="text-slate-500 text-lg font-medium max-w-3xl mx-auto">
-            Une plateforme tout-en-un qui combine la gestion des avantages CSE et des voyages d&apos;affaires pour une expérience optimale
+            {t("allOnePlatformCombines")}
           </p>
 
           {/* Indicateurs de confiance */}
           <div className="flex flex-wrap justify-center gap-6 mt-6">
             {[
-              { icon: <Users className="w-4 h-4" />, label: "500+ entreprises" },
-              { icon: <Globe className="w-4 h-4" />, label: "30 pays couverts" },
-              { icon: <Clock className="w-4 h-4" />, label: "Support 24/7" },
-              { icon: <Award className="w-4 h-4" />, label: "Prix de l'innovation" }
+              { icon: <Users className="w-4 h-4" />, label: t("text500Companies") },
+              { icon: <Globe className="w-4 h-4" />, label: t("text30CountriesCovered") },
+              { icon: <Clock className="w-4 h-4" />, label: t("text247Support") },
+              { icon: <Award className="w-4 h-4" />, label: t("innovationAward") }
             ].map((item, idx) => (
               <motion.div
                 key={idx}
@@ -463,7 +467,7 @@ export default function ServicesSection() {
               <div className="absolute -top-2.5 right-4">
                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${getCategoryColor(service.category)}`}>
                   {getCategoryIcon(service.category)}
-                  {service.category === "voyage" ? "Voyage" : service.category === "cse" ? "CSE" : "Mixte"}
+                  {service.category === "voyage" ? t("travel2") : service.category === "cse" ? "CSE" : t("mixed")}
                 </span>
               </div>
 
@@ -521,7 +525,7 @@ export default function ServicesSection() {
                     
                     {/* Benefits */}
                     <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-indigo-50/50 to-emerald-50/50 border border-indigo-100">
-                      <p className="text-xs font-semibold text-indigo-600 mb-1">✓ Avantages clés</p>
+                      <p className="text-xs font-semibold text-indigo-600 mb-1">{t("keyBenefits")}</p>
                       <div className="flex flex-wrap gap-2">
                         {service.benefits.map((benefit, i) => (
                           <span key={i} className="text-[10px] font-medium text-slate-600 bg-white px-2 py-0.5 rounded-full">
@@ -555,7 +559,7 @@ export default function ServicesSection() {
             animate={{ opacity: 1 }}
             className="text-center py-12"
           >
-            <p className="text-slate-500">Aucun service dans cette catégorie</p>
+            <p className="text-slate-500">{t("noServicesCategory")}</p>
           </motion.div>
         )}
 
@@ -575,20 +579,20 @@ export default function ServicesSection() {
               <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
                 <span className="text-white font-bold text-sm flex items-center gap-2">
                   <Rocket className="w-5 h-5" />
-                  Prêt à transformer votre entreprise ?
+                  {t("readyTransformBusiness")}
                 </span>
                 <div className="flex items-center gap-3">
                   <a 
                     href="#tarifs" 
                     className="px-6 py-2 bg-white text-indigo-600 rounded-full text-sm font-bold hover:scale-105 transition-transform duration-300 shadow-lg"
                   >
-                    Découvrir nos offres
+                    {t("discoverOffers")}
                   </a>
                   <a 
                     href="#contact" 
                     className="px-6 py-2 bg-transparent border-2 border-white/50 text-white rounded-full text-sm font-bold hover:bg-white/10 transition-all duration-300"
                   >
-                    Contactez-nous
+                    {t("contactUs")}
                   </a>
                 </div>
               </div>
@@ -605,15 +609,15 @@ export default function ServicesSection() {
         >
           <span className="flex items-center gap-2">
             <Heart className="w-4 h-4 text-rose-400" />
-            Des milliers d&apos;utilisateurs satisfaits
+            {t("thousandsSatisfiedUsers")}
           </span>
           <span className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-emerald-400" />
-            Sécurité et conformité assurées
+            {t("securityComplianceAssured")}
           </span>
           <span className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-400" />
-            Support disponible 24/7
+            {t("supportAvailable247")}
           </span>
         </motion.div>
       </div>

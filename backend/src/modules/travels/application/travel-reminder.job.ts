@@ -1,9 +1,8 @@
 import { TravelRepository } from "../infrastructure/travel.repository";
-import { NotificationRepository } from "../../notification/infrastructure/notification.repository";
+import { dispatchNotificationToUsers } from "../../notification/application/notification.service";
 import { logger } from "../../../core/utils/logger";
 
 const repo = new TravelRepository();
-const notificationRepo = new NotificationRepository();
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const REMINDER_WINDOW_START_MS = 23 * ONE_HOUR_MS;
@@ -19,11 +18,10 @@ async function sendTripReminders() {
 
     for (const trip of trips) {
         const dateLabel = trip.departureDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
-        await notificationRepo.createForUsers(
-            [trip.requestedById],
-            "Rappel de voyage",
-            `Votre voyage vers ${trip.destination} part le ${dateLabel}.`,
+        await dispatchNotificationToUsers(
             "TRIP_REMINDER",
+            [trip.requestedById],
+            { destination: trip.destination, date: dateLabel },
             "/employes/voyages"
         );
         await repo.markReminderSent(trip.id);

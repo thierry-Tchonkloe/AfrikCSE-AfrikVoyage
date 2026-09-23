@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { Plan } from "@prisma/client";
-import { BillingService, PLAN_PRICES_USD, PLAN_PRICES_XOF, Currency } from "../application/billing.service";
+import { BillingService, PLAN_PRICES_USD, PLAN_PRICES_XOF } from "../application/billing.service";
 
 const service = new BillingService();
 
@@ -17,20 +17,6 @@ export class BillingController {
         res.json(sub);
     }
 
-    async upgradePlan(req: Request, res: Response): Promise<void> {
-        try {
-            const { plan } = req.body as { plan: unknown };
-            if (!isValidPlan(plan)) {
-                res.status(400).json({ message: "Plan invalide" });
-                return;
-            }
-            const sub = await service.upgradePlan(req.user!.organizationId!, plan);
-            res.json(sub);
-        } catch (err: any) {
-            res.status(400).json({ message: err.message });
-        }
-    }
-
     async getInvoices(req: Request, res: Response): Promise<void> {
         const invoices = await service.getInvoices(req.user!.organizationId!);
         res.json(invoices);
@@ -43,10 +29,9 @@ export class BillingController {
     // Étape 4 : On vérifie auprès de l'API KkiaPay et on active l'abonnement
 
     async payWithKkiapay(req: Request, res: Response): Promise<void> {
-        const { plan, transactionId, currency } = req.body as {
+        const { plan, transactionId } = req.body as {
             plan: unknown;
             transactionId: unknown;
-            currency?: Currency;
         };
 
         if (!isValidPlan(plan)) {
@@ -62,8 +47,7 @@ export class BillingController {
             const result = await service.processKkiapayPayment(
                 req.user!.organizationId!,
                 plan,
-                transactionId.trim(),
-                currency ?? "XOF"
+                transactionId.trim()
             );
             res.json({ success: true, message: "Paiement KkiaPay confirmé", ...result });
         } catch (err: any) {
@@ -78,7 +62,7 @@ export class BillingController {
     // Étape 4 : FedaPay appelle le webhook backend pour confirmer le paiement
 
     async payWithFedapay(req: Request, res: Response): Promise<void> {
-        const { plan, currency } = req.body as { plan: unknown; currency?: Currency };
+        const { plan } = req.body as { plan: unknown };
 
         if (!isValidPlan(plan)) {
             res.status(400).json({ message: "Plan invalide" });
@@ -88,8 +72,7 @@ export class BillingController {
         try {
             const result = await service.initiateFedapayPayment(
                 req.user!.organizationId!,
-                plan,
-                currency ?? "XOF"
+                plan
             );
             res.json(result);
         } catch (err: any) {
@@ -157,5 +140,35 @@ export class BillingController {
             priceXOF: PLAN_PRICES_XOF[plan as Plan],
         }));
         res.json(plans);
+    }
+
+    // ── Prix réels pour l'organisation connectée (authentifié) ────────────────
+    // Contrairement à GET /plans (public, indicatif), reflète le prix XOF
+    // dynamique réellement facturé à CETTE organisation.
+
+    async getResolvedPlans(req: Request, res: Response): Promise<void> {
+        const plans = await service.getResolvedPlansForOrg(req.user!.organizationId!);
+        res.json(plans);
+    }
+
+    // ── Wallet entreprise ────────────────────────────────────────────────────
+
+    async getWalletBalance(req: Request, res: Response): Promise<void> {
+        const summary = await service.getWalletBalance(req.user!.organizationId!);
+        res.json(summary);
+    }
+
+    async topUpWallet(req: Request, res: Response): Promise<void> {
+        const { amount } = req.body as { amount: unknown };
+        if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) {
+            res.status(400).json({ message: "amount requis (nombre positif)" });
+            return;
+        }
+        try {
+            const result = await service.topUpWallet(req.user!.organizationId!, amount);
+            res.status(201).json(result);
+        } catch (err: any) {
+            res.status(err.statusCode ?? 400).json({ message: err.message });
+        }
     }
 }

@@ -1,21 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Tests du « socle » applicatif : app.ts (health check, endpoint /api, 404,
-// sécurité HTTP, CORS) + middlewares transverses partagés par tous les modules
-// (authentification, autorisation, validation des paramètres, gestion globale
-// des erreurs). Les routes métier de chaque module (auth, orders, cashback…)
-// sont couvertes dans src/test/modules/<module>/*.test.ts.
-//
-// Isolation DB : `core/config/prisma` est remplacé par le mock manuel
-// `core/config/__mocks__/prisma.ts` (jest-mock-extended) — aucune connexion
-// PostgreSQL réelle n'est établie pendant ces tests.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import request from "supertest";
 import express, { Request, Response } from "express";
 import { MulterError } from "multer";
 import { mockReset, DeepMockProxy } from "jest-mock-extended";
 import type { PrismaClient } from "@prisma/client";
 import { Role } from "@prisma/client";
+import { jest, describe, it, expect, beforeEach } from "@jest/globals";
 
 jest.mock("../core/config/prisma");
 jest.mock("../core/utils/jwt");
@@ -208,6 +197,7 @@ describe("Middleware global de gestion des erreurs (errorMiddleware)", () => {
     expect(res.body).toEqual({ success: false, message: "Erreur interne du serveur" });
   });
 });
+
 
 // ── Middleware de validation des paramètres (validateParams) ────────────────
 describe("Middleware de validation des paramètres (validateParams)", () => {

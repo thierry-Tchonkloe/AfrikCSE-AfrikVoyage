@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as ctrl from "./flight.controller";
 import { authenticate, authorize } from "../../../core/middlewares/auth.middleware";
+import { requireModule } from "../../../core/middlewares/requireModule.middleware";
 import { validateParams } from "../../../core/middlewares/params.middleware";
 import { idempotency } from "../../../core/middlewares/idempotency.middleware";
 import { idParamString } from "../../../core/validators/param.validators";
@@ -11,8 +12,11 @@ const router = Router();
 router.use(authenticate);
 
 // ── Recherche employé ────────────────────────────────────────────────────────
-router.get("/search",   ctrl.search);
-router.get("/airports", ctrl.airports);
+// requireModule uniquement ici, jamais sur /admin/* ci-dessous : le catalogue
+// est géré par le SUPER_ADMIN/PLATFORM_MANAGER au niveau plateforme, pour
+// toutes les organisations — indépendant du module Voyage de LEUR PROPRE org.
+router.get("/search",   requireModule("VOYAGE"), ctrl.search);
+router.get("/airports", requireModule("VOYAGE"), ctrl.airports);
 
 // ── Admin — routes ────────────────────────────────────────────────────────────
 router.get(   "/admin/routes",     authorize(ROLES.SUPER_ADMIN, ROLES.PLATFORM_MANAGER), ctrl.adminListRoutes);

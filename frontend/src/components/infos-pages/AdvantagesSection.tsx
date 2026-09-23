@@ -1,7 +1,7 @@
 // /src/components/infos-pages/AdvantagesSection.tsx
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { 
   Gift, 
@@ -54,6 +54,9 @@ import {
   Gem as GemIcon
 } from "lucide-react";
 import { fadeInUp, scaleIn, floatAnimation } from "../styles/animations";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.advantagesSection">>;
 
 interface Advantage {
   id: number;
@@ -70,20 +73,20 @@ interface Advantage {
   glowColor: string;
 }
 
-const advantages: Advantage[] = [
+const getAdvantages = (t: Translator): Advantage[] => ([
   {
     id: 1,
     icon: <Gift className="w-6 h-6" />,
-    title: "Avantages CSE & Pouvoir d'achat",
-    description: "Cartes cadeaux digitales, billetterie premium et offres négociées pour maximiser le pouvoir d'achat de vos salariés.",
-    tag: "CSE Premium",
+    title: t("cseBenefitsPurchasingPower"),
+    description: t("digitalGiftCardsPremium"),
+    tag: t("csePremium"),
     color: "from-indigo-500 to-blue-600",
     gradient: "from-indigo-600/30 via-blue-500/20 to-transparent",
     stats: [
-      { value: "30%", label: "d'économies" },
+      { value: "30%", label: t("savings") },
       { value: "500+", label: "partenaires" }
     ],
-    benefits: ["Cartes cadeaux digitales", "Billetterie premium", "Offres exclusives négociées"],
+    benefits: [t("digitalGiftCards"), t("premiumTicketing"), t("negotiatedExclusiveOffers")],
     category: "cse",
     image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=600&fit=crop&q=80",
     glowColor: "rgba(99,102,241,0.2)"
@@ -91,16 +94,16 @@ const advantages: Advantage[] = [
   {
     id: 2,
     icon: <Plane className="w-6 h-6" />,
-    title: "Voyages d'affaires simplifiés",
-    description: "Gérez tous vos déplacements professionnels sans avance de frais avec une plateforme centralisée et intuitive.",
-    tag: "Voyages",
+    title: t("simplifiedBusinessTravel"),
+    description: t("manageAllBusinessTrips"),
+    tag: t("travel"),
     color: "from-emerald-500 to-teal-600",
     gradient: "from-emerald-600/30 via-teal-500/20 to-transparent",
     stats: [
       { value: "200+", label: "destinations" },
       { value: "24/7", label: "assistance" }
     ],
-    benefits: ["Réservation centralisée", "Sans avance de frais", "Assistance dédiée"],
+    benefits: [t("centralizedBooking"), t("noUpfrontCosts"), t("dedicatedAssistance")],
     category: "voyage",
     image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&h=600&fit=crop&q=80",
     glowColor: "rgba(16,185,129,0.2)"
@@ -108,16 +111,16 @@ const advantages: Advantage[] = [
   {
     id: 3,
     icon: <Smartphone className="w-6 h-6" />,
-    title: "Application Mobile & Digital",
-    description: "Une expérience digitale fluide pour accéder à tous vos avantages CSE et réservations voyage en un clic.",
-    tag: "Digital",
+    title: t("mobileDigitalApp"),
+    description: t("smoothDigitalExperience"),
+    tag: t("digital"),
     color: "from-purple-500 to-pink-600",
     gradient: "from-purple-600/30 via-pink-500/20 to-transparent",
     stats: [
-      { value: "4.8★", label: "note app" },
+      { value: "4.8★", label: t("appRating") },
       { value: "100K+", label: "utilisateurs" }
     ],
-    benefits: ["Application mobile", "Scan de reçus IA", "Notifications push"],
+    benefits: [t("mobileApp"), t("aiReceiptScanning"), t("pushNotifications")],
     category: "both",
     image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&h=600&fit=crop&q=80",
     glowColor: "rgba(168,85,247,0.2)"
@@ -125,16 +128,16 @@ const advantages: Advantage[] = [
   {
     id: 4,
     icon: <Hotel className="w-6 h-6" />,
-    title: "Hébergement & Séjours",
-    description: "Un large choix d'hébergements premium avec des tarifs négociés pour vos voyages d'affaires et séjours personnels.",
-    tag: "Hébergement",
+    title: t("accommodationStays"),
+    description: t("wideChoicePremium"),
+    tag: t("accommodation"),
     color: "from-amber-500 to-orange-600",
     gradient: "from-amber-600/30 via-orange-500/20 to-transparent",
     stats: [
-      { value: "50K+", label: "hôtels" },
+      { value: "50K+", label: t("hotels") },
       { value: "300+", label: "destinations" }
     ],
-    benefits: ["Hôtels premium", "Résidences d'affaires", "Tarifs négociés"],
+    benefits: [t("premiumHotels"), t("businessResidences"), t("negotiatedRates")],
     category: "voyage",
     image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=600&fit=crop&q=80",
     glowColor: "rgba(245,158,11,0.2)"
@@ -142,16 +145,16 @@ const advantages: Advantage[] = [
   {
     id: 5,
     icon: <Users className="w-6 h-6" />,
-    title: "Expérience Personnalisée",
-    description: "Des avantages adaptés à chaque profil avec des recommandations intelligentes pour les loisirs, la culture et le sport.",
-    tag: "Personnalisé",
+    title: t("personalizedExperience"),
+    description: t("benefitsTailoredEachProfile"),
+    tag: t("personalized"),
     color: "from-rose-500 to-red-600",
     gradient: "from-rose-600/30 via-red-500/20 to-transparent",
     stats: [
       { value: "100%", label: "personnalisable" },
-      { value: "50+", label: "catégories" }
+      { value: "50+", label: t("categories") }
     ],
-    benefits: ["Recommandations IA", "Profils personnalisés", "Adaptation continue"],
+    benefits: [t("aiRecommendations"), t("personalizedProfiles"), t("continuousAdaptation")],
     category: "cse",
     image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop&q=80",
     glowColor: "rgba(244,63,94,0.2)"
@@ -159,16 +162,16 @@ const advantages: Advantage[] = [
   {
     id: 6,
     icon: <Ticket className="w-6 h-6" />,
-    title: "Loisirs & Divertissement",
-    description: "Accédez à des milliers d'activités de loisirs à prix réduits : cinéma, parcs, concerts, sport et shopping.",
-    tag: "Loisirs",
+    title: t("leisureEntertainment"),
+    description: t("accessThousandsDiscounted"),
+    tag: t("leisure"),
     color: "from-cyan-500 to-blue-600",
     gradient: "from-cyan-600/30 via-blue-500/20 to-transparent",
     stats: [
       { value: "500K+", label: "offres" },
       { value: "98%", label: "couverture" }
     ],
-    benefits: ["Cinéma & spectacles", "Parcs d'attractions", "Shopping exclusif"],
+    benefits: [t("cinemaShows"), t("themeParks"), t("exclusiveShopping")],
     category: "cse",
     image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&h=600&fit=crop&q=80",
     glowColor: "rgba(6,182,212,0.2)"
@@ -176,16 +179,16 @@ const advantages: Advantage[] = [
   {
     id: 7,
     icon: <Shield className="w-6 h-6" />,
-    title: "Sécurité & Assistance 24/7",
-    description: "Une assistance dédiée pour vos voyageurs et une sécurité maximale pour vos données et transactions.",
-    tag: "Sécurité",
+    title: t("security247Assistance"),
+    description: t("dedicatedAssistanceTravelers"),
+    tag: t("security"),
     color: "from-slate-700 to-slate-900",
     gradient: "from-slate-800/30 via-slate-700/20 to-transparent",
     stats: [
       { value: "24/7", label: "assistance" },
-      { value: "99.9%", label: "disponibilité" }
+      { value: "99.9%", label: t("availability") }
     ],
-    benefits: ["Support multicanal", "Données sécurisées", "Conformité RGPD"],
+    benefits: [t("multichannelSupport"), t("secureData"), t("gdprCompliance")],
     category: "both",
     image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=600&fit=crop&q=80",
     glowColor: "rgba(30,41,59,0.2)"
@@ -193,28 +196,28 @@ const advantages: Advantage[] = [
   {
     id: 8,
     icon: <TrendingUp className="w-6 h-6" />,
-    title: "Analytics & Optimisation",
-    description: "Des rapports détaillés pour piloter votre budget CSE et voyages avec des indicateurs de performance avancés.",
-    tag: "Analytics",
+    title: t("analyticsOptimization"),
+    description: t("detailedReportsManageCse"),
+    tag: t("analytics"),
     color: "from-emerald-500 to-cyan-600",
     gradient: "from-emerald-600/30 via-cyan-500/20 to-transparent",
     stats: [
-      { value: "50+", label: "KPI" },
-      { value: "98%", label: "précision" }
+      { value: "50+", label: t("kpis") },
+      { value: "98%", label: t("accuracy") }
     ],
-    benefits: ["Tableaux de bord", "Prévisions budgétaires", "Optimisation continue"],
+    benefits: [t("dashboards"), t("budgetForecasts"), t("continuousOptimization")],
     category: "both",
     image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop&q=80",
     glowColor: "rgba(16,185,129,0.2)"
   }
-];
+]);
 
-const categories = [
-  { id: "all", label: "Tous", icon: <Sparkles className="w-4 h-4" /> },
-  { id: "cse", label: "CSE", icon: <Gift className="w-4 h-4" /> },
-  { id: "voyage", label: "Voyages", icon: <Plane className="w-4 h-4" /> },
-  { id: "both", label: "CSE & Voyages", icon: <Globe className="w-4 h-4" /> }
-];
+const getCategories = (t: Translator) => ([
+  { id: "all", label: t("all"), icon: <Sparkles className="w-4 h-4" /> },
+  { id: "cse", label: t("cse"), icon: <Gift className="w-4 h-4" /> },
+  { id: "voyage", label: t("travel"), icon: <Plane className="w-4 h-4" /> },
+  { id: "both", label: t("cseTravel"), icon: <Globe className="w-4 h-4" /> }
+]);
 
 // Composant pour une carte d'avantage avec image de fond
 const AdvantageCard = ({ 
@@ -230,6 +233,7 @@ const AdvantageCard = ({
   onHover: (id: number | null) => void;
   onSelect: (id: number) => void;
 }) => {
+  const t = useTranslations("infos.advantagesSection");
   const cardRef = useRef<HTMLDivElement>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -250,9 +254,9 @@ const AdvantageCard = ({
 
   const getCategoryBadge = () => {
     switch(advantage.category) {
-      case "cse": return { label: "CSE", color: "bg-indigo-100 text-indigo-700" };
-      case "voyage": return { label: "Voyage", color: "bg-emerald-100 text-emerald-700" };
-      case "both": return { label: "CSE & Voyage", color: "bg-purple-100 text-purple-700" };
+      case "cse": return { label: t("badgeCse"), color: "bg-indigo-100 text-indigo-700" };
+      case "voyage": return { label: t("badgeTravel"), color: "bg-emerald-100 text-emerald-700" };
+      case "both": return { label: t("badgeCseTravel"), color: "bg-purple-100 text-purple-700" };
     }
   };
 
@@ -385,7 +389,7 @@ const AdvantageCard = ({
               className="mt-4 flex items-center gap-2 text-sm font-semibold text-white/80 hover:text-white transition-colors"
               whileHover={{ x: 8 }}
             >
-              <span>Découvrir</span>
+              <span>{t("discover")}</span>
               <ArrowUpRight className="w-4 h-4" />
             </motion.div>
           </div>
@@ -419,6 +423,10 @@ const AdvantageCard = ({
 };
 
 export default function AdvantagesSection() {
+  const tr = useTranslations("infos.advantagesSection");
+  const t = useTranslations("infos.advantagesSection");
+  const advantages = useMemo(() => getAdvantages(t), [t]);
+  const categories = useMemo(() => getCategories(t), [t]);
   const [activeCard, setActiveCard] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
@@ -491,19 +499,16 @@ export default function AdvantagesSection() {
           >
             <Sparkles className="w-4 h-4 text-indigo-400" />
             <span className="text-xs font-black uppercase tracking-[0.15em] text-white/80">
-              Club Employés • Solution Intégrée
+              {t("clubEmployesIntegrated")}
             </span>
           </motion.div>
           
           <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight mb-4 leading-[1.1]">
-            Des avantages pensés pour
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400">
-              vos salariés & voyageurs
-            </span>
+            {tr.rich("benefitsDesignedEmployees", { span1: (chunks) => <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400">{chunks}</span> })}
           </h2>
           
           <p className="text-slate-400 text-lg font-medium max-w-2xl mx-auto">
-            Une plateforme unique qui combine les avantages CSE et la gestion des voyages d'affaires pour une expérience optimale
+            {t("singlePlatformCombinesCse")}
           </p>
 
           {/* Filtres */}
@@ -551,10 +556,10 @@ export default function AdvantagesSection() {
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 p-8">
             {[
-              { value: "500K+", label: "Offres disponibles", icon: <ShoppingBag className="w-5 h-5" /> },
-              { value: "200+", label: "Destinations voyage", icon: <Globe className="w-5 h-5" /> },
-              { value: "98%", label: "Taux de satisfaction", icon: <Award className="w-5 h-5" /> },
-              { value: "24/7", label: "Support dédié", icon: <Headphones className="w-5 h-5" /> }
+              { value: "500K+", label: t("availableOffers"), icon: <ShoppingBag className="w-5 h-5" /> },
+              { value: "200+", label: t("travelDestinations"), icon: <Globe className="w-5 h-5" /> },
+              { value: "98%", label: t("satisfactionRate"), icon: <Award className="w-5 h-5" /> },
+              { value: "24/7", label: t("dedicatedSupport"), icon: <Headphones className="w-5 h-5" /> }
             ].map((stat, idx) => (
               <motion.div
                 key={idx}
@@ -584,10 +589,10 @@ export default function AdvantagesSection() {
           >
             <span className="text-white font-bold flex items-center gap-2">
               <Rocket className="w-5 h-5" />
-              Prêt à transformer l'expérience de vos salariés ?
+              {t("readyTransformEmployees")}
             </span>
             <button className="px-6 py-2.5 bg-white text-slate-900 rounded-full text-sm font-bold hover:scale-105 transition-transform shadow-lg">
-              Découvrir la solution
+              {t("discoverSolution")}
             </button>
           </motion.div>
         </motion.div>

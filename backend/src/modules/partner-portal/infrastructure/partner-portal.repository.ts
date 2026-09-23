@@ -7,13 +7,32 @@ const PAYMENT_METHOD_SELECT = {
     maskedHint: true, isActive: true, createdAt: true, updatedAt: true,
 } satisfies Prisma.PartnerPaymentMethodSelect;
 
+// Jamais `notes` (réservé Super Admin), `apiKeyEncrypted`/`partnerToken`/
+// `mobileMoneyNumberEncrypted`/`bankDetailsEncrypted` (secrets chiffrés), ni
+// `warningCount`/`flaggedAt` (modération interne) — voir getPartner().
+const PARTNER_PROFILE_SELECT = {
+    id:           true,
+    name:         true,
+    sector:       true,
+    logoUrl:      true,
+    description:  true,
+    contactEmail: true,
+    phone:        true,
+    websiteUrl:   true,
+    status:       true,
+    scopeType:    true,
+    currencyCode: true,
+    createdAt:    true,
+    updatedAt:    true,
+} satisfies Prisma.PartnerSelect;
+
 export class PartnerPortalRepository {
     // ── Auth / PartnerUser ────────────────────────────────────────────────────
 
     async findUserByEmail(email: string) {
         return prisma.partnerUser.findUnique({
             where: { email },
-            include: { partner: { select: { id: true, name: true, status: true } } },
+            include: { partner: { select: { id: true, name: true, status: true, logoUrl: true } } },
         });
     }
 
@@ -24,6 +43,11 @@ export class PartnerPortalRepository {
         });
     }
 
+    // `select` strict — sans lui, la création d'un compte staff renvoyait le
+    // `PartnerUser` complet au client, y compris `passwordHash` (le hash bcrypt
+    // du mot de passe qu'on vient de définir pour ce compte), `refreshToken`,
+    // `tokenVersion`, `resetPasswordToken`. Même forme que `listStaff()` ci-dessus,
+    // pour une réponse cohérente entre création et listing.
     async createUser(data: {
         partnerId:    string;
         email:        string;
@@ -33,7 +57,13 @@ export class PartnerPortalRepository {
         role?:        "PARTNER_ADMIN" | "PARTNER_STAFF";
         invitedById?: string;
     }) {
-        return prisma.partnerUser.create({ data: data as never });
+        return prisma.partnerUser.create({
+            data:   data as never,
+            select: {
+                id: true, email: true, firstName: true, lastName: true,
+                role: true, isActive: true, lastLoginAt: true, createdAt: true,
+            },
+        });
     }
 
     async updateUserLastLogin(id: string) {
@@ -77,12 +107,70 @@ export class PartnerPortalRepository {
         });
     }
 
+    /** Crée le 1er compte d'un partenaire (bootstrap) avec un token d'activation —
+     *  mot de passe temporaire volontairement non hashé (donc jamais utilisable
+     *  tel quel, cf. commentaire équivalent dans organization.repository.ts). */
+    async createBootstrapUser(data: {
+        partnerId:    string;
+        email:        string;
+        firstName:    string;
+        lastName:     string;
+        tempPassword: string;
+        resetToken:   string;
+        expiresAt:    Date;
+    }) {
+        return prisma.partnerUser.create({
+            data: {
+                partnerId:              data.partnerId,
+                email:                  data.email,
+                passwordHash:           data.tempPassword,
+                firstName:              data.firstName,
+                lastName:               data.lastName,
+                role:                   "PARTNER_ADMIN",
+                resetPasswordToken:     data.resetToken,
+                resetPasswordExpiresAt: data.expiresAt,
+            } as never,
+        });
+    }
+
+    /** Trouve un PartnerUser par son token de reset/activation (non expiré) */
+    async findUserByResetToken(hashedToken: string) {
+        return prisma.partnerUser.findFirst({
+            where: {
+                resetPasswordToken: hashedToken,
+                resetPasswordExpiresAt: { gt: new Date() },
+            } as never,
+        });
+    }
+
+    /** Définit le mot de passe (activation ou reset), efface le token et révoque les sessions. */
+    async setPasswordFromToken(id: string, hashedPassword: string) {
+        return prisma.partnerUser.update({
+            where: { id },
+            data: {
+                passwordHash:           hashedPassword,
+                resetPasswordToken:     null,
+                resetPasswordExpiresAt: null,
+                refreshToken:           null,
+                tokenVersion:           { increment: 1 },
+            } as never,
+        });
+    }
+
     // ── Partner profile ───────────────────────────────────────────────────────
 
+    // `select` strict — jamais `include` sur `Partner` ici : un `include` renvoie
+    // TOUS les champs scalaires, dont `notes` (réservé au Super Admin),
+    // `apiKeyEncrypted`/`partnerToken`/`mobileMoneyNumberEncrypted`/
+    // `bankDetailsEncrypted` (secrets chiffrés) et `warningCount`/`flaggedAt`
+    // (modération interne) — tous interceptables par le partenaire lui-même via
+    // GET /partner-portal/profile. `locations` reste inclus : `listLocations()`
+    // côté frontend n'a pas de route GET /locations dédiée et dépend de cette
+    // relation embarquée dans la réponse profil.
     async getPartner(partnerId: string) {
         return prisma.partner.findUnique({
-            where:   { id: partnerId },
-            include: { locations: { include: { availabilities: true } } },
+            where:  { id: partnerId },
+            select: { ...PARTNER_PROFILE_SELECT, locations: { include: { availabilities: true } } },
         });
     }
 
@@ -95,11 +183,10 @@ export class PartnerPortalRepository {
             contactEmail: string;
             phone:        string;
             websiteUrl:   string;
-            notes:        string;
             logoUrl:      string;
         }>
     ) {
-        return prisma.partner.update({ where: { id: partnerId }, data });
+        return prisma.partner.update({ where: { id: partnerId }, data, select: PARTNER_PROFILE_SELECT });
     }
 
     // ── Locations ─────────────────────────────────────────────────────────────
@@ -196,6 +283,35 @@ export class PartnerPortalRepository {
             // aucune offre ne peut redevenir active sans re-validation SA.
             data:  { ...data, isActive: false, reviewStatus: "PENDING", reviewNote: null, reviewedAt: null, reviewedById: null }, // re-submit for review
         });
+    }
+
+    /**
+     * Bascule la visibilité d'une offre (masquer/afficher), SANS jamais
+     * toucher à `reviewStatus` — contrairement à `updateOffer`, ce n'est pas
+     * une modification de contenu qui doit repasser en revue. Désactiver
+     * (`isActive: false`) est toujours permis (le partenaire doit pouvoir
+     * masquer son offre à tout moment). Réactiver n'est permis que si l'offre
+     * est déjà `APPROVED` — vérifié de façon atomique via le `where` (évite
+     * une race lecture-puis-écriture entre la vérification et la mise à jour,
+     * même pattern que `booking.repository.ts::updateStatusFrom`).
+     */
+    async setOfferActive(id: string, partnerId: string, isActive: boolean) {
+        if (!isActive) {
+            return prisma.benefitCatalogItem.update({ where: { id, partnerId }, data: { isActive: false } });
+        }
+        try {
+            return await prisma.benefitCatalogItem.update({
+                where: { id, partnerId, reviewStatus: "APPROVED" },
+                data:  { isActive: true },
+            });
+        } catch (err: any) {
+            if (err?.code === "P2025") {
+                const offer = await prisma.benefitCatalogItem.findFirst({ where: { id, partnerId } });
+                if (!offer) throw new AppError("Offre introuvable", 404);
+                throw new AppError("Cette offre doit être approuvée par le Super Admin avant de pouvoir être réactivée", 400);
+            }
+            throw err;
+        }
     }
 
     // ── Paramètres ────────────────────────────────────────────────────────────

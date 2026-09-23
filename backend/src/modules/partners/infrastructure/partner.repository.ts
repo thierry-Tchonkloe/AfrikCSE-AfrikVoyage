@@ -1,6 +1,7 @@
 import { prisma } from "../../../core/config/prisma";
 import { Prisma, PartnerStatus, PartnerScope } from "@prisma/client";
 import { encrypt, decrypt } from "../../../core/utils/crypto";
+import { generateSecureToken, hashToken } from "../../../core/utils/hash";
 import { AppError } from "../../../core/errors/app.error";
 
 export interface PartnerFilters {
@@ -116,6 +117,37 @@ export class PartnerRepository {
                 createdBy,
             },
         });
+    }
+
+    /**
+     * Bootstrap du 1er compte de connexion (PARTNER_ADMIN) à la création du
+     * partenaire — sans ça, un partenaire créé par le Super Admin ne pouvait
+     * jamais se connecter à son portail (aucune route ne créait de PartnerUser
+     * en dehors du flux self-service `createStaff`, déjà protégé par une
+     * session partenaire existante). Mot de passe temporaire volontairement non
+     * hashé (jamais utilisable tel quel, cf. organization.repository.ts) —
+     * seul le token d'activation (réutilise /activate, voir AuthService.resetPassword)
+     * permet de définir un vrai mot de passe.
+     */
+    async createBootstrapPartnerUser(partnerId: string, data: { email: string; firstName: string; lastName: string }) {
+        const rawToken   = generateSecureToken();
+        const hashedToken = hashToken(rawToken);
+        const tempPassword = generateSecureToken();
+
+        const user = await prisma.partnerUser.create({
+            data: {
+                partnerId,
+                email:                  data.email,
+                passwordHash:           tempPassword,
+                firstName:              data.firstName,
+                lastName:               data.lastName,
+                role:                   "PARTNER_ADMIN",
+                resetPasswordToken:     hashedToken,
+                resetPasswordExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            } as never,
+        });
+
+        return { user, rawToken };
     }
 
     async update(id: string, data: Partial<PartnerInput>) {

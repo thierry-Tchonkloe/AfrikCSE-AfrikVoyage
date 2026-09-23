@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 export const createOrderSchema = z.object({
-    offerId:               z.string().uuid().optional(),
-    partnerId:             z.string().uuid().optional(),
+    // Les ids du projet sont des cuid (Prisma `@default(cuid())`), jamais des
+    // uuid — `.uuid()` ici rejetait silencieusement tout offerId/partnerId réel.
+    offerId:               z.string().cuid().optional(),
+    partnerId:             z.string().cuid().optional(),
     amount:                z.number().positive(),
     discountAmount:        z.number().min(0).optional(),
     subsidyAmount:         z.number().min(0).optional(),
