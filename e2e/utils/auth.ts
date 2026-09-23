@@ -34,7 +34,7 @@ export async function loginAsUser(page: Page, email: string, password: string): 
     // Navigation complète (window.location.href) déclenchée par le formulaire —
     // on attend la sortie de /login plutôt qu'un texte précis de destination,
     // puisque celle-ci dépend du rôle.
-    await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15000 });
+    await page.waitForURL((url) => !/^\/(?:(?:fr|en)\/)?login(?:\/|$)/.test(url.pathname), { timeout: 15000 });
 }
 
 /** Se déconnecte via le bouton présent dans les layouts employé/entreprise (title="Déconnexion"). */

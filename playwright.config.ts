@@ -23,6 +23,9 @@ export default defineConfig({
 
     use: {
         baseURL: BASE_URL,
+        // Les specs ciblent l'UI française : sans ça, Chromium envoie Accept-Language
+        // en-US et le middleware i18n redirige /login vers /en/login.
+        locale: "fr-FR",
         trace: "retain-on-failure",
         screenshot: "only-on-failure",
         video: "retain-on-failure",

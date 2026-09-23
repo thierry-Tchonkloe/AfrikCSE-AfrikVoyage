@@ -2,15 +2,21 @@
 
 import { motion } from "framer-motion";
 import { LayoutGrid, List } from "lucide-react";
+import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 
-const OPTIONS = [
-    { key: "grid" as const, icon: LayoutGrid, label: "Vue carte" },
-    { key: "list" as const, icon: List, label: "Vue liste" },
-];
+type Translator = ReturnType<typeof useTranslations<"partnerComponents.locationViewToggle">>;
+
+const getOptions = (t: Translator) => ([
+    { key: "grid" as const, icon: LayoutGrid, label: t("mapView") },
+    { key: "list" as const, icon: List, label: t("listView") },
+]);
 
 export type LocationViewMode = "grid" | "list";
 
 export function LocationViewToggle({ mode, onChange }: { mode: LocationViewMode; onChange: (mode: LocationViewMode) => void }) {
+    const t = useTranslations("partnerComponents.locationViewToggle");
+    const OPTIONS = useMemo(() => getOptions(t), [t]);
     return (
         <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-800">
             {OPTIONS.map(({ key, icon: Icon, label }) => (

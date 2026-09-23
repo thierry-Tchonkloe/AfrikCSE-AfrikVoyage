@@ -1,24 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useRouter } from "@/i18n/navigation";
 import { Search, Loader2, Plane, FileText, Gift, CalendarDays, User, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { searchService, SearchResultItem, SearchScope } from "@/services/search.service";
+import { useTranslations } from "next-intl";
 
-const TYPE_META: Record<SearchResultItem["type"], { label: string; icon: typeof Search }> = {
-    travel:       { label: "Voyage",       icon: Plane },
-    expense:      { label: "Note de frais", icon: FileText },
-    benefit:      { label: "Avantage",     icon: Gift },
-    event:        { label: "Événement",    icon: CalendarDays },
-    employee:     { label: "Employé",      icon: User },
-    organization: { label: "Organisation", icon: Building2 },
-};
+type Translator = ReturnType<typeof useTranslations<"shared.globalSearch">>;
+
+const getTypeMeta = (t: Translator): Record<SearchResultItem["type"], { label: string; icon: typeof Search }> => ({
+    travel:       { label: t("trip"),       icon: Plane },
+    expense:      { label: t("expenseReport"), icon: FileText },
+    benefit:      { label: t("benefit"),     icon: Gift },
+    event:        { label: t("event"),    icon: CalendarDays },
+    employee:     { label: t("employee"),      icon: User },
+    organization: { label: t("organization"), icon: Building2 },
+});
 
 export function GlobalSearch({
     scope,
     darkMode = false,
-    placeholder = "Rechercher...",
+    placeholder,
     className,
 }: {
     scope: SearchScope;
@@ -26,6 +29,8 @@ export function GlobalSearch({
     placeholder?: string;
     className?: string;
 }) {
+    const t = useTranslations("shared.globalSearch");
+    const TYPE_META = useMemo(() => getTypeMeta(t), [t]);
     const router = useRouter();
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -96,7 +101,7 @@ export function GlobalSearch({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setOpen(true)}
-                    placeholder={placeholder}
+                    placeholder={placeholder ?? t("defaultPlaceholder")}
                     className={cn(
                         "w-full pl-9 pr-12 py-2 border rounded-xl text-sm outline-none",
                         darkMode
@@ -108,7 +113,7 @@ export function GlobalSearch({
                     "hidden sm:inline-flex absolute right-2.5 top-1/2 -translate-y-1/2 items-center px-1.5 py-0.5 rounded text-[10px] font-medium border",
                     darkMode ? "border-gray-700 text-gray-500" : "border-gray-200 text-gray-400"
                 )}>
-                    Ctrl+K
+                    {t("ctrlK")}
                 </kbd>
             </div>
 
@@ -119,11 +124,11 @@ export function GlobalSearch({
                 )}>
                     {loading ? (
                         <div className={cn("flex items-center justify-center gap-2 py-6 text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>
-                            <Loader2 size={14} className="animate-spin" /> Recherche...
+                            <Loader2 size={14} className="animate-spin" /> {t("search")}
                         </div>
                     ) : results.length === 0 ? (
                         <div className={cn("py-6 text-center text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>
-                            Aucun résultat pour « {query} »
+                            {t("noResults", { query })}
                         </div>
                     ) : (
                         <ul className="py-2">

@@ -3,8 +3,12 @@
 import { motion } from "framer-motion";
 import { MapPin, Clock, Pencil, Trash2, ExternalLink, Loader2 } from "lucide-react";
 import type { PartnerLocation } from "@/types";
+import { useTranslations } from "next-intl";
+import { useMemo } from "react";
 
-const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+type Translator = ReturnType<typeof useTranslations<"partnerComponents.locationCard">>;
+
+const getDays = (tr: Translator) => ([tr("mon"), tr("tue"), tr("wed"), tr("thu"), tr("fri"), tr("sat"), tr("sun")]);
 
 export const locationCardVariants = {
     hidden: { opacity: 0, y: 12 },
@@ -18,6 +22,9 @@ export function LocationCard({ location, deleting, onEdit, onDelete, onAvailabil
     onDelete: (id: string) => void;
     onAvailabilities: (location: PartnerLocation) => void;
 }) {
+    const tr = useTranslations("partnerComponents.locationCard");
+    const DAYS = useMemo(() => getDays(tr), [tr]);
+    const t = useTranslations("partnerComponents.locationCard");
     return (
         <motion.div
             variants={locationCardVariants}
@@ -31,20 +38,20 @@ export function LocationCard({ location, deleting, onEdit, onDelete, onAvailabil
 
                 {location.isMain && (
                     <span className="absolute top-2.5 left-2.5 text-xs bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
-                        Principal
+                        {t("main")}
                     </span>
                 )}
 
                 <div className="absolute top-2.5 right-2.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => onAvailabilities(location)} title="Horaires"
+                    <button onClick={() => onAvailabilities(location)} title={t("openingHours")}
                         className="p-1.5 rounded-lg bg-white/90 dark:bg-gray-900/80 hover:bg-white dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 shadow-sm">
                         <Clock size={14} />
                     </button>
-                    <button onClick={() => onEdit(location)} title="Modifier"
+                    <button onClick={() => onEdit(location)} title={t("edit")}
                         className="p-1.5 rounded-lg bg-white/90 dark:bg-gray-900/80 hover:bg-white dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 shadow-sm">
                         <Pencil size={14} />
                     </button>
-                    <button onClick={() => onDelete(location.id)} disabled={deleting} title="Supprimer"
+                    <button onClick={() => onDelete(location.id)} disabled={deleting} title={t("delete")}
                         className="p-1.5 rounded-lg bg-white/90 dark:bg-gray-900/80 hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-600 hover:text-red-500 shadow-sm">
                         {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                     </button>
@@ -58,7 +65,7 @@ export function LocationCard({ location, deleting, onEdit, onDelete, onAvailabil
                 {location.mapsUrl && (
                     <a href={location.mapsUrl} target="_blank" rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
-                        Voir sur Google Maps <ExternalLink size={11} />
+                        {t("viewGoogleMaps")} <ExternalLink size={11} />
                     </a>
                 )}
 

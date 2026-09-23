@@ -1,7 +1,7 @@
 // components/CSEPage/TestimonialsSection.tsx
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { 
   ChevronLeft, 
@@ -15,6 +15,9 @@ import {
   Quote
 } from "lucide-react";
 import { fadeInUp, scaleIn } from "../styles/animations";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.testimonialsSection">>;
 
 interface Testimonial {
   id: number;
@@ -38,90 +41,90 @@ interface VideoTestimonial {
   duration: string;
 }
 
-const TEXT_TESTIMONIALS: Testimonial[] = [
+const getTextTestimonials = (t: Translator): Testimonial[] => ([
   {
     id: 1,
-    name: "Marie Dubois",
-    role: "Directrice RH",
-    company: "TechAfrik",
+    name: t("marieDubois"),
+    role: t("hrDirector"),
+    company: t("techafrik"),
     avatar: "MD",
     avatarBg: "bg-gradient-to-br from-indigo-500 to-blue-600",
-    text: "La solution CSE a révolutionné notre gestion des avantages. Les collaborateurs sont ravis de la simplicité d'utilisation et du catalogue d'offres.",
+    text: t("cseSolutionRevolutionized"),
     rating: 5,
-    date: "Il y a 2 mois"
+    date: t("text2MonthsAgo")
   },
   {
     id: 2,
-    name: "Jean-Paul Kouassi",
+    name: t("jeanPaulKouassi"),
     role: "CFO",
-    company: "InnovCorp",
+    company: t("innovcorp"),
     avatar: "JK",
     avatarBg: "bg-gradient-to-br from-emerald-500 to-teal-600",
-    text: "La sérénité fiscale que nous apporte la plateforme est inestimable. Chaque centime dépensé est tracé et conforme.",
+    text: t("taxPeaceMindPlatform"),
     rating: 5,
-    date: "Il y a 1 semaine"
+    date: t("text1WeekAgo")
   },
   {
     id: 3,
-    name: "Amina Diop",
-    role: "Head of People",
-    company: "Baobab Digital",
+    name: t("aminaDiop"),
+    role: t("headPeople"),
+    company: t("baobabDigital"),
     avatar: "AD",
     avatarBg: "bg-gradient-to-br from-amber-500 to-orange-600",
-    text: "Le catalogue d'avantages digitalisé fonctionne comme une galerie de services premium. Les employés adorent la flexibilité.",
+    text: t("digitalBenefitsCatalogWorks"),
     rating: 4,
-    date: "Il y a 3 jours"
+    date: t("text3DaysAgo")
   },
   {
     id: 4,
-    name: "Thomas Martin",
+    name: t("thomasMartin"),
     role: "DG",
-    company: "AfriLogistics",
+    company: t("afrilogistics"),
     avatar: "TM",
     avatarBg: "bg-gradient-to-br from-purple-500 to-pink-600",
-    text: "Nous avons réduit de 25% le temps passé sur la gestion des notes de frais. L'automatisation est impressionnante.",
+    text: t("reducedTimeSpentExpense"),
     rating: 5,
-    date: "Il y a 2 semaines"
+    date: t("text2WeeksAgo")
   },
   {
     id: 5,
-    name: "Sarah Koné",
-    role: "Office Manager",
-    company: "Digital Africa",
+    name: t("sarahKone"),
+    role: t("officeManager"),
+    company: t("digitalAfrica"),
     avatar: "SK",
     avatarBg: "bg-gradient-to-br from-rose-500 to-red-600",
-    text: "Les collaborateurs sont ravis. Plus besoin d'avancer les frais, tout est centralisé. Une vraie transformation digitale.",
+    text: t("employeesDelightedNoMore"),
     rating: 5,
-    date: "Il y a 1 mois"
+    date: t("text1MonthAgo")
   }
-];
+]);
 
-const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
+const getVideoTestimonials = (t: Translator): VideoTestimonial[] => ([
   {
     id: 1,
-    name: "David K.",
+    name: t("davidK"),
     role: "CEO",
-    company: "AfrikTech",
+    company: t("afriktech"),
     thumbnail: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&h=300&fit=crop",
     duration: "2:34"
   },
   {
     id: 2,
-    name: "Sophie L.",
+    name: t("sophieL"),
     role: "DRH",
-    company: "EcoSolutions",
+    company: t("ecosolutions"),
     thumbnail: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=300&fit=crop",
     duration: "1:48"
   },
   {
     id: 3,
-    name: "Mohamed A.",
+    name: t("mohamed"),
     role: "COO",
-    company: "LogiAfrica",
+    company: t("logiafrica"),
     thumbnail: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop",
     duration: "3:12"
   }
-];
+]);
 
 // Composant étoiles
 const StarRating = ({ rating }: { rating: number }) => (
@@ -133,6 +136,10 @@ const StarRating = ({ rating }: { rating: number }) => (
 );
 
 export default function TestimonialsSection() {
+  const tr = useTranslations("infos.testimonialsSection");
+  const t = useTranslations("infos.testimonialsSection");
+  const TEXT_TESTIMONIALS = useMemo(() => getTextTestimonials(t), [t]);
+  const VIDEO_TESTIMONIALS = useMemo(() => getVideoTestimonials(t), [t]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isPlaying, setIsPlaying] = useState<number | null>(null);
@@ -194,13 +201,10 @@ export default function TestimonialsSection() {
         >
           <span className="inline-flex items-center gap-2 bg-amber-100 text-amber-600 rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-[0.15em] mb-4">
             <Sparkles className="w-4 h-4" />
-            Ce qu&apos;ils en disent
+            {t("whatTheySay")}
           </span>
           <h2 className="text-4xl md:text-6xl font-bold text-[rgb(21,0,44)] tracking-tight mb-4 leading-[1.1]">
-            Plus de 500 entreprises
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">
-              nous recommandent
-            </span>
+            {tr.rich("moreThan500Companies", { span1: (chunks) => <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">{chunks}</span> })}
           </h2>
         </motion.div>
 
@@ -218,7 +222,7 @@ export default function TestimonialsSection() {
                   <span className="text-2xl font-black text-slate-800">4.7</span>
                   <span className="text-slate-400 text-sm">/5</span>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">Basé sur {TEXT_TESTIMONIALS.length}+ avis</p>
+                <p className="text-xs text-slate-400 mt-1">{t("basedReviews", { length: TEXT_TESTIMONIALS.length })}</p>
               </div>
               <div className="flex gap-1">
                 <button
@@ -294,13 +298,13 @@ export default function TestimonialsSection() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
                 <Play className="w-4 h-4 text-indigo-500" />
-                Témoignages vidéo
+                {t("videoTestimonials")}
               </h3>
               <button
                 onClick={() => setAutoPlay(!autoPlay)}
                 className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 transition-colors"
               >
-                {autoPlay ? "⏸ Pause" : "▶ Auto-play"}
+                {autoPlay ? t("pause") : t("autoPlay")}
               </button>
             </div>
 
@@ -337,7 +341,7 @@ export default function TestimonialsSection() {
                     <p className="text-xs text-slate-500 truncate">{video.role} · {video.company}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
-                        Témoignage
+                        {t("testimonial")}
                       </span>
                     </div>
                   </div>

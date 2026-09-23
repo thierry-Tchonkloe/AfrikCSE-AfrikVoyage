@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import Image from "next/image";
 import { Globe, Rocket, Star, Briefcase, Theater, Gift, TrendingUp, Film, Brain, Sparkles, Lightbulb, ShieldCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // ─── TYPES & INTERFACES ──────────────────────────────────────────────────────
 
@@ -52,6 +53,7 @@ function useInView(ref: React.RefObject<HTMLElement | null>, threshold = 0.15) {
 // ─── COMPONENT: AVATAR GROUP ─────────────────────────────────────────────────
 
 function AvatarGroup() {
+  const t = useTranslations("infos.joinUsPage");
   const avatars = [
     { name: "AM", bg: "from-teal-400 to-emerald-500" },
     { name: "FK", bg: "from-indigo-400 to-purple-500" },
@@ -72,8 +74,8 @@ function AvatarGroup() {
         ))}
       </div>
       <div className="leading-tight">
-        <p className="text-sm font-bold text-slate-800">50+ talents</p>
-        <p className="text-xs text-slate-500">répartis dans 12 pays</p>
+        <p className="text-sm font-bold text-slate-800">{t("text50Talents")}</p>
+        <p className="text-xs text-slate-500">{t("spreadAcross12Countries")}</p>
       </div>
     </div>
   );
@@ -82,13 +84,15 @@ function AvatarGroup() {
 // ─── 1. SECTION: HERO AVEC IMAGE DE FOND ─────────────────────────────────────
 
 function HeroSection() {
+  const tr = useTranslations("infos.joinUsPage");
+  const t = useTranslations("infos.joinUsPage");
   return (
     <section className="relative min-h-[80vh] w-full overflow-hidden flex items-center justify-center bg-white pt-24 pb-16">
       {/* Image de fond */}
       <div className="absolute inset-0 z-0">
         <Image
           src="https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=2074&auto=format"
-          alt="RH planning - équipe en réunion"
+          alt={t("hrPlanningTeamMeeting")}
           fill
           className="object-cover"
           priority
@@ -107,29 +111,23 @@ function HeroSection() {
       <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
         <div className="inline-flex items-center gap-2 rounded-full bg-white/80 backdrop-blur-sm border border-slate-200 px-4 py-1.5 text-xs font-semibold text-indigo-600 mb-6 shadow-sm">
           <span className="flex h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
-          Nous recrutons activement
+          {t("activelyHiring")}
         </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-slate-900 leading-tight">
-          Bâtissez le futur de{" "}
-          <span className="bg-gradient-to-r from-indigo-600 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
-            l&apos;entreprise africaine
-          </span>{" "}
-          avec nous.
+          {tr.rich("buildFutureAfricanBusiness", { span1: (chunks) => <span className="bg-gradient-to-r from-indigo-600 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">{chunks}</span> })}
         </h1>
 
         <p className="mt-6 max-w-2xl mx-auto text-lg text-slate-700 leading-relaxed bg-white/50 backdrop-blur-sm px-6 py-3 rounded-2xl inline-block shadow-sm">
-          Rejoignez une équipe passionnée qui unifie la rigueur de la performance 
-          financière et l&apos;épanouissement des collaborateurs au sein d&apos;une seule
-          interface intelligente.
+          {t("joinPassionateTeamUnifies")}
         </p>
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button className="rounded-xl bg-[#6366F1] px-8 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition-all duration-300 hover:bg-[#5053db] hover:-translate-y-0.5 active:translate-y-0">
-            Voir les postes ouverts
+            {t("seeOpenPositions")}
           </button>
           <button className="rounded-xl border border-slate-300 bg-white/80 backdrop-blur-sm px-8 py-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:bg-white">
-            Découvrir notre manifeste
+            {t("discoverManifesto")}
           </button>
         </div>
 
@@ -139,15 +137,15 @@ function HeroSection() {
           <div className="flex items-center gap-6 text-sm text-slate-600">
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
               <span className="h-7 w-7 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600"><Globe className="w-4 h-4" /></span>
-              <span>12 pays</span>
+              <span>{t("text12Countries")}</span>
             </div>
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
               <span className="h-7 w-7 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><Rocket className="w-4 h-4" /></span>
-              <span>500+ clients</span>
+              <span>{t("text500Customers")}</span>
             </div>
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
               <span className="h-7 w-7 rounded-full bg-amber-50 flex items-center justify-center text-amber-600"><Star className="w-4 h-4" /></span>
-              <span>4.9/5 eNPS</span>
+              <span>{t("text495Enps")}</span>
             </div>
           </div>
         </div>
@@ -159,6 +157,7 @@ function HeroSection() {
 // ─── 2. SECTION: NOTRE DUALITÉ (DEUX PILIERS, UNE MISSION) ───────────────────
 
 function DualMissionSection() {
+  const t = useTranslations("infos.joinUsPage");
   const [activeTab, setActiveTab] = useState<"voyage" | "cse">("voyage");
 
   useEffect(() => {
@@ -175,19 +174,16 @@ function DualMissionSection() {
           
           <div className="lg:col-span-5 space-y-6">
             <div className="text-xs font-bold tracking-wider text-indigo-600 uppercase">
-              Notre Dualité unique
+              {t("uniqueDuality")}
             </div>
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Deux Piliers, <br />Une Seule Mission.
+              {t("twoPillars")} <br />{t("oneSingleMission")}
             </h2>
             <p className="text-base text-slate-600 leading-relaxed">
-              Nous ne développons pas seulement du code, nous créons le pivot de 
-              la transformation digitale en Afrique. Notre force réside dans notre 
-              capacité à équilibrer l&apos;optimisation métier et l&apos;expérience humaine.
+              {t("donTJustWrite")}
             </p>
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm italic text-slate-700">
-              &quot;L&apos;IA et la rigueur d&apos;AfrikVoyage rencontrent la flexibilité et la
-              générosité d&apos;AfrikCSE.&quot;
+              {t("aiRigorAfrikvoyageMeet")}
             </div>
           </div>
 
@@ -208,7 +204,7 @@ function DualMissionSection() {
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />AfrikVoyage</span>
+                    <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{t("afrikvoyage")}</span>
                   </button>
                   <button
                     onClick={() => setActiveTab("cse")}
@@ -218,7 +214,7 @@ function DualMissionSection() {
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    <span className="flex items-center gap-1"><Theater className="w-3 h-3" />AfrikCSE</span>
+                    <span className="flex items-center gap-1"><Theater className="w-3 h-3" />{t("afrikcse")}</span>
                   </button>
                 </div>
                 <div className="w-16 h-2 bg-slate-200 rounded-full" />
@@ -228,21 +224,21 @@ function DualMissionSection() {
                 {activeTab === "voyage" ? (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-500">Section Focus Performance</span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-[#10B981] border border-emerald-200">Live AI Heatmap</span>
+                      <span className="text-xs font-semibold text-slate-500">{t("performanceFocusSection")}</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-[#10B981] border border-emerald-200">{t("liveAiHeatmap")}</span>
                     </div>
-                    <h4 className="text-lg font-bold text-slate-900">Recherche Prédictive & Contrôle Budgétaire</h4>
+                    <h4 className="text-lg font-bold text-slate-900">{t("predictiveSearchBudget")}</h4>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <span className="text-[10px] text-slate-500 block">Flux financier</span>
+                        <span className="text-[10px] text-slate-500 block">{t("financialFlow")}</span>
                         <span className="text-sm font-bold text-slate-900">94.2%</span>
                       </div>
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <span className="text-[10px] text-slate-500 block">Routage prédictif</span>
-                        <span className="text-sm font-bold text-indigo-600">Optimal</span>
+                        <span className="text-[10px] text-slate-500 block">{t("predictiveRouting")}</span>
+                        <span className="text-sm font-bold text-indigo-600">{t("optimal")}</span>
                       </div>
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <span className="text-[10px] text-slate-500 block">Économies directes</span>
+                        <span className="text-[10px] text-slate-500 block">{t("directSavings")}</span>
                         <span className="text-sm font-bold text-[#10B981]">-30%</span>
                       </div>
                     </div>
@@ -253,30 +249,30 @@ function DualMissionSection() {
                 ) : (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-500">Section Focus Humain</span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">Style Netflix Experience</span>
+                      <span className="text-xs font-semibold text-slate-500">{t("humanFocusSection")}</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">{t("netflixStyleExperience")}</span>
                     </div>
-                    <h4 className="text-lg font-bold text-slate-900">Service Gallery & Satisfaction Collaborateur</h4>
+                    <h4 className="text-lg font-bold text-slate-900">{t("serviceGalleryEmployee")}</h4>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 bg-gradient-to-tr from-white to-indigo-50/40 rounded-xl border border-indigo-100">
-                        <span className="flex items-center gap-1 text-xs font-bold text-slate-900 mb-1"><Gift className="w-3 h-3 text-indigo-600 shrink-0" />Catalogue d&apos;avantages</span>
-                        <span className="text-[11px] text-slate-500">Cinéma, chèques cadeaux, loisirs illimités.</span>
+                        <span className="flex items-center gap-1 text-xs font-bold text-slate-900 mb-1"><Gift className="w-3 h-3 text-indigo-600 shrink-0" />{t("benefitsCatalog")}</span>
+                        <span className="text-[11px] text-slate-500">{t("cinemaGiftVouchersUnlimited")}</span>
                       </div>
                       <div className="p-3 bg-gradient-to-tr from-white to-emerald-50/40 rounded-xl border border-emerald-100">
-                        <span className="flex items-center gap-1 text-xs font-bold text-slate-900 mb-1"><TrendingUp className="w-3 h-3 text-emerald-600 shrink-0" />Score Engagement</span>
-                        <span className="text-sm font-black text-[#10B981]">eNPS: +72</span>
+                        <span className="flex items-center gap-1 text-xs font-bold text-slate-900 mb-1"><TrendingUp className="w-3 h-3 text-emerald-600 shrink-0" />{t("engagementScore")}</span>
+                        <span className="text-sm font-black text-[#10B981]">{t("enps72")}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-indigo-700 bg-indigo-50 p-2 rounded-lg border border-indigo-100">
                       <Film className="w-3.5 h-3.5 shrink-0" />
-                      <span>Les collaborateurs naviguent leurs privilèges de façon fluide et ludique.</span>
+                      <span>{t("employeesBrowseTheirPerks")}</span>
                     </div>
                   </div>
                 )}
                 
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-                  <span>Système de management unifié v2.4</span>
-                  <span className="font-mono">Status: Connected</span>
+                  <span>{t("unifiedManagementSystemV2")}</span>
+                  <span className="font-mono">{t("statusConnected")}</span>
                 </div>
               </div>
             </div>
@@ -291,6 +287,7 @@ function DualMissionSection() {
 // ─── 3. SECTION: BENTO GRID ("POURQUOI NOUS REJOINDRE ?") ───────────────────
 
 function BentoCard({ title, description, badge, icon, className = "" }: BentoCardProps) {
+  const t = useTranslations("infos.joinUsPage");
   return (
     <div className={`relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 flex flex-col justify-between group transition-all duration-300 hover:border-slate-300 hover:shadow-lg ${className}`}>
       <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all duration-500" />
@@ -313,13 +310,15 @@ function BentoCard({ title, description, badge, icon, className = "" }: BentoCar
         </p>
       </div>
       <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-semibold text-slate-400 group-hover:text-slate-600 flex items-center gap-1 transition-colors">
-        En savoir plus <span className="transform group-hover:translate-x-1 transition-transform">→</span>
+        {t("learnMore")} <span className="transform group-hover:translate-x-1 transition-transform">→</span>
       </div>
     </div>
   );
 }
 
 function BentoGridSection() {
+  const tt = useTranslations("infos.joinUsPage");
+  const t = useTranslations("infos.joinUsPage");
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref);
 
@@ -328,10 +327,10 @@ function BentoGridSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-12 text-center max-w-3xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-4">
-            Pourquoi choisir de nous rejoindre ?
+            {t("whyChooseJoinUs")}
           </h2>
           <p className="text-base text-slate-500">
-            Intégrez un écosystème conçu pour les innovateurs, associant des architectures techniques complexes à des missions à fort impact.
+            {t("joinEcosystemDesigned")}
           </p>
         </div>
 
@@ -343,21 +342,21 @@ function BentoGridSection() {
         >
           <BentoCard
             icon={<Brain className="w-6 h-6 text-slate-600" />}
-            badge="IA & Prédictif"
-            title="L'IA au service de l'humain"
-            description="Travaillez sur des algorithmes prédictifs complexes qui redéfinissent entièrement la logistique et la gestion des voyages."
+            badge={tt("aiPredictive")}
+            title={t("aiServingPeople")}
+            description={t("workComplexPredictive")}
           />
           <BentoCard
             icon={<Globe className="w-6 h-6 text-slate-600" />}
-            badge="Scale Panafricain"
-            title="Un rayonnement continental"
-            description="Rejoignez une solution technologique majeure déjà adoptée de façon critique par plus de 500 entreprises africaines et internationales."
+            badge={tt("panAfricanScale")}
+            title={t("continentalReach")}
+            description={t("joinMajorTechnologySolution")}
           />
           <BentoCard
             icon={<Sparkles className="w-6 h-6 text-slate-600" />}
-            badge="B2C UX en SaaS"
-            title="L'expérience B2C en entreprise"
-            description="Nous croyons fermement que les outils professionnels doivent être aussi intuitifs, vibrants et agréables que les meilleures applications grand public."
+            badge={tt("b2cUxSaas")}
+            title={t("b2cExperienceBusiness")}
+            description={t("firmlyBelieveProfessional")}
           />
         </div>
       </div>
@@ -391,6 +390,8 @@ function ContributionCard({ number, title, description, tag }: ContributionCardP
 }
 
 function ContributionSection() {
+  const tt = useTranslations("infos.joinUsPage");
+  const t = useTranslations("infos.joinUsPage");
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref);
 
@@ -401,13 +402,13 @@ function ContributionSection() {
           
           <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
             <div className="text-xs font-bold tracking-wider text-[#6366F1] uppercase">
-              Notre Manifeste d&apos;Impact
+              {t("impactManifesto")}
             </div>
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Comment souhaitons-nous contribuer ?
+              {t("howDoWantContribute")}
             </h2>
             <p className="text-base text-slate-500 leading-relaxed">
-              Au-delà des lignes de code, nous façonnons des outils qui redéfinissent la valeur du travail et transforment durablement l&apos;économie de notre continent.
+              {t("beyondLinesCodeShape")}
             </p>
           </div>
 
@@ -419,27 +420,27 @@ function ContributionSection() {
           >
             <ContributionCard 
               number="01"
-              tag="Économie locale"
-              title="Soutenir la croissance des entreprises africaines"
-              description="En automatisant les processus complexes et en optimisant chaque dépense, nous libérons du capital pour l'innovation locale."
+              tag={tt("localEconomy")}
+              title={t("supportingGrowthAfrican")}
+              description={t("automatingComplexProcesses")}
             />
             <ContributionCard 
               number="02"
-              tag="Inclusion sociale"
-              title="Démocratiser les avantages aux employés"
-              description="Nous offrons aux collaborateurs un accès équitable à la culture, au bien-être et aux loisirs, renforçant l'épanouissement individuel."
+              tag={tt("socialInclusion")}
+              title={t("democratizingEmployee")}
+              description={t("giveEmployeesFairAccess")}
             />
             <ContributionCard 
               number="03"
-              tag="Modernisation"
-              title="Élever les standards de l'expérience RH"
-              description="Nous transformons des outils traditionnellement austères en expériences numériques fluides, intuitives et mémorables."
+              tag={tt("modernization")}
+              title={t("raisingStandardsHrExperience")}
+              description={t("turnTraditionallyAustere")}
             />
             <ContributionCard 
               number="04"
-              tag="Responsabilité"
-              title="Garantir une transparence absolue"
-              description="Notre IA assure une conformité parfaite avec les réglementations, instaurant un climat de confiance solide entre employeurs et équipes."
+              tag={tt("responsibility")}
+              title={t("guaranteeingAbsolute")}
+              description={t("aiEnsuresPerfectCompliance")}
             />
           </div>
 
@@ -452,24 +453,25 @@ function ContributionSection() {
 // ─── 5. SECTION: VISION & VALEURS ────────────────────────────────────────────
 
 function ValuesSection() {
+  const t = useTranslations("infos.joinUsPage");
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref);
 
   const corporateValues: Value[] = [
     {
       icon: <Lightbulb className="w-6 h-6 text-slate-600" />,
-      title: "Innovation",
-      description: "Repousser sans cesse les frontières du possible et concevoir l'écosystème de demain.",
+      title: t("innovation"),
+      description: t("constantlyPushingBoundaries"),
     },
     {
       icon: <ShieldCheck className="w-6 h-6 text-slate-600" />,
-      title: "Confiance",
-      description: "Garantir une transparence absolue et une fiabilité infaillible envers nos talents et partenaires.",
+      title: t("trust"),
+      description: t("guaranteeingAbsolute2"),
     },
     {
       icon: <TrendingUp className="w-6 h-6 text-slate-600" />,
-      title: "Performance",
-      description: "Allier rigueur algorithmique, exécution d'élite et création de valeur quantifiable.",
+      title: t("performance"),
+      description: t("combiningAlgorithmicRigor"),
     },
   ];
 
@@ -478,13 +480,13 @@ function ValuesSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-16 text-center max-w-2xl mx-auto">
           <div className="text-xs font-bold tracking-wider text-[#6366F1] uppercase mb-2">
-            Notre ADN d&apos;ingénierie
+            {t("engineeringDna")}
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Nos Valeurs Fondamentales
+            {t("coreValues")}
           </h2>
           <p className="mt-3 text-base text-slate-500">
-            Ce qui gouverne chacune de nos décisions techniques et humaines au quotidien.
+            {t("whatGovernsEachTechnical")}
           </p>
         </div>
 
@@ -502,7 +504,7 @@ function ValuesSection() {
             >
               <div className="absolute top-6 right-6 flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
                 <span className="flex h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse" />
-                <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wide">Secure</span>
+                <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wide">{t("secure")}</span>
               </div>
 
               <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-slate-50 border border-slate-100 group-hover:scale-105 transition-transform">

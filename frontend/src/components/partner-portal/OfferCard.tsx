@@ -4,18 +4,18 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Pencil, Clock, CheckCircle2, XCircle, ImageOff } from "lucide-react";
 import type { PartnerOffer } from "@/services/partner/partner-portal.service";
+import { useTranslations } from "next-intl";
+import { useDateLocale } from "@/hooks/useDateLocale";
 
 // "Active" retiré du libellé APPROVED : la visibilité réelle de l'offre
 // (isActive) est désormais un état séparé et bascule indépendamment — un
 // badge de revue disant "Active" alors que le partenaire vient de la masquer
 // via le toggle ci-dessous serait directement contradictoire.
-export const REVIEW_BADGE: Record<PartnerOffer["reviewStatus"], { label: string; className: string; icon: typeof Clock }> = {
-    PENDING:  { label: "En attente de validation", className: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: Clock },
-    APPROVED: { label: "Approuvée",                className: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle2 },
-    REJECTED: { label: "Refusée",                   className: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",         icon: XCircle },
+export const REVIEW_BADGE: Record<PartnerOffer["reviewStatus"], { labelKey: "pendingValidation" | "approved" | "rejected"; className: string; icon: typeof Clock }> = {
+    PENDING:  { labelKey: "pendingValidation", className: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: Clock },
+    APPROVED: { labelKey: "approved",          className: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle2 },
+    REJECTED: { labelKey: "rejected",          className: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",         icon: XCircle },
 };
-
-const fmt = (v: number) => new Intl.NumberFormat("fr-FR").format(v);
 
 export const offerCardVariants = {
     hidden: { opacity: 0, y: 12 },
@@ -27,6 +27,9 @@ export function OfferCard({ offer, onEdit, onToggleActive }: {
     onEdit: (offer: PartnerOffer) => void;
     onToggleActive: (offer: PartnerOffer) => void;
 }) {
+    const t = useTranslations("partnerComponents.offerCard");
+    const dateLocale = useDateLocale();
+    const fmt = (v: number) => new Intl.NumberFormat(dateLocale).format(v);
     const review = REVIEW_BADGE[offer.reviewStatus];
     const ReviewIcon = review.icon;
     // Activer n'est permis que si l'offre est déjà approuvée (vérifié aussi
@@ -63,7 +66,7 @@ export function OfferCard({ offer, onEdit, onToggleActive }: {
                 )}
 
                 <span className={`absolute top-3 right-3 flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${review.className}`}>
-                    <ReviewIcon size={12} /> {review.label}
+                    <ReviewIcon size={12} /> {t(review.labelKey)}
                 </span>
             </div>
 
@@ -80,21 +83,21 @@ export function OfferCard({ offer, onEdit, onToggleActive }: {
 
                 {offer.reviewStatus === "REJECTED" && offer.reviewNote && (
                     <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-2.5 py-1.5">
-                        Motif du refus : {offer.reviewNote}
+                        {t("rejectionReason", { reviewNote: offer.reviewNote })}
                     </p>
                 )}
 
                 <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700 mt-auto">
                     <p className="text-sm font-bold text-gray-900 dark:text-white">
-                        {fmt(offer.employeePrice)} <span className="text-xs font-normal text-gray-400">XOF employé</span>
-                        <span className="text-xs font-normal text-gray-400"> · {fmt(offer.companyPrice)} entreprise</span>
+                        {fmt(offer.employeePrice)} <span className="text-xs font-normal text-gray-400">{t("xofEmployee")}</span>
+                        <span className="text-xs font-normal text-gray-400"> {t("company", { p1: fmt(offer.companyPrice) })}</span>
                     </p>
                 </div>
 
                 <div className="flex items-center justify-between pt-1"
-                    title={!offer.isActive && !canActivate ? "Cette offre doit être approuvée par le Super Admin avant de pouvoir être activée" : undefined}>
+                    title={!offer.isActive && !canActivate ? t("offerMustApprovedSuper") : undefined}>
                     <span className="text-xs text-gray-500">
-                        {offer.isActive ? "Visible par les employés" : "Masquée"}
+                        {offer.isActive ? t("visibleEmployees") : t("hidden")}
                     </span>
                     <button
                         type="button"

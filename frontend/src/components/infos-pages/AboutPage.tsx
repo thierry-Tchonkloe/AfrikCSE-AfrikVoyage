@@ -1,9 +1,9 @@
 // /src/components/infos-pages/AboutPage.tsx
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { motion, useInView, useAnimation, AnimatePresence } from "framer-motion";
 import {
   Rocket,
@@ -165,105 +165,110 @@ import {
   Wine as WineIcon,
   Cake as CakeIcon
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.aboutPage">>;
 
 // ─── DONNÉES ──────────────────────────────────────────────────────────────
 
 // Statistiques clés - inspirées de HappyPal
-const stats = [
-  { value: "500K+", label: "Bénéficiaires", icon: <Users className="w-5 h-5" />, color: "indigo" },
-  { value: "10K+", label: "Entreprises clientes", icon: <Building2 className="w-5 h-5" />, color: "emerald" },
-  { value: "500K+", label: "Offres disponibles", icon: <ShoppingBag className="w-5 h-5" />, color: "purple" },
-  { value: "98%", label: "Satisfaction utilisateurs", icon: <Heart className="w-5 h-5" />, color: "rose" },
-];
+const getStats = (t: Translator) => ([
+  { value: "500K+", label: t("beneficiaries"), icon: <Users className="w-5 h-5" />, color: "indigo" },
+  { value: "10K+", label: t("clientCompanies"), icon: <Building2 className="w-5 h-5" />, color: "emerald" },
+  { value: "500K+", label: t("availableOffers"), icon: <ShoppingBag className="w-5 h-5" />, color: "purple" },
+  { value: "98%", label: t("userSatisfaction"), icon: <Heart className="w-5 h-5" />, color: "rose" },
+]);
 
 // Avantages - style HappyPal (cartes simples avec icônes)
-const advantages = [
+const getAdvantages = (t: Translator) => ([
   {
     icon: <Gift className="w-6 h-6" />,
-    title: "Billetterie CSE et réductions",
-    description: "Des milliers d'offres irrésistibles, adaptées à tous les moments de vie.",
+    title: t("cseTicketingDiscounts"),
+    description: t("thousandsIrresistibleOffers"),
     color: "indigo"
   },
   {
     icon: <Smartphone className="w-6 h-6" />,
-    title: "Expérience mobile intuitive",
-    description: "Une application ludique et facile à prendre en main pour tous vos salariés.",
+    title: t("intuitiveMobileExperience"),
+    description: t("funEasyUseApp"),
     color: "emerald"
   },
   {
     icon: <Users className="w-6 h-6" />,
-    title: "Animations qui rapprochent",
-    description: "Des événements qui font vivre le CSE toute l'année et créent du lien.",
+    title: t("activitiesBringPeople"),
+    description: t("eventsKeepCseAlive"),
     color: "purple"
   },
   {
     icon: <Headphones className="w-6 h-6" />,
-    title: "Support utilisateur 7j/7",
-    description: "Une équipe réactive à votre écoute pour vous accompagner au quotidien.",
+    title: t("userSupport7Days"),
+    description: t("responsiveTeamReadyListen"),
     color: "amber"
   }
-];
+]);
 
 // Témoignages - comme sur HappyPal
-const testimonials = [
+const getTestimonials = (t: Translator) => ([
   {
     id: 1,
-    name: "Aurélia & Marie",
-    role: "Élues CSE",
-    text: "Notre CSE travaillait déjà avec un prestataire, le problème, c'est qu'il y avait une offre qui était assez réduite. On a fait appel à notre solution puisqu'on cherchait une nouvelle approche pour nos collaborateurs, pour pouvoir leur proposer davantage d'activités, de bons plans, et côté CSE pour nous faciliter la vie en termes de gestion.",
+    name: t("aureliaMarie"),
+    role: t("cseRepresentatives"),
+    text: t("cseWasAlreadyWorking"),
     avatar: "AM",
     color: "indigo"
   },
   {
     id: 2,
-    name: "Nathalie",
-    role: "Élue CSE",
-    text: "Nous avons choisi Club Employés pour sa grande modernité, sa facilité d'utilisation, son ergonomie et son approche 100% digitale que nous ne trouvions nulle part ailleurs. Modernité, liberté et simplicité.",
+    name: t("nathalie"),
+    role: t("cseRepresentative"),
+    text: t("choseClubEmployesIts"),
     avatar: "N",
     color: "emerald"
   },
   {
     id: 3,
-    name: "Sonia",
-    role: "Élue CSE",
-    text: "Le CSE de WWF peut enfin tout centraliser au même endroit, que ce soit du côté administrateur ou du côté salarié, qui retrouve tous leurs avantages dans une même application mobile.",
+    name: t("sonia"),
+    role: t("cseRepresentative"),
+    text: t("wwfSCseCan"),
     avatar: "S",
     color: "purple"
   }
-];
+]);
 
 // Avis utilisateurs
-const userReviews = [
-  { text: "Je suis super contente de l'échange que j'ai eu avec l'assistance. La réponse a été rapide et très claire.", author: "Marie D.", rating: 5 },
-  { text: "Très bonne plateforme facile à utiliser et avec beaucoup de réduction.", author: "Jean P.", rating: 5 },
-  { text: "Très bonne application .ras", author: "Sophie L.", rating: 5 },
-  { text: "La plateforme est très bien faite, permet de profiter de bons plans et de réductions avantageuses.", author: "Thomas M.", rating: 5 },
-  { text: "Globalement le choix est si grand que je m'y retrouve. Le support via chat est très réactif.", author: "Amandine R.", rating: 5 },
-];
+const getUserReviews = (t: Translator) => ([
+  { text: t("iMReallyHappy"), author: t("marieD"), rating: 5 },
+  { text: t("veryGoodPlatformEasy"), author: t("jeanP"), rating: 5 },
+  { text: t("veryGoodAppNothing"), author: t("sophieL"), rating: 5 },
+  { text: t("platformVeryWellMade"), author: t("thomasM"), rating: 5 },
+  { text: t("overallChoiceSoWide"), author: t("amandineR"), rating: 5 },
+]);
 
 // ─── COMPOSANTS ────────────────────────────────────────────────────────────
 
 // Hero Section - style HappyPal (deux parties + carrousel)
 function HeroSection() {
+  const t = useTranslations("infos.aboutPage");
+  const stats = useMemo(() => getStats(t), [t]);
   const [activeSlide, setActiveSlide] = useState(0);
   const slides = [
     {
-      title: "Simplifiez la gestion du CSE",
-      description: "Une plateforme qui centralise tous vos avantages salariés en un seul endroit, accessible partout, tout le temps.",
+      title: t("simplifyCseManagement"),
+      description: t("platformCentralizesAll"),
       image: "/images/hero-cse.jpg",
-      cta: "Découvrir"
+      cta: t("discover")
     },
     {
-      title: "Des milliers d'offres à portée de main",
-      description: "Billetterie, cartes cadeaux, réductions locales et nationales : vos salariés profitent de 500K+ offres exclusives.",
+      title: t("thousandsOffersFingertips"),
+      description: t("ticketingGiftCardsLocal"),
       image: "/images/hero-offers.jpg",
-      cta: "Voir les offres"
+      cta: t("viewOffers")
     },
     {
-      title: "Une expérience mobile ludique",
-      description: "Application intuitive et simple à prendre en main pour que chaque salarié profite de ses avantages en toute autonomie.",
+      title: t("funMobileExperience"),
+      description: t("intuitiveEasyUseApp"),
       image: "/images/hero-mobile.jpg",
-      cta: "Télécharger"
+      cta: t("download")
     }
   ];
 
@@ -289,7 +294,7 @@ function HeroSection() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-200 mb-6"
           >
             <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-            <span className="text-xs font-semibold text-indigo-700">Plateforme CSE • 9 ans d'expertise</span>
+            <span className="text-xs font-semibold text-indigo-700">{t("csePlatform9Years")}</span>
           </motion.div>
 
           {/* Titre avec carrousel */}
@@ -334,7 +339,7 @@ function HeroSection() {
               href="#"
               className="px-8 py-3.5 border-2 border-slate-200 text-slate-700 rounded-xl font-semibold hover:border-indigo-300 hover:bg-indigo-50 transition-all"
             >
-              Voir la démo
+              {t("watchDemo")}
             </Link>
           </div>
 
@@ -424,22 +429,22 @@ function HeroSection() {
 
 // Section "Augmentez l'impact" - style HappyPal
 function ImpactSection() {
+  const tr = useTranslations("infos.aboutPage");
+  const t = useTranslations("infos.aboutPage");
+  const advantages = useMemo(() => getAdvantages(t), [t]);
   return (
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold mb-4">
             <Sparkles className="w-4 h-4" />
-            Notre mission
+            {t("mission")}
           </span>
           <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4" style={{ fontFamily: "'Sanomat', ui-serif" }}>
-            Augmentez l'impact du CSE sur le{" "}
-            <span className="bg-linear-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
-              bien-être des salariés
-            </span>
+            {tr.rich("increaseCsesImpactEmployee", { span1: (chunks) => <span className="bg-linear-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">{chunks}</span> })}
           </h2>
           <p className="text-lg text-slate-500">
-            Une plateforme vivante qui enrichit la vie de vos collaborateurs tout au long de l'année
+            {t("livelyPlatformEnriches")}
           </p>
         </div>
 
@@ -468,26 +473,27 @@ function ImpactSection() {
 
 // Section "Simplifiez la gestion" - style HappyPal
 function ManagementSection() {
+  const t = useTranslations("infos.aboutPage");
   const features = [
     {
       icon: <SettingsIcon className="w-5 h-5" />,
-      title: "Paramétrage en quelques clics",
-      description: "Dotations-cadeaux et subventions ASC configurées facilement"
+      title: t("setUpFewClicks"),
+      description: t("giftAllowancesAscSubsidies")
     },
     {
       icon: <Users className="w-5 h-5" />,
-      title: "Gestion avancée des utilisateurs",
-      description: "Ouvrants droits et ayants droits gérés simplement"
+      title: t("advancedUserManagement"),
+      description: t("beneficiariesDependents")
     },
     {
       icon: <CreditCard className="w-5 h-5" />,
-      title: "Comptabilité ultra-facilitée",
-      description: "Subventions et remboursements automatisés"
+      title: t("ultraSimplifiedAccounting"),
+      description: t("automatedSubsidies")
     },
     {
       icon: <Headphones className="w-5 h-5" />,
-      title: "Accompagnement expert",
-      description: "De A à Z par nos spécialistes CSE"
+      title: t("expertSupport"),
+      description: t("fromZCseSpecialists")
     }
   ];
 
@@ -502,13 +508,13 @@ function ManagementSection() {
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold mb-4">
               <Zap className="w-4 h-4" />
-              Gestion simplifiée
+              {t("simplifiedManagement")}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4" style={{ fontFamily: "'Sanomat', ui-serif" }}>
-              Simplifiez au maximum votre gestion des budgets
+              {t("simplifyBudgetManagementAs")}
             </h2>
             <p className="text-lg text-slate-500 mb-8">
-              Une plateforme qui centralise tout : dotations, subventions, remboursements et distribution aux salariés.
+              {t("platformCentralizes")}
             </p>
             <div className="space-y-4">
               {features.map((feature, idx) => (
@@ -540,7 +546,7 @@ function ManagementSection() {
             <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6">
               <Image
                 src="/images/dashboard-cse.jpg"
-                alt="Dashboard CSE"
+                alt={t("cseDashboard")}
                 width={600}
                 height={400}
                 className="rounded-2xl"
@@ -552,8 +558,8 @@ function ManagementSection() {
               <div className="absolute -bottom-4 -right-4 bg-white rounded-xl shadow-lg p-4 border border-slate-200">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-sm font-semibold text-slate-700">En direct</span>
-                  <span className="text-xs text-slate-400">1 234 utilisateurs</span>
+                  <span className="text-sm font-semibold text-slate-700">{t("live")}</span>
+                  <span className="text-xs text-slate-400">{t("text1234Users")}</span>
                 </div>
               </div>
             </div>
@@ -566,26 +572,27 @@ function ManagementSection() {
 
 // Section "Créez du lien" - style HappyPal
 function ConnectionSection() {
+  const t = useTranslations("infos.aboutPage");
   const tools = [
     {
       icon: <Mail className="w-5 h-5" />,
-      title: "Newsletters",
-      description: "Communication ciblée vers vos salariés"
+      title: t("newsletters"),
+      description: t("targetedCommunication")
     },
     {
       icon: <Calendar className="w-5 h-5" />,
-      title: "Événements",
-      description: "Gestion d'inscriptions et voyages"
+      title: t("events"),
+      description: t("registrationTravelManagement")
     },
     {
       icon: <BellIcon className="w-5 h-5" />,
-      title: "Notifications mobiles",
-      description: "Alertes en temps réel"
+      title: t("mobileNotifications"),
+      description: t("realTimeAlerts")
     },
     {
       icon: <Users className="w-5 h-5" />,
-      title: "Ciblage avancé",
-      description: "Destinataires personnalisés"
+      title: t("advancedTargeting"),
+      description: t("customRecipients")
     }
   ];
 
@@ -602,7 +609,7 @@ function ConnectionSection() {
             <div className="bg-indigo-50 rounded-3xl p-8 border border-indigo-200">
               <Image
                 src="/images/mobile-app.jpg"
-                alt="Application mobile"
+                alt={t("mobileApp")}
                 width={500}
                 height={400}
                 className="rounded-2xl mx-auto"
@@ -622,13 +629,13 @@ function ConnectionSection() {
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold mb-4">
               <Users className="w-4 h-4" />
-              Créez du lien
+              {t("buildConnections")}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4" style={{ fontFamily: "'Sanomat', ui-serif" }}>
-              Créez du lien entre vos salariés et valorisez les actions du CSE
+              {t("buildConnectionsBetween")}
             </h2>
             <p className="text-lg text-slate-500 mb-8">
-              Une suite d'outils simples à prendre en main qui met votre CSE dans la poche des salariés.
+              {t("suiteEasyUseTools")}
             </p>
             <div className="grid grid-cols-2 gap-4">
               {tools.map((tool, idx) => (
@@ -651,7 +658,7 @@ function ConnectionSection() {
               href="#"
               className="inline-flex items-center gap-2 mt-6 text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
             >
-              Voir les avis clients
+              {t("seeCustomerReviews")}
               <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>
@@ -663,6 +670,9 @@ function ConnectionSection() {
 
 // Section Témoignages - style HappyPal
 function TestimonialsSection() {
+  const tr = useTranslations("infos.aboutPage");
+  const t = useTranslations("infos.aboutPage");
+  const testimonials = useMemo(() => getTestimonials(t), [t]);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const nextTestimonial = () => {
@@ -679,13 +689,10 @@ function TestimonialsSection() {
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold mb-4">
             <Quote className="w-4 h-4" />
-            Ils témoignent
+            {t("testimonials")}
           </span>
           <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4" style={{ fontFamily: "'Sanomat', ui-serif" }}>
-            Reconnue par les entreprises,{" "}
-            <span className="bg-linear-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-              adorée par les employés
-            </span>
+            {tr.rich("recognizedCompaniesLoved", { span1: (chunks) => <span className="bg-linear-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">{chunks}</span> })}
           </h2>
         </div>
 
@@ -753,6 +760,8 @@ function TestimonialsSection() {
 
 // Section Avis utilisateurs - style HappyPal (carrousel de citations)
 function UserReviewsSection() {
+  const t = useTranslations("infos.aboutPage");
+  const userReviews = useMemo(() => getUserReviews(t), [t]);
   const [activeReview, setActiveReview] = useState(0);
 
   useEffect(() => {
@@ -767,7 +776,7 @@ function UserReviewsSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-800" style={{ fontFamily: "'Sanomat', ui-serif" }}>
-            On chouchoute nos users, et ils nous le rendent bien
+            {t("pamperUsersTheyReturn")}
           </h2>
         </div>
 
@@ -816,6 +825,7 @@ function UserReviewsSection() {
 
 // Section "Tous vos avantages dans une application mobile"
 function MobileAppSection() {
+  const t = useTranslations("infos.aboutPage");
   return (
     <section className="py-20 bg-indigo-600 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -827,13 +837,13 @@ function MobileAppSection() {
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-xs font-semibold mb-4">
               <Smartphone className="w-4 h-4" />
-              Application mobile
+              {t("mobileApp")}
             </span>
             <h2 className="text-3xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Sanomat', ui-serif" }}>
-              Tous vos avantages dans une application mobile
+              {t("allBenefitsOneMobile")}
             </h2>
             <p className="text-lg text-indigo-200 mb-8">
-              Accédez à toutes les réductions, subventions et actualités de votre CSE depuis votre application mobile.
+              {t("accessAllDiscountsSubsidies")}
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
@@ -841,14 +851,14 @@ function MobileAppSection() {
                 className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-semibold hover:bg-indigo-50 transition-all flex items-center gap-2"
               >
                 <AppleIcon className="w-5 h-5" />
-                App Store
+                {t("appStore")}
               </Link>
               <Link
                 href="#"
                 className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-xl font-semibold hover:bg-white/20 transition-all flex items-center gap-2"
               >
                 <Play className="w-5 h-5" />
-                Google Play
+                {t("googlePlay")}
               </Link>
             </div>
           </motion.div>
@@ -862,7 +872,7 @@ function MobileAppSection() {
             <div className="relative">
               <Image
                 src="/images/mobile-app-mockup.png"
-                alt="Application mobile Club Employés"
+                alt={t("clubEmployesMobileApp")}
                 width={300}
                 height={500}
                 className="rounded-3xl shadow-2xl"
@@ -874,7 +884,7 @@ function MobileAppSection() {
               <div className="absolute -bottom-4 -right-4 bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-sm text-white font-semibold">500K+ utilisateurs</span>
+                  <span className="text-sm text-white font-semibold">{t("text500kUsers")}</span>
                 </div>
               </div>
             </div>

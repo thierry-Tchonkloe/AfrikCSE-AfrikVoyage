@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, useAnimation, useInView } from "framer-motion";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
     Rocket, Building2, Landmark, ShieldCheck, Smartphone, Users,
     Settings, Link2, TrendingUp, ChevronDown, ChevronLeft, ChevronRight,
     Check
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.benefitsAndTrust">>;
 
 // ── TYPES & CONFIGURATIONS DATA ───────────────────────────────────────
 
@@ -44,247 +47,247 @@ interface FAQItem {
 }
 
 // Tableau comparatif
-const COMPARISONS = [
+const getComparisons = (t: Translator) => ([
     {
-        criterion: "Gestion des reçus & frais",
-        old: "Notes de frais papier perdues, saisie manuelle interminable.",
-        new: "Scan IA instantané, rapprochement bancaire automatique en 2s.",
+        criterion: t("receiptExpenseManagement"),
+        old: t("lostPaperExpenseReports"),
+        new: t("instantAiScanningAutomatic"),
         status: "bad"
     },
     {
-        criterion: "Validation des dépenses",
-        old: "Chaîne d'e-mails interminable, blocages opérationnels.",
-        new: "Workflows de validation dynamiques et alertes Slack/WhatsApp.",
+        criterion: t("expenseApproval"),
+        old: t("endlessEmailChains"),
+        new: t("dynamicApprovalWorkflows"),
         status: "good"
     },
     {
-        criterion: "Réservation de voyages",
-        old: "Salariés qui avancent les frais sur des sites grand public.",
-        new: "Inventaire centralisé (vols, hôtels, bus) sans avance de frais.",
+        criterion: t("travelBooking"),
+        old: t("employeesPayingUpfront"),
+        new: t("centralizedInventoryFlights"),
         status: "good"
     },
     {
-        criterion: "Avantages & Crédits CSE",
-        old: "Chèques cadeaux physiques périmés ou oubliés au fond d'un tiroir.",
-        new: "Compte unique digitalisé utilisable instantanément via mobile.",
+        criterion: t("cseBenefitsCredits"),
+        old: t("physicalGiftVouchersExpired"),
+        new: t("singleDigitalAccountUsable"),
         status: "good"
     },
     {
-        criterion: "Suivi carbone & RSE",
-        old: "Aucun suivi de l'impact environnemental des déplacements.",
-        new: "Budget carbone intégré et visualisation de l'empreinte CO₂ par trajet.",
+        criterion: t("carbonTrackingCsr"),
+        old: t("noTrackingEnvironmental"),
+        new: t("builtCarbonBudgetCo"),
         status: "good"
     },
     {
-        criterion: "Gestion des imprévus (vols annulés)",
-        old: "Stress et gestion manuelle, heures perdues à tout réorganiser.",
-        new: "IA prédictive reprogramme automatiquement vols et hôtels avant notification.",
+        criterion: t("handlingDisruptionsCancelled"),
+        old: t("stressManualHandlingHours"),
+        new: t("predictiveAiAutomatically"),
         status: "good"
     }
-];
+]);
 
 // Processus d'intégration en 4 étapes
-const INTEGRATION_STEPS = [
+const getIntegrationSteps = (t: Translator) => ([
     {
         num: "01",
-        title: "Configuration Intelligente",
-        desc: "Analyse de votre politique voyage et paramétrage sur-mesure de votre espace de travail.",
-        tag: "Setup Express",
+        title: t("smartConfiguration"),
+        desc: t("analysisTravelPolicyTailor"),
+        tag: t("setupExpress"),
         color: "from-teal-500 to-emerald-500",
         Icon: Settings,
-        label: "CONFIGURATION INTELLIGENTE"
+        label: t("smartConfiguration2")
     },
     {
         num: "02",
-        title: "Synchronisation ERP",
-        desc: "Connexion API sécurisée à vos outils (SAP, Odoo, Salesforce) pour une donnée unique et éviter la double saisie.",
-        tag: "Intégration Native",
+        title: t("erpSynchronization"),
+        desc: t("secureApiConnectionTools"),
+        tag: t("nativeIntegration"),
         color: "from-indigo-500 to-blue-600",
         Icon: Link2,
-        label: "SYNCHRONISATION ERP"
+        label: t("erpSynchronization2")
     },
     {
         num: "03",
-        title: "Déploiement Accompagné",
-        desc: "Formation des administrateurs et activation de l'application mobile pour les voyageurs.",
-        tag: "Onboarding",
+        title: t("guidedDeployment"),
+        desc: t("administratorTrainingMobile"),
+        tag: t("onboarding"),
         color: "from-purple-500 to-pink-600",
         Icon: Rocket,
-        label: "DÉPLOIEMENT ACCOMPAGNÉ"
+        label: t("guidedDeployment2")
     },
     {
         num: "04",
-        title: "Optimisation Continue",
-        desc: "Analyse des rapports de dépenses et ajustements stratégiques pour atteindre les -30% d'économies.",
-        tag: "Santé Système",
+        title: t("continuousOptimization"),
+        desc: t("analysisExpenseReports"),
+        tag: t("systemHealth"),
         color: "from-amber-500 to-orange-600",
         Icon: TrendingUp,
-        label: "OPTIMISATION CONTINUE"
+        label: t("continuousOptimization2")
     }
-];
+]);
 
 // Plans tarifaires - BOUTONS HARMONISÉS
-const PRICING_PLANS: PricingPlan[] = [
+const getPricingPlans = (t: Translator): PricingPlan[] => ([
     {
         id: 1,
-        name: "Startup",
+        name: t("startup"),
         price: "..€",
-        period: "/mois",
-        description: "Parfait pour les PME en croissance",
+        period: t("month"),
+        description: t("perfectGrowingSmes"),
         features: [
-            "Jusqu'à 25 utilisateurs",
-            "Réservations voyages illimitées",
-            "Gestion des notes de frais basique",
-            "Support email 5j/7",
-            "Dashboard analytics"
+            t("up25Users"),
+            t("unlimitedTravelBookings"),
+            t("basicExpenseReportManagement"),
+            t("emailSupport5Days"),
+            t("analyticsDashboard")
         ],
-        buttonText: "Commencer",
+        buttonText: t("getStarted"),
         buttonVariant: "outline",
         icon: "rocket"
     },
     {
         id: 2,
-        name: "Business",
+        name: t("business"),
         price: "..€",
-        period: "/mois",
-        description: "La solution complète pour les ETI",
+        period: t("month"),
+        description: t("completeSolutionMidSized"),
         features: [
-            "Jusqu'à 150 utilisateurs",
-            "Toutes les fonctionnalités voyage",
-            "IA predictive + reporting avancé",
-            "Support prioritaire 7j/7",
-            "Intégrations ERP natives",
-            "Gestion CSE complète"
+            t("up150Users"),
+            t("allTravelFeatures"),
+            t("predictiveAiAdvanced"),
+            t("prioritySupport7Days"),
+            t("nativeErpIntegrations"),
+            t("fullCseManagement")
         ],
-        buttonText: "Commencer",
+        buttonText: t("getStarted"),
         buttonVariant: "primary",
         popular: true,
         icon: "building"
     },
     {
         id: 3,
-        name: "Enterprise",
-        price: "Sur mesure",
+        name: t("enterprise"),
+        price: t("custom"),
         period: "",
-        description: "Pour les grands groupes",
+        description: t("largeGroups"),
         features: [
-            "Utilisateurs illimités",
-            "API dédiée et personnalisation",
-            "SLA garantie 99.9%",
-            "Account manager dédié",
-            "Formation sur site",
-            "Audit et optimisation RSE"
+            t("unlimitedUsers"),
+            t("dedicatedApiCustomization"),
+            t("guaranteed999Sla"),
+            t("dedicatedAccountManager"),
+            t("siteTraining"),
+            t("csrAuditOptimization")
         ],
-        buttonText: "Nous contacter",
+        buttonText: t("contactUs"),
         buttonVariant: "outline",
         icon: "landmark"
     }
-];
+]);
 
 // Témoignages
-const REVIEWS: Testimonial[] = [
+const getReviews = (t: Translator): Testimonial[] => ([
     {
         id: 1,
-        name: "Marie Dubois",
-        role: "Directrice RH",
-        company: "TechAfrik",
+        name: t("marieDubois"),
+        role: t("hrDirector"),
+        company: t("techafrik"),
         avatar: "MD",
         avatarBg: "bg-teal-600",
         metric: "-30%",
-        metricLabel: "De frais de voyage",
-        text: "AfrikVoyage a révolutionné notre gestion. Nous avons divisé nos coûts tout en offrant une autonomie totale à nos équipes. L'interface est intuitive et le support est réactif.",
+        metricLabel: t("travelCosts"),
+        text: t("afrikvoyageRevolutionized"),
         rating: 5,
-        date: "Il y a 2 mois"
+        date: t("text2MonthsAgo")
     },
     {
         id: 2,
-        name: "Jean-Paul Kouassi",
+        name: t("jeanPaulKouassi"),
         role: "CFO",
-        company: "InnovCorp",
+        company: t("innovcorp"),
         avatar: "JK",
         avatarBg: "bg-blue-600",
         metric: "100%",
-        metricLabel: "Conformité Audit",
-        text: "La sérénité fiscale que nous apporte la plateforme est inestimable. Chaque centime dépensé est tracé et conforme. Un gain de temps considérable pour nos équipes financières.",
+        metricLabel: t("auditCompliance"),
+        text: t("taxPeaceMindPlatform"),
         rating: 5,
-        date: "Il y a 1 semaine"
+        date: t("text1WeekAgo")
     },
     {
         id: 3,
-        name: "Amina Diop",
-        role: "Head of People",
-        company: "Baobab Digital",
+        name: t("aminaDiop"),
+        role: t("headPeople"),
+        company: t("baobabDigital"),
         avatar: "AD",
         avatarBg: "bg-amber-500",
         metric: "+45%",
-        metricLabel: "Engagement CSE",
-        text: "Le catalogue d'avantages digitalisé fonctionne comme une galerie de services premium. Les employés adorent la flexibilité et l'accès instantané aux offres.",
+        metricLabel: t("cseEngagement"),
+        text: t("digitalBenefitsCatalogWorks"),
         rating: 4,
-        date: "Il y a 3 jours"
+        date: t("text3DaysAgo")
     },
     {
         id: 4,
-        name: "Thomas Martin",
-        role: "Directeur Général",
-        company: "AfriLogistics",
+        name: t("thomasMartin"),
+        role: t("generalManager"),
+        company: t("afrilogistics"),
         avatar: "TM",
         avatarBg: "bg-indigo-600",
         metric: "-25%",
-        metricLabel: "Temps administratif",
-        text: "Nous avons réduit de 25% le temps passé sur la gestion des notes de frais. L'automatisation est impressionnante et les équipes sont autonomes.",
+        metricLabel: t("administrativeTime"),
+        text: t("reducedTimeSpentExpense"),
         rating: 5,
-        date: "Il y a 2 semaines"
+        date: t("text2WeeksAgo")
     },
     {
         id: 5,
-        name: "Sarah Koné",
-        role: "Office Manager",
-        company: "Digital Africa",
+        name: t("sarahKone"),
+        role: t("officeManager"),
+        company: t("digitalAfrica"),
         avatar: "SK",
         avatarBg: "bg-rose-500",
         metric: "+60%",
-        metricLabel: "Satisfaction employés",
-        text: "Les collaborateurs sont ravis de la simplicité d'utilisation. Plus besoin d'avancer les frais, tout est centralisé. Une vraie transformation digitale.",
+        metricLabel: t("employeeSatisfaction"),
+        text: t("employeesDelightedHowSimple"),
         rating: 5,
-        date: "Il y a 1 mois"
+        date: t("text1MonthAgo")
     }
-];
+]);
 
 // FAQ
-const FAQ_ITEMS: FAQItem[] = [
+const getFaqItems = (t: Translator): FAQItem[] => ([
     {
-        question: "Comment se passe l'intégration avec nos outils existants ?",
-        answer: "Notre équipe technique vous accompagne pour connecter votre ERP (SAP, Odoo, Salesforce) via notre API sécurisée. L'intégration se fait en moyenne en 2 semaines."
+        question: t("howDoesIntegrationExisting"),
+        answer: t("technicalTeamHelpsConnect")
     },
     {
-        question: "Quels sont les délais de mise en place ?",
-        answer: "La plateforme peut être opérationnelle en 48h pour les fonctionnalités de base. L'intégration complète avec vos politiques voyage prend généralement 1 à 2 semaines."
+        question: t("whatSetupTimes"),
+        answer: t("platformCanOperational48")
     },
     {
-        question: "Les données sont-elles hébergées en Afrique ?",
-        answer: "Oui, nous proposons un hébergement local en Afrique (région Ouest ou Est selon votre préférence) avec une conformité RGPD et aux réglementations locales."
+        question: t("dataHostedAfrica"),
+        answer: t("yesOfferLocalHosting")
     },
     {
-        question: "Comment gérez-vous la conformité fiscale multi-pays ?",
-        answer: "Notre moteur de règles intègre automatiquement les spécificités fiscales de chaque pays (TVA, taxes locales, seuils d'exonération). Les politiques sont mises à jour en temps réel."
+        question: t("howDoHandleMulti"),
+        answer: t("rulesEngineAutomatically")
     },
     {
-        question: "Proposez-vous une application mobile ?",
-        answer: "Oui, nos applications iOS et Android permettent aux employés de gérer leurs réservations, notes de frais et avantages CSE en mobilité complète."
+        question: t("doOfferMobileApp"),
+        answer: t("yesIosAndroidApps")
     },
     {
-        question: "Quel est le support inclus ?",
-        answer: "Le support est inclus 24/7 par chat et email. Les clients Enterprise bénéficient d'un account manager dédié et d'un SLA de 99.9%."
+        question: t("whatSupportIncluded"),
+        answer: t("supportIncluded247")
     },
     {
-        question: "Pouvons-nous personnaliser les politiques de voyage ?",
-        answer: "Absolument. Notre plateforme permet de configurer des politiques de voyage par département, par région ou par type de collaborateur, avec des niveaux d'approbation personnalisables."
+        question: t("canCustomizeTravelPolicies"),
+        answer: t("absolutelyPlatformLets")
     },
     {
-        question: "Comment est gérée la confidentialité des données ?",
-        answer: "Nous appliquons le principe de minimisation des données avec un chiffrement AES-256 au repos et TLS 1.3 en transit. L'accès aux données est strictement contrôlé par des rôles et permissions."
+        question: t("howDataPrivacyManaged"),
+        answer: t("applyPrincipleData")
     }
-];
+]);
 
 // ── COMPOSANTS INTERNES ───────────────────────────────────────────────────────
 
@@ -336,6 +339,8 @@ const TrustBadge = ({ children, icon, color }: { children: React.ReactNode; icon
 
 // Carrousel d'avis
 function ReviewsCarousel() {
+    const t = useTranslations("infos.benefitsAndTrust");
+    const REVIEWS = useMemo(() => getReviews(t), [t]);
     const [activeIndex, setActiveIndex] = useState(0);
     const [direction, setDirection] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -389,13 +394,13 @@ function ReviewsCarousel() {
                         <span className="text-2xl font-black text-slate-800">{averageRating}</span>
                         <span className="text-slate-400">/5</span>
                     </div>
-                    <p className="text-slate-500 text-sm">Basé sur {REVIEWS.length} avis clients</p>
+                    <p className="text-slate-500 text-sm">{t("basedCustomerReviews", { length: REVIEWS.length })}</p>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={prevReview} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-all" aria-label="Avis précédent">
+                    <button onClick={prevReview} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-all" aria-label={t("previousReview")}>
                         <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <button onClick={nextReview} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-all" aria-label="Avis suivant">
+                    <button onClick={nextReview} className="w-10 h-10 rounded-full bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition-all" aria-label={t("nextReview")}>
                         <ChevronRight className="w-5 h-5" />
                     </button>
                 </div>
@@ -447,6 +452,7 @@ function ReviewsCarousel() {
 
 // ── FORMULAIRE DE CONTACT RAPIDE ─────────────────────────────────────────────
 const QuickContactForm = () => {
+    const t = useTranslations("infos.benefitsAndTrust");
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -473,16 +479,16 @@ const QuickContactForm = () => {
         <div className="bg-indigo-600 rounded-2xl p-6 md:p-8 text-white">
             <div className="text-center mb-6">
                 <div className="text-4xl mb-3">💬</div>
-                <h3 className="text-xl font-black mb-1">Une question spécifique ?</h3>
+                <h3 className="text-xl font-black mb-1">{t("specificQuestion")}</h3>
                 <p className="text-indigo-200 text-sm">
-                    Notre équipe est disponible pour vous accompagner dans votre projet.
+                    {t("teamAvailableSupportProject")}
                 </p>
             </div>
 
             {isSubmitted ? (
                 <div className="bg-emerald-500/20 border border-emerald-400/30 rounded-xl p-4 text-center">
-                    <p className="text-emerald-300 font-semibold">✅ Message envoyé !</p>
-                    <p className="text-emerald-200/70 text-sm mt-1">Nous vous répondrons dans les meilleurs délais.</p>
+                    <p className="text-emerald-300 font-semibold">{t("messageSent")}</p>
+                    <p className="text-emerald-200/70 text-sm mt-1">{t("willGetBackAs")}</p>
                 </div>
             ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -490,7 +496,7 @@ const QuickContactForm = () => {
                         <input
                             type="text"
                             name="name"
-                            placeholder="Votre nom"
+                            placeholder={t("name")}
                             value={formData.name}
                             onChange={handleChange}
                             required
@@ -501,7 +507,7 @@ const QuickContactForm = () => {
                         <input
                             type="email"
                             name="email"
-                            placeholder="Votre email"
+                            placeholder={t("email")}
                             value={formData.email}
                             onChange={handleChange}
                             required
@@ -511,7 +517,7 @@ const QuickContactForm = () => {
                     <div>
                         <textarea
                             name="message"
-                            placeholder="Votre message..."
+                            placeholder={t("message")}
                             rows={3}
                             value={formData.message}
                             onChange={handleChange}
@@ -523,13 +529,13 @@ const QuickContactForm = () => {
                         type="submit"
                         className="w-full bg-white text-indigo-600 py-3 rounded-xl font-bold text-sm hover:bg-indigo-50 transition-colors"
                     >
-                        Envoyer le message
+                        {t("sendMessage")}
                     </button>
                 </form>
             )}
 
             <div className="mt-6 pt-6 border-t border-indigo-500/30 text-center">
-                <p className="text-indigo-200 text-xs mb-2">Ou contactez-nous directement</p>
+                <p className="text-indigo-200 text-xs mb-2">{t("contactUsDirectly")}</p>
                 <a href="tel:+33123456789" className="text-lg font-black hover:text-white transition-colors">
                     +33 1 23 45 67 89
                 </a>
@@ -539,6 +545,13 @@ const QuickContactForm = () => {
 };
 
 export default function BenefitsTrustAndProcess() {
+    const tt = useTranslations("infos.benefitsAndTrust");
+    const tr = useTranslations("infos.benefitsAndTrust");
+    const t = useTranslations("infos.benefitsAndTrust");
+    const COMPARISONS = useMemo(() => getComparisons(t), [t]);
+    const INTEGRATION_STEPS = useMemo(() => getIntegrationSteps(t), [t]);
+    const PRICING_PLANS = useMemo(() => getPricingPlans(t), [t]);
+    const FAQ_ITEMS = useMemo(() => getFaqItems(t), [t]);
     const [activeStep, setActiveStep] = useState(0);
     const [openFAQ, setOpenFAQ] = useState<number | null>(null);
     const stepIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -613,13 +626,13 @@ export default function BenefitsTrustAndProcess() {
                 >
                     <motion.div variants={itemVariants} className="text-center max-w-3xl mx-auto mb-16">
                         <span className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full">
-                            Tarifs adaptés à vos besoins
+                            {t("pricingTailoredNeeds")}
                         </span>
                         <h2 style={{ fontFamily: "Sanomat, ui-serif", fontWeight: 600 }} className="text-3xl md:text-5xl text-[rgb(21,0,44)] tracking-tight mt-4 mb-6">
-                            Des offres <MarkerHighlight color="rgba(99,102,241,0.12)">flexibles et transparentes</MarkerHighlight>
+                            {tr.rich("offersFlexibleTransparent", { markerhighlight1: (chunks) => <MarkerHighlight color="rgba(99,102,241,0.12)">{chunks}</MarkerHighlight> })}
                         </h2>
                         <p className="text-slate-500 text-base font-medium max-w-2xl mx-auto">
-                            Choisissez le plan qui correspond à votre taille d'entreprise. Sans engagement, évolutif à tout moment.
+                            {t("choosePlanMatchesCompany")}
                         </p>
                     </motion.div>
 
@@ -635,7 +648,7 @@ export default function BenefitsTrustAndProcess() {
                             >
                                 {plan.popular && (
                                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full">
-                                        Le plus populaire
+                                        {t("mostPopular")}
                                     </div>
                                 )}
                                 
@@ -680,24 +693,24 @@ export default function BenefitsTrustAndProcess() {
                 >
                     <motion.div variants={itemVariants} className="text-center max-w-3xl mx-auto mb-16">
                         <span className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full">
-                            L'ancien paradigme est révolu
+                            {t("oldParadigmOver")}
                         </span>
                         <h2 style={{ fontFamily: "Sanomat, ui-serif", fontWeight: 600 }} className="text-3xl md:text-5xl text-[rgb(21,0,44)] tracking-tight mt-4 mb-6">
-                            Pourquoi les leaders <MarkerHighlight color="rgba(16, 185, 129, 0.12)">changent de méthode</MarkerHighlight>
+                            {tr.rich("whyLeadersChangingTheir", { markerhighlight1: (chunks) => <MarkerHighlight color="rgba(16, 185, 129, 0.12)">{chunks}</MarkerHighlight> })}
                         </h2>
                         <p className="text-slate-500 text-base font-medium max-w-2xl mx-auto">
-                            Comparez la lourdeur des processus manuels traditionnels avec l'agilité de l'écosystème unifié d'Afrik.
+                            {t("compareHeavinessTraditional")}
                         </p>
                     </motion.div>
 
                     <motion.div variants={itemVariants} className="border border-slate-200 rounded-3xl overflow-hidden shadow-xl shadow-slate-100/50 bg-white">
                         <div className="grid grid-cols-1 md:grid-cols-3 bg-slate-900 text-white font-bold p-5 text-sm tracking-wide border-b border-slate-800">
-                            <div className="hidden md:block">CRITÈRE</div>
+                            <div className="hidden md:block">{t("criterion")}</div>
                             <div className="opacity-60 flex items-center gap-2">
-                                <span className="text-amber-400 text-lg">✕</span> AVANT (MÉTHODES ANCIENNES)
+                                <span className="text-amber-400 text-lg">✕</span> {t("beforeOldMethods")}
                             </div>
                             <div className="text-emerald-400 flex items-center gap-2">
-                                <span className="text-emerald-400 text-lg">✓</span> MAINTENANT AVEC AFRIK
+                                <span className="text-emerald-400 text-lg">✓</span> {t("nowAfrik")}
                                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"/>
                             </div>
                         </div>
@@ -729,12 +742,12 @@ export default function BenefitsTrustAndProcess() {
                         variants={containerVariants}
                     >
                         <motion.div variants={itemVariants} className="text-center max-w-3xl mx-auto mb-16">
-                            <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600 bg-emerald-100 px-3 py-1.5 rounded-full">Déploiement Agile</span>
+                            <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600 bg-emerald-100 px-3 py-1.5 rounded-full">{t("agileDeployment")}</span>
                             <h2 style={{ fontFamily: "Sanomat, ui-serif", fontWeight: 600 }} className="text-3xl md:text-5xl text-[rgb(21,0,44)] tracking-tight mt-4 mb-6">
-                                Une intégration en <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-600 to-emerald-600">quatre temps forts</span>
+                                {tr.rich("integrationFourKeyStages", { span1: (chunks) => <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-600 to-emerald-600">{chunks}</span> })}
                             </h2>
                             <p className="text-slate-500 text-base font-medium max-w-2xl mx-auto">
-                                De la configuration à l'optimisation continue, nous vous accompagnons à chaque étape.
+                                {t("fromSetupContinuous")}
                             </p>
                         </motion.div>
 
@@ -754,7 +767,7 @@ export default function BenefitsTrustAndProcess() {
                                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                             </span>
-                                            <span className="text-[9px] font-semibold text-emerald-600">Santé Système</span>
+                                            <span className="text-[9px] font-semibold text-emerald-600">{t("systemHealth")}</span>
                                         </div>
                                     )}
                                     
@@ -782,22 +795,22 @@ export default function BenefitsTrustAndProcess() {
                                         <div className="w-3 h-3 rounded-full bg-rose-500" />
                                         <div className="w-3 h-3 rounded-full bg-amber-500" />
                                         <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                                        <span className="text-[11px] text-slate-500 font-bold ml-2">afrik-workspace // core-system</span>
+                                        <span className="text-[11px] text-slate-500 font-bold ml-2">{t("afrikWorkspaceCoreSystem")}</span>
                                     </div>
                                     <div className="bg-slate-100 text-[10px] font-black uppercase text-slate-500 px-3 py-1 rounded-full">
-                                        Live Sandbox
+                                        {t("liveSandbox")}
                                     </div>
                                 </div>
 
                                 <div className="py-8 flex-1 flex flex-col justify-center">
                                     {activeStep === 0 && (
                                         <div className="space-y-4">
-                                            <div className="text-xs font-bold text-indigo-600 flex items-center gap-1.5"><Settings className="w-3.5 h-3.5" /> CONFIGURATION INTELLIGENTE</div>
+                                            <div className="text-xs font-bold text-indigo-600 flex items-center gap-1.5"><Settings className="w-3.5 h-3.5" /> {t("smartConfiguration2")}</div>
                                             <div className="grid grid-cols-2 gap-3">
-                                                {["Politique voyage", "Plafonds budgétaires", "Workflows validation", "Profils utilisateurs"].map((item, i) => (
+                                                {[tt("travelPolicy"), t("budgetCaps"), tt("approvalWorkflows"), tt("userProfiles")].map((item, i) => (
                                                     <div key={i} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between">
                                                         <span className="text-xs font-bold text-slate-700">{item}</span>
-                                                        <span className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full font-black">CONFIGURÉ</span>
+                                                        <span className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full font-black">{t("configured")}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -805,50 +818,50 @@ export default function BenefitsTrustAndProcess() {
                                     )}
                                     {activeStep === 1 && (
                                         <div className="space-y-4">
-                                            <div className="text-xs font-bold text-blue-600 flex items-center gap-1.5"><Link2 className="w-3.5 h-3.5" /> SYNCHRONISATION ERP</div>
+                                            <div className="text-xs font-bold text-blue-600 flex items-center gap-1.5"><Link2 className="w-3.5 h-3.5" /> {t("erpSynchronization2")}</div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 {["SAP", "Odoo", "Salesforce", "Sage"].map((erp, i) => (
                                                     <div key={i} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between">
                                                         <span className="text-xs font-bold text-slate-700">{erp}</span>
-                                                        <span className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full font-black">CONNECTÉ</span>
+                                                        <span className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full font-black">{t("connected")}</span>
                                                     </div>
                                                 ))}
                                             </div>
-                                            <div className="text-[11px] text-slate-500 text-center mt-2">API sécurisée - Double saisie évitée</div>
+                                            <div className="text-[11px] text-slate-500 text-center mt-2">{t("secureApiNoDouble")}</div>
                                         </div>
                                     )}
                                     {activeStep === 2 && (
                                         <div className="space-y-4">
-                                            <div className="text-xs font-bold text-purple-600 flex items-center gap-1.5"><Rocket className="w-3.5 h-3.5" /> DÉPLOIEMENT ACCOMPAGNÉ</div>
+                                            <div className="text-xs font-bold text-purple-600 flex items-center gap-1.5"><Rocket className="w-3.5 h-3.5" /> {t("guidedDeployment2")}</div>
                                             <div className="bg-white p-5 rounded-xl border border-slate-200">
                                                 <div className="flex justify-between items-center mb-3">
-                                                    <span className="text-xs font-black text-slate-700">Formation des administrateurs</span>
-                                                    <span className="text-xs font-black text-white bg-indigo-600 px-2 py-1 rounded">COMPLÉTÉE</span>
+                                                    <span className="text-xs font-black text-slate-700">{t("administratorTraining")}</span>
+                                                    <span className="text-xs font-black text-white bg-indigo-600 px-2 py-1 rounded">{t("completed")}</span>
                                                 </div>
                                                 <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
                                                     <div className="w-full h-full bg-linear-to-r from-emerald-500 to-indigo-500" />
                                                 </div>
                                                 <div className="flex justify-between text-[10px] text-slate-500 font-bold">
-                                                    <span>Activation mobile : 98%</span>
-                                                    <span>+245 utilisateurs actifs</span>
+                                                    <span>{t("mobileActivation98")}</span>
+                                                    <span>{t("text245ActiveUsers")}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     )}
                                     {activeStep === 3 && (
                                         <div className="space-y-4">
-                                            <div className="text-xs font-bold text-amber-600 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> OPTIMISATION CONTINUE</div>
+                                            <div className="text-xs font-bold text-amber-600 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> {t("continuousOptimization2")}</div>
                                             <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-semibold text-slate-700">Économies réalisées</span>
+                                                    <span className="text-xs font-semibold text-slate-700">{t("savingsAchieved")}</span>
                                                     <span className="text-xl font-black text-emerald-600">-30%</span>
                                                 </div>
                                                 <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                                                     <div className="w-[30%] h-full bg-emerald-500 rounded-full" />
                                                 </div>
                                                 <div className="flex items-center justify-between text-[10px] text-slate-500">
-                                                    <span>Objectif Q3 2026</span>
-                                                    <span className="text-emerald-600">✓ Atteint</span>
+                                                    <span>{t("q32026Target")}</span>
+                                                    <span className="text-emerald-600">{t("achieved")}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -856,8 +869,8 @@ export default function BenefitsTrustAndProcess() {
                                 </div>
 
                                 <div className="border-t border-slate-200 pt-4 flex justify-between items-center text-[11px] text-slate-500 font-medium">
-                                    <span>Sécurité Chiffrement AES-256</span>
-                                    <span>Mise à jour temps réel</span>
+                                    <span>{t("securityAes256Encryption")}</span>
+                                    <span>{t("realTimeUpdate")}</span>
                                 </div>
                             </div>
                         </motion.div>
@@ -874,30 +887,30 @@ export default function BenefitsTrustAndProcess() {
                 >
                     <motion.div variants={itemVariants} className="text-center max-w-3xl mx-auto mb-16">
                         <span className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full">
-                            Validation Empirique
+                            {t("empiricalValidation")}
                         </span>
                         <h2 style={{ fontFamily: "Sanomat, ui-serif", fontWeight: 600 }} className="text-3xl md:text-5xl text-[rgb(21,0,44)] tracking-tight mt-4 mb-5">
-                            La confiance par <MarkerHighlight color="rgba(59,130,246,0.12)">les preuves</MarkerHighlight>
+                            {tr.rich("trustThroughProof", { markerhighlight1: (chunks) => <MarkerHighlight color="rgba(59,130,246,0.12)">{chunks}</MarkerHighlight> })}
                         </h2>
                         <p className="text-slate-500 text-base font-medium max-w-2xl mx-auto">
-                            Découvrez pourquoi plus de 500 entreprises nous font confiance pour leur transformation digitale.
+                            {t("findOutWhyMore")}
                         </p>
                     </motion.div>
 
                     <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
                         <TrustBadge icon={<ShieldCheck className="w-5 h-5" />} color="indigo">
-                            <span className="font-bold text-indigo-600">Conformité intégrée (Compliance Guardrails)</span><br />
-                            Les politiques de voyage et règles fiscales sont des garde-fous automatiques bloquant les dépassements à la source.
+                            <span className="font-bold text-indigo-600">{t("builtComplianceCompliance")}</span><br />
+                            {t("travelPoliciesTaxRules")}
                         </TrustBadge>
 
                         <TrustBadge icon={<Smartphone className="w-5 h-5" />} color="emerald">
-                            <span className="font-bold text-emerald-600">Preuve mobile : zéro saisie, 100% légal</span><br />
-                            Notre IA scanne et catégorise vos reçus. La version numérique a valeur probante – le papier peut être jeté.
+                            <span className="font-bold text-emerald-600">{t("mobileProofZeroEntry")}</span><br />
+                            {t("aiScansCategorizesReceipts")}
                         </TrustBadge>
 
                         <TrustBadge icon={<Users className="w-5 h-5" />} color="purple">
-                            <span className="font-bold text-purple-600">Expertise humaine 24/7</span><br />
-                            Assistance multicanal basée en Afrique et en Europe. Un expert dédié prend le relais pour les situations complexes.
+                            <span className="font-bold text-purple-600">{t("text247HumanExpertise")}</span><br />
+                            {t("multichannelAssistanceBased")}
                         </TrustBadge>
                     </motion.div>
                 </motion.div>
@@ -912,10 +925,10 @@ export default function BenefitsTrustAndProcess() {
                 >
                     <motion.div variants={itemVariants} className="text-center max-w-3xl mx-auto mb-16">
                         <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full">
-                            Ce qu'ils en disent
+                            {t("whatTheySay")}
                         </span>
                         <h2 style={{ fontFamily: "Sanomat, ui-serif", fontWeight: 600 }} className="text-3xl md:text-5xl text-[rgb(21,0,44)] tracking-tight mt-4 mb-6">
-                            Plus de 500 entreprises <MarkerHighlight color="rgba(245,158,11,0.12)">nous recommandent</MarkerHighlight>
+                            {tr.rich("moreThan500Companies", { markerhighlight1: (chunks) => <MarkerHighlight color="rgba(245,158,11,0.12)">{chunks}</MarkerHighlight> })}
                         </h2>
                     </motion.div>
 
@@ -935,13 +948,13 @@ export default function BenefitsTrustAndProcess() {
                     >
                         <motion.div variants={itemVariants} className="text-center max-w-3xl mx-auto mb-16">
                             <span className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 bg-indigo-100 px-3 py-1.5 rounded-full">
-                                Besoin d'aide ?
+                                {t("needHelp")}
                             </span>
                             <h2 style={{ fontFamily: "Sanomat, ui-serif", fontWeight: 600 }} className="text-3xl md:text-5xl text-[rgb(21,0,44)] tracking-tight mt-4 mb-6">
-                                Questions <MarkerHighlight color="rgba(99,102,241,0.12)">fréquentes</MarkerHighlight>
+                                {tr.rich("frequentlyAskedQuestions", { markerhighlight1: (chunks) => <MarkerHighlight color="rgba(99,102,241,0.12)">{chunks}</MarkerHighlight> })}
                             </h2>
                             <p className="text-slate-500 text-base font-medium max-w-2xl mx-auto">
-                                Trouvez rapidement une réponse à vos questions, ou contactez notre équipe.
+                                {t("quicklyFindAnswerQuestions")}
                             </p>
                         </motion.div>
 

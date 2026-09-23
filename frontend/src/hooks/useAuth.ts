@@ -286,6 +286,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { User } from "@/types";
 import api from "@/lib/api";
+import { splitLocalePath } from "@/i18n/locale-path";
 
 
 export function useAuth() {
@@ -300,7 +301,7 @@ export function useAuth() {
     // (monté au niveau du layout racine, donc sur tout le site) : sans ce garde,
     // chaque page /partner-portal/* déclenchait un /auth/me 401 puis un
     // /auth/refresh raté, et l'intercepteur renvoyait l'utilisateur vers /login.
-    if (typeof window !== "undefined" && window.location.pathname.startsWith("/partner-portal")) {
+    if (typeof window !== "undefined" && splitLocalePath(window.location.pathname).path.startsWith("/partner-portal")) {
       setLoading(false);
       return;
     }

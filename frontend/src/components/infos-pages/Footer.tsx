@@ -1,29 +1,32 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 
-const FOOTER_LINKS = {
+type Translator = ReturnType<typeof useTranslations<"infos.footer">>;
+
+const getFooterLinks = (t: Translator) => ({
     Produits: [
-        { label: "AfrikCSE", href: "/afrikcse" },
-        { label: "AfrikVoyage", href: "/afrikvoyage" },
-        { label: "Intégrations", href: "/integrations" },
-        { label: "API", href: "/api" },
+        { label: t("afrikcse"), href: "/afrikcse" },
+        { label: t("afrikvoyage"), href: "/afrikvoyage" },
+        { label: t("integrations"), href: "/integrations" },
+        { label: t("api"), href: "/api" },
     ],
     Entreprise: [
-        { label: "À Propos", href: "/infos/about" },
-        { label: "Comment ça marche", href: "/infos/how-it-works" },
-        { label: "Contact", href: "/infos/contact" },
-        { label: "Rejoignez-nous", href: "/infos/join-us" },
+        { label: t("about"), href: "/infos/about" },
+        { label: t("howWorks"), href: "/infos/how-it-works" },
+        { label: t("contact"), href: "/infos/contact" },
+        { label: t("joinUs"), href: "/infos/join-us" },
     ],
     Support: [
-        { label: "Centre d'aide", href: "/infos/contact" },
-        { label: "Tarifs", href: "/infos/pricing" },
-        { label: "Politique de confidentialité", href: "/infos/privacy" },
-        { label: "Contact", href: "/infos/contact" },
+        { label: t("helpCenter"), href: "/infos/contact" },
+        { label: t("pricing"), href: "/infos/pricing" },
+        { label: t("privacyPolicy"), href: "/infos/privacy" },
+        { label: t("contact"), href: "/infos/contact" },
     ],
-};
+});
 
-const SOCIAL_LINKS = [
+const getSocialLinks = (t: Translator) => ([
     {
-        label: "LinkedIn",
+        label: t("linkedin"),
         href: "https://linkedin.com",
         icon: (
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -32,7 +35,7 @@ const SOCIAL_LINKS = [
         ),
     },
     {
-        label: "Twitter",
+        label: t("twitter"),
         href: "https://twitter.com",
         icon: (
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -41,7 +44,7 @@ const SOCIAL_LINKS = [
         ),
     },
     {
-        label: "Facebook",
+        label: t("facebook"),
         href: "https://facebook.com",
         icon: (
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -50,7 +53,7 @@ const SOCIAL_LINKS = [
         ),
     },
     {
-        label: "YouTube",
+        label: t("youtube"),
         href: "https://youtube.com",
         icon: (
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -58,9 +61,12 @@ const SOCIAL_LINKS = [
             </svg>
         ),
     },
-];
+]);
 
 export default function Footer() {
+    const t = useTranslations("infos.footer");
+    const FOOTER_LINKS = getFooterLinks(t);
+    const SOCIAL_LINKS = getSocialLinks(t);
     return (
         <footer className="bg-[#0d1b2a] text-gray-300">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
@@ -76,11 +82,11 @@ export default function Footer() {
                                 </svg>
                             </div>
                             <span className="text-white font-bold text-base tracking-tight">
-                                AfrikCSE <span className="text-teal-400">&amp;</span> AfrikVoyage
+                                AfrikCSE <span className="text-teal-400">&amp;</span> {t("afrikvoyage")}
                             </span>
                         </Link>
                         <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs">
-                            Offrir aux entreprises africaines des solutions numériques modernes pour la gestion des voyages et des employés.
+                            {t("offeringAfricanCompanies")}
                         </p>
                         
                         {/* Socials avec animations */}
@@ -125,14 +131,14 @@ export default function Footer() {
                 {/* Bottom bar avec séparateur */}
                 <div className="mt-12 pt-6 border-t border-slate-700/50 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-gray-500 text-sm">
-                        © 2024 AfrikCSE &amp; AfrikVoyage. Tous droits réservés.
+                        {t("text2024AfrikcseAfrikvoyageAll")}
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
                         {[
-                            { label: "Confidentialité", href: "/infos/privacy" },
-                            { label: "Conditions", href: "/infos/legal" },
-                            { label: "Cookies", href: "/infos/privacy" },
-                            { label: "Mentions légales", href: "/infos/legal" },
+                            { label: t("privacy"), href: "/infos/privacy" },
+                            { label: t("terms"), href: "/infos/legal" },
+                            { label: t("cookies"), href: "/infos/privacy" },
+                            { label: t("legalNotice"), href: "/infos/legal" },
                         ].map((item) => (
                             <Link
                                 key={item.label}
@@ -149,19 +155,19 @@ export default function Footer() {
                 <div className="mt-6 pt-4 border-t border-slate-800/50 flex flex-wrap items-center justify-center gap-6 text-xs text-gray-500">
                     <span className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-                        Sécurité RGPD
+                        {t("gdprSecurity")}
                     </span>
                     <span className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-                        Hébergement souverain
+                        {t("sovereignHosting")}
                     </span>
                     <span className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-                        Support 24/7
+                        {t("text247Support")}
                     </span>
                     <span className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-                        ISO 27001 certifié
+                        {t("iso27001Certified")}
                     </span>
                 </div>
             </div>

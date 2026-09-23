@@ -1,14 +1,17 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { motion, useScroll, useMotionValueEvent, AnimatePresence, useInView, useAnimation } from "framer-motion";
 import { 
   Sparkles, 
   CheckCircle2, 
   ArrowRight,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.partnerMarquee">>;
 
 // ─── 1. DONNÉES DU SCROLL DES AVANTAGES ───────────────────────────────────────
 interface AdvantageStep {
@@ -27,90 +30,90 @@ interface AdvantageStep {
   }[];
 }
 
-const ADVANTAGES_STEPS: AdvantageStep[] = [
+const getAdvantagesSteps = (t: Translator): AdvantageStep[] => ([
   {
     id: "global-2in1",
-    badge: "Synergie 2-en-1",
+    badge: t("text21Synergy"),
     badgeBg: "bg-purple-100 border-purple-200 text-purple-700",
-    badgeText: "Plateforme Unifiée",
-    title: "Une seule plateforme pour vos CSE & Voyages d'Affaires",
-    subtitle: "Dites adieu aux outils dispersés. Centralisez la gestion des avantages salariés et la réservation de vos déplacements professionnels sur une interface moderne et ultra-performante.",
+    badgeText: t("unifiedPlatform"),
+    title: t("onePlatformCseBusiness"),
+    subtitle: t("sayGoodbyeScatteredTools"),
     image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&q=80",
     imagePosition: "left",
     benefits: [
       {
-        title: "Gain de temps massif pour la gestion",
-        description: "Centralisez les demandes de vos salariés, qu'il s'agisse d'un chèque vacances ou d'une réservation de billet d'avion.",
+        title: t("massiveTimeSavingsManagement"),
+        description: t("centralizeEmployeesRequests"),
         highlight: true,
       },
       {
-        title: "Adoption collaborateurs maximale",
-        description: "Un compte unique pour vos employés : un identifiant pour accéder à leurs réductions et réserver leurs missions pro.",
+        title: t("maximumEmployeeAdoption"),
+        description: t("singleAccountEmployeesOne"),
       },
       {
-        title: "Saisie et comptabilité automatisées",
-        description: "Exportation directe vers votre logiciel de paie et votre comptabilité sans aucune double saisie manuelle.",
+        title: t("automatedDataEntryAccounting"),
+        description: t("directExportPayrollSoftware"),
       },
     ],
   },
   {
     id: "cse-advantages",
-    badge: "Avantages CSE",
+    badge: t("cseBenefits"),
     badgeBg: "bg-blue-100 border-blue-200 text-blue-700",
-    badgeText: "Espace Comité",
-    title: "Maximisez le pouvoir d'achat de vos collaborateurs",
-    subtitle: "Offrez un accès instantané à des milliers d'offres de loisirs et gérez vos subventions en toute conformité URSSAF.",
+    badgeText: t("committeeArea"),
+    title: t("maximizeEmployeesPurchasing"),
+    subtitle: t("offerInstantAccessThousands"),
     image: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80",
     imagePosition: "right",
     benefits: [
       {
-        title: "Billetterie & Cartes Cadeaux 100% URSSAF",
-        description: "Émission instantanée de titres cadeaux respectant scrupuleusement les événements réglementés.",
+        title: t("text100UrssafCompliantTicketing"),
+        description: t("instantIssuanceGiftVouchers"),
         highlight: true,
       },
       {
-        title: "Subventions vacances & loisirs sur-mesure",
-        description: "Définissez vos règles de prise en charge et attribuez automatiquement les recharges aux salariés.",
+        title: t("tailorMadeHolidayLeisure"),
+        description: t("defineCoverageRules"),
       },
       {
-        title: "Accompagnement par des experts CSE",
-        description: "Un conseiller dédié vous guide dans la mise en place et le suivi légal de vos activités sociales.",
+        title: t("supportFromCseExperts"),
+        description: t("dedicatedAdvisorGuides"),
       },
     ],
   },
   {
     id: "travel-advantages",
-    badge: "Voyages d'Affaires",
+    badge: t("businessTravel"),
     badgeBg: "bg-emerald-100 border-emerald-200 text-emerald-700",
     badgeText: "Corporate Travel",
-    title: "Simplifiez vos déplacements professionnels d'entreprise",
-    subtitle: "Gardez le contrôle sur la politique de voyage tout en offrant une liberté totale de réservation à vos équipes.",
+    title: t("simplifyCompanyBusiness"),
+    subtitle: t("keepControlTravelPolicy"),
     image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=80",
     imagePosition: "left",
     benefits: [
       {
-        title: "Travel Policy & Plafonds Automatisés",
-        description: "Les réservations hors barème sont bloquées ou soumises à validation RH instantanée.",
+        title: t("automatedTravelPolicy"),
+        description: t("outPolicyBookingsBlocked"),
         highlight: true,
       },
       {
-        title: "Tarifs Négociés & Zéro Avance de Frais",
-        description: "Accédez aux meilleurs tarifs vols, trains et hôtels avec facturation directe à l'entreprise.",
+        title: t("negotiatedRatesZeroUpfront"),
+        description: t("accessBestFlightTrain"),
       },
       {
-        title: "Dématérialisation totale des reçus de frais",
-        description: "Prenez en photo votre ticket de caisse : les données sont extraites par IA et transmises à la compta.",
+        title: t("fullyPaperlessExpense"),
+        description: t("takePhotoReceiptData"),
       },
     ],
   },
-];
+]);
 
 // ─── 2. DONNÉES DES CHIFFRES CLÉS ─────────────────────────────────────────────
-const STATS_CARDS = [
+const getStatsCards = (t: Translator) => ([
   {
     value: "+ 2 000",
-    label: "marques partenaires",
-    subtext: "Partout en Afrique & Europe",
+    label: t("partnerBrands"),
+    subtext: t("acrossAfricaEurope"),
     bg: "bg-slate-900 text-white",
     accentBg: "bg-blue-500",
     rotation: "sm:-rotate-2",
@@ -118,8 +121,8 @@ const STATS_CARDS = [
   },
   {
     value: "+ 500 000",
-    label: "offres & réductions",
-    subtext: "Loisirs, ciné, billets & hôtels",
+    label: t("offersDiscounts"),
+    subtext: t("leisureCinemaTicketsHotels"),
     bg: "bg-blue-600 text-white",
     accentBg: "bg-white",
     rotation: "sm:rotate-2",
@@ -127,8 +130,8 @@ const STATS_CARDS = [
   },
   {
     value: "+ 1 200 €",
-    label: "économie / salarié / an",
-    subtext: "Pouvoir d'achat préservé",
+    label: t("savingsEmployeeYear"),
+    subtext: t("purchasingPowerPreserved"),
     bg: "bg-amber-100 text-slate-900 border border-amber-200/80",
     accentBg: "bg-amber-500",
     rotation: "sm:-rotate-1",
@@ -136,14 +139,14 @@ const STATS_CARDS = [
   },
   {
     value: "- 80 %",
-    label: "de temps de gestion",
-    subtext: "Pour les RH & Élus CSE",
+    label: t("managementTime"),
+    subtext: t("hrCseRepresentatives"),
     bg: "bg-emerald-600 text-white",
     accentBg: "bg-emerald-300",
     rotation: "sm:rotate-3",
     shadow: "shadow-emerald-500/20",
   },
-];
+]);
 
 // ─── 3. DONNÉES PARTENAIRES POUR LE CAROUSEL ──────────────────────────────────
 interface Partner {
@@ -232,6 +235,14 @@ const PARTNERS: Partner[] = [
 
 // ─── COMPOSANT CAROUSEL DES PARTENAIRES ───────────────────────────────────────
 const PartnerCarousel = () => {
+  const t = useTranslations("infos.partnerMarquee");
+  const countryNames: Record<string, string> = {
+    BJ: t("countryBenin"),
+    SN: t("countrySenegal"),
+    CI: t("countryIvoryCoast"),
+    KE: t("countryKenya"),
+    TG: t("countryTogo"),
+  };
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -272,10 +283,10 @@ const PartnerCarousel = () => {
       <div className="flex items-center justify-between mb-8">
         <div className="flex flex-col gap-1">
           <span className="text-[11px] font-black uppercase tracking-[0.25em] text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full inline-block w-fit">
-            Écosystème
+            {t("ecosystem")}
           </span>
           <h3 className="text-slate-900 font-bold text-2xl md:text-3xl tracking-tight mt-2">
-            Nos partenaires stratégiques
+            {t("strategicPartners")}
           </h3>
         </div>
         <div className="flex gap-2 self-end">
@@ -311,7 +322,7 @@ const PartnerCarousel = () => {
           <div className="flex-1">
             <h4 className="font-bold text-slate-800 text-xl">{PARTNERS[activeIndex].name}</h4>
             <p className="text-slate-500 text-sm mt-1">
-              {PARTNERS[activeIndex].city}, {PARTNERS[activeIndex].country}
+              {PARTNERS[activeIndex].city}, {countryNames[PARTNERS[activeIndex].countryCode] ?? PARTNERS[activeIndex].country}
             </p>
           </div>
           <div className="flex gap-2 self-end sm:self-center">
@@ -350,6 +361,9 @@ const PartnerCarousel = () => {
 
 // ─── COMPOSANT PRINCIPAL GLOBAL ───────────────────────────────────────────────
 export default function CompleteAdvantagesSection() {
+  const t = useTranslations("infos.partnerMarquee");
+  const ADVANTAGES_STEPS = useMemo(() => getAdvantagesSteps(t), [t]);
+  const STATS_CARDS = useMemo(() => getStatsCards(t), [t]);
   const containerRef = useRef<HTMLDivElement>(null);
   const foundersRef = useRef<HTMLDivElement>(null);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -562,13 +576,13 @@ export default function CompleteAdvantagesSection() {
           
           <div className="text-center max-w-2xl mx-auto space-y-3">
             <span className="text-xs font-mono font-bold text-blue-600 uppercase tracking-widest bg-blue-50 border border-blue-200 px-3.5 py-1 rounded-full">
-              Impact Mesurable
+              {t("measurableImpact")}
             </span>
             <h3 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Notre plateforme en quelques chiffres
+              {t("platformFewNumbers")}
             </h3>
             <p className="text-slate-600 text-sm sm:text-base">
-              Des résultats concrets observés auprès de plus de 500 entreprises partenaires.
+              {t("concreteResultsObservedAmong")}
             </p>
           </div>
 
@@ -585,7 +599,7 @@ export default function CompleteAdvantagesSection() {
                 <div className="flex items-center justify-between">
                   <span className={`w-3 h-3 rounded-full ${stat.accentBg}`} />
                   <span className="text-[10px] font-mono uppercase tracking-widest opacity-70">
-                    #Impact 0{idx + 1}
+                    {t("impact0", { p1: idx + 1 })}
                   </span>
                 </div>
 
@@ -612,7 +626,7 @@ export default function CompleteAdvantagesSection() {
               href="/demo"
               className="inline-flex items-center gap-3 bg-slate-900 hover:bg-blue-600 text-white font-bold text-sm px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-blue-500/25 hover:scale-105 cursor-pointer"
             >
-              Rejoindre nos partenaires
+              {t("joinPartners")}
               <ArrowRight size={16} />
             </Link>
           </div>
@@ -644,16 +658,16 @@ export default function CompleteAdvantagesSection() {
           <div className="space-y-16">
             <div className="text-center max-w-3xl mx-auto">
               <span className="text-[11px] font-black uppercase tracking-[0.25em] text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full inline-block">
-                Notre manifeste
+                {t("manifesto")}
               </span>
               <h3 style={titleStyle} className="mt-4 tracking-tight hidden sm:block">
-                Pourquoi avoir créé cette solution ?
+                {t("whyDidCreateSolution")}
               </h3>
               <h3 style={{ ...titleStyle, fontSize: "32px", lineHeight: "40px" }} className="mt-4 tracking-tight sm:hidden">
-                Pourquoi avoir créé cette solution ?
+                {t("whyDidCreateSolution")}
               </h3>
               <p className="text-slate-500 mt-4 text-base sm:text-lg font-medium max-w-2xl mx-auto">
-                L&apos;histoire derrière la convergence unique d&apos;AfrikVoyage et AfrikCSE racontée par ses concepteurs.
+                {t("storyBehindUniqueConvergence")}
               </p>
             </div>
 
@@ -667,15 +681,15 @@ export default function CompleteAdvantagesSection() {
                     <div>
                       <div className="flex items-center justify-between w-full flex-wrap gap-2">
                         <span className="text-[10px] font-black text-slate-800 tracking-widest uppercase bg-slate-100 px-3 py-1.5 rounded-lg">
-                          Fondateur & CEO
+                          {t("founderCeo")}
                         </span>
                         <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-full">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Focus AfrikVoyage
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> {t("afrikvoyageFocus")}
                         </span>
                       </div>
                       
                       <p className="text-slate-700 font-medium text-base sm:text-lg leading-relaxed italic mt-8 relative pl-4 border-l-2 border-indigo-500">
-                        &quot;Nous avons constaté que les entreprises africaines perdaient une énergie folle à synchroniser les déplacements terrains et la satisfaction des collaborateurs. Centraliser les dépenses de voyage et les avantages sociaux sur une interface unique était la seule réponse logique pour catalyser la croissance.&quot;
+                        {t("noticedAfricanCompaniesWere")}
                       </p>
                     </div>
 
@@ -684,22 +698,22 @@ export default function CompleteAdvantagesSection() {
                         <div className="relative w-18 h-18 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
                           <img 
                             src="/images/richnel.png"
-                            alt="Richnel AGAZOUNON"
+                            alt={t("richnelAgazounon")}
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div className="flex flex-col">
                           <h4 style={{ fontFamily: "Sanomat, ui-serif" }} className="text-slate-900 font-bold text-lg tracking-tight">
-                            Richnel AGAZOUNON
+                            {t("richnelAgazounon")}
                           </h4>
                           <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-0.5">
-                            Ex-McKinsey // Tech Visionary
+                            {t("exMckinseyTechVisionary")}
                           </span>
                         </div>
                       </div>
                       <div className="flex flex-col items-end text-right bg-slate-50 border border-slate-100 p-3 rounded-xl transition-all duration-300 group-hover:bg-emerald-50 group-hover:border-emerald-500">
-                        <span className="text-xs font-black text-indigo-600 uppercase tracking-wider">Optimisation</span>
-                        <span className="text-lg font-black text-slate-900 mt-0.5">-30% de coûts</span>
+                        <span className="text-xs font-black text-indigo-600 uppercase tracking-wider">{t("optimization")}</span>
+                        <span className="text-lg font-black text-slate-900 mt-0.5">{t("text30Costs")}</span>
                       </div>
                     </div>
                   </div>
@@ -713,15 +727,15 @@ export default function CompleteAdvantagesSection() {
                     <div>
                       <div className="flex items-center justify-between w-full flex-wrap gap-2">
                         <span className="text-[10px] font-black text-indigo-600 tracking-widest uppercase bg-indigo-50 px-3 py-1.5 rounded-lg">
-                          Co-fondateur & CTO
+                          {t("coFounderCto")}
                         </span>
                         <span className="text-xs font-bold text-indigo-600 flex items-center gap-1 bg-indigo-50 px-2.5 py-1 rounded-full">
-                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" /> Focus AfrikCSE
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" /> {t("afrikcseFocus")}
                         </span>
                       </div>
                       
                       <p className="text-slate-700 font-medium text-base sm:text-lg leading-relaxed italic mt-8 relative pl-4 border-l-2 border-emerald-500">
-                        &quot;La tech n&apos;a de valeur que si elle sert l&apos;humain. Avec le volet CSE, nous redonnons du pouvoir d&apos;achat et une reconnaissance directe aux salariés via un catalogue fluide, tandis que la branche Voyage élimine la friction administrative pour les équipes financières.&quot;
+                        {t("techOnlyHasValue")}
                       </p>
                     </div>
 
@@ -730,22 +744,22 @@ export default function CompleteAdvantagesSection() {
                         <div className="relative w-18 h-18 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
                           <img 
                             src="/images/michaelis.png" 
-                            alt="Michaelis MAHOUTO" 
+                            alt={t("michaelisMahouto")} 
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div className="flex flex-col">
                           <h4 style={{ fontFamily: "Sanomat, ui-serif" }} className="text-slate-900 font-bold text-lg tracking-tight">
-                            Michaelis MAHOUTO
+                            {t("michaelisMahouto")}
                           </h4>
                           <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-0.5">
-                            Ex-VP Operations // Fintech Expert
+                            {t("exVpOperationsFintech")}
                           </span>
                         </div>
                       </div>
                       <div className="flex flex-col items-end text-right bg-slate-50 border border-slate-100 p-3 rounded-xl transition-all duration-300 group-hover:bg-indigo-50 group-hover:border-indigo-500">
-                        <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">Indicateur</span>
-                        <span className="text-lg font-black text-slate-900 mt-0.5">Retours 100% Zen</span>
+                        <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">{t("indicator")}</span>
+                        <span className="text-lg font-black text-slate-900 mt-0.5">{t("text100ZenFeedback")}</span>
                       </div>
                     </div>
                   </div>

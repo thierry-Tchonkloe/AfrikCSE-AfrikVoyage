@@ -1,6 +1,21 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import "./globals.css";
+
+// global-error remplace le layout racine : pas de provider next-intl ici, la langue est déduite de l'URL (/fr, /en).
+const COPY = {
+    fr: {
+        title: "Une erreur critique est survenue",
+        description: "L'application a rencontré un problème inattendu. Veuillez recharger la page.",
+        reload: "Recharger",
+    },
+    en: {
+        title: "A critical error occurred",
+        description: "The application ran into an unexpected problem. Please reload the page.",
+        reload: "Reload",
+    },
+} as const;
 
 export default function GlobalError({
     reset,
@@ -8,8 +23,16 @@ export default function GlobalError({
     error: Error & { digest?: string };
     reset: () => void;
 }) {
+    const [lang, setLang] = useState<keyof typeof COPY>("fr");
+
+    useEffect(() => {
+        if (/^\/en(\/|$)/.test(window.location.pathname)) setLang("en");
+    }, []);
+
+    const copy = COPY[lang];
+
     return (
-        <html lang="fr">
+        <html lang={lang}>
             <body>
                 <div
                     className="min-h-screen flex items-center justify-center px-4"
@@ -20,17 +43,17 @@ export default function GlobalError({
                         style={{ background: "var(--color-card)", borderColor: "var(--color-border)" }}
                     >
                         <h1 className="text-xl font-bold mb-2" style={{ color: "var(--color-text)" }}>
-                            Une erreur critique est survenue
+                            {copy.title}
                         </h1>
                         <p className="text-sm mb-6" style={{ color: "var(--color-muted)" }}>
-                            L&apos;application a rencontré un problème inattendu. Veuillez recharger la page.
+                            {copy.description}
                         </p>
                         <button
                             onClick={() => reset()}
                             className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
                             style={{ background: "var(--color-primary)" }}
                         >
-                            Recharger
+                            {copy.reload}
                         </button>
                     </div>
                 </div>

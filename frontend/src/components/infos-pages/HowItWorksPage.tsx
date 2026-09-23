@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { Zap, ShieldCheck, TrendingUp, RefreshCw, Plane, Gift, BarChart2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+
+type Translator = ReturnType<typeof useTranslations<"infos.howItWorksPage">>;
 
 // ─── Interfaces & Types Typés Premium ────────────────────────────────────────
 
@@ -32,39 +35,39 @@ interface Benefit {
 
 // ─── Données Métiers Unifiées avec Images Réelles ────────────────────────────
 
-const steps: Step[] = [
+const getSteps = (t: Translator): Step[] => ([
     {
         number: "01",
         Icon: RefreshCw,
-        title: "Configurez en 5 minutes",
-        subtitle: "Centralisez tous vos services",
-        description: "Connectez vos équipes RH, Finance et Voyages en quelques clics. Notre interface intuitive vous guide pas à pas, tandis que l'IA synchronise automatiquement vos données et budgets en arrière-plan.",
+        title: t("setUp5Minutes"),
+        subtitle: t("centralizeAllServices"),
+        description: t("connectHrFinanceTravel"),
         metrics: [
-            { label: "Configuration", value: "< 5 min", change: "-70%" },
-            { label: "Services intégrés", value: "3", change: "+100%" },
-            { label: "Automatisation", value: "95%", change: "+45%" }
+            { label: t("setup"), value: "< 5 min", change: "-70%" },
+            { label: t("integratedServices"), value: "3", change: "+100%" },
+            { label: t("automation"), value: "95%", change: "+45%" }
         ],
         features: [
-            "Configuration guidée en moins de 5 minutes",
-            "Synchronisation automatique des données",
-            "IA pour l'optimisation budgétaire",
-            "Interface intuitive et épurée"
+            t("guidedSetupUnder5"),
+            t("automaticDataSynchronization"),
+            t("aiBudgetOptimization"),
+            t("intuitiveCleanInterface")
         ],
         mediaType: "video",
         videoUrl: "/bg-whyUse.mp4", 
         imageUrl: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=400&fit=crop",
-        imageAlt: "Équipe configurant la plateforme",
+        imageAlt: t("teamConfiguringPlatform"),
         illustration: (
             <div className="relative w-full h-full min-h-[250px] rounded-xl overflow-hidden">
                 <Image 
                     src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=400&fit=crop"
-                    alt="Configuration de la plateforme"
+                    alt={t("platformSetup")}
                     fill
                     className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-bold text-indigo-600">⚡ Configuration rapide</span>
+                    <span className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-bold text-indigo-600">{t("quickSetup")}</span>
                 </div>
             </div>
         )
@@ -72,34 +75,34 @@ const steps: Step[] = [
     {
         number: "02",
         Icon: Plane,
-        title: "Réservez en toute simplicité",
-        subtitle: "Des voyages optimisés et conformes",
-        description: "Vos collaborateurs trouvent et réservent leurs déplacements en moins de 3 minutes. Les budgets s'affichent en temps réel avec des alertes intelligentes pour maîtriser vos coûts.",
+        title: t("bookCompleteEase"),
+        subtitle: t("optimizedCompliantTravel"),
+        description: t("employeesFindBookTheir"),
         metrics: [
-            { label: "Temps de réservation", value: "< 3 min", change: "-60%" },
-            { label: "Conformité", value: "98%", change: "+25%" },
-            { label: "Économies", value: "-30%", change: "+12%" }
+            { label: t("bookingTime"), value: "< 3 min", change: "-60%" },
+            { label: t("compliance"), value: "98%", change: "+25%" },
+            { label: t("savings"), value: "-30%", change: "+12%" }
         ],
         features: [
-            "Recherche multi-compagnies en temps réel",
-            "Alertes budget et conformité",
-            "Scan automatique des notes de frais",
-            "Politiques de voyage personnalisées"
+            t("realTimeMultiAirline"),
+            t("budgetComplianceAlerts"),
+            t("automaticExpenseReport"),
+            t("customizedTravelPolicies")
         ],
         mediaType: "dual-grid",
         imageUrl: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=400&fit=crop",
-        imageAlt: "Réservation de voyage professionnelle",
+        imageAlt: t("professionalTravelBooking"),
         illustration: (
             <div className="relative w-full h-full min-h-[250px] rounded-xl overflow-hidden">
                 <Image
                     src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=400&fit=crop"
-                    alt="Réservation de voyage professionnelle"
+                    alt={t("professionalTravelBooking")}
                     fill
                     className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-bold text-emerald-600">Réservation en 3 minutes</span>
+                    <span className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-bold text-emerald-600">{t("booking3Minutes")}</span>
                 </div>
             </div>
         )
@@ -107,35 +110,35 @@ const steps: Step[] = [
     {
         number: "03",
         Icon: Gift,
-        title: "Valorisez vos équipes",
-        subtitle: "Des avantages sociaux à portée de clic",
-        description: "Offrez à vos collaborateurs un accès 24/7 à une galerie d'avantages moderne. Ils parcourent, choisissent et utilisent leurs bénéfices en quelques secondes pour un bien-être renforcé.",
+        title: t("empowerTeams"),
+        subtitle: t("employeeBenefitsFingertips"),
+        description: t("giveEmployees247"),
         metrics: [
-            { label: "Satisfaction", value: "96%", change: "+42%" },
-            { label: "Utilisation", value: "89%", change: "+67%" },
-            { label: "Engagement", value: "+47%", change: "NPS +35" }
+            { label: t("satisfaction"), value: "96%", change: "+42%" },
+            { label: t("usage"), value: "89%", change: "+67%" },
+            { label: t("engagement"), value: "+47%", change: "NPS +35" }
         ],
         features: [
-            "Catalogue d'avantages varié et local",
-            "Interface fluide et intuitive",
-            "Notifications en temps réel",
-            "Accès mobile 24/7"
+            t("variedLocalBenefitsCatalog"),
+            t("smoothIntuitiveInterface"),
+            t("realTimeNotifications"),
+            t("text247MobileAccess")
         ],
         mediaType: "mockup",
         videoUrl: "/videos/cse-gallery-scroll.mp4",
         imageUrl: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=400&fit=crop",
-        imageAlt: "Avantages sociaux pour collaborateurs",
+        imageAlt: t("employeeBenefitsStaff"),
         illustration: (
             <div className="relative w-full h-full min-h-[250px] rounded-xl overflow-hidden">
                 <Image 
                     src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=400&fit=crop"
-                    alt="Avantages sociaux"
+                    alt={t("employeeBenefits")}
                     fill
                     className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-bold text-purple-600">🎁 Avantages 24/7</span>
+                    <span className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-bold text-purple-600">{t("text247Benefits")}</span>
                 </div>
             </div>
         )
@@ -143,64 +146,64 @@ const steps: Step[] = [
     {
         number: "04",
         Icon: BarChart2,
-        title: "Pilotez votre performance",
-        subtitle: "Des données claires pour des décisions éclairées",
-        description: "Accédez à une vue unifiée de vos indicateurs clés. Le tableau de bord fusionne les données d'engagement et de dépenses avec des alertes automatisées pour optimiser vos performances.",
+        title: t("managePerformance"),
+        subtitle: t("clearDataInformedDecisions"),
+        description: t("accessUnifiedViewKey"),
         metrics: [
-            { label: "Visibilité", value: "100%", change: "+100%" },
-            { label: "Conformité", value: "99.9%", change: "+15%" },
-            { label: "ROI", value: "+25%", change: "Année 1" }
+            { label: t("visibility"), value: "100%", change: "+100%" },
+            { label: t("compliance"), value: "99.9%", change: "+15%" },
+            { label: t("roi"), value: "+25%", change: t("year1") }
         ],
         features: [
-            "Tableau de bord personnalisé",
-            "Alertes prédictives intelligentes",
-            "Rapports d'audit en un clic",
-            "Indicateurs de performance en temps réel"
+            t("customDashboard"),
+            t("smartPredictiveAlerts"),
+            t("auditReportsOneClick"),
+            t("realTimePerformance")
         ],
         mediaType: "dashboard",
         imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=400&fit=crop",
-        imageAlt: "Tableau de bord analytique",
+        imageAlt: t("analyticsDashboard"),
         illustration: (
             <div className="relative w-full h-full min-h-[250px] rounded-xl overflow-hidden">
                 <Image 
                     src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=400&fit=crop"
-                    alt="Tableau de bord"
+                    alt={t("dashboard")}
                     fill
                     className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2">
-                    <span className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-bold text-indigo-600">📊 Pilotage en temps réel</span>
+                    <span className="px-3 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-bold text-indigo-600">{t("realTimeManagement")}</span>
                 </div>
             </div>
         ),
-        roiHighlight: { amount: "-30%", label: "d'économies constatées sur les déplacements" }
+        roiHighlight: { amount: "-30%", label: t("savingsObservedTravel") }
     }
-];
+]);
 
-const benefits: Benefit[] = [
+const getBenefits = (t: Translator): Benefit[] => ([
     {
         Icon: Zap,
-        title: "Gagnez un temps précieux",
-        description: "Automatisez vos processus complexes et réduisez drastiquement le temps consacré à la gestion administrative quotidienne.",
-        metric: "-70% de temps administratif",
+        title: t("savePreciousTime"),
+        description: t("automateComplexProcesses"),
+        metric: t("text70AdministrativeTime"),
         gradient: "from-indigo-500 to-blue-500"
     },
     {
         Icon: ShieldCheck,
-        title: "Sécurisez vos opérations",
-        description: "Suivez en temps réel les réglementations locales et internationales pour une conformité totale et une sérénité juridique.",
-        metric: "Zéro risque juridique",
+        title: t("secureOperations"),
+        description: t("trackLocalInternational"),
+        metric: t("zeroLegalRisk"),
         gradient: "from-emerald-500 to-teal-500"
     },
     {
         Icon: TrendingUp,
-        title: "Optimisez vos budgets",
-        description: "Maîtrisez vos dépenses grâce à des analyses prédictives et des alertes intelligentes au moment de chaque achat.",
-        metric: "Jusqu'à 30% d'économies",
+        title: t("optimizeBudgets"),
+        description: t("keepSpendingUnderControl"),
+        metric: t("up30Savings"),
         gradient: "from-purple-500 to-pink-500"
     }
-];
+]);
 
 // ─── Hook Custom: Intersection Observer ─────────────────────────────────────
 
@@ -259,6 +262,8 @@ function AnimatedCounter({ value, suffix = "", duration = 1000 }: { value: strin
 // ─── Composant Carrousel Mobile ────────────────────────────────────────────
 
 function MobileCarousel({ children }: { children: React.ReactNode[] }) {
+    const tt = useTranslations("infos.howItWorksPage");
+    const t = useTranslations("infos.howItWorksPage");
     const [currentIndex, setCurrentIndex] = useState(0);
     const [touchStart, setTouchStart] = useState(0);
     const [touchEnd, setTouchEnd] = useState(0);
@@ -318,7 +323,7 @@ function MobileCarousel({ children }: { children: React.ReactNode[] }) {
                                 ? "w-8 bg-gradient-to-r from-indigo-600 to-emerald-500" 
                                 : "w-2 bg-slate-300 hover:bg-slate-400"
                         }`}
-                        aria-label={`Aller à la slide ${index + 1}`}
+                        aria-label={tt("goSlide", { p1: index + 1 })}
                     />
                 ))}
             </div>
@@ -326,14 +331,14 @@ function MobileCarousel({ children }: { children: React.ReactNode[] }) {
             <button
                 onClick={prevSlide}
                 className="absolute left-0 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white shadow-xl border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-indigo-600 hover:text-white transition-all duration-300"
-                aria-label="Slide précédent"
+                aria-label={t("previousSlide")}
             >
                 ←
             </button>
             <button
                 onClick={nextSlide}
                 className="absolute right-0 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white shadow-xl border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-indigo-600 hover:text-white transition-all duration-300"
-                aria-label="Slide suivant"
+                aria-label={t("nextSlide")}
             >
                 →
             </button>
@@ -344,6 +349,7 @@ function MobileCarousel({ children }: { children: React.ReactNode[] }) {
 // ─── Section 1: Hero Section ────────────────────────────────────────────────
 
 function HeroSection() {
+    const t = useTranslations("infos.howItWorksPage");
     const [activeTab, setActiveTab] = useState<"voyage" | "cse">("voyage");
     const [isVideoOpen, setIsVideoOpen] = useState(false);
 
@@ -379,7 +385,7 @@ function HeroSection() {
                     type="button"
                     onClick={() => setIsVideoOpen(true)}
                     className="absolute left-[53%] top-[47%] z-30 hidden h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/90 text-indigo-600 shadow-[0_24px_70px_rgba(79,70,229,0.32)] backdrop-blur-md transition-all duration-300 before:absolute before:inset-[-10px] before:rounded-full before:border before:border-indigo-200/70 before:bg-indigo-500/5 hover:scale-105 hover:bg-indigo-600 hover:text-white lg:flex"
-                    aria-label="Lire la vidéo de présentation"
+                    aria-label={t("playPresentationVideo")}
                 >
                     <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-emerald-500 text-white shadow-[0_12px_28px_rgba(79,70,229,0.35)]">
                         <span className="ml-1 text-xl leading-none">▶</span>
@@ -394,14 +400,14 @@ function HeroSection() {
                                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-500 text-white shadow-lg">
                                         ▶
                                     </span>
-                                    <span className="text-sm font-bold text-white">Vidéo de présentation</span>
+                                    <span className="text-sm font-bold text-white">{t("presentationVideo")}</span>
                                 </div>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsVideoOpen(false)}
                                 className="absolute right-4 top-4 z-10 h-10 w-10 rounded-full bg-white/90 text-xl font-bold text-slate-900 shadow-lg transition-colors hover:bg-white"
-                                aria-label="Fermer la vidéo"
+                                aria-label={t("closeVideo")}
                             >
                                 ×
                             </button>
@@ -418,18 +424,18 @@ function HeroSection() {
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
                             </span>
-                            Comment ça marche
+                            {t("howWorks")}
                         </span>
                         
                         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-slate-950 leading-tight sm:leading-none">
-                            Une plateforme, <br />
+                            {t("onePlatform")} <br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-500 to-emerald-500">
-                                4 étapes simples
+                                {t("text4SimpleSteps")}
                             </span>
                         </h1>
                         
                         <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-relaxed text-slate-600 font-medium px-4 sm:px-0">
-                            Découvrez comment notre solution unifiée transforme la gestion de vos voyages d'affaires et avantages sociaux en un processus fluide, automatisé et centré sur vos collaborateurs.
+                            {t("discoverHowUnifiedSolution")}
                         </p>
                         
                         <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4">
@@ -441,7 +447,7 @@ function HeroSection() {
                                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-emerald-500 text-white text-[10px] shadow-md">
                                     <span className="ml-0.5">▶</span>
                                 </span>
-                                Voir la démo en 5 min
+                                {t("watch5MinDemo")}
                             </button>
                         </div>
                     </div>
@@ -463,13 +469,13 @@ function HeroSection() {
                                         onClick={() => setActiveTab("voyage")}
                                         className={`px-2 sm:px-4 py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${activeTab === "voyage" ? "bg-emerald-500 text-slate-950 shadow-md" : "text-slate-500 hover:text-slate-950"}`}
                                     >
-                                        🌐 Voyages
+                                        {t("travel")}
                                     </button>
                                     <button 
                                         onClick={() => setActiveTab("cse")}
                                         className={`px-2 sm:px-4 py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${activeTab === "cse" ? "bg-indigo-500 text-white shadow-md" : "text-slate-500 hover:text-slate-950"}`}
                                     >
-                                        🎁 Avantages
+                                        {t("benefits")}
                                     </button>
                                 </div>
                             </div>
@@ -495,21 +501,21 @@ function HeroSection() {
                                         <div className="animate-fade-in space-y-3 sm:space-y-4">
                                             <div>
                                                 <span className="text-[8px] sm:text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 sm:py-1 rounded border border-emerald-500/20">
-                                                    Mobilité d'affaires
+                                                    {t("businessMobility")}
                                                 </span>
-                                                <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white mt-1 sm:mt-2 tracking-tight">Recherche de vol optimisée</h4>
+                                                <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white mt-1 sm:mt-2 tracking-tight">{t("optimizedFlightSearch")}</h4>
                                             </div>
                                             
                                             <div className="mx-auto max-w-sm rounded-xl bg-slate-950/80 backdrop-blur-xl border border-white/10 p-3 sm:p-4 text-left shadow-2xl transform hover:scale-[1.02] transition-transform duration-300">
                                                 <div className="flex justify-between items-center mb-2 relative z-10">
                                                     <div className="h-1.5 w-10 sm:w-12 bg-emerald-500 rounded" />
-                                                    <span className="text-[8px] sm:text-[9px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-1.5 sm:px-2 rounded">✓ Tarif négocié</span>
+                                                    <span className="text-[8px] sm:text-[9px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-1.5 sm:px-2 rounded">{t("negotiatedRate")}</span>
                                                 </div>
-                                                <p className="text-[10px] sm:text-xs text-slate-200 font-medium relative z-10">Cotonou → Paris • Classe Économique</p>
-                                                <p className="text-[9px] sm:text-[11px] text-slate-400 font-mono mt-1 relative z-10">Tarif préférentiel • <span className="text-emerald-400 font-bold">-12%</span></p>
+                                                <p className="text-[10px] sm:text-xs text-slate-200 font-medium relative z-10">{t("cotonouParisEconomyClass")}</p>
+                                                <p className="text-[9px] sm:text-[11px] text-slate-400 font-mono mt-1 relative z-10">{t("preferentialRate")} <span className="text-emerald-400 font-bold">-12%</span></p>
                                                 <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-white/5 flex justify-between items-center text-[8px] sm:text-[10px] text-slate-400 relative z-10">
-                                                    <span>Politique : Conforme</span>
-                                                    <span className="bg-emerald-500 text-slate-950 font-bold px-1.5 sm:px-2 py-0.5 rounded text-[8px] sm:text-[9px]">✓ Validé</span>
+                                                    <span>{t("policyCompliant")}</span>
+                                                    <span className="bg-emerald-500 text-slate-950 font-bold px-1.5 sm:px-2 py-0.5 rounded text-[8px] sm:text-[9px]">{t("approved")}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -517,30 +523,30 @@ function HeroSection() {
                                         <div className="animate-fade-in space-y-3 sm:space-y-4">
                                             <div>
                                                 <span className="text-[8px] sm:text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-2 py-0.5 sm:py-1 rounded border border-indigo-500/20">
-                                                    Avantages sociaux
+                                                    {t("employeeBenefits")}
                                                 </span>
-                                                <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white mt-1 sm:mt-2 tracking-tight">Galerie de services</h4>
+                                                <h4 className="text-base sm:text-xl lg:text-2xl font-black text-white mt-1 sm:mt-2 tracking-tight">{t("serviceGallery")}</h4>
                                             </div>
                                             
                                             <div className="mx-auto max-w-sm rounded-xl bg-slate-950/80 backdrop-blur-xl border border-white/10 p-3 sm:p-4 text-left shadow-2xl transform hover:scale-[1.02] transition-transform duration-300">
                                                 <div className="flex justify-between items-center mb-2 relative z-10">
                                                     <div className="h-1.5 w-12 sm:w-16 bg-indigo-500 rounded" />
-                                                    <span className="text-[8px] sm:text-[10px] font-mono font-bold text-indigo-400">Allocation active</span>
+                                                    <span className="text-[8px] sm:text-[10px] font-mono font-bold text-indigo-400">{t("activeAllocation")}</span>
                                                 </div>
-                                                <p className="text-[10px] sm:text-xs text-slate-200 font-medium relative z-10">Subvention disponible : <span className="text-white font-bold">50 000 FCFA</span></p>
+                                                <p className="text-[10px] sm:text-xs text-slate-200 font-medium relative z-10">{t("availableSubsidy")} <span className="text-white font-bold">50 000 FCFA</span></p>
                                                 
                                                 <div className="mt-3 sm:mt-4 grid grid-cols-3 gap-1.5 sm:gap-2 relative z-10">
                                                     <div className="h-10 sm:h-12 bg-white/[0.03] hover:bg-white/10 rounded-lg border border-white/5 flex flex-col items-center justify-center text-[10px] sm:text-xs transition-colors cursor-pointer">
                                                         <span className="text-sm sm:text-base">🎟️</span>
-                                                        <span className="text-[6px] sm:text-[8px] text-slate-400 mt-0.5">Tickets</span>
+                                                        <span className="text-[6px] sm:text-[8px] text-slate-400 mt-0.5">{t("tickets")}</span>
                                                     </div>
                                                     <div className="h-10 sm:h-12 bg-white/[0.03] hover:bg-white/10 rounded-lg border border-white/5 flex flex-col items-center justify-center text-[10px] sm:text-xs transition-colors cursor-pointer">
                                                         <span className="text-sm sm:text-base">🛒</span>
-                                                        <span className="text-[6px] sm:text-[8px] text-slate-400 mt-0.5">Bons</span>
+                                                        <span className="text-[6px] sm:text-[8px] text-slate-400 mt-0.5">{t("vouchers")}</span>
                                                     </div>
                                                     <div className="h-10 sm:h-12 bg-white/[0.03] hover:bg-white/10 rounded-lg border border-white/5 flex flex-col items-center justify-center text-[10px] sm:text-xs transition-colors cursor-pointer">
                                                         <span className="text-sm sm:text-base">🏨</span>
-                                                        <span className="text-[6px] sm:text-[8px] text-slate-400 mt-0.5">Loisirs</span>
+                                                        <span className="text-[6px] sm:text-[8px] text-slate-400 mt-0.5">{t("leisure")}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -567,6 +573,7 @@ function HeroSection() {
 // ─── Section 2: StepsSection Améliorée ──────────────────────────────────────
 
 function StepCard({ step, index }: { step: Step; index: number }) {
+    const t = useTranslations("infos.howItWorksPage");
     const ref = useRef<HTMLDivElement>(null);
     const inView = useInView(ref, 0.2);
 
@@ -591,7 +598,7 @@ function StepCard({ step, index }: { step: Step; index: number }) {
                     <div className="flex items-center gap-2">
                         <step.Icon className="w-6 h-6 text-indigo-500" />
                         <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                            Étape {step.number}
+                            {t("step", { number: step.number })}
                         </span>
                     </div>
                 </div>
@@ -646,18 +653,21 @@ function StepCard({ step, index }: { step: Step; index: number }) {
 }
 
 function StepsSection() {
+    const tr = useTranslations("infos.howItWorksPage");
+    const t = useTranslations("infos.howItWorksPage");
+    const steps = useMemo(() => getSteps(t), [t]);
     return (
         <section className="bg-white py-16 sm:py-24 lg:py-32 relative">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="mb-12 sm:mb-20 text-center max-w-2xl mx-auto">
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
-                        Le processus en détail
+                        {t("processDetail")}
                     </span>
                     <h2 className="mt-4 text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-                        Tout commence par <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-emerald-500">4 étapes</span>
+                        {tr.rich("allStarts4Steps", { span1: (chunks) => <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-emerald-500">{chunks}</span> })}
                     </h2>
                     <p className="mt-3 text-slate-500 max-w-md mx-auto">
-                        De la configuration initiale au pilotage stratégique, suivez le guide
+                        {t("fromInitialSetupStrategic")}
                     </p>
                 </div>
 
@@ -674,6 +684,9 @@ function StepsSection() {
 // ─── Section 3: WhySection ─────────────────────────────────────────────────
 
 function WhySection() {
+    const tr = useTranslations("infos.howItWorksPage");
+    const t = useTranslations("infos.howItWorksPage");
+    const benefits = useMemo(() => getBenefits(t), [t]);
     const benefitsCards = benefits.map((benefit, i) => (
         <div 
             key={i} 
@@ -689,7 +702,7 @@ function WhySection() {
                 {benefit.description}
             </p>
             <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Résultat prouvé</span>
+                <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">{t("provenResult")}</span>
                 <span className={`text-xs font-extrabold bg-gradient-to-r ${benefit.gradient} bg-clip-text text-transparent`}>
                     {benefit.metric}
                 </span>
@@ -702,13 +715,13 @@ function WhySection() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="mb-12 sm:mb-20 text-center max-w-2xl mx-auto">
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
-                        Pourquoi nous choisir
+                        {t("whyChooseUs")}
                     </span>
                     <h2 className="mt-4 text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-                        Des bénéfices <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">concrets</span>
+                        {tr.rich("concreteBenefits", { span1: (chunks) => <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">{chunks}</span> })}
                     </h2>
                     <p className="mt-3 text-slate-500">
-                        Des résultats mesurables pour votre entreprise
+                        {t("measurableResultsBusiness")}
                     </p>
                 </div>
 
