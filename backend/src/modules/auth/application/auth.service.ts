@@ -56,6 +56,7 @@ import { RegisterCompanyDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, Comp
 import { sendMail } from "../../../core/services/email.service";
 import { companyRegistrationReceivedEmail, newCompanyPendingValidationEmail, passwordResetEmail, } from "../../../core/mailer/email.templates";
 import { logger } from "../../../core/utils/logger";
+import { AppError } from "../../../core/errors/app.error";
 import { PartnerPortalService } from "../../partner-portal/application/partner-portal.service";
 
 export class AuthService {
@@ -167,7 +168,11 @@ export class AuthService {
             try {
                 const partnerResult = await this.partnerPortalService.login(dto.email, dto.password);
                 return { type: "partner" as const, ...partnerResult };
-            } catch {
+            } catch (err) {
+                // Statut du partenaire (DRAFT, SUSPENDED) : levé uniquement APRÈS
+                // vérification du mot de passe → remonté tel quel, comme le statut
+                // de l'organisation côté User ci-dessous.
+                if (err instanceof AppError && err.statusCode === 403) throw err;
                 // Même message générique qu'un email User inconnu — pas d'énumération de compte
                 throw new Error("Email ou mot de passe incorrect");
             }

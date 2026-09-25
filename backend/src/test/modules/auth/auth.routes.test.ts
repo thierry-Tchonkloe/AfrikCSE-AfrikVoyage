@@ -90,6 +90,7 @@ jest.mock("../../../core/utils/logger", () => ({
 }));
 
 import { AuthService } from "../../../modules/auth/application/auth.service";
+import { AppError } from "../../../core/errors/app.error";
 
 const service = new AuthService();
 
@@ -182,6 +183,17 @@ describe("AuthService.login", () => {
 
     expect(erreurMauvaisMdp.message).toBe(erreurEmailInconnu.message);
     expect(erreurEmailInconnu.message).toBe("Email ou mot de passe incorrect");
+  });
+
+  it("remonte le statut du partenaire (DRAFT), levé seulement après vérification de son mot de passe", async () => {
+    mocks.findUserByEmail.mockResolvedValueOnce(null);
+    mocks.partnerLogin.mockRejectedValueOnce(
+      new AppError("Votre compte partenaire est en attente de validation.", 403),
+    );
+
+    await expect(service.login(dto)).rejects.toThrow(
+      "Votre compte partenaire est en attente de validation.",
+    );
   });
 
   it("ne persiste que le hash du refresh token dans la session, jamais le token brut", async () => {

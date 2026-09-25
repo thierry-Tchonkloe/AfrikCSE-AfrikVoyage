@@ -113,6 +113,14 @@ export class UserRepository {
             resetPasswordToken: inviteTokenHash,
             resetPasswordExpiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
         },
+        // Le user créé est renvoyé tel quel par POST /api/users : sans cet
+        // `omit`, la réponse exposait le mot de passe temporaire et le hash du
+        // token d'invitation.
+        omit: {
+            password: true,
+            resetPasswordToken: true,
+            resetPasswordExpiresAt: true,
+        },
         });
 
         if (process.env.NODE_ENV !== "production") {

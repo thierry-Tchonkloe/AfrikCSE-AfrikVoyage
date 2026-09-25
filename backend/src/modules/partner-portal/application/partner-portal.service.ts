@@ -83,11 +83,20 @@ export class PartnerPortalService {
     async login(email: string, password: string) {
         const user = await repo.findUserByEmail(email);
         if (!user || !user.isActive) throw new AppError("Identifiants invalides", 401);
-        if (!user.partner || (user.partner as { status: string }).status === "SUSPENDED") {
-            throw new AppError("Accès au portail partenaire désactivé", 403);
-        }
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) throw new AppError("Identifiants invalides", 401);
+
+        // Statut du partenaire vérifié APRÈS le mot de passe : sans identifiants
+        // valides, rien ne révèle qu'un compte existe ni dans quel état il est.
+        const partnerStatus = (user.partner as { status: string } | null)?.status;
+        if (!user.partner || partnerStatus === "SUSPENDED") {
+            throw new AppError("Accès au portail partenaire désactivé", 403);
+        }
+        // DRAFT : le partenaire peut déjà activer son compte (définir son mot de
+        // passe via le lien reçu) mais ne se connecte qu'une fois validé (ACTIVE).
+        if (partnerStatus === "DRAFT") {
+            throw new AppError("Votre compte partenaire est en attente de validation.", 403);
+        }
 
         const payload: PartnerTokenPayload = {
             partnerUserId: user.id,
